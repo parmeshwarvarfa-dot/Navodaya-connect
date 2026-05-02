@@ -1,23 +1,36 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
-const config = getDefaultConfig(__dirname);
+const workspaceRoot = path.resolve(__dirname, "../..");
+const projectRoot = __dirname;
 
-// Exclude Firebase temp files that cause Metro watcher crashes
-config.watchFolders = [];
+const config = getDefaultConfig(projectRoot);
+
+// Include the monorepo root so Metro can resolve pnpm-hoisted packages
+config.watchFolders = [workspaceRoot];
+
+// Set the project root explicitly
+config.projectRoot = projectRoot;
+
+// Block Firebase temp files that crash the watcher
+const { blockList: existingBlockList } = config.resolver || {};
+const defaultBlockList = Array.isArray(existingBlockList)
+  ? existingBlockList
+  : existingBlockList
+    ? [existingBlockList]
+    : [];
+
 config.resolver = {
   ...config.resolver,
-  blockList: [
-    /.*_tmp_\d+$/,
-    /.*\/node_modules\/.pnpm\/@firebase.*_tmp_\d+.*/,
+  nodeModulesPaths: [
+    path.resolve(projectRoot, "node_modules"),
+    path.resolve(workspaceRoot, "node_modules"),
   ],
-};
-
-// Use polling watcher to avoid ENOENT crashes from firebase temp files
-config.watcher = {
-  ...config.watcher,
-  healthCheck: {
-    enabled: false,
-  },
+  blockList: [
+    ...defaultBlockList,
+    // Exclude Firebase temp watch files
+    new RegExp(`.*_tmp_\\d+$`),
+  ],
 };
 
 module.exports = config;

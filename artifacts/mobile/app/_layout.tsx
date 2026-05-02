@@ -10,30 +10,14 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-
-function RootLayoutNav() {
-  const { user, loading } = useAuth();
-
-  if (loading) return null;
-
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-      <Stack.Screen name="+not-found" />
-    </Stack>
-  );
-}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -56,11 +40,15 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AuthProvider>
-                <RootLayoutNav />
-              </AuthProvider>
-            </KeyboardProvider>
+            <AuthProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+            </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
