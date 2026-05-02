@@ -11,12 +11,15 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1E40AF"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.navodaya.connect"
     },
-    "android": {},
+    "android": {
+      "package": "com.navodaya.connect"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
