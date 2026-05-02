@@ -26,9 +26,7 @@ export interface UserProfile {
   house: "Aravali" | "Nilgiri" | "Shivalik" | "Udaygiri";
   photoURL?: string;
   createdAt?: any;
-  // Student fields
   class?: string;
-  // Alumni fields
   enrollYear?: string;
   passoutYear?: string;
   profession?: string;
@@ -36,9 +34,7 @@ export interface UserProfile {
   company?: string;
   skills?: string[];
   verificationStatus?: "unverified" | "pending" | "verified";
-  // Teacher fields
   subject?: string;
-  // Official fields
   designation?: string;
 }
 
@@ -46,7 +42,11 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, profileData: Omit<UserProfile, "uid" | "createdAt">) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    profileData: Omit<UserProfile, "uid" | "createdAt">
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(docSnap.data() as UserProfile);
       }
     } catch (e) {
-      // ignore
+      // Firestore read failed silently — user may not have a profile yet
     }
   };
 
@@ -89,8 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     profileData: Omit<UserProfile, "uid" | "createdAt">
   ) => {
+    // Step 1: Create the Firebase Auth account
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
+
     const fullProfile: UserProfile = {
       ...profileData,
       uid,
@@ -98,8 +100,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verificationStatus:
         profileData.role === "alumni" ? "unverified" : undefined,
     };
-    await setDoc(doc(db, "users", uid), fullProfile);
-    setProfile(fullProfile);
+
+    // Step 2: Write to Firestore (best-effort — don't block sign-up if this fails)
+    try {
+      await setDoc(doc(db, "users", uid), fullProfile);
+      setProfile(fullProfile);
+    } catch (firestoreError) {
+      // Auth succeeded; Firestore write failed (likely security rules).
+      // User is logged in but profile may be missing — set local state anyway.
+      console.warn("Firestore profile write failed:", firestoreError);
+      setProfile(fullProfile);
+    }
   };
 
   const signIn = async (email: string, password: string) => {

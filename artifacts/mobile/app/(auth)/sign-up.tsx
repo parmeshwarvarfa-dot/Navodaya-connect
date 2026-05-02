@@ -237,10 +237,21 @@ export default function SignUpScreen() {
       });
       router.replace("/(tabs)");
     } catch (err: any) {
+      const code: string = err?.code ?? "";
       const msg =
-        err?.code === "auth/email-already-in-use"
-          ? "This email is already registered."
-          : "Sign up failed. Please try again.";
+        code === "auth/email-already-in-use"
+          ? "This email is already registered. Please sign in instead."
+          : code === "auth/invalid-email"
+          ? "Invalid email address."
+          : code === "auth/weak-password"
+          ? "Password must be at least 6 characters."
+          : code === "auth/operation-not-allowed"
+          ? "Email/password sign-up is not enabled. Please contact support."
+          : code === "auth/network-request-failed"
+          ? "Network error. Check your connection and try again."
+          : code
+          ? `Error: ${code}`
+          : err?.message ?? "Sign up failed. Please try again.";
       Alert.alert("Sign Up Failed", msg);
     } finally {
       setLoading(false);
