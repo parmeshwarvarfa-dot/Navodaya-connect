@@ -73,8 +73,8 @@ function Field({
   );
 }
 
-function ChipRow({ label, options, value, onChange }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void;
+function ChipRow({ label, options, value, onChange, houseFont }: {
+  label: string; options: string[]; value: string; onChange: (v: string) => void; houseFont?: boolean;
 }) {
   return (
     <View style={fld.wrap}>
@@ -83,7 +83,7 @@ function ChipRow({ label, options, value, onChange }: {
         {options.map((o) => (
           <TouchableOpacity key={o} onPress={() => onChange(o)}
             style={[chip.base, value === o && chip.active]}>
-            <Text style={[chip.text, value === o && chip.textActive]}>{o}</Text>
+            <Text style={[chip.text, value === o && chip.textActive, houseFont && { fontFamily: "Pacifico_400Regular", fontSize: 13 }]}>{o}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -252,7 +252,7 @@ export default function EditProfileScreen() {
           <Section title="JNV Details" icon="school-outline">
             <Field label="JNV Name" value={jnvName} onChange={setJnvName} placeholder="e.g. JNV Jaipur" icon="business-outline" />
             <Field label="State" value={jnvState} onChange={setJnvState} placeholder="e.g. Rajasthan" icon="map-outline" />
-            <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} />
+            <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} houseFont />
           </Section>
 
           {/* ── Alumni ── */}
