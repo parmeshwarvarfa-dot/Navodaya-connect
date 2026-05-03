@@ -165,7 +165,7 @@ export default function ChatsScreen() {
                   <Ionicons name={group.icon} size={22} color={group.iconColor} />
                 </View>
                 <View style={styles.groupInfo}>
-                  <Text style={[styles.groupName, group.icon === "home-outline" && { fontFamily: "Pacifico_400Regular" }]}>{group.name}</Text>
+                  <Text style={styles.groupName}>{group.name}</Text>
                   <Text style={styles.groupMessage} numberOfLines={1}>{group.lastMessage}</Text>
                 </View>
                 <View style={styles.groupRight}>
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   houseColorBar: { height: 5 },
   houseCardBody: { padding: 14, gap: 4 },
   houseEmoji: { fontSize: 24, marginBottom: 4 },
-  houseName: { fontSize: 16, fontFamily: "Pacifico_400Regular", color: "#111827" },
+  houseName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827" },
   houseMembers: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 8 },
   joinBtn: { paddingVertical: 7, borderRadius: 20, alignItems: "center" },
   joinBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },

@@ -31,16 +31,16 @@ const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyph
 ];
 
 function BluePicker({
-  placeholder, value, options, onSelect, icon, houseFont,
+  placeholder, value, options, onSelect, icon,
 }: {
-  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap; houseFont?: boolean;
+  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <TouchableOpacity style={styles.inputWrap} onPress={() => setOpen(true)}>
         <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
-        <Text style={[styles.inputText, !value && styles.placeholderText, value && houseFont && { fontFamily: "Pacifico_400Regular" }]}>
+        <Text style={[styles.inputText, !value && styles.placeholderText]}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.65)" />
@@ -61,7 +61,7 @@ function BluePicker({
                 style={modalStyles.option}
                 onPress={() => { onSelect(item); setOpen(false); }}
               >
-                <Text style={[modalStyles.optionText, houseFont && { fontFamily: "Pacifico_400Regular" }, item === value && { color: "#3D5AF1" }]}>
+                <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
                   {item}
                 </Text>
                 {item === value && <Ionicons name="checkmark" size={18} color="#3D5AF1" />}
@@ -234,7 +234,7 @@ export default function SignUpScreen() {
                 <BluePicker placeholder="Select Class" value={studentClass} options={CLASSES} onSelect={setStudentClass} icon="school-outline" />
               )}
 
-              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" houseFont />
+              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" />
               <BluePicker
                 placeholder="Select JNV State"
                 value={jnvState}

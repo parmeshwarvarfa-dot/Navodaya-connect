@@ -157,7 +157,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.infoText}>
                 <Text style={styles.infoLabel}>{item.label}</Text>
-                <Text style={[styles.infoValue, item.label === "House" && { fontFamily: "Pacifico_400Regular" }]}>{item.value}</Text>
+                <Text style={styles.infoValue}>{item.value}</Text>
               </View>
             </View>
           ))}
