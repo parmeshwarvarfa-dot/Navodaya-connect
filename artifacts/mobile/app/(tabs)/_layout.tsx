@@ -1,10 +1,11 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useMemo } from "react";
 import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -23,7 +24,49 @@ const TAB_ITEMS: {
 
 const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
 
-function DostAiFab() {
+const HOUSE_THEMES: Record<
+  string,
+  { color: string; gradient: [string, string]; bg: string; label: string; emoji: string }
+> = {
+  Aravali: {
+    color: "#1D6ADE",
+    gradient: ["#1D6ADE", "#4B9EF5"],
+    bg: "#EFF6FF",
+    label: "Aravali",
+    emoji: "🔵",
+  },
+  Nilgiri: {
+    color: "#16A34A",
+    gradient: ["#16A34A", "#4ADE80"],
+    bg: "#F0FDF4",
+    label: "Nilgiri",
+    emoji: "🟢",
+  },
+  Shivalik: {
+    color: "#DC2626",
+    gradient: ["#DC2626", "#F87171"],
+    bg: "#FEF2F2",
+    label: "Shivalik",
+    emoji: "🔴",
+  },
+  Udaygiri: {
+    color: "#D97706",
+    gradient: ["#D97706", "#FBBF24"],
+    bg: "#FFFBEB",
+    label: "Udaygiri",
+    emoji: "🟡",
+  },
+};
+
+const DEFAULT_THEME = {
+  color: "#3D5AF1",
+  gradient: ["#4B6EF5", "#3151E8"] as [string, string],
+  bg: "#EEF2FF",
+  label: "",
+  emoji: "",
+};
+
+function DostAiFab({ accentColor }: { accentColor: string; gradientColors: [string, string] }) {
   const insets = useSafeAreaInsets();
   const tabBarHeight = Platform.OS === "web" ? 60 : 80;
   const bottom = tabBarHeight + insets.bottom + 12;
@@ -40,16 +83,13 @@ function DostAiFab() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Robot "face" built with icons */}
         <View style={styles.roboWrap}>
           <Ionicons name="hardware-chip" size={26} color="#fff" />
         </View>
       </LinearGradient>
 
-      {/* Pulse ring */}
       <View style={styles.fabRing} />
 
-      {/* Label tooltip */}
       <View style={styles.fabLabel}>
         <Text style={styles.fabLabelText}>DOST AI</Text>
       </View>
@@ -61,19 +101,29 @@ export default function TabLayout() {
   const isWeb = Platform.OS === "web";
   const tabBarHeight = isWeb ? 60 : 80;
   const paddingBottom = isWeb ? 8 : 16;
+  const { profile } = useAuth();
+
+  const house = profile?.house ?? "";
+  const theme = useMemo(
+    () => HOUSE_THEMES[house] ?? DEFAULT_THEME,
+    [house]
+  );
 
   return (
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#3D5AF1",
+          tabBarActiveTintColor: theme.color,
           tabBarInactiveTintColor: "#9CA3AF",
           headerShown: false,
           tabBarStyle: {
             backgroundColor: "#fff",
-            borderTopWidth: 1,
-            borderTopColor: "#F0F0F0",
-            elevation: 8,
+            borderTopWidth: 0,
+            elevation: 12,
+            shadowColor: theme.color,
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
             height: tabBarHeight,
             paddingBottom,
             paddingTop: 8,
@@ -83,7 +133,10 @@ export default function TabLayout() {
             fontFamily: "Inter_500Medium",
           },
           tabBarBackground: () => (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fff" }]} />
+            <View style={StyleSheet.absoluteFill}>
+              <View style={[styles.tabBarBg, { borderTopColor: theme.color + "33" }]} />
+              <View style={[styles.houseAccentLine, { backgroundColor: theme.color }]} />
+            </View>
           ),
         }}
       >
@@ -94,7 +147,9 @@ export default function TabLayout() {
             options={{
               title: tab.title,
               tabBarIcon: ({ color, focused }) => (
-                <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
+                <View style={focused ? [styles.activeIconWrap, { backgroundColor: theme.color + "18" }] : undefined}>
+                  <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
+                </View>
               ),
             }}
           />
@@ -104,12 +159,57 @@ export default function TabLayout() {
         ))}
       </Tabs>
 
-      <DostAiFab />
+      {house ? (
+        <View style={[styles.houseBadge, { backgroundColor: theme.color }]}>
+          <Text style={styles.houseBadgeText}>{theme.emoji} {theme.label}</Text>
+        </View>
+      ) : null}
+
+      <DostAiFab accentColor={theme.color} gradientColors={theme.gradient as [string, string]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  tabBarBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#fff",
+    borderTopWidth: 1.5,
+  },
+  houseAccentLine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.85,
+  },
+  activeIconWrap: {
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 2,
+  },
+  houseBadge: {
+    position: "absolute",
+    bottom: Platform.OS === "web" ? 68 : 88,
+    left: 16,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    zIndex: 998,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  houseBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.3,
+  },
   fab: {
     position: "absolute",
     right: 18,
