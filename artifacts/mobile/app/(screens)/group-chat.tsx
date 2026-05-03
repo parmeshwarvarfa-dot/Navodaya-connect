@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,49 +13,46 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
 import * as Haptics from "expo-haptics";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { GroupMessage } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-
-interface Message {
-  id: string;
-  text: string;
-  senderName: string;
-  senderId: string;
-  createdAt: any;
-}
 
 export default function GroupChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const decName = name ? decodeURIComponent(name) : "Group";
 
-  useEffect(() => {
+  const fetchMessages = useCallback(async () => {
     if (!id) return;
-    const q = query(
-      collection(db, "groups", id, "messages"),
-      orderBy("createdAt", "asc")
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Message)));
-    });
-    return unsub;
+    try {
+      const data = await api.groups.getMessages(id);
+      setMessages(data);
+    } catch {}
   }, [id]);
+
+  useEffect(() => {
+    fetchMessages();
+    pollRef.current = setInterval(fetchMessages, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
+    }
+  }, [messages.length]);
 
   const handleSend = async () => {
     if (!text.trim() || !id) return;
@@ -64,22 +61,17 @@ export default function GroupChatScreen() {
     setSending(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await addDoc(collection(db, "groups", id, "messages"), {
-        text: msg,
-        senderName: profile?.fullName,
-        senderId: profile?.uid,
-        role: profile?.role,
-        createdAt: serverTimestamp(),
-      });
+      await api.groups.sendMessage(id, msg);
+      fetchMessages();
     } catch {}
     setSending(false);
   };
 
-  const isMe = (senderId: string) => senderId === profile?.uid;
+  const isMe = (senderId?: string | null) => senderId === profile?.uid;
 
-  const formatTime = (ts: any) => {
-    if (!ts?.toDate) return "";
-    const d = ts.toDate();
+  const formatTime = (ts: string) => {
+    if (!ts) return "";
+    const d = new Date(ts);
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
@@ -104,6 +96,7 @@ export default function GroupChatScreen() {
         keyboardVerticalOffset={0}
       >
         <FlatList
+          ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.chatContent, { paddingBottom: 8 }]}
@@ -111,9 +104,7 @@ export default function GroupChatScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="chatbubbles-outline" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No messages yet
-              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No messages yet</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -132,28 +123,16 @@ export default function GroupChatScreen() {
                     styles.bubble,
                     mine
                       ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
-                      : {
-                          backgroundColor: colors.card,
-                          borderColor: colors.border,
-                          borderWidth: 1,
-                          borderBottomLeftRadius: 4,
-                        },
+                      : { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderBottomLeftRadius: 4 },
                   ]}
                 >
                   {!mine && (
-                    <Text style={[styles.senderName, { color: colors.primary }]}>
-                      {item.senderName}
-                    </Text>
+                    <Text style={[styles.senderName, { color: colors.primary }]}>{item.senderName}</Text>
                   )}
                   <Text style={[styles.bubbleText, { color: mine ? "#fff" : colors.foreground }]}>
                     {item.text}
                   </Text>
-                  <Text
-                    style={[
-                      styles.timeText,
-                      { color: mine ? "rgba(255,255,255,0.65)" : colors.mutedForeground },
-                    ]}
-                  >
+                  <Text style={[styles.timeText, { color: mine ? "rgba(255,255,255,0.65)" : colors.mutedForeground }]}>
                     {formatTime(item.createdAt)}
                   </Text>
                 </View>
@@ -162,25 +141,9 @@ export default function GroupChatScreen() {
           }}
         />
 
-        <View
-          style={[
-            styles.inputBar,
-            {
-              backgroundColor: colors.card,
-              borderTopColor: colors.border,
-              paddingBottom: insets.bottom + 8,
-            },
-          ]}
-        >
+        <View style={[styles.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
           <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.muted,
-                color: colors.foreground,
-                borderRadius: colors.radius - 4,
-              },
-            ]}
+            style={[styles.input, { backgroundColor: colors.muted, color: colors.foreground, borderRadius: colors.radius - 4 }]}
             placeholder="Type a message..."
             placeholderTextColor={colors.mutedForeground}
             value={text}
@@ -191,18 +154,11 @@ export default function GroupChatScreen() {
             onSubmitEditing={handleSend}
           />
           <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              { backgroundColor: text.trim() ? colors.primary : colors.muted },
-            ]}
+            style={[styles.sendBtn, { backgroundColor: text.trim() ? colors.primary : colors.muted }]}
             onPress={handleSend}
             disabled={!text.trim() || sending}
           >
-            <Ionicons
-              name="send"
-              size={18}
-              color={text.trim() ? "#fff" : colors.mutedForeground}
-            />
+            <Ionicons name="send" size={18} color={text.trim() ? "#fff" : colors.mutedForeground} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

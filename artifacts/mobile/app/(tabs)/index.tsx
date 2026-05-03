@@ -7,35 +7,18 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
-  FlatList,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  onSnapshot,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { RoleBadge } from "@/components/RoleBadge";
 import { SectionHeader } from "@/components/SectionHeader";
-
-interface NewsItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  createdAt: any;
-  imageUrl?: string;
-}
 
 const FEATURE_CARDS = [
   { id: "news", icon: "newspaper-outline", label: "News", color: "#3B82F6", route: "/(screens)/news" },
@@ -56,15 +39,12 @@ export default function HomeScreen() {
 
   const fetchNews = async () => {
     try {
-      const q = query(collection(db, "news"), orderBy("createdAt", "desc"), limit(5));
-      const snap = await getDocs(q);
-      setNews(snap.docs.map((d) => ({ id: d.id, ...d.data() } as NewsItem)));
+      const items = await api.news.list();
+      setNews(items.slice(0, 5));
     } catch {}
   };
 
-  useEffect(() => {
-    fetchNews();
-  }, []);
+  useEffect(() => { fetchNews(); }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -168,17 +148,11 @@ export default function HomeScreen() {
             news.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                onPress={() => router.push(`/(screens)/news-detail?id=${item.id}` as any)}
                 activeOpacity={0.9}
               >
                 <PremiumCard style={styles.newsCard}>
                   <View style={styles.newsCategoryRow}>
-                    <View
-                      style={[
-                        styles.categoryBadge,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    >
+                    <View style={[styles.categoryBadge, { backgroundColor: colors.accent }]}>
                       <Text style={[styles.categoryText, { color: colors.primary }]}>
                         {item.category || "General"}
                       </Text>
@@ -187,10 +161,7 @@ export default function HomeScreen() {
                   <Text style={[styles.newsTitle, { color: colors.foreground }]}>
                     {item.title}
                   </Text>
-                  <Text
-                    style={[styles.newsDesc, { color: colors.mutedForeground }]}
-                    numberOfLines={2}
-                  >
+                  <Text style={[styles.newsDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
                     {item.description}
                   </Text>
                 </PremiumCard>
@@ -200,14 +171,12 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader
-            title="Quick Actions"
-          />
+          <SectionHeader title="Quick Actions" />
           <View style={styles.quickActions}>
             {(profile?.role === "teacher" || profile?.role === "official") && (
               <TouchableOpacity
                 style={[styles.quickCard, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
-                onPress={() => router.push("/(screens)/create-news" as any)}
+                onPress={() => router.push("/(screens)/news" as any)}
                 activeOpacity={0.85}
               >
                 <Ionicons name="add-circle" size={20} color="#fff" />
@@ -249,134 +218,50 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
+  header: { paddingHorizontal: 20, paddingBottom: 24 },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 12,
   },
-  greeting: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  userName: {
-    color: "#fff",
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-  },
+  greeting: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontFamily: "Inter_400Regular" },
+  userName: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold" },
   notifBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 40, height: 40, borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
   },
   notifDot: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    position: "absolute", top: 8, right: 8,
+    width: 8, height: 8, borderRadius: 4,
     backgroundColor: "#F59E0B",
-    borderWidth: 1.5,
-    borderColor: "#1E40AF",
+    borderWidth: 1.5, borderColor: "#1E40AF",
   },
-  profileChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  jnvText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    flex: 1,
-  },
+  profileChip: { flexDirection: "row", alignItems: "center", gap: 8 },
+  jnvText: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   scrollContent: { padding: 16 },
   featuresSection: { marginBottom: 24 },
-  featuresGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
+  featuresGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   featureCard: {
-    width: "30%",
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    width: "30%", aspectRatio: 1,
+    alignItems: "center", justifyContent: "center",
     borderWidth: 1,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 6,
+    shadowOpacity: 1, shadowRadius: 8, elevation: 2, gap: 6,
   },
-  featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  featureLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-  },
+  featureIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  featureLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
   section: { marginBottom: 24 },
   newsCard: { marginBottom: 10 },
   newsCategoryRow: { marginBottom: 6 },
-  categoryBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  categoryText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
-  newsTitle: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 6,
-    lineHeight: 22,
-  },
-  newsDesc: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 19,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  quickActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  quickCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 6,
-  },
-  quickCardText: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-  },
+  categoryBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  categoryText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  newsTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", marginBottom: 6, lineHeight: 22 },
+  newsDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  emptyState: { alignItems: "center", paddingVertical: 24, gap: 8 },
+  emptyText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  quickActions: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  quickCard: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 6 },
+  quickCardText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });

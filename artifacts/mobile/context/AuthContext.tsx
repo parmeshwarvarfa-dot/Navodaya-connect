@@ -1,51 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User,
-} from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { api, getToken, setToken, clearToken } from "@/lib/api";
+import type { UserProfile, SignupData } from "@/lib/api";
 
+export type { UserProfile };
 export type UserRole = "student" | "alumni" | "teacher" | "official";
 
-export interface UserProfile {
-  uid: string;
-  fullName: string;
-  email: string;
-  role: UserRole;
-  jnvState: string;
-  jnvName: string;
-  house: "Aravali" | "Nilgiri" | "Shivalik" | "Udaygiri";
-  photoURL?: string;
-  createdAt?: any;
-  class?: string;
-  enrollYear?: string;
-  passoutYear?: string;
-  profession?: string;
-  field?: string;
-  company?: string;
-  skills?: string[];
-  verificationStatus?: "unverified" | "pending" | "verified";
-  subject?: string;
-  designation?: string;
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: { uid: string } | null;
   profile: UserProfile | null;
   loading: boolean;
   signUp: (
     email: string,
     password: string,
-    profileData: Omit<UserProfile, "uid" | "createdAt">
+    profileData: Omit<SignupData, "email" | "password">
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -55,82 +22,58 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (uid: string) => {
-    try {
-      const docRef = doc(db, "users", uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
-      }
-    } catch (e) {
-      // Firestore read failed silently — user may not have a profile yet
-    }
-  };
-
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await fetchProfile(firebaseUser.uid);
-      } else {
-        setProfile(null);
+    (async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          const { profile: p } = await api.auth.me();
+          setProfile(p);
+        }
+      } catch {
+        await clearToken();
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
-    return unsub;
+    })();
   }, []);
 
   const signUp = async (
     email: string,
     password: string,
-    profileData: Omit<UserProfile, "uid" | "createdAt">
+    profileData: Omit<SignupData, "email" | "password">
   ) => {
-    // Step 1: Create the Firebase Auth account
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = cred.user.uid;
-
-    const fullProfile: UserProfile = {
-      ...profileData,
-      uid,
-      createdAt: serverTimestamp(),
-      verificationStatus:
-        profileData.role === "alumni" ? "unverified" : undefined,
-    };
-
-    // Step 2: Write to Firestore (best-effort — don't block sign-up if this fails)
-    try {
-      await setDoc(doc(db, "users", uid), fullProfile);
-      setProfile(fullProfile);
-    } catch (firestoreError) {
-      // Auth succeeded; Firestore write failed (likely security rules).
-      // User is logged in but profile may be missing — set local state anyway.
-      console.warn("Firestore profile write failed:", firestoreError);
-      setProfile(fullProfile);
-    }
+    const { token, profile: p } = await api.auth.signup({ email, password, ...profileData });
+    await setToken(token);
+    setProfile(p);
   };
 
   const signIn = async (email: string, password: string) => {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    await fetchProfile(cred.user.uid);
+    const { token, profile: p } = await api.auth.signin(email, password);
+    await setToken(token);
+    setProfile(p);
   };
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    try { await api.auth.signout(); } catch {}
+    await clearToken();
     setProfile(null);
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.uid);
+    try {
+      const { profile: p } = await api.auth.me();
+      setProfile(p);
+    } catch {}
   };
 
+  const user = profile ? { uid: profile.uid } : null;
+
   return (
-    <AuthContext.Provider
-      value={{ user, profile, loading, signUp, signIn, signOut, refreshProfile }}
-    >
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

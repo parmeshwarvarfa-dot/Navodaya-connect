@@ -15,33 +15,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { Problem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
-
-interface Problem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  priority: "low" | "medium" | "high";
-  status: "submitted" | "seen" | "in_progress" | "solved";
-  anonymous: boolean;
-  submittedBy: string;
-  submittedByName: string;
-  createdAt: any;
-}
 
 const STATUS_CONFIG = {
   submitted: { label: "Submitted", color: "#64748B", bg: "#F1F5F9" },
@@ -75,16 +55,13 @@ export default function ProblemsScreen() {
 
   const fetchProblems = async () => {
     try {
-      const q = query(collection(db, "problems"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setProblems(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Problem)));
+      const data = await api.problems.list();
+      setProblems(data);
     } catch {}
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchProblems();
-  }, []);
+  useEffect(() => { fetchProblems(); }, []);
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
@@ -93,19 +70,7 @@ export default function ProblemsScreen() {
     }
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "problems"), {
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        priority,
-        anonymous,
-        status: "submitted",
-        submittedBy: profile?.uid,
-        submittedByName: anonymous ? "Anonymous" : profile?.fullName,
-        jnvName: profile?.jnvName,
-        jnvState: profile?.jnvState,
-        createdAt: serverTimestamp(),
-      });
+      await api.problems.create({ title: title.trim(), description: description.trim(), category, priority, anonymous });
       setShowCreate(false);
       setTitle("");
       setDescription("");
@@ -128,10 +93,7 @@ export default function ProblemsScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Problems</Text>
           {(profile?.role === "student" || profile?.role === "teacher") && (
-            <TouchableOpacity
-              style={styles.createBtn}
-              onPress={() => setShowCreate(true)}
-            >
+            <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreate(true)}>
               <Ionicons name="add" size={22} color="#fff" />
             </TouchableOpacity>
           )}
@@ -141,54 +103,35 @@ export default function ProblemsScreen() {
       <FlatList
         data={problems}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: 100 + insets.bottom },
-        ]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
               <Ionicons name="alert-circle-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No problems reported
-              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No problems reported</Text>
             </View>
           ) : null
         }
         renderItem={({ item }) => {
-          const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.submitted;
-          const priorityCfg = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.medium;
+          const statusCfg = STATUS_CONFIG[item.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.submitted;
+          const priorityCfg = PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
           return (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push(`/(screens)/problem-detail?id=${item.id}` as any)}
-            >
+            <TouchableOpacity activeOpacity={0.85}>
               <PremiumCard style={styles.card}>
                 <View style={styles.cardHeader}>
                   <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-                    <Text style={[styles.statusText, { color: statusCfg.color }]}>
-                      {statusCfg.label}
-                    </Text>
+                    <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
                   </View>
-                  <Text style={[styles.priorityText, { color: priorityCfg.color }]}>
-                    {priorityCfg.label} priority
-                  </Text>
+                  <Text style={[styles.priorityText, { color: priorityCfg.color }]}>{priorityCfg.label} priority</Text>
                 </View>
-                <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-                  {item.title}
-                </Text>
-                <Text
-                  style={[styles.cardDesc, { color: colors.mutedForeground }]}
-                  numberOfLines={2}
-                >
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>{item.title}</Text>
+                <Text style={[styles.cardDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
                   {item.description}
                 </Text>
                 <View style={styles.cardFooter}>
                   <View style={[styles.catBadge, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.catText, { color: colors.mutedForeground }]}>
-                      {item.category}
-                    </Text>
+                    <Text style={[styles.catText, { color: colors.mutedForeground }]}>{item.category}</Text>
                   </View>
                   <Text style={[styles.submittedBy, { color: colors.mutedForeground }]}>
                     {item.anonymous ? "Anonymous" : item.submittedByName}
@@ -203,21 +146,13 @@ export default function ProblemsScreen() {
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-              Report Problem
-            </Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Report Problem</Text>
             <TouchableOpacity onPress={() => setShowCreate(false)}>
               <Ionicons name="close" size={24} color={colors.foreground} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <PremiumInput
-              label="Title"
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Brief title of the problem"
-              icon="document-text-outline"
-            />
+            <PremiumInput label="Title" value={title} onChangeText={setTitle} placeholder="Brief title of the problem" icon="document-text-outline" />
             <PremiumInput
               label="Description"
               value={description}
@@ -228,86 +163,40 @@ export default function ProblemsScreen() {
               style={{ minHeight: 80, textAlignVertical: "top" }}
               icon="create-outline"
             />
-
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-              Category
-            </Text>
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {CATEGORIES.map((c) => (
                 <TouchableOpacity
                   key={c}
                   onPress={() => setCategory(c)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: category === c ? colors.primary : colors.muted,
-                      borderRadius: 20,
-                    },
-                  ]}
+                  style={[styles.chip, { backgroundColor: category === c ? colors.primary : colors.muted, borderRadius: 20 }]}
                 >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      { color: category === c ? "#fff" : colors.foreground },
-                    ]}
-                  >
-                    {c}
-                  </Text>
+                  <Text style={[styles.chipText, { color: category === c ? "#fff" : colors.foreground }]}>{c}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-              Priority
-            </Text>
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Priority</Text>
             <View style={styles.priorityRow}>
               {(["low", "medium", "high"] as const).map((p) => (
                 <TouchableOpacity
                   key={p}
                   onPress={() => setPriority(p)}
-                  style={[
-                    styles.priorityBtn,
-                    {
-                      backgroundColor:
-                        priority === p ? PRIORITY_CONFIG[p].color : colors.muted,
-                      borderRadius: 10,
-                    },
-                  ]}
+                  style={[styles.priorityBtn, { backgroundColor: priority === p ? PRIORITY_CONFIG[p].color : colors.muted, borderRadius: 10 }]}
                 >
-                  <Text
-                    style={[
-                      styles.priorityBtnText,
-                      { color: priority === p ? "#fff" : colors.foreground },
-                    ]}
-                  >
+                  <Text style={[styles.priorityBtnText, { color: priority === p ? "#fff" : colors.foreground }]}>
                     {PRIORITY_CONFIG[p].label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-
             <View style={styles.anonymousRow}>
               <View>
-                <Text style={[styles.anonymousLabel, { color: colors.foreground }]}>
-                  Submit Anonymously
-                </Text>
-                <Text style={[styles.anonymousSub, { color: colors.mutedForeground }]}>
-                  Your name will be hidden
-                </Text>
+                <Text style={[styles.anonymousLabel, { color: colors.foreground }]}>Submit Anonymously</Text>
+                <Text style={[styles.anonymousSub, { color: colors.mutedForeground }]}>Your name will be hidden</Text>
               </View>
-              <Switch
-                value={anonymous}
-                onValueChange={setAnonymous}
-                trackColor={{ true: colors.primary, false: colors.muted }}
-              />
+              <Switch value={anonymous} onValueChange={setAnonymous} trackColor={{ true: colors.primary, false: colors.muted }} />
             </View>
-
-            <PremiumButton
-              title="Submit Problem"
-              onPress={handleSubmit}
-              loading={submitting}
-              style={{ marginTop: 16 }}
-            />
+            <PremiumButton title="Submit Problem" onPress={handleSubmit} loading={submitting} style={{ marginTop: 16 }} />
           </ScrollView>
         </View>
       </Modal>
@@ -318,20 +207,9 @@ export default function ProblemsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
-  createBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  createBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   listContent: { padding: 16 },
   card: { marginBottom: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
@@ -347,13 +225,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   modalContainer: { flex: 1 },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-  },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   modalContent: { padding: 20 },
   fieldLabel: { fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 8, marginTop: 4 },
@@ -363,13 +235,7 @@ const styles = StyleSheet.create({
   priorityRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   priorityBtn: { flex: 1, paddingVertical: 10, alignItems: "center" },
   priorityBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  anonymousRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-    padding: 12,
-  },
+  anonymousRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: 12 },
   anonymousLabel: { fontSize: 15, fontFamily: "Inter_500Medium" },
   anonymousSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
 });

@@ -12,40 +12,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { AlumniUser } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
-
-interface AlumniProfile {
-  id: string;
-  fullName: string;
-  profession: string;
-  company: string;
-  field: string;
-  skills: string[];
-  jnvName: string;
-  jnvState: string;
-  passoutYear: string;
-  verificationStatus: string;
-}
 
 export default function AlumniScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [alumni, setAlumni] = useState<AlumniProfile[]>([]);
+  const [alumni, setAlumni] = useState<AlumniUser[]>([]);
   const [search, setSearch] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const fetchAlumni = async () => {
-    try {
-      const q = query(collection(db, "users"), where("role", "==", "alumni"));
-      const snap = await getDocs(q);
-      setAlumni(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlumniProfile)));
-    } catch {}
-  };
-
-  useEffect(() => { fetchAlumni(); }, []);
+  useEffect(() => {
+    api.users.alumni().then(setAlumni).catch(() => {});
+  }, []);
 
   const filtered = alumni.filter(
     (a) =>
@@ -109,12 +90,10 @@ export default function AlumniScreen() {
                 <Text style={[styles.profession, { color: colors.mutedForeground }]}>
                   {item.profession}{item.company ? ` at ${item.company}` : ""}
                 </Text>
-                <Text style={[styles.jnv, { color: colors.mutedForeground }]}>
-                  {item.jnvName} {item.passoutYear ? `• Batch ${item.passoutYear}` : ""}
-                </Text>
+                <Text style={[styles.jnv, { color: colors.mutedForeground }]}>{item.jnvName}</Text>
               </View>
             </View>
-            {item.skills?.length > 0 && (
+            {item.skills && item.skills.length > 0 && (
               <View style={styles.skills}>
                 {item.skills.slice(0, 3).map((s) => (
                   <View key={s} style={[styles.skillChip, { backgroundColor: colors.muted }]}>

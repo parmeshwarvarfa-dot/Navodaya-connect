@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  Alert,
   TextInput,
   KeyboardAvoidingView,
 } from "react-native";
@@ -14,42 +13,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { ProblemWithComments } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
-
-interface Problem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  priority: string;
-  status: "submitted" | "seen" | "in_progress" | "solved";
-  anonymous: boolean;
-  submittedByName: string;
-  createdAt: any;
-}
-
-interface Comment {
-  id: string;
-  text: string;
-  authorName: string;
-  authorRole: string;
-  createdAt: any;
-}
 
 const STATUSES = ["submitted", "seen", "in_progress", "solved"] as const;
 const STATUS_LABELS: Record<string, string> = {
@@ -58,14 +27,19 @@ const STATUS_LABELS: Record<string, string> = {
   in_progress: "In Progress",
   solved: "Solved",
 };
+const statusColors: Record<string, string> = {
+  submitted: "#64748B",
+  seen: "#2563EB",
+  in_progress: "#D97706",
+  solved: "#059669",
+};
 
 export default function ProblemDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [problem, setProblem] = useState<Problem | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [problem, setProblem] = useState<ProblemWithComments | null>(null);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -73,11 +47,8 @@ export default function ProblemDetailScreen() {
   const fetchData = async () => {
     if (!id) return;
     try {
-      const docSnap = await getDoc(doc(db, "problems", id));
-      if (docSnap.exists()) setProblem({ id: docSnap.id, ...docSnap.data() } as Problem);
-      const q = query(collection(db, "problems", id, "comments"), orderBy("createdAt", "asc"));
-      const snap = await getDocs(q);
-      setComments(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Comment)));
+      const data = await api.problems.get(id);
+      setProblem(data);
     } catch {}
   };
 
@@ -87,13 +58,7 @@ export default function ProblemDetailScreen() {
     if (!commentText.trim() || !id) return;
     setPosting(true);
     try {
-      await addDoc(collection(db, "problems", id, "comments"), {
-        text: commentText.trim(),
-        authorName: profile?.fullName,
-        authorRole: profile?.role,
-        authorId: profile?.uid,
-        createdAt: serverTimestamp(),
-      });
+      await api.problems.addComment(id, commentText.trim());
       setCommentText("");
       fetchData();
     } catch {}
@@ -101,21 +66,14 @@ export default function ProblemDetailScreen() {
   };
 
   const handleStatusUpdate = async (newStatus: string) => {
-    if (!id || profile?.role !== "official") return;
+    if (!id) return;
     try {
-      await updateDoc(doc(db, "problems", id), { status: newStatus });
+      await api.problems.updateStatus(id, newStatus);
       fetchData();
     } catch {}
   };
 
   if (!problem) return null;
-
-  const statusColors: Record<string, string> = {
-    submitted: "#64748B",
-    seen: "#2563EB",
-    in_progress: "#D97706",
-    solved: "#059669",
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -132,24 +90,16 @@ export default function ProblemDetailScreen() {
         </View>
       </LinearGradient>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: 40 }]}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 40 }]} showsVerticalScrollIndicator={false}>
           <PremiumCard style={styles.problemCard}>
             <View style={styles.statusRow}>
-              <View style={[styles.statusBadge, { backgroundColor: statusColors[problem.status] + "20" }]}>
-                <Text style={[styles.statusText, { color: statusColors[problem.status] }]}>
-                  {STATUS_LABELS[problem.status]}
+              <View style={[styles.statusBadge, { backgroundColor: (statusColors[problem.status] || "#64748B") + "20" }]}>
+                <Text style={[styles.statusText, { color: statusColors[problem.status] || "#64748B" }]}>
+                  {STATUS_LABELS[problem.status] || problem.status}
                 </Text>
               </View>
-              <Text style={[styles.priority, { color: colors.mutedForeground }]}>
-                {problem.priority} priority
-              </Text>
+              <Text style={[styles.priority, { color: colors.mutedForeground }]}>{problem.priority} priority</Text>
             </View>
             <Text style={[styles.problemTitle, { color: colors.foreground }]}>{problem.title}</Text>
             <Text style={[styles.problemDesc, { color: colors.mutedForeground }]}>{problem.description}</Text>
@@ -166,20 +116,9 @@ export default function ProblemDetailScreen() {
                   <TouchableOpacity
                     key={s}
                     onPress={() => handleStatusUpdate(s)}
-                    style={[
-                      styles.statusBtn,
-                      {
-                        backgroundColor: problem.status === s ? colors.primary : colors.muted,
-                        borderRadius: 10,
-                      },
-                    ]}
+                    style={[styles.statusBtn, { backgroundColor: problem.status === s ? colors.primary : colors.muted, borderRadius: 10 }]}
                   >
-                    <Text
-                      style={[
-                        styles.statusBtnText,
-                        { color: problem.status === s ? "#fff" : colors.foreground },
-                      ]}
-                    >
+                    <Text style={[styles.statusBtnText, { color: problem.status === s ? "#fff" : colors.foreground }]}>
                       {STATUS_LABELS[s]}
                     </Text>
                   </TouchableOpacity>
@@ -189,14 +128,14 @@ export default function ProblemDetailScreen() {
           )}
 
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Comments ({comments.length})
+            Comments ({problem.comments?.length || 0})
           </Text>
 
-          {comments.map((c) => (
+          {problem.comments?.map((c) => (
             <PremiumCard key={c.id} style={styles.commentCard}>
               <View style={styles.commentHeader}>
                 <Text style={[styles.commentAuthor, { color: colors.primary }]}>{c.authorName}</Text>
-                <Text style={[styles.commentRole, { color: colors.mutedForeground }]}>{c.authorRole}</Text>
+                <Text style={[styles.commentRole, { color: colors.mutedForeground }]}>{c.role}</Text>
               </View>
               <Text style={[styles.commentText, { color: colors.foreground }]}>{c.text}</Text>
             </PremiumCard>
@@ -214,12 +153,7 @@ export default function ProblemDetailScreen() {
                 multiline
                 numberOfLines={3}
               />
-              <PremiumButton
-                title="Post Comment"
-                onPress={handleComment}
-                loading={posting}
-                style={{ marginTop: 10 }}
-              />
+              <PremiumButton title="Post Comment" onPress={handleComment} loading={posting} style={{ marginTop: 10 }} />
             </PremiumCard>
           )}
         </ScrollView>

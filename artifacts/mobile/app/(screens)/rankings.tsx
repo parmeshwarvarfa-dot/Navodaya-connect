@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,13 +11,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
@@ -72,21 +65,11 @@ export default function RankingsScreen() {
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tab, tab === "india" && styles.activeTab]}
-            onPress={() => setTab("india")}
-          >
-            <Text style={[styles.tabText, tab === "india" && styles.activeTabText]}>
-              India Ranking
-            </Text>
+          <TouchableOpacity style={[styles.tab, tab === "india" && styles.activeTab]} onPress={() => setTab("india")}>
+            <Text style={[styles.tabText, tab === "india" && styles.activeTabText]}>India Ranking</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, tab === "state" && styles.activeTab]}
-            onPress={() => setTab("state")}
-          >
-            <Text style={[styles.tabText, tab === "state" && styles.activeTabText]}>
-              State Ranking
-            </Text>
+          <TouchableOpacity style={[styles.tab, tab === "state" && styles.activeTab]} onPress={() => setTab("state")}>
+            <Text style={[styles.tabText, tab === "state" && styles.activeTabText]}>State Ranking</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -101,12 +84,7 @@ export default function RankingsScreen() {
                 <Text style={[styles.podiumName, { color: colors.foreground }]} numberOfLines={1}>
                   {item.jnvName.replace("JNV ", "")}
                 </Text>
-                <View
-                  style={[
-                    styles.podiumBlock,
-                    { height: heights[i], backgroundColor: MEDAL_COLORS[podiumPos] + "30" },
-                  ]}
-                >
+                <View style={[styles.podiumBlock, { height: heights[i], backgroundColor: MEDAL_COLORS[podiumPos] + "30" }]}>
                   <Text style={[styles.podiumRank, { color: MEDAL_COLORS[podiumPos] }]}>
                     #{tab === "india" ? item.indiaRank : item.stateRank}
                   </Text>
@@ -122,47 +100,30 @@ export default function RankingsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.listContent, { paddingBottom: 40 }]}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => {
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="trophy-outline" size={48} color={colors.mutedForeground} />
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No rankings for your state</Text>
+          </View>
+        }
+        renderItem={({ item }) => {
           const rank = tab === "india" ? item.indiaRank : item.stateRank;
           const isYou = item.jnvName === profile?.jnvName;
           return (
-            <PremiumCard
-              style={[
-                styles.rankCard,
-                isYou && { borderColor: colors.primary, borderWidth: 2 },
-              ]}
-            >
+            <PremiumCard style={[styles.rankCard, isYou && { borderColor: colors.primary, borderWidth: 2 }]}>
               <View style={styles.rankRow}>
-                <View
-                  style={[
-                    styles.rankBadge,
-                    {
-                      backgroundColor:
-                        rank <= 3 ? MEDAL_COLORS[rank - 1] + "20" : colors.muted,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rankNum,
-                      { color: rank <= 3 ? MEDAL_COLORS[rank - 1] : colors.mutedForeground },
-                    ]}
-                  >
+                <View style={[styles.rankBadge, { backgroundColor: rank <= 3 ? MEDAL_COLORS[rank - 1] + "20" : colors.muted }]}>
+                  <Text style={[styles.rankNum, { color: rank <= 3 ? MEDAL_COLORS[rank - 1] : colors.mutedForeground }]}>
                     #{rank}
                   </Text>
                 </View>
                 <View style={styles.rankInfo}>
                   <Text style={[styles.jnvName, { color: colors.foreground }]}>
-                    {item.jnvName}
-                    {isYou ? " (You)" : ""}
+                    {item.jnvName}{isYou ? " (You)" : ""}
                   </Text>
-                  <Text style={[styles.stateName, { color: colors.mutedForeground }]}>
-                    {item.state}
-                  </Text>
+                  <Text style={[styles.stateName, { color: colors.mutedForeground }]}>{item.state}</Text>
                 </View>
-                <Text style={[styles.score, { color: colors.primary }]}>
-                  {item.score}
-                </Text>
+                <Text style={[styles.score, { color: colors.primary }]}>{item.score}</Text>
               </View>
             </PremiumCard>
           );
@@ -197,4 +158,6 @@ const styles = StyleSheet.create({
   jnvName: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   stateName: { fontSize: 12, fontFamily: "Inter_400Regular" },
   score: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
 });

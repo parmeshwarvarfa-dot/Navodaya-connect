@@ -4,8 +4,9 @@ A premium community mobile app for Jawahar Navodaya Vidyalaya (JNV) connecting S
 
 ## Architecture
 
-- **Framework**: Expo (React Native) with Expo Router file-based routing
-- **Backend**: Firebase (Authentication, Firestore, Storage)
+- **Framework**: Expo SDK 54 (React Native) with Expo Router file-based routing
+- **Backend**: Express + Drizzle ORM + PostgreSQL (via `@workspace/api-server`)
+- **Auth**: Token-based (Bearer token in AsyncStorage, no Firebase)
 - **State**: React Context (AuthContext) + React Query
 - **Styling**: React Native StyleSheet with premium design tokens in `constants/colors.ts`
 
@@ -17,33 +18,39 @@ A premium community mobile app for Jawahar Navodaya Vidyalaya (JNV) connecting S
   - `app/(auth)/` — Sign In / Sign Up screens (3-step registration)
   - `app/(tabs)/` — Main tab navigation (Home, Groups, Problems, Mentorship, Profile)
   - `app/(screens)/` — Secondary screens (News, Events, Rankings, Store, Alumni, Community, Group Chat, etc.)
-  - `context/AuthContext.tsx` — Firebase Auth + Firestore user profile management
-  - `lib/firebase.ts` — Firebase app initialization
+  - `context/AuthContext.tsx` — Token-based auth context using REST API
+  - `lib/api.ts` — Full API client (all REST calls, token management)
   - `constants/colors.ts` — Design tokens (blue gradient theme)
   - `data/jnvData.ts` — All Indian states and JNV names lookup data
 
-## Firebase Collections
+- `artifacts/api-server/` — Express REST API
+  - `src/routes/auth.ts` — POST /auth/signup, /auth/signin, /auth/signout, GET /auth/me
+  - `src/routes/news.ts` — GET/POST/DELETE /news
+  - `src/routes/groups.ts` — GET/POST /groups, GET/POST /groups/:id/messages
+  - `src/routes/problems.ts` — GET/POST /problems, GET /problems/:id, POST /problems/:id/comments, PATCH /problems/:id/status
+  - `src/routes/events.ts` — GET/POST /events
+  - `src/routes/users.ts` — GET /users/alumni, PATCH /users/me
+  - `src/routes/mentorRequests.ts` — GET/POST /mentor-requests
+  - `src/lib/auth.ts` — requireAuth middleware + getUser helper
 
-- `users` — User profiles with role-based fields
+- `lib/db/src/schema/` — Drizzle ORM table schemas
+  - `users.ts`, `sessions.ts`, `news.ts`, `groups.ts`, `problems.ts`, `events.ts`, `mentorRequests.ts`
+
+## Database Tables (PostgreSQL)
+
+- `users` — User profiles with role-based fields + verificationStatus
+- `sessions` — Auth tokens (Bearer, 90-day expiry)
 - `news` — News posts (created by teachers/officials)
 - `groups` — Teacher-created study groups
-- `groups/{id}/messages` — Group chat messages
+- `group_messages` — Group chat messages
 - `problems` — Student-reported problems with status tracking
-- `problems/{id}/comments` — Comments from alumni/teachers/officials
+- `problem_comments` — Comments from alumni/teachers/officials
 - `events` — Events (created by teachers/officials)
-- `orders` — Store orders
-- `mentorRequests` — Mentorship requests from students to verified alumni
-- `verificationRequests` — Alumni verification requests (needs 2 approvals)
+- `mentor_requests` — Mentorship requests from students to verified alumni
 
-## Environment Variables (Secrets)
+## API Base URL
 
-All stored as Replit Secrets:
-- `EXPO_PUBLIC_FIREBASE_API_KEY`
-- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
-- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `EXPO_PUBLIC_FIREBASE_APP_ID`
+`https://${EXPO_PUBLIC_DOMAIN}/api` — the mobile app reads `EXPO_PUBLIC_DOMAIN` (set in the Expo workflow env to `$REPLIT_DEV_DOMAIN`).
 
 ## User Roles
 
@@ -52,23 +59,23 @@ All stored as Replit Secrets:
 - **teacher** — Can create groups, post news, create events, manage students
 - **official** — Can post news, create events, update problem statuses
 
-## Features Built
+## Features
 
 1. Authentication (Sign Up 3-step / Sign In) with role + JNV selection
 2. Home Dashboard with feature grid and news feed
 3. News system (CRUD for teachers/officials, view for others)
-4. Teacher Groups with real-time group chat
+4. Teacher Groups with polling-based group chat (5s interval)
 5. Problems system (submit, track, comment, update status)
 6. Mentorship (request from verified alumni, category-based)
-7. Rankings (India + State, podium display)
-8. Events (create, join)
-9. Store (products, cart, place orders)
-10. Alumni Directory (searchable)
+7. Rankings (India + State, podium display, mock data)
+8. Events (create for teachers/officials, view for all)
+9. Store (products, cart, place orders — local state)
+10. Alumni Directory (searchable, verified alumni only)
 11. Community Groups (4 profession groups: IT, Medical, UPSC, Defence)
-12. Alumni Verification (community-based, 2 approvals needed)
+12. Alumni Verification (submit request → sets verificationStatus to "pending")
 13. Profile with role-specific info and quick navigation
-14. Notifications screen
-15. Edit Profile
+14. Edit Profile (updates via PATCH /users/me)
+15. Notifications screen
 
 ## Design
 
@@ -77,4 +84,3 @@ All stored as Replit Secrets:
 - Rounded corners (16px radius)
 - Inter font family (400/500/600/700)
 - iOS-style bottom navigation with BlurView
-- Liquid glass tabs on iOS 26+

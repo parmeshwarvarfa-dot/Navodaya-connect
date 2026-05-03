@@ -14,34 +14,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-  arrayUnion,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  organizer: string;
-  attendees: string[];
-  createdAt: any;
-}
 
 export default function EventsScreen() {
   const colors = useColors();
@@ -60,9 +39,8 @@ export default function EventsScreen() {
 
   const fetchEvents = async () => {
     try {
-      const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Event)));
+      const data = await api.events.list();
+      setEvents(data);
     } catch {}
     setLoading(false);
   };
@@ -76,15 +54,11 @@ export default function EventsScreen() {
     }
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "events"), {
+      await api.events.create({
         title: title.trim(),
         description: description.trim(),
         date: date.trim(),
-        location: location.trim(),
-        organizer: profile?.fullName,
-        organizerId: profile?.uid,
-        attendees: [],
-        createdAt: serverTimestamp(),
+        location: location.trim() || undefined,
       });
       setShowCreate(false);
       setTitle(""); setDescription(""); setDate(""); setLocation("");
@@ -93,15 +67,6 @@ export default function EventsScreen() {
       Alert.alert("Error", "Failed to create event");
     }
     setSubmitting(false);
-  };
-
-  const handleJoin = async (eventId: string) => {
-    try {
-      await updateDoc(doc(db, "events", eventId), {
-        attendees: arrayUnion(profile?.uid),
-      });
-      fetchEvents();
-    } catch {}
   };
 
   return (
@@ -136,48 +101,32 @@ export default function EventsScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => {
-          const joined = item.attendees?.includes(profile?.uid || "");
-          return (
-            <PremiumCard style={styles.eventCard}>
-              <View style={styles.eventHeader}>
-                <View style={[styles.dateBox, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.dateText}>{item.date?.split(" ")[0] || "TBD"}</Text>
-                </View>
-                <View style={styles.eventInfo}>
-                  <Text style={[styles.eventTitle, { color: colors.foreground }]}>{item.title}</Text>
-                  {item.location && (
-                    <View style={styles.locationRow}>
-                      <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
-                      <Text style={[styles.locationText, { color: colors.mutedForeground }]}>{item.location}</Text>
-                    </View>
-                  )}
-                  <Text style={[styles.organizerText, { color: colors.mutedForeground }]}>
-                    By {item.organizer}
-                  </Text>
-                </View>
+        renderItem={({ item }) => (
+          <PremiumCard style={styles.eventCard}>
+            <View style={styles.eventHeader}>
+              <View style={[styles.dateBox, { backgroundColor: colors.primary }]}>
+                <Text style={styles.dateText}>{item.date?.split(" ")[0] || "TBD"}</Text>
               </View>
-              {item.description ? (
-                <Text style={[styles.eventDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                  {item.description}
+              <View style={styles.eventInfo}>
+                <Text style={[styles.eventTitle, { color: colors.foreground }]}>{item.title}</Text>
+                {item.location && (
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
+                    <Text style={[styles.locationText, { color: colors.mutedForeground }]}>{item.location}</Text>
+                  </View>
+                )}
+                <Text style={[styles.organizerText, { color: colors.mutedForeground }]}>
+                  By {item.organizer}
                 </Text>
-              ) : null}
-              <View style={styles.eventFooter}>
-                <Text style={[styles.attendeeCount, { color: colors.mutedForeground }]}>
-                  {item.attendees?.length || 0} attending
-                </Text>
-                <PremiumButton
-                  title={joined ? "Joined" : "Join Event"}
-                  onPress={() => handleJoin(item.id)}
-                  variant={joined ? "secondary" : "primary"}
-                  fullWidth={false}
-                  disabled={joined}
-                  style={{ paddingVertical: 8, paddingHorizontal: 16 }}
-                />
               </View>
-            </PremiumCard>
-          );
-        }}
+            </View>
+            {item.description ? (
+              <Text style={[styles.eventDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                {item.description}
+              </Text>
+            ) : null}
+          </PremiumCard>
+        )}
       />
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
@@ -227,9 +176,7 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 },
   locationText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   organizerText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  eventDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19, marginBottom: 10 },
-  eventFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  attendeeCount: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  eventDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
   emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   modalContainer: { flex: 1 },

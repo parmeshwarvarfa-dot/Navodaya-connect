@@ -12,15 +12,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  getDocs,
-  doc,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
@@ -73,7 +64,6 @@ export default function CommunityScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   useEffect(() => {
-    // Auto-suggest groups based on profession
     if (profile?.profession) {
       const autoJoin = PROFESSION_GROUPS.filter((g) =>
         g.professions.some((p) => profile.profession?.toLowerCase().includes(p.toLowerCase()))
@@ -104,9 +94,7 @@ export default function CommunityScreen() {
           <Text style={styles.headerTitle}>Community Groups</Text>
           <View style={{ width: 36 }} />
         </View>
-        <Text style={styles.headerSub}>
-          Connect with Navodayans in your field
-        </Text>
+        <Text style={styles.headerSub}>Connect with Navodayans in your field</Text>
       </LinearGradient>
 
       <FlatList
@@ -129,9 +117,7 @@ export default function CommunityScreen() {
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.groupDesc, { color: colors.mutedForeground }]}>
-                {item.description}
-              </Text>
+              <Text style={[styles.groupDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
               <PremiumButton
                 title={isJoined ? "Joined" : "Join Community"}
                 onPress={() => handleJoin(item.id)}

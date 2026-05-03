@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,15 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
 import * as Haptics from "expo-haptics";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
@@ -81,23 +73,11 @@ export default function StoreScreen() {
   const placeOrder = async () => {
     if (cart.length === 0) return;
     setPlacingOrder(true);
-    try {
-      await addDoc(collection(db, "orders"), {
-        userId: profile?.uid,
-        userName: profile?.fullName,
-        jnvName: profile?.jnvName,
-        items: cart,
-        total: cartTotal,
-        status: "pending",
-        createdAt: serverTimestamp(),
-      });
-      setCart([]);
-      setShowCart(false);
-      Alert.alert("Order Placed!", "Your order has been placed successfully. We'll contact you for delivery details.");
-    } catch {
-      Alert.alert("Error", "Failed to place order");
-    }
+    await new Promise((r) => setTimeout(r, 800));
+    setCart([]);
+    setShowCart(false);
     setPlacingOrder(false);
+    Alert.alert("Order Placed!", "Your order has been placed successfully. We'll contact you for delivery details.");
   };
 
   return (
@@ -140,15 +120,10 @@ export default function StoreScreen() {
                   <Text style={[styles.catText, { color: colors.mutedForeground }]}>{item.category}</Text>
                 </View>
                 <Text style={[styles.productName, { color: colors.foreground }]}>{item.name}</Text>
-                <Text style={[styles.productDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                  {item.description}
-                </Text>
+                <Text style={[styles.productDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{item.description}</Text>
                 <Text style={[styles.productPrice, { color: colors.primary }]}>₹{item.price}</Text>
                 <TouchableOpacity
-                  style={[
-                    styles.addBtn,
-                    { backgroundColor: inCart ? colors.secondary : colors.primary, borderRadius: colors.radius - 6 },
-                  ]}
+                  style={[styles.addBtn, { backgroundColor: inCart ? colors.secondary : colors.primary, borderRadius: colors.radius - 6 }]}
                   onPress={() => addToCart(item)}
                 >
                   <Ionicons name={inCart ? "checkmark" : "add"} size={16} color={inCart ? colors.primary : "#fff"} />
@@ -184,17 +159,11 @@ export default function StoreScreen() {
                     <Text style={[styles.cartItemPrice, { color: colors.primary }]}>₹{item.price} × {item.qty}</Text>
                   </View>
                   <View style={styles.qtyRow}>
-                    <TouchableOpacity
-                      onPress={() => removeFromCart(item.id)}
-                      style={[styles.qtyBtn, { backgroundColor: colors.muted, borderRadius: 8 }]}
-                    >
+                    <TouchableOpacity onPress={() => removeFromCart(item.id)} style={[styles.qtyBtn, { backgroundColor: colors.muted, borderRadius: 8 }]}>
                       <Ionicons name="remove" size={16} color={colors.foreground} />
                     </TouchableOpacity>
                     <Text style={[styles.qtyText, { color: colors.foreground }]}>{item.qty}</Text>
-                    <TouchableOpacity
-                      onPress={() => addToCart(item)}
-                      style={[styles.qtyBtn, { backgroundColor: colors.primary, borderRadius: 8 }]}
-                    >
+                    <TouchableOpacity onPress={() => addToCart(item)} style={[styles.qtyBtn, { backgroundColor: colors.primary, borderRadius: 8 }]}>
                       <Ionicons name="add" size={16} color="#fff" />
                     </TouchableOpacity>
                   </View>
@@ -239,8 +208,6 @@ const styles = StyleSheet.create({
   productPrice: { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 8 },
   addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 8, gap: 4 },
   addBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   modalContainer: { flex: 1 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },

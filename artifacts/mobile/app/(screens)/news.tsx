@@ -14,31 +14,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
-
-interface NewsItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  createdAt: any;
-  authorName: string;
-}
 
 const NEWS_CATEGORIES = ["General", "Academic", "Sports", "Cultural", "Achievement", "Announcement"];
 
@@ -58,9 +40,8 @@ export default function NewsScreen() {
 
   const fetchNews = async () => {
     try {
-      const q = query(collection(db, "news"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setNews(snap.docs.map((d) => ({ id: d.id, ...d.data() } as NewsItem)));
+      const data = await api.news.list();
+      setNews(data);
     } catch {}
     setLoading(false);
   };
@@ -74,15 +55,7 @@ export default function NewsScreen() {
     }
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "news"), {
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        authorId: profile?.uid,
-        authorName: profile?.fullName,
-        jnvName: profile?.jnvName,
-        createdAt: serverTimestamp(),
-      });
+      await api.news.create({ title: title.trim(), description: description.trim(), category });
       setShowCreate(false);
       setTitle("");
       setDescription("");
@@ -94,15 +67,19 @@ export default function NewsScreen() {
     setSubmitting(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     Alert.alert("Delete", "Delete this news post?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          await deleteDoc(doc(db, "news", id));
-          fetchNews();
+          try {
+            await api.news.delete(id);
+            fetchNews();
+          } catch {
+            Alert.alert("Error", "Failed to delete");
+          }
         },
       },
     ]);
@@ -136,9 +113,7 @@ export default function NewsScreen() {
           !loading ? (
             <View style={styles.emptyState}>
               <Ionicons name="newspaper-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No news yet
-              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No news yet</Text>
             </View>
           ) : null
         }
@@ -155,12 +130,8 @@ export default function NewsScreen() {
               )}
             </View>
             <Text style={[styles.newsTitle, { color: colors.foreground }]}>{item.title}</Text>
-            <Text style={[styles.newsDesc, { color: colors.mutedForeground }]}>
-              {item.description}
-            </Text>
-            <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>
-              By {item.authorName}
-            </Text>
+            <Text style={[styles.newsDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
+            <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>By {item.authorName}</Text>
           </PremiumCard>
         )}
       />

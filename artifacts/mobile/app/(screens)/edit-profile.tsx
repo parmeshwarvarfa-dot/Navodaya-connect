@@ -12,8 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumInput } from "@/components/PremiumInput";
@@ -43,7 +42,7 @@ export default function EditProfileScreen() {
       }
       if (profile?.role === "teacher") updates.subject = subject.trim();
       if (profile?.role === "official") updates.designation = designation.trim();
-      await updateDoc(doc(db, "users", profile?.uid || ""), updates);
+      await api.users.updateMe(updates);
       await refreshProfile();
       Alert.alert("Saved", "Profile updated successfully.");
       router.back();
@@ -73,13 +72,7 @@ export default function EditProfileScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <PremiumInput
-          label="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
-          icon="person-outline"
-        />
-
+        <PremiumInput label="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" />
         {profile?.role === "alumni" && (
           <>
             <PremiumInput label="Profession" value={profession} onChangeText={setProfession} icon="briefcase-outline" />
@@ -87,15 +80,12 @@ export default function EditProfileScreen() {
             <PremiumInput label="Skills (comma-separated)" value={skills} onChangeText={setSkills} placeholder="Python, Leadership..." icon="bulb-outline" />
           </>
         )}
-
         {profile?.role === "teacher" && (
           <PremiumInput label="Subject" value={subject} onChangeText={setSubject} icon="book-outline" />
         )}
-
         {profile?.role === "official" && (
           <PremiumInput label="Designation" value={designation} onChangeText={setDesignation} icon="ribbon-outline" />
         )}
-
         <PremiumButton title="Save Changes" onPress={handleSave} loading={saving} style={{ marginTop: 8 }} />
       </ScrollView>
     </View>

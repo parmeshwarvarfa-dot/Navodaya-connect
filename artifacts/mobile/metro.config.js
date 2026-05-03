@@ -12,24 +12,11 @@ config.watchFolders = [workspaceRoot];
 // Set the project root explicitly
 config.projectRoot = projectRoot;
 
-// Block Firebase temp files that crash the watcher
-const { blockList: existingBlockList } = config.resolver || {};
-const defaultBlockList = Array.isArray(existingBlockList)
-  ? existingBlockList
-  : existingBlockList
-    ? [existingBlockList]
-    : [];
-
 config.resolver = {
   ...config.resolver,
   nodeModulesPaths: [
     path.resolve(projectRoot, "node_modules"),
     path.resolve(workspaceRoot, "node_modules"),
-  ],
-  blockList: [
-    ...defaultBlockList,
-    // Exclude Firebase temp watch files
-    new RegExp(`.*_tmp_\\d+$`),
   ],
 };
 
