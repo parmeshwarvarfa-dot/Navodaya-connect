@@ -31,17 +31,18 @@ const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyph
 ];
 
 function BluePicker({
-  placeholder, value, options, onSelect, icon,
+  placeholder, value, options, onSelect, icon, labelMap,
 }: {
-  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
+  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap; labelMap?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
+  const displayValue = labelMap?.[value] ?? value;
   return (
     <>
       <TouchableOpacity style={styles.inputWrap} onPress={() => setOpen(true)}>
         <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
         <Text style={[styles.inputText, !value && styles.placeholderText]}>
-          {value || placeholder}
+          {displayValue || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.65)" />
       </TouchableOpacity>
@@ -62,7 +63,7 @@ function BluePicker({
                 onPress={() => { onSelect(item); setOpen(false); }}
               >
                 <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
-                  {item}
+                  {labelMap?.[item] ?? item}
                 </Text>
                 {item === value && <Ionicons name="checkmark" size={18} color="#3D5AF1" />}
               </TouchableOpacity>
@@ -73,6 +74,13 @@ function BluePicker({
     </>
   );
 }
+
+const HOUSE_LABEL_MAP: Record<string, string> = {
+  Aravali:  "Aravali House 💙",
+  Nilgiri:  "Nilgiri House 💚",
+  Shivalik: "Shivalik House ❤️",
+  Udaygiri: "Udaygiri House 💛",
+};
 
 function BlueInput({
   placeholder, value, onChangeText, icon, secureTextEntry, keyboardType,
@@ -234,7 +242,7 @@ export default function SignUpScreen() {
                 <BluePicker placeholder="Select Class" value={studentClass} options={CLASSES} onSelect={setStudentClass} icon="school-outline" />
               )}
 
-              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" />
+              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" labelMap={HOUSE_LABEL_MAP} />
               <BluePicker
                 placeholder="Select JNV State"
                 value={jnvState}

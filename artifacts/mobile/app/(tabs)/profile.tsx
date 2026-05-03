@@ -56,7 +56,7 @@ export default function ProfileScreen() {
       ? [{ icon: "school-outline" as const, label: "Class", value: profile.class }]
       : []),
     ...(profile.house
-      ? [{ icon: "ribbon-outline" as const, label: "House", value: profile.house }]
+      ? [{ icon: "ribbon-outline" as const, label: "House", value: { Aravali: "Aravali House 💙", Nilgiri: "Nilgiri House 💚", Shivalik: "Shivalik House ❤️", Udaygiri: "Udaygiri House 💛" }[profile.house] ?? profile.house }]
       : []),
     ...(profile.role === "alumni" && profile.passoutYear
       ? [{ icon: "calendar-outline" as const, label: "Batch", value: profile.passoutYear }]

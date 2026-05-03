@@ -73,8 +73,15 @@ function Field({
   );
 }
 
-function ChipRow({ label, options, value, onChange }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void;
+const HOUSE_LABEL_MAP: Record<string, string> = {
+  Aravali:  "Aravali House 💙",
+  Nilgiri:  "Nilgiri House 💚",
+  Shivalik: "Shivalik House ❤️",
+  Udaygiri: "Udaygiri House 💛",
+};
+
+function ChipRow({ label, options, value, onChange, labelMap }: {
+  label: string; options: string[]; value: string; onChange: (v: string) => void; labelMap?: Record<string, string>;
 }) {
   return (
     <View style={fld.wrap}>
@@ -83,7 +90,7 @@ function ChipRow({ label, options, value, onChange }: {
         {options.map((o) => (
           <TouchableOpacity key={o} onPress={() => onChange(o)}
             style={[chip.base, value === o && chip.active]}>
-            <Text style={[chip.text, value === o && chip.textActive]}>{o}</Text>
+            <Text style={[chip.text, value === o && chip.textActive]}>{labelMap?.[o] ?? o}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -252,7 +259,7 @@ export default function EditProfileScreen() {
           <Section title="JNV Details" icon="school-outline">
             <Field label="JNV Name" value={jnvName} onChange={setJnvName} placeholder="e.g. JNV Jaipur" icon="business-outline" />
             <Field label="State" value={jnvState} onChange={setJnvState} placeholder="e.g. Rajasthan" icon="map-outline" />
-            <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} />
+            <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} labelMap={HOUSE_LABEL_MAP} />
           </Section>
 
           {/* ── Alumni ── */}

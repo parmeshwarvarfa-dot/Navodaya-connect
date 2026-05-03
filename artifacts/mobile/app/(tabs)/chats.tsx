@@ -29,10 +29,10 @@ const HOUSE_META: Record<string, { color: string; bg: string; emoji: string }> =
 };
 
 const HOUSE_GROUPS = [
-  { id: "aravali-house", name: "Aravali", color: "#3D5AF1", members: 28, icon: "🏠" },
-  { id: "nilgiri-house", name: "Nilgiri", color: "#10B981", members: 24, icon: "🌿" },
-  { id: "shivalik-house", name: "Shivalik", color: "#F59E0B", members: 31, icon: "⛰️" },
-  { id: "udaygiri-house", name: "Udaygiri", color: "#EF4444", members: 26, icon: "🌄" },
+  { id: "aravali-house", name: "Aravali House 💙", color: "#1D6ADE", members: 28, icon: "🏠" },
+  { id: "nilgiri-house", name: "Nilgiri House 💚", color: "#10B981", members: 24, icon: "🌿" },
+  { id: "shivalik-house", name: "Shivalik House ❤️", color: "#DC2626", members: 31, icon: "⛰️" },
+  { id: "udaygiri-house", name: "Udaygiri House 💛", color: "#D97706", members: 26, icon: "🌄" },
 ];
 
 const EXPLORE_GROUPS = [
