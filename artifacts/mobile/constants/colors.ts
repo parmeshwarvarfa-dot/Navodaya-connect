@@ -1,46 +1,50 @@
 const colors = {
   light: {
-    text: "#0F172A",
-    tint: "#2563EB",
+    text: "#111827",
+    tint: "#1A3C6E",
 
-    background: "#F8FAFC",
-    foreground: "#0F172A",
+    background: "#F5F7FB",
+    foreground: "#111827",
 
     card: "#FFFFFF",
-    cardForeground: "#0F172A",
+    cardForeground: "#111827",
 
-    primary: "#2563EB",
+    primary: "#1A3C6E",
     primaryForeground: "#FFFFFF",
 
-    secondary: "#EFF6FF",
-    secondaryForeground: "#1E40AF",
+    secondary: "#FFF0E0",
+    secondaryForeground: "#FF7A00",
 
-    muted: "#F1F5F9",
-    mutedForeground: "#64748B",
+    muted: "#F3F4F6",
+    mutedForeground: "#6B7280",
 
-    accent: "#DBEAFE",
-    accentForeground: "#1D4ED8",
+    accent: "#FFF0E0",
+    accentForeground: "#FF7A00",
+
+    saffron: "#FF7A00",
+    saffronLight: "#FFF0E0",
+    saffronDark: "#E06900",
 
     destructive: "#EF4444",
     destructiveForeground: "#FFFFFF",
 
-    success: "#10B981",
+    success: "#16A34A",
     successForeground: "#FFFFFF",
 
     warning: "#F59E0B",
     warningForeground: "#FFFFFF",
 
-    border: "#E2E8F0",
-    input: "#E2E8F0",
+    border: "#E5E7EB",
+    input: "#E5E7EB",
 
     gold: "#F59E0B",
-    gradientStart: "#1E40AF",
-    gradientEnd: "#2563EB",
+    gradientStart: "#0D2B6E",
+    gradientEnd: "#1A3C6E",
     gradientLight: "#EFF6FF",
-    shadow: "rgba(37, 99, 235, 0.12)",
+    shadow: "rgba(26, 60, 110, 0.10)",
   },
 
-  radius: 16,
+  radius: 12,
 };
 
 export default colors;

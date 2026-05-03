@@ -16,7 +16,7 @@ interface PremiumButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "saffron";
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
@@ -63,6 +63,30 @@ export function PremiumButton({
     );
   }
 
+  if (variant === "saffron") {
+    return (
+      <TouchableOpacity
+        onPress={handlePress}
+        disabled={disabled || loading}
+        activeOpacity={0.85}
+        style={[fullWidth && styles.fullWidth, style]}
+      >
+        <LinearGradient
+          colors={[colors.saffron, colors.saffronDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.button, { borderRadius: colors.radius }, disabled && styles.disabled]}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={[styles.primaryText, textStyle]}>{title}</Text>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
   if (variant === "secondary") {
     return (
       <TouchableOpacity
@@ -82,9 +106,9 @@ export function PremiumButton({
         ]}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primary} size="small" />
+          <ActivityIndicator color={colors.saffron} size="small" />
         ) : (
-          <Text style={[styles.secondaryText, { color: colors.primary }, textStyle]}>
+          <Text style={[styles.secondaryText, { color: colors.saffron }, textStyle]}>
             {title}
           </Text>
         )}

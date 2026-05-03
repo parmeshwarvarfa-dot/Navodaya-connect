@@ -66,7 +66,7 @@ export default function SignInScreen() {
       >
         <View style={styles.logoRow}>
           <View style={styles.logoCircle}>
-            <Ionicons name="school" size={28} color="#fff" />
+            <Ionicons name="school" size={28} color="#FF7A00" />
           </View>
           <View style={styles.logoText}>
             <Text style={styles.appName}>Navodaya Connect</Text>

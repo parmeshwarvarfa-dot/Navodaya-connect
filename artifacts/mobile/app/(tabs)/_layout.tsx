@@ -1,8 +1,8 @@
-import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { BlurView } from "expo-blur";
 import { useColors } from "@/hooks/useColors";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
@@ -14,9 +14,9 @@ const TAB_ITEMS: {
   activeIcon: IoniconsName;
 }[] = [
   { name: "index", title: "Home", icon: "home-outline", activeIcon: "home" },
-  { name: "groups", title: "Groups", icon: "chatbubbles-outline", activeIcon: "chatbubbles" },
-  { name: "problems", title: "Problems", icon: "alert-circle-outline", activeIcon: "alert-circle" },
-  { name: "mentorship", title: "Mentorship", icon: "star-outline", activeIcon: "star" },
+  { name: "alumni", title: "Alumni", icon: "people-outline", activeIcon: "people" },
+  { name: "events", title: "Events", icon: "calendar-outline", activeIcon: "calendar" },
+  { name: "jobs", title: "Jobs", icon: "briefcase-outline", activeIcon: "briefcase" },
   { name: "profile", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
@@ -26,13 +26,13 @@ export default function TabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
-  const tabBarHeight = isWeb ? 64 : 84;
-  const paddingBottom = isWeb ? 12 : 20;
+  const tabBarHeight = isWeb ? 60 : 80;
+  const paddingBottom = isWeb ? 8 : 16;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.saffron,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
@@ -40,10 +40,10 @@ export default function TabLayout() {
           backgroundColor: isIOS ? "transparent" : colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          elevation: 8,
+          elevation: 10,
           height: tabBarHeight,
           paddingBottom,
-          paddingTop: 10,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -52,7 +52,7 @@ export default function TabLayout() {
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={100}
+              intensity={80}
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
