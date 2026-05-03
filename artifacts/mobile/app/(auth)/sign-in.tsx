@@ -43,23 +43,13 @@ export default function SignInScreen() {
       await signIn(email.trim(), password);
       router.replace("/(tabs)");
     } catch (err: any) {
-      const code: string = err?.code ?? "";
+      const message: string = err?.message ?? "";
       const msg =
-        code === "auth/user-not-found" ||
-        code === "auth/wrong-password" ||
-        code === "auth/invalid-credential"
-          ? "Invalid email or password."
-          : code === "auth/invalid-email"
-          ? "Invalid email address."
-          : code === "auth/user-disabled"
-          ? "This account has been disabled."
-          : code === "auth/network-request-failed"
+        message.toLowerCase().includes("invalid credentials") || message.toLowerCase().includes("invalid email or password")
+          ? "Invalid email or password. Please try again."
+          : message.toLowerCase().includes("network") || message.toLowerCase().includes("failed to fetch")
           ? "Network error. Check your connection."
-          : code === "auth/operation-not-allowed"
-          ? "Email sign-in is not enabled. Please contact support."
-          : code
-          ? `Error: ${code}`
-          : err?.message ?? "Sign in failed. Please try again.";
+          : message || "Sign in failed. Please try again.";
       Alert.alert("Sign In Failed", msg);
     } finally {
       setLoading(false);
