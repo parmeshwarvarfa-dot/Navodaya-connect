@@ -23,24 +23,26 @@ const queryClient = new QueryClient();
 
 function AuthNavGuard() {
   const { user, loading } = useAuth();
-  const prevUserRef = useRef<boolean | null>(null);
+  const initialized = useRef(false);
+  const wasLoggedIn = useRef(false);
 
   useEffect(() => {
     if (loading) return;
-    const wasLoggedIn = prevUserRef.current;
+
     const isLoggedIn = !!user;
 
-    if (wasLoggedIn === true && !isLoggedIn) {
-      router.replace("/(auth)/sign-in" as any);
-    } else if (wasLoggedIn === null && !isLoggedIn) {
-      AsyncStorage.getItem("onboarding_done").then((done) => {
-        router.replace(done ? "/(auth)/sign-in" as any : "/onboarding" as any);
-      });
-    } else if (wasLoggedIn === null && isLoggedIn) {
-      router.replace("/(tabs)" as any);
+    if (!initialized.current) {
+      initialized.current = true;
+      wasLoggedIn.current = isLoggedIn;
+      return;
     }
 
-    prevUserRef.current = isLoggedIn;
+    if (wasLoggedIn.current && !isLoggedIn) {
+      wasLoggedIn.current = false;
+      router.replace("/(auth)/sign-in" as any);
+    } else if (!wasLoggedIn.current && isLoggedIn) {
+      wasLoggedIn.current = true;
+    }
   }, [user, loading]);
 
   return null;
