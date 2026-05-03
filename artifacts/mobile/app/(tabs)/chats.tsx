@@ -15,12 +15,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
-const YOUR_GROUPS = [
+const BASE_GROUPS = [
   { id: "class-12", icon: "school-outline" as const, name: "Class 12", lastMessage: "Welcome to your class group!", time: "12:51 PM", color: "#EEF2FF", iconColor: "#3D5AF1" },
-  { id: "aravali", icon: "home-outline" as const, name: "Aravali House 💙", lastMessage: "Welcome to Aravali House!", time: "12:51 PM", color: "#EFF8FF", iconColor: "#3D5AF1" },
   { id: "jnv-delhi", icon: "chatbubble-outline" as const, name: "JNV Delhi", lastMessage: "Connect with your JNV community!", time: "12:51 PM", color: "#F0FDF4", iconColor: "#10B981" },
   { id: "all-navodayans", icon: "chatbubbles-outline" as const, name: "All Navodayans", lastMessage: "United by JNV spirit!", time: "12:51 PM", color: "#FFF7ED", iconColor: "#F59E0B" },
 ];
+
+const HOUSE_META: Record<string, { color: string; bg: string; emoji: string }> = {
+  Aravali:  { color: "#1D6ADE", bg: "#EFF6FF", emoji: "💙" },
+  Nilgiri:  { color: "#16A34A", bg: "#F0FDF4", emoji: "💚" },
+  Shivalik: { color: "#DC2626", bg: "#FEF2F2", emoji: "❤️" },
+  Udaygiri: { color: "#D97706", bg: "#FFFBEB", emoji: "💛" },
+};
 
 const HOUSE_GROUPS = [
   { id: "aravali-house", name: "Aravali", color: "#3D5AF1", members: 28, icon: "🏠" },
@@ -48,10 +54,27 @@ export default function ChatsScreen() {
   const [newGroupName, setNewGroupName] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
-  const allGroups = [...YOUR_GROUPS];
+  const house = profile?.house ?? "";
+  const houseMeta = HOUSE_META[house];
+  const houseGroup = house
+    ? {
+        id: `${house.toLowerCase()}-myhouse`,
+        icon: "home-outline" as const,
+        name: `${house} House ${houseMeta?.emoji ?? "🏠"}`,
+        lastMessage: `Welcome to ${house} House!`,
+        time: "12:51 PM",
+        color: houseMeta?.bg ?? "#EEF2FF",
+        iconColor: houseMeta?.color ?? "#3D5AF1",
+      }
+    : null;
+
+  const YOUR_GROUPS = houseGroup
+    ? [BASE_GROUPS[0], houseGroup, ...BASE_GROUPS.slice(1)]
+    : BASE_GROUPS;
+
   const filtered = searchQuery.trim()
-    ? allGroups.filter((g) => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : allGroups;
+    ? YOUR_GROUPS.filter((g) => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : YOUR_GROUPS;
 
   const toggleHouse = (id: string) => {
     setJoinedHouses((prev) => {
