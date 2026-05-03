@@ -77,7 +77,7 @@ export default function ProfileScreen() {
     ...(profile.role !== "student"
       ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
       : []),
-    { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(tabs)/problems" as any) },
+    { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/community" as any) },
     { icon: "trophy-outline" as const, label: "Rankings", onPress: () => router.push("/(screens)/rankings" as any) },
     ...(profile.role === "alumni"
       ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-verify" as any) }]

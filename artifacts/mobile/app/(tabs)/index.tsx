@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,24 +16,24 @@ import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STUDENT_ACTIONS = [
-  { label: "Ask Alumni", icon: "chatbubble-outline" as const, color: "#3D5AF1", bg: "#EEF2FF" },
-  { label: "Report Problem", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2" },
-  { label: "Find Mentor", icon: "people-outline" as const, color: "#10B981", bg: "#ECFDF5" },
-  { label: "AI Career Guide", icon: "ribbon-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
+  { label: "Ask Alumni", icon: "chatbubble-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/chats" },
+  { label: "Report Problem", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/community" },
+  { label: "Find Mentor", icon: "people-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni" },
+  { label: "AI Career Guide", icon: "ribbon-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/dost-ai" },
 ];
 
 const TEACHER_ACTIONS = [
-  { label: "Manage Students", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF" },
-  { label: "Post Update", icon: "megaphone-outline" as const, color: "#10B981", bg: "#ECFDF5" },
-  { label: "Create Event", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
-  { label: "View Problems", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2" },
+  { label: "Manage Students", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/community" },
+  { label: "Post Update", icon: "megaphone-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news" },
+  { label: "Create Event", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events" },
+  { label: "View Problems", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/community" },
 ];
 
 const ALUMNI_ACTIONS = [
-  { label: "Mentor Students", icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF" },
-  { label: "Post Advice", icon: "create-outline" as const, color: "#10B981", bg: "#ECFDF5" },
-  { label: "Job Referrals", icon: "briefcase-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
-  { label: "My Network", icon: "people-outline" as const, color: "#8B5CF6", bg: "#F5F3FF" },
+  { label: "Mentor Students", icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni" },
+  { label: "Post Advice", icon: "create-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news" },
+  { label: "Job Referrals", icon: "briefcase-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni" },
+  { label: "My Network", icon: "people-outline" as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/community" },
 ];
 
 function getInitials(name: string) {
@@ -130,6 +130,7 @@ export default function HomeScreen() {
                 key={action.label}
                 style={styles.actionCard}
                 activeOpacity={0.75}
+                onPress={() => router.push(action.route as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: action.bg }]}>
                   <Ionicons name={action.icon} size={24} color={action.color} />
@@ -149,11 +150,13 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             {[
-              { name: "Class 9A", icon: "school-outline" as const, count: 28 },
-              { name: "Class 10B", icon: "school-outline" as const, count: 30 },
-              { name: "Aravali House", icon: "home-outline" as const, count: 45 },
+              { name: "Class 9A", icon: "school-outline" as const, count: 28, id: "class-9a" },
+              { name: "Class 10B", icon: "school-outline" as const, count: 30, id: "class-10b" },
+              { name: "Aravali House", icon: "home-outline" as const, count: 45, id: "aravali" },
             ].map((g) => (
-              <TouchableOpacity key={g.name} style={styles.teacherGroupRow}>
+              <TouchableOpacity key={g.name} style={styles.teacherGroupRow}
+                onPress={() => router.push({ pathname: "/(screens)/group-chat" as any, params: { id: g.id, name: g.name } })}
+              >
                 <View style={styles.teacherGroupIcon}>
                   <Ionicons name={g.icon} size={18} color="#3D5AF1" />
                 </View>
@@ -196,15 +199,20 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Available Mentors</Text>
           <View style={styles.mentorsRow}>
             {[
-              { id: "1", uri: "https://picsum.photos/seed/mentor1/200/200", name: "Priya S.", field: "Engineering" },
-              { id: "2", uri: "https://picsum.photos/seed/mentor2/200/200", name: "Amit K.", field: "IAS Officer" },
-              { id: "3", uri: "https://picsum.photos/seed/mentor3/200/200", name: "Neha R.", field: "Medicine" },
-              { id: "4", uri: "https://picsum.photos/seed/mentor4/200/200", name: "Raj M.", field: "Research" },
+              { id: "1", name: "Priya S.", field: "Engineering" },
+              { id: "2", name: "Amit K.", field: "IAS Officer" },
+              { id: "3", name: "Neha R.", field: "Medicine" },
+              { id: "4", name: "Raj M.", field: "Research" },
             ].map((m) => (
-              <TouchableOpacity key={m.id} style={styles.mentorCard} activeOpacity={0.8}>
+              <TouchableOpacity
+                key={m.id}
+                style={styles.mentorCard}
+                activeOpacity={0.8}
+                onPress={() => router.push("/(screens)/alumni" as any)}
+              >
                 <View style={styles.mentorAvatarWrap}>
                   <View style={styles.mentorAvatar}>
-                    <Ionicons name="person" size={28} color="#3D5AF1" />
+                    <Text style={styles.mentorInitial}>{m.name[0]}</Text>
                   </View>
                   <View style={styles.mentorDot} />
                 </View>
@@ -430,6 +438,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#10B981",
     borderWidth: 2, borderColor: "#fff",
   },
+  mentorInitial: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
   mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#111827" },
   mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280" },
 });
