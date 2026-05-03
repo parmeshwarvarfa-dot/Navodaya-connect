@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Platform,
   FlatList,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,6 +76,26 @@ function formatDate(dateStr: string) {
   } catch { return ""; }
 }
 
+// ── House Arena shared data ──
+const HOUSE_META_HOME: Record<string, { color: string; emoji: string }> = {
+  Aravali:  { color: "#1D6ADE", emoji: "💙" },
+  Nilgiri:  { color: "#16A34A", emoji: "💚" },
+  Shivalik: { color: "#DC2626", emoji: "❤️" },
+  Udaygiri: { color: "#D97706", emoji: "💛" },
+};
+type HouseScore = { name: string; points: number; delta: number };
+const INITIAL_ARENA_SCORES: HouseScore[] = [
+  { name: "Shivalik", points: 2840, delta: 0 },
+  { name: "Aravali",  points: 2710, delta: 0 },
+  { name: "Nilgiri",  points: 2590, delta: 0 },
+  { name: "Udaygiri", points: 2420, delta: 0 },
+];
+const LIVE_CHALLENGES = [
+  { id: "gk-blitz",   title: "GK Blitz Quiz",  icon: "🧠", color: "#3D5AF1", players: 63, pts: 50  },
+  { id: "math-ninja", title: "Number Ninja",    icon: "🔢", color: "#10B981", players: 41, pts: 70  },
+];
+const RANK_MEDALS_HOME = ["🥇", "🥈", "🥉", "4️⃣"];
+
 const GRADIENT_SETS = [
   ["#3D5AF1", "#2563EB"] as const,
   ["#10B981", "#059669"] as const,
@@ -96,6 +117,39 @@ export default function HomeScreen() {
   const isOfficial = role === "official";
 
   const quickActions = isTeacher || isOfficial ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
+
+  // House Arena live state
+  const [arenaScores, setArenaScores] = useState<HouseScore[]>(INITIAL_ARENA_SCORES);
+  const [livePlayerCount, setLivePlayerCount] = useState({ "gk-blitz": 63, "math-ninja": 41 });
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.5, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,   duration: 700, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setArenaScores((prev) => {
+        const updated = prev.map((h) => {
+          const delta = Math.random() < 0.6 ? Math.floor(Math.random() * 15) + 2 : 0;
+          return { ...h, points: h.points + delta, delta };
+        });
+        return [...updated].sort((a, b) => b.points - a.points);
+      });
+      setLivePlayerCount((p) => ({
+        "gk-blitz":   Math.max(40, p["gk-blitz"]  + (Math.random() < 0.5 ? 1 : -1)),
+        "math-ninja": Math.max(20, p["math-ninja"] + (Math.random() < 0.5 ? 1 : -1)),
+      }));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -194,6 +248,79 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* ── HOUSE ARENA ── */}
+        <View style={[styles.section, { marginTop: 18, paddingHorizontal: 0 }]}>
+          <LinearGradient colors={["#1E1B4B", "#312E81"]} style={styles.arenaCard}>
+            {/* Header row */}
+            <View style={styles.arenaTopRow}>
+              <View>
+                <Text style={styles.arenaTitle}>🏆 House Arena</Text>
+                <Text style={styles.arenaSub}>Live standings · updates every 4s</Text>
+              </View>
+              <View style={styles.arenaLiveChip}>
+                <Animated.View style={[styles.arenaLiveDot, { transform: [{ scale: pulseAnim }] }]} />
+                <Text style={styles.arenaLiveText}>LIVE</Text>
+              </View>
+            </View>
+
+            {/* Leaderboard */}
+            <View style={styles.arenaBoard}>
+              {arenaScores.map((h, i) => {
+                const meta = HOUSE_META_HOME[h.name];
+                const maxPts = arenaScores[0]?.points ?? 1;
+                const barW = (h.points / maxPts) * 100;
+                const isMe = h.name === profile?.house;
+                return (
+                  <View key={h.name} style={[styles.arenaRow, isMe && styles.arenaRowMe]}>
+                    <Text style={styles.arenaMedal}>{RANK_MEDALS_HOME[i]}</Text>
+                    <View style={[styles.arenaDot, { backgroundColor: meta?.color ?? "#888" }]} />
+                    <View style={styles.arenaInfo}>
+                      <View style={styles.arenaNameRow}>
+                        <Text style={styles.arenaName}>{h.name} {meta?.emoji}{isMe ? " ★" : ""}</Text>
+                        <View style={styles.arenaRightRow}>
+                          {h.delta > 0 && <Text style={styles.arenaDelta}>+{h.delta}</Text>}
+                          <Text style={styles.arenaPoints}>{h.points.toLocaleString()}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.arenaBarBg}>
+                        <View style={[styles.arenaBarFill, { width: `${barW}%` as any, backgroundColor: meta?.color ?? "#888" }]} />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Live Challenges strip */}
+            <View style={styles.arenaChallenges}>
+              {LIVE_CHALLENGES.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.arenaChallengeCard}
+                  activeOpacity={0.85}
+                  onPress={() => router.push("/(tabs)/chats" as any)}
+                >
+                  <Text style={styles.arenaChallengeIcon}>{c.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.arenaChallengeName}>{c.title}</Text>
+                    <Text style={styles.arenaChallengeInfo}>
+                      🔴 {livePlayerCount[c.id as keyof typeof livePlayerCount]} playing · +{c.pts} pts
+                    </Text>
+                  </View>
+                  <View style={[styles.arenaPlayBtn, { backgroundColor: c.color }]}>
+                    <Text style={styles.arenaPlayText}>Play</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.arenaSeeAll} onPress={() => router.push("/(tabs)/chats" as any)}>
+              <Text style={styles.arenaSeeAllText}>See all challenges in Arena</Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
 
         {/* ── ANNOUNCEMENTS SECTION ── */}
@@ -472,4 +599,35 @@ const styles = StyleSheet.create({
   mentorInitial: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
   mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#111827" },
   mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280" },
+
+  // House Arena (home dashboard)
+  arenaCard: { marginHorizontal: 16, borderRadius: 20, padding: 16 },
+  arenaTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  arenaTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff" },
+  arenaSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.55)", marginTop: 2 },
+  arenaLiveChip: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  arenaLiveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#EF4444" },
+  arenaLiveText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff", letterSpacing: 0.5 },
+  arenaBoard: { gap: 9, marginBottom: 14 },
+  arenaRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 9 },
+  arenaRowMe: { backgroundColor: "rgba(255,255,255,0.14)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  arenaMedal: { fontSize: 17, width: 24, textAlign: "center" },
+  arenaDot: { width: 9, height: 9, borderRadius: 4.5 },
+  arenaInfo: { flex: 1 },
+  arenaNameRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  arenaName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  arenaRightRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  arenaDelta: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#6EE7B7", backgroundColor: "rgba(110,231,183,0.15)", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 },
+  arenaPoints: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#fff" },
+  arenaBarBg: { height: 4, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 2, overflow: "hidden" },
+  arenaBarFill: { height: 4, borderRadius: 2 },
+  arenaChallenges: { gap: 8, marginBottom: 12 },
+  arenaChallengeCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 12, padding: 10 },
+  arenaChallengeIcon: { fontSize: 22, width: 32, textAlign: "center" },
+  arenaChallengeName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff", marginBottom: 2 },
+  arenaChallengeInfo: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.6)" },
+  arenaPlayBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18 },
+  arenaPlayText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#fff" },
+  arenaSeeAll: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingTop: 4 },
+  arenaSeeAllText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.6)" },
 });
