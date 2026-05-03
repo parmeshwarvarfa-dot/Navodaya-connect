@@ -17,11 +17,11 @@ const TAB_ITEMS: {
   { name: "index", title: "JNV Connect", icon: "home-outline", activeIcon: "home" },
   { name: "memories", title: "Memories", icon: "heart-outline", activeIcon: "heart" },
   { name: "chats", title: "Chat Groups", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { name: "events", title: "Events", icon: "calendar-outline", activeIcon: "calendar" },
+  { name: "store", title: "JNV Store", icon: "storefront-outline", activeIcon: "storefront" },
   { name: "profile", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems"];
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
 
 function DostAiFab() {
   const insets = useSafeAreaInsets();

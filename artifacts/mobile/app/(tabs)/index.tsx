@@ -310,7 +310,7 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Explore More</Text>
           {[
             { label: "JNV Rankings", desc: "India-wide & state JNV rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
-            { label: "JNV Store", desc: "Merchandise, books & study notes", icon: "storefront-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(screens)/store" },
+            { label: "JNV Store", desc: "Merchandise, books & study notes", icon: "storefront-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(tabs)/store" },
             { label: "Study Hub", desc: "Notes, syllabus & practice questions", icon: "book-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/study" },
           ].map((item) => (
             <TouchableOpacity key={item.label} style={styles.exploreRow} onPress={() => router.push(item.route as any)} activeOpacity={0.75}>
