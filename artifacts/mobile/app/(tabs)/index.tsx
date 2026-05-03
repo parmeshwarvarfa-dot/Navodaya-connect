@@ -168,6 +168,54 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Explore More</Text>
+          {[
+            { label: "JNV Rankings", desc: "View India-wide & state rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
+            { label: "JNV Store", desc: "Buy merchandise, books & notes", icon: "storefront-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(screens)/store" },
+            { label: "DOST AI", desc: "Your AI guide & assistant", icon: "hardware-chip-outline" as const, iconColor: "#3D5AF1", iconBg: "#EEF2FF", route: "/(screens)/dost-ai" },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.exploreRow}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>
+                <Ionicons name={item.icon} size={22} color={item.iconColor} />
+              </View>
+              <View style={styles.exploreText}>
+                <Text style={styles.exploreLabel}>{item.label}</Text>
+                <Text style={styles.exploreDesc}>{item.desc}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Available Mentors</Text>
+          <View style={styles.mentorsRow}>
+            {[
+              { id: "1", uri: "https://picsum.photos/seed/mentor1/200/200", name: "Priya S.", field: "Engineering" },
+              { id: "2", uri: "https://picsum.photos/seed/mentor2/200/200", name: "Amit K.", field: "IAS Officer" },
+              { id: "3", uri: "https://picsum.photos/seed/mentor3/200/200", name: "Neha R.", field: "Medicine" },
+              { id: "4", uri: "https://picsum.photos/seed/mentor4/200/200", name: "Raj M.", field: "Research" },
+            ].map((m) => (
+              <TouchableOpacity key={m.id} style={styles.mentorCard} activeOpacity={0.8}>
+                <View style={styles.mentorAvatarWrap}>
+                  <View style={styles.mentorAvatar}>
+                    <Ionicons name="person" size={28} color="#3D5AF1" />
+                  </View>
+                  <View style={styles.mentorDot} />
+                </View>
+                <Text style={styles.mentorName} numberOfLines={1}>{m.name}</Text>
+                <Text style={styles.mentorField} numberOfLines={1}>{m.field}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Latest Updates</Text>
             <TouchableOpacity onPress={() => router.push("/(screens)/news" as any)}>
@@ -349,4 +397,39 @@ const styles = StyleSheet.create({
   emptyFeed: { alignItems: "center", paddingVertical: 40, gap: 8 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center" },
+  exploreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  exploreIconWrap: {
+    width: 46, height: 46, borderRadius: 23,
+    alignItems: "center", justifyContent: "center",
+  },
+  exploreText: { flex: 1 },
+  exploreLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
+  exploreDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
+  mentorsRow: { flexDirection: "row", gap: 12 },
+  mentorCard: { alignItems: "center", gap: 6, width: 72 },
+  mentorAvatarWrap: { position: "relative" },
+  mentorAvatar: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: "#3D5AF1",
+  },
+  mentorDot: {
+    position: "absolute", bottom: 2, right: 2,
+    width: 12, height: 12, borderRadius: 6,
+    backgroundColor: "#10B981",
+    borderWidth: 2, borderColor: "#fff",
+  },
+  mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#111827" },
+  mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280" },
 });
