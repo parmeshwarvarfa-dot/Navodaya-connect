@@ -1,9 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
-import { BlurView } from "expo-blur";
-import { useColors } from "@/hooks/useColors";
+import { Platform, StyleSheet, View } from "react-native";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -13,18 +11,16 @@ const TAB_ITEMS: {
   icon: IoniconsName;
   activeIcon: IoniconsName;
 }[] = [
-  { name: "index", title: "Home", icon: "home-outline", activeIcon: "home" },
-  { name: "alumni", title: "Alumni", icon: "people-outline", activeIcon: "people" },
+  { name: "index", title: "JNV Connect", icon: "home-outline", activeIcon: "home" },
+  { name: "memories", title: "Memories", icon: "heart-outline", activeIcon: "heart" },
+  { name: "chats", title: "Chat Groups", icon: "chatbubble-outline", activeIcon: "chatbubble" },
   { name: "events", title: "Events", icon: "calendar-outline", activeIcon: "calendar" },
-  { name: "jobs", title: "Jobs", icon: "briefcase-outline", activeIcon: "briefcase" },
   { name: "profile", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems"];
+
 export default function TabLayout() {
-  const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const tabBarHeight = isWeb ? 60 : 80;
   const paddingBottom = isWeb ? 8 : 16;
@@ -32,38 +28,25 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.saffron,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: "#3D5AF1",
+        tabBarInactiveTintColor: "#9CA3AF",
         headerShown: false,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
+          backgroundColor: "#fff",
           borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: 10,
+          borderTopColor: "#F0F0F0",
+          elevation: 8,
           height: tabBarHeight,
           paddingBottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontFamily: "Inter_500Medium",
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={80}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.card },
-              ]}
-            />
-          ),
+        tabBarBackground: () => (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fff" }]} />
+        ),
       }}
     >
       {TAB_ITEMS.map((tab) => (
@@ -73,14 +56,13 @@ export default function TabLayout() {
           options={{
             title: tab.title,
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name={focused ? tab.activeIcon : tab.icon}
-                size={22}
-                color={color}
-              />
+              <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
             ),
           }}
         />
+      ))}
+      {HIDDEN.map((name) => (
+        <Tabs.Screen key={name} name={name} options={{ href: null }} />
       ))}
     </Tabs>
   );

@@ -2,24 +2,30 @@ import { useEffect } from "react";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { View, ActivityIndicator } from "react-native";
-import { useColors } from "@/hooks/useColors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function IndexScreen() {
   const { user, loading } = useAuth();
-  const colors = useColors();
 
   useEffect(() => {
     if (loading) return;
-    if (user) {
-      router.replace("/(tabs)");
-    } else {
-      router.replace("/(auth)/sign-in");
-    }
+    (async () => {
+      if (user) {
+        router.replace("/(tabs)");
+      } else {
+        const done = await AsyncStorage.getItem("onboarding_done");
+        if (done) {
+          router.replace("/(auth)/sign-in");
+        } else {
+          router.replace("/onboarding");
+        }
+      }
+    })();
   }, [user, loading]);
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
-      <ActivityIndicator color={colors.primary} size="large" />
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#4B6EF5" }}>
+      <ActivityIndicator color="#fff" size="large" />
     </View>
   );
 }

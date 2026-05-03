@@ -5,622 +5,363 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Platform,
   Alert,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
-import { PremiumInput } from "@/components/PremiumInput";
-import { PremiumButton } from "@/components/PremiumButton";
-import { useColors } from "@/hooks/useColors";
 import { JNV_DATA, STATES } from "@/data/jnvData";
 
-const ROLES: { value: UserRole; label: string; icon: string }[] = [
+const HOUSES = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
+const CLASSES = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
+const BATCHES = Array.from({ length: 30 }, (_, i) => String(2026 - i));
+
+const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: "student", label: "Student", icon: "school-outline" },
-  { value: "alumni", label: "Alumni", icon: "people-outline" },
+  { value: "alumni", label: "Alumni", icon: "home-outline" },
+  { value: "official", label: "JNV Official", icon: "business-outline" },
   { value: "teacher", label: "Teacher", icon: "book-outline" },
-  { value: "official", label: "Official", icon: "briefcase-outline" },
 ];
 
-const HOUSES = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"] as const;
-
-function DropdownPicker({
-  label,
-  value,
-  placeholder,
-  options,
-  onSelect,
-  disabled,
-  error,
+function BluePicker({
+  placeholder, value, options, onSelect, icon,
 }: {
-  label: string;
-  value: string;
-  placeholder: string;
-  options: string[];
-  onSelect: (v: string) => void;
-  disabled?: boolean;
-  error?: string;
+  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
 }) {
-  const colors = useColors();
   const [open, setOpen] = useState(false);
-
   return (
-    <View style={{ marginBottom: 12 }}>
-      <Text style={[ddStyles.label, { color: colors.mutedForeground }]}>{label}</Text>
-      <TouchableOpacity
-        disabled={disabled}
-        onPress={() => setOpen(true)}
-        style={[
-          ddStyles.trigger,
-          {
-            borderColor: error ? colors.destructive : colors.border,
-            borderRadius: colors.radius - 4,
-            backgroundColor: disabled ? colors.muted : colors.card,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            ddStyles.value,
-            { color: value ? colors.foreground : colors.mutedForeground },
-          ]}
-        >
+    <>
+      <TouchableOpacity style={styles.inputWrap} onPress={() => setOpen(true)}>
+        <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
+        <Text style={[styles.inputText, !value && styles.placeholderText]}>
           {value || placeholder}
         </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+        <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.65)" />
       </TouchableOpacity>
-      {error && <Text style={[ddStyles.error, { color: colors.destructive }]}>{error}</Text>}
-
       <Modal visible={open} animationType="slide" presentationStyle="formSheet">
-        <View style={[ddStyles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[ddStyles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[ddStyles.modalTitle, { color: colors.foreground }]}>{label}</Text>
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+          <View style={modalStyles.header}>
+            <Text style={modalStyles.title}>{placeholder}</Text>
             <TouchableOpacity onPress={() => setOpen(false)}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+              <Ionicons name="close" size={24} color="#111" />
             </TouchableOpacity>
           </View>
           <FlatList
             data={options}
-            keyExtractor={(item) => item}
+            keyExtractor={(i) => i}
             renderItem={({ item }) => (
               <TouchableOpacity
-                onPress={() => {
-                  onSelect(item);
-                  setOpen(false);
-                }}
-                style={[
-                  ddStyles.option,
-                  {
-                    borderBottomColor: colors.border,
-                    backgroundColor:
-                      item === value ? colors.accent : "transparent",
-                  },
-                ]}
+                style={modalStyles.option}
+                onPress={() => { onSelect(item); setOpen(false); }}
               >
-                <Text
-                  style={[
-                    ddStyles.optionText,
-                    {
-                      color: item === value ? colors.primary : colors.foreground,
-                      fontFamily:
-                        item === value ? "Inter_600SemiBold" : "Inter_400Regular",
-                    },
-                  ]}
-                >
+                <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
                   {item}
                 </Text>
-                {item === value && (
-                  <Ionicons name="checkmark" size={18} color={colors.primary} />
-                )}
+                {item === value && <Ionicons name="checkmark" size={18} color="#3D5AF1" />}
               </TouchableOpacity>
             )}
           />
         </View>
       </Modal>
+    </>
+  );
+}
+
+function BlueInput({
+  placeholder, value, onChangeText, icon, secureTextEntry, keyboardType,
+}: {
+  placeholder: string; value: string; onChangeText: (t: string) => void;
+  icon: keyof typeof Ionicons.glyphMap; secureTextEntry?: boolean; keyboardType?: any;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <View style={styles.inputWrap}>
+      <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
+      <TextInput
+        style={[styles.input, { flex: 1 }]}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.65)"
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={secureTextEntry && !show}
+        keyboardType={keyboardType}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      {secureTextEntry && (
+        <TouchableOpacity onPress={() => setShow(!show)}>
+          <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color="rgba(255,255,255,0.75)" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-const ddStyles = StyleSheet.create({
-  label: { fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 6 },
-  trigger: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    minHeight: 52,
-  },
-  value: { fontSize: 15, fontFamily: "Inter_400Regular" },
-  error: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
-  modalContainer: { flex: 1 },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  option: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  optionText: { fontSize: 15 },
-});
-
 export default function SignUpScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { signUp } = useAuth();
+  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<"role" | "form">("role");
+  const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole | "">("");
   const [jnvState, setJnvState] = useState("");
   const [jnvName, setJnvName] = useState("");
   const [house, setHouse] = useState("");
-  // Role-specific
   const [studentClass, setStudentClass] = useState("");
-  const [enrollYear, setEnrollYear] = useState("");
-  const [passoutYear, setPassoutYear] = useState("");
+  const [passoutBatch, setPassoutBatch] = useState("");
   const [profession, setProfession] = useState("");
-  const [field, setField] = useState("");
-  const [company, setCompany] = useState("");
-  const [skills, setSkills] = useState("");
+  const [principalName, setPrincipalName] = useState("");
+  const [jnvEmail, setJnvEmail] = useState("");
   const [subject, setSubject] = useState("");
-  const [designation, setDesignation] = useState("");
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-
-  const validateStep1 = () => {
-    const e: Record<string, string> = {};
-    if (!fullName.trim()) e.fullName = "Full name required";
-    if (!email.trim()) e.email = "Email required";
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = "Invalid email";
-    if (!password) e.password = "Password required";
-    else if (password.length < 6) e.password = "Min 6 characters";
-    if (!role) e.role = "Select a role";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const validateStep2 = () => {
-    const e: Record<string, string> = {};
-    if (!jnvState) e.jnvState = "Select your state";
-    if (!jnvName) e.jnvName = "Select your JNV";
-    if (!house) e.house = "Select your house";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleNext = () => {
-    if (step === 1 && validateStep1()) setStep(2);
-    else if (step === 2 && validateStep2()) setStep(3);
+  const selectRole = (r: UserRole) => {
+    setRole(r);
+    setStep("form");
   };
 
   const handleSignUp = async () => {
+    if (!fullName.trim() || !email.trim() || !password || !jnvState || !jnvName || !house) {
+      Alert.alert("Missing Fields", "Please fill in all required fields.");
+      return;
+    }
     setLoading(true);
     try {
       await signUp(email.trim(), password, {
         fullName: fullName.trim(),
-        email: email.trim(),
-        role: role as UserRole,
+        role: role!,
         jnvState,
         jnvName,
         house: house as any,
         class: role === "student" ? studentClass : undefined,
-        enrollYear: role === "alumni" ? enrollYear : undefined,
-        passoutYear: role === "alumni" ? passoutYear : undefined,
+        passoutYear: role === "alumni" ? passoutBatch : undefined,
         profession: role === "alumni" ? profession : undefined,
-        field: role === "alumni" ? field : undefined,
-        company: role === "alumni" ? company : undefined,
-        skills: role === "alumni" ? skills.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+        designation: role === "official" ? principalName : undefined,
         subject: role === "teacher" ? subject : undefined,
-        designation: role === "official" ? designation : undefined,
       });
       router.replace("/(tabs)");
     } catch (err: any) {
-      const message: string = err?.message ?? "";
-      const msg =
-        message.toLowerCase().includes("already in use") || message.toLowerCase().includes("already registered")
-          ? "This email is already registered. Please sign in instead."
-          : message.toLowerCase().includes("missing required")
-          ? "Please fill in all required fields."
-          : message.toLowerCase().includes("network") || message.toLowerCase().includes("failed to fetch")
-          ? "Network error. Check your connection and try again."
-          : message || "Sign up failed. Please try again.";
-      Alert.alert("Sign Up Failed", msg);
+      const msg: string = err?.message ?? "";
+      Alert.alert(
+        "Sign Up Failed",
+        msg.toLowerCase().includes("already") ? "This email is already registered." :
+        msg.toLowerCase().includes("network") ? "Network error. Check your connection." :
+        msg || "Sign up failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
+  const roleTitles: Record<UserRole, string> = {
+    student: "Student Registration",
+    alumni: "Alumni Registration",
+    official: "JNV Official Registration",
+    teacher: "Teacher Registration",
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={[colors.gradientStart, colors.gradientEnd]}
-        style={[styles.header, { paddingTop: topPad + 16 }]}
-      >
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => (step > 1 ? setStep(step - 1) : router.back())}
-            style={styles.backBtn}
+    <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.gradient}>
+      {step === "role" ? (
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.replace("/(auth)/sign-in")}>
+            <Ionicons name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+
+          <Text style={styles.roleScreenTitle}>Select Your Role</Text>
+          <Text style={styles.roleScreenSub}>Choose how you want to join JNV Connect</Text>
+
+          <View style={styles.roleCards}>
+            {ROLES.map((r) => (
+              <TouchableOpacity
+                key={r.value}
+                style={styles.roleCard}
+                onPress={() => selectRole(r.value)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.roleIconWrap}>
+                  <Ionicons name={r.icon} size={26} color="#3D5AF1" />
+                </View>
+                <Text style={styles.roleCardText}>{r.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.replace("/(auth)/sign-in")}>
+              <Text style={styles.footerLink}>Login</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      ) : (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView
+            contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Account</Text>
-          <Text style={styles.stepIndicator}>{step}/3</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${(step / 3) * 100}%` },
-            ]}
-          />
-        </View>
-      </LinearGradient>
+            <TouchableOpacity style={styles.backBtn} onPress={() => setStep("role")}>
+              <Ionicons name="arrow-back" size={20} color="#fff" />
+            </TouchableOpacity>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 32 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {step === 1 && (
-          <View>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>
-              Basic Information
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>
-              Tell us about yourself
-            </Text>
-            <PremiumInput
-              label="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Your full name"
-              icon="person-outline"
-              error={errors.fullName}
-            />
-            <PremiumInput
-              label="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              icon="mail-outline"
-              error={errors.email}
-            />
-            <PremiumInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Min 6 characters"
-              isPassword
-              icon="lock-closed-outline"
-              error={errors.password}
-            />
+            <Text style={styles.formTitle}>{roleTitles[role!]}</Text>
+            <Text style={styles.formSub}>Create your JNV Connect account</Text>
 
-            <Text style={[styles.roleLabel, { color: colors.mutedForeground }]}>
-              I am a...
-            </Text>
-            {errors.role && (
-              <Text style={[styles.roleError, { color: colors.destructive }]}>
-                {errors.role}
-              </Text>
-            )}
-            <View style={styles.roleGrid}>
-              {ROLES.map((r) => (
-                <TouchableOpacity
-                  key={r.value}
-                  onPress={() => setRole(r.value)}
-                  style={[
-                    styles.roleCard,
-                    {
-                      borderColor: role === r.value ? colors.primary : colors.border,
-                      backgroundColor:
-                        role === r.value ? colors.accent : colors.card,
-                      borderRadius: colors.radius - 4,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={r.icon as any}
-                    size={24}
-                    color={role === r.value ? colors.primary : colors.mutedForeground}
-                  />
-                  <Text
-                    style={[
-                      styles.roleText,
-                      {
-                        color:
-                          role === r.value ? colors.primary : colors.foreground,
-                        fontFamily:
-                          role === r.value ? "Inter_600SemiBold" : "Inter_500Medium",
-                      },
-                    ]}
-                  >
-                    {r.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.form}>
+              <BlueInput placeholder="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" />
+              <BlueInput placeholder="Email" value={email} onChangeText={setEmail} icon="mail-outline" keyboardType="email-address" />
+              <BlueInput placeholder="Password" value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
+
+              {role === "student" && (
+                <BluePicker placeholder="Select Class" value={studentClass} options={CLASSES} onSelect={setStudentClass} icon="school-outline" />
+              )}
+
+              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" />
+              <BluePicker
+                placeholder="Select JNV State"
+                value={jnvState}
+                options={STATES}
+                onSelect={(v) => { setJnvState(v); setJnvName(""); }}
+                icon="location-outline"
+              />
+              <BluePicker
+                placeholder="Select JNV Name"
+                value={jnvName}
+                options={jnvOptions}
+                onSelect={setJnvName}
+                icon="business-outline"
+              />
+
+              {role === "alumni" && (
+                <>
+                  <BluePicker placeholder="Select Pass-out Batch" value={passoutBatch} options={BATCHES} onSelect={setPassoutBatch} icon="calendar-outline" />
+                  <BlueInput placeholder="Profession" value={profession} onChangeText={setProfession} icon="briefcase-outline" />
+                </>
+              )}
+
+              {role === "official" && (
+                <>
+                  <BlueInput placeholder="Name of Principal" value={principalName} onChangeText={setPrincipalName} icon="person-outline" />
+                  <BlueInput placeholder="JNV Email ID" value={jnvEmail} onChangeText={setJnvEmail} icon="mail-outline" keyboardType="email-address" />
+                </>
+              )}
+
+              {role === "teacher" && (
+                <BlueInput placeholder="Subject" value={subject} onChangeText={setSubject} icon="book-outline" />
+              )}
+
+              <TouchableOpacity style={styles.createBtn} onPress={handleSignUp} disabled={loading} activeOpacity={0.85}>
+                <Text style={styles.createBtnText}>{loading ? "Creating..." : "Create Account"}</Text>
+              </TouchableOpacity>
             </View>
-
-            <PremiumButton title="Next" onPress={handleNext} style={{ marginTop: 16 }} />
-          </View>
-        )}
-
-        {step === 2 && (
-          <View>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>
-              Your JNV Details
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>
-              Connect with your Navodaya family
-            </Text>
-
-            <DropdownPicker
-              label="State / UT"
-              value={jnvState}
-              placeholder="Select your state"
-              options={STATES}
-              onSelect={(v) => {
-                setJnvState(v);
-                setJnvName("");
-              }}
-              error={errors.jnvState}
-            />
-
-            <DropdownPicker
-              label="JNV Name"
-              value={jnvName}
-              placeholder={jnvState ? "Select your JNV" : "Select state first"}
-              options={jnvOptions}
-              onSelect={setJnvName}
-              disabled={!jnvState}
-              error={errors.jnvName}
-            />
-
-            <DropdownPicker
-              label="House"
-              value={house}
-              placeholder="Select your house"
-              options={HOUSES as unknown as string[]}
-              onSelect={setHouse}
-              error={errors.house}
-            />
-
-            <PremiumButton title="Next" onPress={handleNext} style={{ marginTop: 8 }} />
-          </View>
-        )}
-
-        {step === 3 && (
-          <View>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>
-              {role === "student" && "Student Details"}
-              {role === "alumni" && "Alumni Profile"}
-              {role === "teacher" && "Teacher Details"}
-              {role === "official" && "Official Details"}
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>
-              Complete your profile
-            </Text>
-
-            {role === "student" && (
-              <DropdownPicker
-                label="Current Class"
-                value={studentClass}
-                placeholder="Select class"
-                options={["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"]}
-                onSelect={setStudentClass}
-              />
-            )}
-
-            {role === "alumni" && (
-              <>
-                <PremiumInput
-                  label="Enrollment Year"
-                  value={enrollYear}
-                  onChangeText={setEnrollYear}
-                  placeholder="e.g. 2010"
-                  keyboardType="numeric"
-                  icon="calendar-outline"
-                />
-                <PremiumInput
-                  label="Passout Year"
-                  value={passoutYear}
-                  onChangeText={setPassoutYear}
-                  placeholder="e.g. 2022"
-                  keyboardType="numeric"
-                  icon="calendar-outline"
-                />
-                <DropdownPicker
-                  label="Profession"
-                  value={profession}
-                  placeholder="Select profession"
-                  options={["Engineer", "Doctor", "IAS/IPS Officer", "Defence", "Lawyer", "Teacher", "Researcher", "Entrepreneur", "Other"]}
-                  onSelect={setProfession}
-                />
-                <PremiumInput
-                  label="Field / Domain"
-                  value={field}
-                  onChangeText={setField}
-                  placeholder="e.g. Software Engineering"
-                  icon="briefcase-outline"
-                />
-                <PremiumInput
-                  label="Company / Institution"
-                  value={company}
-                  onChangeText={setCompany}
-                  placeholder="e.g. Google, AIIMS"
-                  icon="business-outline"
-                />
-                <PremiumInput
-                  label="Skills (comma-separated)"
-                  value={skills}
-                  onChangeText={setSkills}
-                  placeholder="e.g. Python, Leadership, Research"
-                  icon="bulb-outline"
-                />
-              </>
-            )}
-
-            {role === "teacher" && (
-              <PremiumInput
-                label="Subject"
-                value={subject}
-                onChangeText={setSubject}
-                placeholder="e.g. Mathematics, Physics"
-                icon="book-outline"
-              />
-            )}
-
-            {role === "official" && (
-              <PremiumInput
-                label="Designation"
-                value={designation}
-                onChangeText={setDesignation}
-                placeholder="e.g. Principal, JNV Commissioner"
-                icon="ribbon-outline"
-              />
-            )}
-
-            <PremiumButton
-              title="Create Account"
-              onPress={handleSignUp}
-              loading={loading}
-              style={{ marginTop: 16 }}
-            />
-          </View>
-        )}
-
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-            Already have an account?{" "}
-          </Text>
-          <TouchableOpacity onPress={() => router.replace("/(auth)/sign-in")}>
-            <Text style={[styles.footerLink, { color: colors.primary }]}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
+    </LinearGradient>
   );
 }
 
+const modalStyles = StyleSheet.create({
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  title: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111" },
+  option: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB" },
+  optionText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#111" },
+});
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
+  gradient: { flex: 1 },
+  scroll: { paddingHorizontal: 28, flexGrow: 1 },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 28,
   },
-  headerTitle: {
+  roleScreenTitle: {
+    fontFamily: "Pacifico_400Regular",
+    fontSize: 28,
     color: "#fff",
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
-  },
-  stepIndicator: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: 4,
-    backgroundColor: "#fff",
-    borderRadius: 2,
-  },
-  scrollContent: {
-    padding: 24,
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    marginBottom: 6,
-  },
-  stepSub: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 24,
-  },
-  roleLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  roleError: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
     marginBottom: 8,
   },
-  roleGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 4,
-  },
-  roleCard: {
-    width: "47%",
-    padding: 16,
-    borderWidth: 1.5,
-    alignItems: "center",
-    gap: 8,
-  },
-  roleText: {
-    fontSize: 14,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: 15,
+  roleScreenSub: {
     fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.75)",
+    marginBottom: 36,
   },
-  footerLink: {
+  roleCards: { gap: 14 },
+  roleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  roleIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center", justifyContent: "center",
+  },
+  roleCardText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#111827" },
+  formTitle: {
+    fontFamily: "Pacifico_400Regular",
+    fontSize: 26,
+    color: "#fff",
+    marginBottom: 6,
+  },
+  formSub: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.75)",
+    marginBottom: 28,
+  },
+  form: { gap: 14 },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    height: 54,
+  },
+  inputIcon: { marginRight: 10 },
+  input: {
+    color: "#fff",
+    fontFamily: "Inter_400Regular",
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
   },
+  inputText: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
+  placeholderText: { color: "rgba(255,255,255,0.65)" },
+  createBtn: {
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  createBtnText: { color: "#3D5AF1", fontFamily: "Inter_700Bold", fontSize: 16 },
+  footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
+  footerText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 15 },
+  footerLink: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },
 });

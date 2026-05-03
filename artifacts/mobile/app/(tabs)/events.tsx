@@ -3,50 +3,63 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Platform,
   Modal,
-  ScrollView,
   Alert,
+  Image,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
 import { PremiumInput } from "@/components/PremiumInput";
-import { PremiumButton } from "@/components/PremiumButton";
 
-const TABS = ["Upcoming", "My RSVPs"];
+const EVENT_IMAGES = [
+  "https://picsum.photos/seed/conference2/800/350",
+  "https://picsum.photos/seed/sports2026/800/350",
+  "https://picsum.photos/seed/graduation2026/800/350",
+  "https://picsum.photos/seed/workshop2026/800/350",
+  "https://picsum.photos/seed/seminar2026/800/350",
+];
 
-function formatDate(dateStr: string) {
+function getDateParts(dateStr: string) {
   try {
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+      const day = d.getDate();
+      const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+      return { day, month };
     }
   } catch {}
-  return dateStr;
+  return { day: "--", month: "---" };
+}
+
+function formatTime(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    }
+  } catch {}
+  return "TBD";
 }
 
 export default function EventsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Upcoming");
-  const [rsvped, setRsvped] = useState<Set<string>>(new Set());
+  const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 60 : insets.top;
   const canCreate = profile?.role === "teacher" || profile?.role === "official";
 
   const fetchEvents = async () => {
@@ -59,11 +72,10 @@ export default function EventsScreen() {
 
   useEffect(() => { fetchEvents(); }, []);
 
-  const handleRSVP = (id: string) => {
-    setRsvped((prev) => {
+  const handleRegister = (id: string) => {
+    setRegistered((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -90,153 +102,104 @@ export default function EventsScreen() {
     setSubmitting(false);
   };
 
-  const displayEvents = activeTab === "My RSVPs"
-    ? events.filter((e) => rsvped.has(e.id))
-    : events;
+  const now = new Date().toISOString();
+  const mockEvents: Event[] = events.length > 0 ? events : [
+    { id: "m1", title: "Career Guidance Webinar: Engineering Paths", description: "Join our alumni working at top tech companies to learn about various engineering paths and career opportunities.", date: new Date(Date.now() + 7 * 86400000).toISOString(), location: "Online", organizer: "Priya Sharma", createdAt: now },
+    { id: "m2", title: "JNV Alumni Sports Meet 2026", description: "Annual sports meet for all JNV alumni. Join us for cricket, kabaddi, and athletics.", date: new Date(Date.now() + 14 * 86400000).toISOString(), location: "JNV Delhi Campus", organizer: "Sports Committee", createdAt: now },
+    { id: "m3", title: "UPSC Preparation Workshop", description: "Expert guidance from IAS officers who are JNV alumni. Learn tips and strategies for UPSC preparation.", date: new Date(Date.now() + 21 * 86400000).toISOString(), location: "Online", organizer: "Amit Verma", createdAt: now },
+  ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={[colors.gradientStart, colors.gradientEnd]}
-        style={[styles.header, { paddingTop: topPad + 8 }]}
-      >
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Events</Text>
-            <Text style={styles.headerSub}>Meetups, reunions & more</Text>
-          </View>
-          {canCreate && (
-            <TouchableOpacity
-              style={[styles.hostBtn, { backgroundColor: colors.saffron }]}
-              onPress={() => setShowCreate(true)}
-            >
-              <Ionicons name="add" size={16} color="#fff" />
-              <Text style={styles.hostBtnText}>Host</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient>
-
-      <View style={[styles.tabBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && { borderBottomColor: colors.saffron, borderBottomWidth: 2 }]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === tab ? colors.saffron : colors.mutedForeground },
-              ]}
-            >
-              {tab}
-            </Text>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
+        <Text style={styles.headerTitle}>Events</Text>
+        {canCreate && (
+          <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
+            <Ionicons name="add" size={22} color="#3D5AF1" />
           </TouchableOpacity>
-        ))}
+        )}
       </View>
 
-      <FlatList
-        data={displayEvents}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                {activeTab === "My RSVPs" ? "No RSVPs yet" : "No events yet"}
-              </Text>
-              <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                {activeTab === "My RSVPs" ? "RSVP to events to see them here" : "Check back soon for upcoming events"}
-              </Text>
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => {
-          const isGoing = rsvped.has(item.id);
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+      >
+        {mockEvents.map((event, idx) => {
+          const { day, month } = getDateParts(event.date);
+          const isOnline = event.location?.toLowerCase().includes("online") || event.location?.toLowerCase().includes("zoom");
+          const isReg = registered.has(event.id);
+          const attendees = Math.floor(Math.random() * 50 + 2);
+          const imgUri = EVENT_IMAGES[idx % EVENT_IMAGES.length];
+
           return (
-            <View style={[styles.eventCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.eventAccentBar, { backgroundColor: colors.saffron }]} />
+            <View key={event.id} style={styles.eventCard}>
+              <Image source={{ uri: imgUri }} style={styles.eventImage} resizeMode="cover" />
+
               <View style={styles.eventBody}>
                 <View style={styles.eventTopRow}>
-                  {item.location && (
-                    <View style={styles.locationChip}>
-                      <Ionicons name={item.location.toLowerCase().includes("online") || item.location.toLowerCase().includes("zoom") ? "laptop-outline" : "location-outline"} size={11} color={colors.mutedForeground} />
-                      <Text style={[styles.locationText, { color: colors.mutedForeground }]}>{item.location}</Text>
-                    </View>
-                  )}
-                  <Text style={[styles.goingCount, { color: colors.mutedForeground }]}>
-                    {Math.floor(Math.random() * 200 + 20)} Going
-                  </Text>
-                </View>
-
-                <Text style={[styles.eventTitle, { color: colors.primary }]}>{item.title}</Text>
-
-                <View style={styles.eventMeta}>
-                  <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
-                  <Text style={[styles.eventMetaText, { color: colors.mutedForeground }]}>{formatDate(item.date)}</Text>
-                </View>
-
-                {item.organizer && (
-                  <View style={styles.eventMeta}>
-                    <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.eventMetaText, { color: colors.mutedForeground }]}>By {item.organizer}</Text>
+                  <View style={styles.dateBox}>
+                    <Text style={styles.dateDay}>{day}</Text>
+                    <Text style={styles.dateMonth}>{month}</Text>
                   </View>
-                )}
+                  <View style={styles.eventDetails}>
+                    {isOnline && (
+                      <View style={styles.onlineBadge}>
+                        <Text style={styles.onlineBadgeText}>Online</Text>
+                      </View>
+                    )}
+                    <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
+                    <Text style={styles.eventDesc} numberOfLines={2}>{event.description}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={styles.metaItem}>
+                        <Ionicons name="time-outline" size={13} color="#6B7280" />
+                        <Text style={styles.metaText}>{formatTime(event.date)}</Text>
+                      </View>
+                      <View style={styles.metaItem}>
+                        <Ionicons name="people-outline" size={13} color="#6B7280" />
+                        <Text style={styles.metaText}>{attendees} attending</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
 
-                {item.description ? (
-                  <Text style={[styles.eventDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                ) : null}
-
-                <View style={styles.eventActions}>
+                <View style={styles.eventFooter}>
+                  {event.organizer && (
+                    <Text style={styles.organizer}>By {event.organizer}</Text>
+                  )}
                   <TouchableOpacity
-                    style={[
-                      styles.rsvpBtn,
-                      { backgroundColor: isGoing ? colors.success : colors.saffron },
-                    ]}
-                    onPress={() => handleRSVP(item.id)}
+                    style={[styles.registerBtn, isReg && styles.registeredBtn]}
+                    onPress={() => handleRegister(event.id)}
+                    activeOpacity={0.85}
                   >
-                    <Ionicons name={isGoing ? "checkmark-circle" : "checkmark-circle-outline"} size={15} color="#fff" />
-                    <Text style={styles.rsvpText}>{isGoing ? "Going ✓" : "RSVP"}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.shareBtn, { borderColor: colors.border }]}>
-                    <Ionicons name="share-social-outline" size={15} color={colors.mutedForeground} />
-                    <Text style={[styles.shareBtnText, { color: colors.mutedForeground }]}>Share</Text>
+                    <Text style={styles.registerText}>{isReg ? "Registered ✓" : "Register"}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
           );
-        }}
-      />
+        })}
+      </ScrollView>
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Host an Event</Text>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Create Event</Text>
             <TouchableOpacity onPress={() => setShowCreate(false)}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+              <Ionicons name="close" size={24} color="#111" />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <PremiumInput label="Event Title" value={title} onChangeText={setTitle} placeholder="E.g. JNV Alumni Reunion 2026" icon="calendar-outline" />
-            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="E.g. June 15, 2026 at 10:00 AM" icon="time-outline" />
-            <PremiumInput label="Location" value={location} onChangeText={setLocation} placeholder="E.g. India Habitat Centre, Delhi" icon="location-outline" />
-            <PremiumInput
-              label="Description"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Tell people what this event is about…"
-              multiline
-              numberOfLines={3}
-              style={{ minHeight: 80, textAlignVertical: "top" }}
-              icon="create-outline"
-            />
-            <PremiumButton title="Create Event" onPress={handleCreate} loading={submitting} style={{ marginTop: 8 }} />
+          <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+            <PremiumInput label="Event Title" value={title} onChangeText={setTitle} placeholder="E.g. Alumni Reunion 2026" icon="calendar-outline" />
+            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="E.g. June 15, 2026" icon="time-outline" />
+            <PremiumInput label="Location" value={location} onChangeText={setLocation} placeholder="E.g. Online / Delhi" icon="location-outline" />
+            <PremiumInput label="Description" value={description} onChangeText={setDescription} placeholder="What is this event about?" multiline numberOfLines={3} icon="create-outline" />
+            <TouchableOpacity
+              style={[styles.createBtn, submitting && { opacity: 0.6 }]}
+              onPress={handleCreate}
+              disabled={submitting}
+            >
+              <Text style={styles.createBtnText}>{submitting ? "Creating..." : "Create Event"}</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </Modal>
@@ -245,38 +208,76 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
-  headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
-  hostBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, gap: 5 },
-  hostBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  tabBar: { flexDirection: "row", borderBottomWidth: 1, paddingHorizontal: 16 },
-  tab: { paddingVertical: 12, paddingHorizontal: 16, marginRight: 4 },
-  tabText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  listContent: { padding: 16 },
-  eventCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden", marginBottom: 14 },
-  eventAccentBar: { height: 4 },
-  eventBody: { padding: 14 },
-  eventTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  locationChip: { flexDirection: "row", alignItems: "center", gap: 4 },
-  locationText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  goingCount: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  eventTitle: { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 8, lineHeight: 22 },
-  eventMeta: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  eventMetaText: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  eventDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20, marginTop: 8, marginBottom: 12 },
-  eventActions: { flexDirection: "row", gap: 10, marginTop: 12 },
-  rsvpBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 9, borderRadius: 8, gap: 5 },
-  rsvpText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
-  shareBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 9, borderRadius: 8, borderWidth: 1, gap: 5 },
-  shareBtnText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
-  modalContainer: { flex: 1 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  modalContent: { padding: 20 },
+  container: { flex: 1, backgroundColor: "#fff" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#fff",
+  },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
+  addBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center",
+  },
+  eventCard: {
+    backgroundColor: "#fff",
+    marginBottom: 2,
+    borderBottomWidth: 8,
+    borderBottomColor: "#F5F6FA",
+  },
+  eventImage: { width: "100%", height: 200 },
+  eventBody: { padding: 16 },
+  eventTopRow: { flexDirection: "row", gap: 14, marginBottom: 14 },
+  dateBox: {
+    width: 52, height: 60,
+    backgroundColor: "#3D5AF1",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  dateDay: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 24 },
+  dateMonth: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  eventDetails: { flex: 1 },
+  onlineBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#EEF2FF",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 6,
+  },
+  onlineBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  eventTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827", lineHeight: 22, marginBottom: 4 },
+  eventDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 20, marginBottom: 8 },
+  metaRow: { flexDirection: "row", gap: 14 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  metaText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  eventFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  organizer: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  registerBtn: {
+    backgroundColor: "#3D5AF1",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+  },
+  registeredBtn: { backgroundColor: "#10B981" },
+  registerText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  modalHeader: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111" },
+  modalBody: { padding: 20 },
+  createBtn: {
+    backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 16,
+    alignItems: "center", marginTop: 8,
+  },
+  createBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
 });

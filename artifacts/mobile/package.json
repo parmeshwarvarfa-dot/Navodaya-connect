@@ -55,5 +55,7 @@
     "zod": "catalog:",
     "zod-validation-error": "^3.4.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@expo-google-fonts/pacifico": "^0.4.1"
+  }
 }
