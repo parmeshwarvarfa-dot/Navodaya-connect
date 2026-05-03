@@ -7,18 +7,44 @@ import {
 } from "@expo-google-fonts/inter";
 import { Pacifico_400Regular, useFonts as usePacificoFonts } from "@expo-google-fonts/pacifico";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function AuthNavGuard() {
+  const { user, loading } = useAuth();
+  const prevUserRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+    const wasLoggedIn = prevUserRef.current;
+    const isLoggedIn = !!user;
+
+    if (wasLoggedIn === true && !isLoggedIn) {
+      router.replace("/(auth)/sign-in" as any);
+    } else if (wasLoggedIn === null && !isLoggedIn) {
+      AsyncStorage.getItem("onboarding_done").then((done) => {
+        router.replace(done ? "/(auth)/sign-in" as any : "/onboarding" as any);
+      });
+    } else if (wasLoggedIn === null && isLoggedIn) {
+      router.replace("/(tabs)" as any);
+    }
+
+    prevUserRef.current = isLoggedIn;
+  }, [user, loading]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const [interLoaded, interError] = useInterFonts({
@@ -47,6 +73,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <AuthProvider>
+              <AuthNavGuard />
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding" options={{ headerShown: false }} />
