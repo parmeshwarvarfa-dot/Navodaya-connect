@@ -8,18 +8,13 @@ import {
   Platform,
   TextInput,
   Modal,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
-const BASE_GROUPS = [
-  { id: "class-12", icon: "school-outline" as const, name: "Class 12", lastMessage: "Welcome to your class group!", time: "12:51 PM", color: "#EEF2FF", iconColor: "#3D5AF1" },
-  { id: "jnv-delhi", icon: "chatbubble-outline" as const, name: "JNV Delhi", lastMessage: "Connect with your JNV community!", time: "12:51 PM", color: "#F0FDF4", iconColor: "#10B981" },
-  { id: "all-navodayans", icon: "chatbubbles-outline" as const, name: "All Navodayans", lastMessage: "United by JNV spirit!", time: "12:51 PM", color: "#FFF7ED", iconColor: "#F59E0B" },
-];
+const ALL_NAVODAYANS = { id: "all-navodayans", icon: "chatbubbles-outline" as const, name: "All Navodayans", lastMessage: "United by JNV spirit!", time: "12:51 PM", color: "#FFF7ED", iconColor: "#F59E0B" };
 
 const HOUSE_META: Record<string, { color: string; bg: string; emoji: string }> = {
   Aravali:  { color: "#1D6ADE", bg: "#EFF6FF", emoji: "💙" },
@@ -52,10 +47,14 @@ export default function ChatsScreen() {
   const [joinedExplore, setJoinedExplore] = useState<Set<string>>(new Set());
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [leaveConfirm, setLeaveConfirm] = useState<{ type: "house" | "explore"; id: string; name: string } | null>(null);
+  const [joinToast, setJoinToast] = useState("");
+  const [groupCreatedToast, setGroupCreatedToast] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
   const house = profile?.house ?? "";
   const houseMeta = HOUSE_META[house];
+
   const houseGroup = house
     ? {
         id: `${house.toLowerCase()}-myhouse`,
@@ -68,50 +67,90 @@ export default function ChatsScreen() {
       }
     : null;
 
-  const YOUR_GROUPS = houseGroup
-    ? [BASE_GROUPS[0], houseGroup, ...BASE_GROUPS.slice(1)]
-    : BASE_GROUPS;
+  const batchOrClassGroup = (() => {
+    if (!profile) return null;
+    if (profile.role === "alumni" && profile.passoutYear) {
+      return {
+        id: `batch-${profile.passoutYear}`,
+        icon: "people-outline" as const,
+        name: `Batch ${profile.passoutYear}`,
+        lastMessage: `Connect with your Batch ${profile.passoutYear} batchmates!`,
+        time: "12:51 PM",
+        color: "#EEF2FF",
+        iconColor: "#3D5AF1",
+      };
+    }
+    if (profile.role === "student" && profile.class) {
+      return {
+        id: `class-${profile.class}`,
+        icon: "school-outline" as const,
+        name: `Class ${profile.class}`,
+        lastMessage: `Study and connect with your Class ${profile.class} mates!`,
+        time: "12:51 PM",
+        color: "#EEF2FF",
+        iconColor: "#3D5AF1",
+      };
+    }
+    return null;
+  })();
+
+  const jnvGroup = profile?.jnvName
+    ? {
+        id: `jnv-${profile.jnvName.toLowerCase().replace(/\s+/g, "-")}`,
+        icon: "chatbubble-outline" as const,
+        name: profile.jnvName,
+        lastMessage: `Connect with your ${profile.jnvName} community!`,
+        time: "12:51 PM",
+        color: "#F0FDF4",
+        iconColor: "#10B981",
+      }
+    : null;
+
+  const YOUR_GROUPS = [batchOrClassGroup, houseGroup, jnvGroup, ALL_NAVODAYANS].filter(Boolean) as typeof ALL_NAVODAYANS[];
 
   const filtered = searchQuery.trim()
     ? YOUR_GROUPS.filter((g) => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : YOUR_GROUPS;
 
-  const toggleHouse = (id: string) => {
-    setJoinedHouses((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        Alert.alert("Leave Group", "Leave this house group?", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Leave", style: "destructive", onPress: () => setJoinedHouses((p) => { const n = new Set(p); n.delete(id); return n; }) },
-        ]);
-        return prev;
-      }
-      next.add(id);
-      return next;
-    });
+  const showToast = (msg: string) => {
+    setJoinToast(msg);
+    setTimeout(() => setJoinToast(""), 2500);
+  };
+
+  const toggleHouse = (id: string, name: string) => {
+    if (joinedHouses.has(id)) {
+      setLeaveConfirm({ type: "house", id, name });
+    } else {
+      setJoinedHouses((prev) => { const n = new Set(prev); n.add(id); return n; });
+    }
   };
 
   const toggleExplore = (id: string, name: string) => {
-    setJoinedExplore((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        Alert.alert("Leave Group", `Leave "${name}"?`, [
-          { text: "Cancel", style: "cancel" },
-          { text: "Leave", style: "destructive", onPress: () => setJoinedExplore((p) => { const n = new Set(p); n.delete(id); return n; }) },
-        ]);
-        return prev;
-      }
-      next.add(id);
-      Alert.alert("Joined!", `You joined "${name}". You can now chat with members.`);
-      return next;
-    });
+    if (joinedExplore.has(id)) {
+      setLeaveConfirm({ type: "explore", id, name });
+    } else {
+      setJoinedExplore((prev) => { const n = new Set(prev); n.add(id); return n; });
+      showToast(`Joined "${name}"!`);
+    }
+  };
+
+  const confirmLeave = () => {
+    if (!leaveConfirm) return;
+    if (leaveConfirm.type === "house") {
+      setJoinedHouses((p) => { const n = new Set(p); n.delete(leaveConfirm.id); return n; });
+    } else {
+      setJoinedExplore((p) => { const n = new Set(p); n.delete(leaveConfirm.id); return n; });
+    }
+    setLeaveConfirm(null);
   };
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return;
-    Alert.alert("Group Created!", `"${newGroupName.trim()}" has been created. Invite members to join.`);
+    const name = newGroupName.trim();
     setNewGroupName("");
     setShowNewGroup(false);
+    setGroupCreatedToast(`"${name}" created! Invite members to join.`);
+    setTimeout(() => setGroupCreatedToast(""), 3000);
   };
 
   return (
@@ -196,7 +235,7 @@ export default function ChatsScreen() {
                           style={[styles.joinBtn, { backgroundColor: joined ? "#E5E7EB" : h.color }]}
                           onPress={() => joined
                             ? router.push({ pathname: "/(screens)/group-chat" as any, params: { id: h.id, name: encodeURIComponent(h.name + " House") } })
-                            : toggleHouse(h.id)
+                            : toggleHouse(h.id, h.name)
                           }
                         >
                           <Text style={[styles.joinBtnText, { color: joined ? "#374151" : "#fff" }]}>
@@ -274,6 +313,34 @@ export default function ChatsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Leave confirmation modal */}
+      <Modal visible={!!leaveConfirm} transparent animationType="fade">
+        <View style={styles.leaveOverlay}>
+          <View style={styles.leaveCard}>
+            <Text style={styles.leaveTitle}>Leave Group</Text>
+            <Text style={styles.leaveSub}>
+              {leaveConfirm ? `Leave "${leaveConfirm.name}"?` : ""}
+            </Text>
+            <View style={styles.leaveRow}>
+              <TouchableOpacity style={styles.leaveCancelBtn} onPress={() => setLeaveConfirm(null)}>
+                <Text style={styles.leaveCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.leaveConfirmBtn} onPress={confirmLeave}>
+                <Text style={styles.leaveConfirmText}>Leave</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Join / Group Created toast */}
+      {(joinToast || groupCreatedToast) ? (
+        <View style={styles.toast} pointerEvents="none">
+          <Ionicons name="checkmark-circle" size={16} color="#fff" />
+          <Text style={styles.toastText}>{joinToast || groupCreatedToast}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -354,4 +421,15 @@ const styles = StyleSheet.create({
   },
   createBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15, alignItems: "center" },
   createBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
+  leaveOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
+  leaveCard: { backgroundColor: "#fff", borderRadius: 20, padding: 24, width: "100%" },
+  leaveTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111", marginBottom: 6 },
+  leaveSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 20 },
+  leaveRow: { flexDirection: "row", gap: 12 },
+  leaveCancelBtn: { flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12, paddingVertical: 13, alignItems: "center" },
+  leaveCancelText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#374151" },
+  leaveConfirmBtn: { flex: 1, backgroundColor: "#EF4444", borderRadius: 12, paddingVertical: 13, alignItems: "center" },
+  leaveConfirmText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#fff" },
+  toast: { position: "absolute", bottom: 24, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 8 },
+  toastText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },
 });
