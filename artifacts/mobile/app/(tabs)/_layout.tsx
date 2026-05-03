@@ -24,49 +24,16 @@ const TAB_ITEMS: {
 
 const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
 
-const HOUSE_THEMES: Record<
-  string,
-  { color: string; gradient: [string, string]; bg: string; label: string; emoji: string }
-> = {
-  Aravali: {
-    color: "#1D6ADE",
-    gradient: ["#1D6ADE", "#4B9EF5"],
-    bg: "#EFF6FF",
-    label: "Aravali",
-    emoji: "🔵",
-  },
-  Nilgiri: {
-    color: "#16A34A",
-    gradient: ["#16A34A", "#4ADE80"],
-    bg: "#F0FDF4",
-    label: "Nilgiri",
-    emoji: "🟢",
-  },
-  Shivalik: {
-    color: "#DC2626",
-    gradient: ["#DC2626", "#F87171"],
-    bg: "#FEF2F2",
-    label: "Shivalik",
-    emoji: "🔴",
-  },
-  Udaygiri: {
-    color: "#D97706",
-    gradient: ["#D97706", "#FBBF24"],
-    bg: "#FFFBEB",
-    label: "Udaygiri",
-    emoji: "🟡",
-  },
+const HOUSE_COLOR: Record<string, string> = {
+  Aravali:  "#1D6ADE",
+  Nilgiri:  "#16A34A",
+  Shivalik: "#DC2626",
+  Udaygiri: "#D97706",
 };
 
-const DEFAULT_THEME = {
-  color: "#3D5AF1",
-  gradient: ["#4B6EF5", "#3151E8"] as [string, string],
-  bg: "#EEF2FF",
-  label: "",
-  emoji: "",
-};
+const DEFAULT_COLOR = "#3D5AF1";
 
-function DostAiFab({ accentColor }: { accentColor: string; gradientColors: [string, string] }) {
+function DostAiFab() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = Platform.OS === "web" ? 60 : 80;
   const bottom = tabBarHeight + insets.bottom + 12;
@@ -103,27 +70,23 @@ export default function TabLayout() {
   const paddingBottom = isWeb ? 8 : 16;
   const { profile } = useAuth();
 
-  const house = profile?.house ?? "";
-  const theme = useMemo(
-    () => HOUSE_THEMES[house] ?? DEFAULT_THEME,
-    [house]
+  const activeColor = useMemo(
+    () => HOUSE_COLOR[profile?.house ?? ""] ?? DEFAULT_COLOR,
+    [profile?.house]
   );
 
   return (
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: theme.color,
+          tabBarActiveTintColor: activeColor,
           tabBarInactiveTintColor: "#9CA3AF",
           headerShown: false,
           tabBarStyle: {
             backgroundColor: "#fff",
-            borderTopWidth: 0,
-            elevation: 12,
-            shadowColor: theme.color,
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
+            borderTopWidth: 1,
+            borderTopColor: "#F0F0F0",
+            elevation: 8,
             height: tabBarHeight,
             paddingBottom,
             paddingTop: 8,
@@ -133,10 +96,7 @@ export default function TabLayout() {
             fontFamily: "Inter_500Medium",
           },
           tabBarBackground: () => (
-            <View style={StyleSheet.absoluteFill}>
-              <View style={[styles.tabBarBg, { borderTopColor: theme.color + "33" }]} />
-              <View style={[styles.houseAccentLine, { backgroundColor: theme.color }]} />
-            </View>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fff" }]} />
           ),
         }}
       >
@@ -147,9 +107,7 @@ export default function TabLayout() {
             options={{
               title: tab.title,
               tabBarIcon: ({ color, focused }) => (
-                <View style={focused ? [styles.activeIconWrap, { backgroundColor: theme.color + "18" }] : undefined}>
-                  <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
-                </View>
+                <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
               ),
             }}
           />
@@ -159,57 +117,12 @@ export default function TabLayout() {
         ))}
       </Tabs>
 
-      {house ? (
-        <View style={[styles.houseBadge, { backgroundColor: theme.color }]}>
-          <Text style={styles.houseBadgeText}>{theme.emoji} {theme.label}</Text>
-        </View>
-      ) : null}
-
-      <DostAiFab accentColor={theme.color} gradientColors={theme.gradient as [string, string]} />
+      <DostAiFab />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabBarBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#fff",
-    borderTopWidth: 1.5,
-  },
-  houseAccentLine: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderRadius: 2,
-    opacity: 0.85,
-  },
-  activeIconWrap: {
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 2,
-  },
-  houseBadge: {
-    position: "absolute",
-    bottom: Platform.OS === "web" ? 68 : 88,
-    left: 16,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    zIndex: 998,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  houseBadgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 0.3,
-  },
   fab: {
     position: "absolute",
     right: 18,
