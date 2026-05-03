@@ -20,6 +20,10 @@ export const usersTable = pgTable("users", {
   verificationStatus: text("verification_status").default("unverified"),
   subject: text("subject"),
   designation: text("designation"),
+  bio: text("bio"),
+  phone: text("phone"),
+  linkedinUrl: text("linkedin_url"),
+  twitterUrl: text("twitter_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   Modal,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -99,17 +100,47 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom, paddingHorizontal: 16 }}
       >
         <View style={styles.profileCard}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatarRing}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
+          <TouchableOpacity
+            style={styles.avatarWrap}
+            onPress={() => router.push("/(screens)/edit-profile" as any)}
+            activeOpacity={0.85}
+          >
+            {profile.photoURL ? (
+              <Image source={{ uri: profile.photoURL }} style={styles.avatarPhoto} />
+            ) : (
+              <View style={styles.avatarRing}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
               </View>
+            )}
+            <View style={styles.editPhotoBadge}>
+              <Ionicons name="camera" size={13} color="#fff" />
             </View>
-          </View>
+          </TouchableOpacity>
           <Text style={styles.profileName}>{profile.fullName}</Text>
+          {(profile as any).bio ? (
+            <Text style={styles.profileBio} numberOfLines={2}>{(profile as any).bio}</Text>
+          ) : null}
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>{roleLabel}</Text>
           </View>
+          {((profile as any).linkedinUrl || (profile as any).twitterUrl) && (
+            <View style={styles.socialRow}>
+              {(profile as any).linkedinUrl && (
+                <View style={styles.socialPill}>
+                  <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
+                  <Text style={styles.socialPillText}>LinkedIn</Text>
+                </View>
+              )}
+              {(profile as any).twitterUrl && (
+                <View style={styles.socialPill}>
+                  <Ionicons name="logo-twitter" size={14} color="#1DA1F2" />
+                  <Text style={styles.socialPillText}>Twitter</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.infoCard}>
@@ -240,7 +271,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
-  avatarWrap: { marginBottom: 12 },
+  avatarWrap: { marginBottom: 12, position: "relative" },
+  avatarPhoto: {
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 3, borderColor: "#3D5AF1",
+  },
   avatarRing: {
     width: 96, height: 96, borderRadius: 48,
     borderWidth: 3, borderColor: "#3D5AF1",
@@ -252,14 +287,33 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   avatarText: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
-  profileName: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 8 },
+  editPhotoBadge: {
+    position: "absolute", bottom: 0, right: 0,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "#fff",
+    alignItems: "center", justifyContent: "center",
+  },
+  profileName: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
+  profileBio: {
+    fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280",
+    textAlign: "center", marginHorizontal: 24, marginBottom: 8, lineHeight: 19,
+  },
   roleBadge: {
     backgroundColor: "#EEF2FF",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 5,
+    marginTop: 4,
   },
   roleBadgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  socialRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  socialPill: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "#F3F4F6", borderRadius: 16,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: "#E5E7EB",
+  },
+  socialPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
   infoCard: {
     backgroundColor: "#fff",
     borderRadius: 16,

@@ -114,6 +114,10 @@ export interface UserProfile {
   verificationStatus?: "unverified" | "pending" | "verified";
   subject?: string;
   designation?: string;
+  bio?: string;
+  phone?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
 }
 
 export interface SignupData extends Omit<UserProfile, "uid"> {

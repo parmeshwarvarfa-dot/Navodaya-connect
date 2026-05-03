@@ -23,18 +23,35 @@ router.get("/users/alumni", requireAuth, async (req, res) => {
 router.patch("/users/me", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
-    const { fullName, profession, company, field, subject, designation, skills, verificationStatus } = req.body;
+    const {
+      fullName, profession, company, field, subject, designation,
+      skills, verificationStatus, photoURL, jnvName, jnvState, house,
+      passoutYear, enrollYear, class: cls, bio, phone, linkedinUrl, twitterUrl,
+    } = req.body;
+
     const updates: Partial<typeof usersTable.$inferInsert> = {};
     if (fullName !== undefined) updates.fullName = fullName;
+    if (photoURL !== undefined) updates.photoURL = photoURL;
+    if (jnvName !== undefined) updates.jnvName = jnvName;
+    if (jnvState !== undefined) updates.jnvState = jnvState;
+    if (house !== undefined) updates.house = house;
+    if (bio !== undefined) updates.bio = bio;
+    if (phone !== undefined) updates.phone = phone;
+    if (linkedinUrl !== undefined) updates.linkedinUrl = linkedinUrl;
+    if (twitterUrl !== undefined) updates.twitterUrl = twitterUrl;
     if (profession !== undefined) updates.profession = profession;
     if (company !== undefined) updates.company = company;
     if (field !== undefined) updates.field = field;
     if (subject !== undefined) updates.subject = subject;
     if (designation !== undefined) updates.designation = designation;
     if (skills !== undefined) updates.skills = JSON.stringify(skills);
-    if (verificationStatus !== undefined && (user.role === "alumni")) {
+    if (passoutYear !== undefined) updates.passoutYear = passoutYear;
+    if (enrollYear !== undefined) updates.enrollYear = enrollYear;
+    if (cls !== undefined) updates.class = cls;
+    if (verificationStatus !== undefined && user.role === "alumni") {
       updates.verificationStatus = verificationStatus;
     }
+
     const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id)).returning();
     const { passwordHash, ...safe } = updated;
     res.json({ ...safe, skills: safe.skills ? JSON.parse(safe.skills) : [] });
