@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
-  Alert,
   Modal,
   FlatList,
   KeyboardAvoidingView,
@@ -121,6 +120,7 @@ export default function SignUpScreen() {
   const [step, setStep] = useState<"role" | "form">("role");
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -143,8 +143,9 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = async () => {
+    setErrorMsg("");
     if (!fullName.trim() || !email.trim() || !password || !jnvState || !jnvName || !house) {
-      Alert.alert("Missing Fields", "Please fill in all required fields.");
+      setErrorMsg("Please fill in all required fields.");
       return;
     }
     setLoading(true);
@@ -164,9 +165,8 @@ export default function SignUpScreen() {
       router.replace("/(tabs)");
     } catch (err: any) {
       const msg: string = err?.message ?? "";
-      Alert.alert(
-        "Sign Up Failed",
-        msg.toLowerCase().includes("already") ? "This email is already registered." :
+      setErrorMsg(
+        msg.toLowerCase().includes("already") ? "This email is already registered. Try signing in instead." :
         msg.toLowerCase().includes("network") ? "Network error. Check your connection." :
         msg || "Sign up failed. Please try again."
       );
@@ -276,6 +276,13 @@ export default function SignUpScreen() {
                 <BlueInput placeholder="Subject" value={subject} onChangeText={setSubject} icon="book-outline" />
               )}
 
+              {errorMsg ? (
+                <View style={styles.errorBox}>
+                  <Ionicons name="alert-circle-outline" size={16} color="#fff" />
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              ) : null}
+
               <TouchableOpacity style={styles.createBtn} onPress={handleSignUp} disabled={loading} activeOpacity={0.85}>
                 <Text style={styles.createBtnText}>{loading ? "Creating..." : "Create Account"}</Text>
               </TouchableOpacity>
@@ -360,6 +367,17 @@ const styles = StyleSheet.create({
   },
   inputText: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
   placeholderText: { color: "rgba(255,255,255,0.65)" },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(239,68,68,0.85)",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 4,
+  },
+  errorText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 18 },
   createBtn: {
     backgroundColor: "#fff",
     borderRadius: 28,
