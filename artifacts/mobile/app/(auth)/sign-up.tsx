@@ -23,16 +23,25 @@ const CLASSES = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 
 const BATCHES = Array.from({ length: 30 }, (_, i) => String(2026 - i));
 
 const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: "student", label: "Student", icon: "school-outline" },
-  { value: "alumni", label: "Alumni", icon: "home-outline" },
+  { value: "student",  label: "Student",     icon: "school-outline"   },
+  { value: "alumni",   label: "Alumni",       icon: "home-outline"     },
   { value: "official", label: "JNV Official", icon: "business-outline" },
-  { value: "teacher", label: "Teacher", icon: "book-outline" },
+  { value: "teacher",  label: "Teacher",      icon: "book-outline"     },
 ];
+
+const HOUSE_LABEL_MAP: Record<string, string> = {
+  Aravali:  "Aravali House 💙",
+  Nilgiri:  "Nilgiri House 💚",
+  Shivalik: "Shivalik House ❤️",
+  Udaygiri: "Udaygiri House 💛",
+};
 
 function BluePicker({
   placeholder, value, options, onSelect, icon, labelMap,
 }: {
-  placeholder: string; value: string; options: string[]; onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap; labelMap?: Record<string, string>;
+  placeholder: string; value: string; options: string[];
+  onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
+  labelMap?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
   const displayValue = labelMap?.[value] ?? value;
@@ -74,13 +83,6 @@ function BluePicker({
   );
 }
 
-const HOUSE_LABEL_MAP: Record<string, string> = {
-  Aravali:  "Aravali House 💙",
-  Nilgiri:  "Nilgiri House 💚",
-  Shivalik: "Shivalik House ❤️",
-  Udaygiri: "Udaygiri House 💛",
-};
-
 function BlueInput({
   placeholder, value, onChangeText, icon, secureTextEntry, keyboardType,
 }: {
@@ -114,7 +116,7 @@ function BlueInput({
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { signUp } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad    = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   const [step, setStep] = useState<"role" | "form">("role");
@@ -122,52 +124,65 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [jnvState, setJnvState] = useState("");
-  const [jnvName, setJnvName] = useState("");
-  const [house, setHouse] = useState("");
-  const [studentClass, setStudentClass] = useState("");
-  const [passoutBatch, setPassoutBatch] = useState("");
-  const [profession, setProfession] = useState("");
-  const [principalName, setPrincipalName] = useState("");
-  const [jnvEmail, setJnvEmail] = useState("");
-  const [subject, setSubject] = useState("");
+  const [fullName,       setFullName]       = useState("");
+  const [email,          setEmail]          = useState("");
+  const [password,       setPassword]       = useState("");
+  const [confirmPwd,     setConfirmPwd]     = useState("");
+  const [jnvState,       setJnvState]       = useState("");
+  const [jnvName,        setJnvName]        = useState("");
+  const [house,          setHouse]          = useState("");
+  const [studentClass,   setStudentClass]   = useState("");
+  const [passoutBatch,   setPassoutBatch]   = useState("");
+  const [profession,     setProfession]     = useState("");
+  const [principalName,  setPrincipalName]  = useState("");
+  const [jnvEmail,       setJnvEmail]       = useState("");
+  const [subject,        setSubject]        = useState("");
 
   const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
+  const needsHouse = role === "student" || role === "alumni";
 
-  const selectRole = (r: UserRole) => {
-    setRole(r);
-    setStep("form");
-  };
+  const selectRole = (r: UserRole) => { setRole(r); setStep("form"); };
 
   const handleSignUp = async () => {
     setErrorMsg("");
-    if (!fullName.trim() || !email.trim() || !password || !jnvState || !jnvName || !house) {
+
+    if (!fullName.trim() || !email.trim() || !password || !jnvState || !jnvName) {
       setErrorMsg("Please fill in all required fields.");
       return;
     }
+    if (password !== confirmPwd) {
+      setErrorMsg("Passwords do not match. Please try again.");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+    if (needsHouse && !house) {
+      setErrorMsg("Please select your house.");
+      return;
+    }
+
     setLoading(true);
     try {
       await signUp(email.trim(), password, {
-        fullName: fullName.trim(),
-        role: role!,
+        fullName:    fullName.trim(),
+        role:        role!,
         jnvState,
         jnvName,
-        house: house as any,
-        class: role === "student" ? studentClass : undefined,
-        passoutYear: role === "alumni" ? passoutBatch : undefined,
-        profession: role === "alumni" ? profession : undefined,
-        designation: role === "official" ? principalName : undefined,
-        subject: role === "teacher" ? subject : undefined,
+        house:       (needsHouse ? house : "Aravali") as any,
+        class:       role === "student" ? studentClass : undefined,
+        passoutYear: role === "alumni"  ? passoutBatch : undefined,
+        profession:  role === "alumni"  ? profession   : undefined,
+        designation: role === "official"? principalName: undefined,
+        subject:     role === "teacher" ? subject      : undefined,
       });
       router.replace("/(tabs)");
     } catch (err: any) {
       const msg: string = err?.message ?? "";
       setErrorMsg(
         msg.toLowerCase().includes("already") ? "This email is already registered. Try signing in instead." :
-        msg.toLowerCase().includes("network") ? "Network error. Check your connection." :
+        msg.toLowerCase().includes("network")  ? "Network error. Check your connection." :
         msg || "Sign up failed. Please try again."
       );
     } finally {
@@ -176,10 +191,10 @@ export default function SignUpScreen() {
   };
 
   const roleTitles: Record<UserRole, string> = {
-    student: "Student Registration",
-    alumni: "Alumni Registration",
+    student:  "Student Registration",
+    alumni:   "Alumni Registration",
     official: "JNV Official Registration",
-    teacher: "Teacher Registration",
+    teacher:  "Teacher Registration",
   };
 
   return (
@@ -208,6 +223,7 @@ export default function SignUpScreen() {
                   <Ionicons name={r.icon} size={26} color="#3D5AF1" />
                 </View>
                 <Text style={styles.roleCardText}>{r.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" style={{ marginLeft: "auto" }} />
               </TouchableOpacity>
             ))}
           </View>
@@ -234,15 +250,36 @@ export default function SignUpScreen() {
             <Text style={styles.formSub}>Create your JNV Connect account</Text>
 
             <View style={styles.form}>
-              <BlueInput placeholder="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" />
-              <BlueInput placeholder="Email" value={email} onChangeText={setEmail} icon="mail-outline" keyboardType="email-address" />
-              <BlueInput placeholder="Password" value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
+              {/* Common fields */}
+              <BlueInput placeholder="Full Name"  value={fullName} onChangeText={setFullName} icon="person-outline" />
+              <BlueInput placeholder="Email"       value={email}    onChangeText={setEmail}    icon="mail-outline" keyboardType="email-address" />
+              <BlueInput placeholder="Password"   value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
+              <BlueInput placeholder="Confirm Password" value={confirmPwd} onChangeText={setConfirmPwd} icon="shield-checkmark-outline" secureTextEntry />
 
+              {/* Password match indicator */}
+              {confirmPwd.length > 0 && (
+                <View style={[styles.matchRow, { opacity: password === confirmPwd ? 1 : 0.85 }]}>
+                  <Ionicons
+                    name={password === confirmPwd ? "checkmark-circle" : "close-circle"}
+                    size={15}
+                    color={password === confirmPwd ? "#6EE7B7" : "#FCA5A5"}
+                  />
+                  <Text style={[styles.matchText, { color: password === confirmPwd ? "#6EE7B7" : "#FCA5A5" }]}>
+                    {password === confirmPwd ? "Passwords match" : "Passwords do not match"}
+                  </Text>
+                </View>
+              )}
+
+              {/* Role-specific extras */}
               {role === "student" && (
                 <BluePicker placeholder="Select Class" value={studentClass} options={CLASSES} onSelect={setStudentClass} icon="school-outline" />
               )}
 
-              <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" labelMap={HOUSE_LABEL_MAP} />
+              {/* House — only for student & alumni */}
+              {needsHouse && (
+                <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" labelMap={HOUSE_LABEL_MAP} />
+              )}
+
               <BluePicker
                 placeholder="Select JNV State"
                 value={jnvState}
@@ -284,7 +321,7 @@ export default function SignUpScreen() {
               ) : null}
 
               <TouchableOpacity style={styles.createBtn} onPress={handleSignUp} disabled={loading} activeOpacity={0.85}>
-                <Text style={styles.createBtnText}>{loading ? "Creating..." : "Create Account"}</Text>
+                <Text style={styles.createBtnText}>{loading ? "Creating Account..." : "Create Account"}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -310,81 +347,39 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     marginBottom: 28,
   },
-  roleScreenTitle: {
-    fontFamily: "Pacifico_400Regular",
-    fontSize: 28,
-    color: "#fff",
-    marginBottom: 8,
-  },
-  roleScreenSub: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: "rgba(255,255,255,0.75)",
-    marginBottom: 36,
-  },
+  roleScreenTitle: { fontFamily: "Pacifico_400Regular", fontSize: 28, color: "#fff", marginBottom: 8 },
+  roleScreenSub: { fontFamily: "Inter_400Regular", fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 36 },
   roleCards: { gap: 14 },
   roleCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    gap: 16,
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#fff", borderRadius: 14,
+    paddingVertical: 18, paddingHorizontal: 20, gap: 16,
   },
-  roleIconWrap: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: "#EEF2FF",
-    alignItems: "center", justifyContent: "center",
-  },
+  roleIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   roleCardText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  formTitle: {
-    fontFamily: "Pacifico_400Regular",
-    fontSize: 26,
-    color: "#fff",
-    marginBottom: 6,
-  },
-  formSub: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.75)",
-    marginBottom: 28,
-  },
+  formTitle: { fontFamily: "Pacifico_400Regular", fontSize: 26, color: "#fff", marginBottom: 6 },
+  formSub: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 28 },
   form: { gap: 14 },
   inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.18)",
-    borderRadius: 28,
-    paddingHorizontal: 18,
-    height: 54,
+    borderRadius: 28, paddingHorizontal: 18, height: 54,
   },
   inputIcon: { marginRight: 10 },
-  input: {
-    color: "#fff",
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-  },
+  input: { color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
   inputText: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
   placeholderText: { color: "rgba(255,255,255,0.65)" },
+  matchRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4 },
+  matchText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(239,68,68,0.85)",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 4,
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "rgba(239,68,68,0.85)", borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4,
   },
   errorText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 18 },
   createBtn: {
-    backgroundColor: "#fff",
-    borderRadius: 28,
-    height: 54,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
+    backgroundColor: "#fff", borderRadius: 28, height: 54,
+    alignItems: "center", justifyContent: "center", marginTop: 6,
   },
   createBtnText: { color: "#3D5AF1", fontFamily: "Inter_700Bold", fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
