@@ -1,0 +1,347 @@
+Enhance the existing Student Dashboard in my already functional app “Navodaya Connect” by creating a dedicated “Study Section”.
+
+IMPORTANT:
+- Do NOT rebuild the app.
+- Do NOT replace the existing dashboard or navigation.
+- Only enhance the current student system.
+- Keep the UI lightweight, modern, mobile-friendly, and optimized for low backend/API usage.
+- Reuse existing components wherever possible.
+
+==================================================
+MAIN GOAL
+==================================================
+
+Create a centralized “Study Section” inside the Student Dashboard where students can access all important academic and study-related features in one organized place.
+
+The Study Section should feel like a smart academic hub for students.
+
+==================================================
+STUDY SECTION STRUCTURE
+==================================================
+
+Create a new section:
+📚 Study Section
+
+This section should contain:
+
+1. Notes & Study Materials
+2. Assignments
+3. Announcements
+4. Ask Queries / Academic Doubts
+5. Attendance
+6. Results & Performance
+7. Chat with Teachers / Classmates
+8. Clubs & Activities
+9. Submit Feedback
+
+==================================================
+1. NOTES & STUDY MATERIALS
+==================================================
+
+Feature:
+“View Notes / Materials”
+
+Allow teachers to upload:
+- notes
+- PDFs
+- study materials
+- presentations
+- PYQs
+- links/resources
+
+Organize materials using:
+- Class
+- Stream
+- Section
+- Subject
+
+Examples:
+- Class 10 A → Mathematics
+- Class 12 Science B → Physics
+
+Students can:
+- view materials
+- download files
+- bookmark materials
+- search by subject/topic
+
+Use pagination and lazy loading for optimization.
+
+==================================================
+2. ASSIGNMENTS SYSTEM
+==================================================
+
+Feature:
+“Submit Assignments”
+
+Teachers can:
+- create assignments
+- assign by class/stream/section
+- set deadlines
+- upload assignment files
+
+Students can:
+- view pending assignments
+- upload submissions
+- see submission status
+- view teacher remarks
+
+Assignment statuses:
+- pending
+- submitted
+- late
+- reviewed
+
+==================================================
+3. ANNOUNCEMENTS
+==================================================
+
+Feature:
+“Check Announcements”
+
+Allow verified teachers/coordinators to post announcements targeted by:
+- whole school
+- class
+- stream
+- section
+
+Examples:
+- Class 9 A test notice
+- Class 12 Science practical update
+- School event announcement
+
+Students should only receive relevant announcements.
+
+Add:
+- pinned announcements
+- priority tags
+- latest notices section
+
+==================================================
+4. ASK QUERIES / ACADEMIC DOUBTS
+==================================================
+
+Feature:
+“Ask Queries”
+
+Students can ask:
+- academic doubts
+- career questions
+- school-related questions
+
+Categories:
+- academics
+- JEE
+- NEET
+- coding
+- career guidance
+- hostel life
+
+Verified teachers and verified alumni can answer.
+
+Add:
+- solved status
+- best answer
+- upvote helpful answers
+
+==================================================
+5. ATTENDANCE SYSTEM
+==================================================
+
+Feature:
+“View Attendance”
+
+Students can view:
+- overall attendance
+- monthly attendance
+- subject-wise attendance optional
+
+Teachers/coordinators manage attendance records.
+
+Display attendance using clean cards and progress indicators.
+
+==================================================
+6. RESULTS & PERFORMANCE
+==================================================
+
+Feature:
+“View Results”
+
+Students can:
+- view exam results
+- see report cards
+- check subject-wise performance
+- track academic progress
+
+Optional:
+- downloadable report card PDF
+
+Keep analytics lightweight.
+
+==================================================
+7. CHAT WITH TEACHERS / CLASSMATES
+==================================================
+
+Feature:
+“Chat with Teachers / Peers”
+
+Implement controlled communication system.
+
+Rules:
+- students can chat only with:
+  - assigned teachers
+  - same class students
+  - approved mentors
+- prevent random messaging/spam
+- add block/report features
+- maintain moderation logs
+
+Avoid creating open public social-media style chats.
+
+==================================================
+8. CLUBS & ACTIVITIES
+==================================================
+
+Feature:
+“Join Clubs / Activities”
+
+Allow schools to create:
+- coding clubs
+- sports clubs
+- debate clubs
+- music clubs
+- robotics clubs
+
+Students can:
+- join clubs
+- view activities
+- participate in discussions
+- receive event announcements
+
+==================================================
+9. FEEDBACK SYSTEM
+==================================================
+
+Feature:
+“Submit Feedback”
+
+Allow students to submit:
+- teacher feedback
+- school feedback
+- event feedback
+
+Feedback rules:
+- anonymous to teachers
+- visible to coordinators/admins only
+- respectful and moderated
+- prevent spam submissions
+
+==================================================
+CLASS + STREAM + SECTION SUPPORT
+==================================================
+
+Apply structure everywhere:
+
+For Class 6–10:
+- section required:
+  - A
+  - B
+
+Examples:
+- Class 8 A
+- Class 10 B
+
+For Class 11–12:
+- stream required:
+  - Science
+  - Commerce
+  - Arts
+- section optional:
+  - A
+  - B
+
+Examples:
+- Class 11 Science A
+- Class 12 Commerce B
+
+==================================================
+STUDENT STUDY DASHBOARD UI
+==================================================
+
+The Study Section homepage should show:
+
+Top Dashboard Widgets:
+- today’s classes
+- pending assignments
+- latest announcements
+- attendance %
+- upcoming exams/events
+
+Middle Section:
+- recent study materials
+- latest teacher uploads
+- active discussions
+
+Bottom Section:
+- quick access feature cards
+
+==================================================
+SEARCH & FILTERS
+==================================================
+
+Allow students to search/filter by:
+- subject
+- class
+- stream
+- section
+- teacher
+- material type
+
+==================================================
+NOTIFICATION SYSTEM
+==================================================
+
+Add lightweight notifications for:
+- new assignments
+- announcements
+- teacher replies
+- uploaded materials
+- result publication
+
+Use optimized notification handling.
+
+==================================================
+SECURITY & ACCESS CONTROL
+==================================================
+
+- students access only their class/stream/section content
+- teachers access only assigned classes
+- uploaded files protected
+- prevent unauthorized downloads where necessary
+- implement role-based access control
+
+==================================================
+OPTIMIZATION REQUIREMENTS
+==================================================
+
+- minimize API calls
+- use reusable components
+- use lazy loading
+- optimize file handling
+- avoid heavy AI processing
+- ensure fast mobile performance
+- keep backend queries lightweight
+
+==================================================
+FINAL GOAL
+==================================================
+
+The Study Section should become the main academic hub where students can:
+- study
+- manage assignments
+- communicate academically
+- receive guidance
+- stay updated
+- track progress
+
+all from one organized section inside the Student Dashboard.

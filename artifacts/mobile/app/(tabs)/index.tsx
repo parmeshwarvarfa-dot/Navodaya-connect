@@ -18,10 +18,10 @@ import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STUDENT_ACTIONS = [
-  { label: "Ask Senior",      icon: "help-circle-outline"    as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/ask-senior"      },
-  { label: "Senior Connect",  icon: "people-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/senior-connect"   },
-  { label: "Report Problem",  icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"   },
-  { label: "View Events",     icon: "calendar-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(tabs)/events"              },
+  { label: "Study Hub",       icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"   },
+  { label: "Ask Senior",      icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"      },
+  { label: "Senior Connect",  icon: "people-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/senior-connect"  },
+  { label: "Report Problem",  icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"  },
 ];
 const TEACHER_ACTIONS = [
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
