@@ -18,9 +18,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { JNV_DATA, STATES } from "@/data/jnvData";
 
-const HOUSES = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
-const CLASSES = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
-const BATCHES = Array.from({ length: 30 }, (_, i) => String(2026 - i));
+const HOUSES   = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
+const CLASSES  = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
+const STREAMS  = ["Science", "Commerce", "Arts"];
+const SECTIONS = ["A", "B"];
+const BATCHES  = Array.from({ length: 30 }, (_, i) => String(2026 - i));
 
 const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: "student",  label: "Student",     icon: "school-outline"   },
@@ -132,11 +134,22 @@ export default function SignUpScreen() {
   const [jnvName,        setJnvName]        = useState("");
   const [house,          setHouse]          = useState("");
   const [studentClass,   setStudentClass]   = useState("");
+  const [stream,         setStream]         = useState("");
+  const [section,        setSection]        = useState("");
   const [passoutBatch,   setPassoutBatch]   = useState("");
   const [profession,     setProfession]     = useState("");
   const [principalName,  setPrincipalName]  = useState("");
   const [jnvEmail,       setJnvEmail]       = useState("");
   const [subject,        setSubject]        = useState("");
+
+  const classNum = studentClass ? parseInt(studentClass.replace("Class ", ""), 10) : 0;
+  const isSenior = classNum >= 11;
+  const isJunior = classNum >= 6 && classNum <= 10;
+  const builtClass = studentClass
+    ? isSenior
+      ? [studentClass, stream, section].filter(Boolean).join(" ")
+      : [studentClass, section].filter(Boolean).join(" ")
+    : "";
 
   const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
   const needsHouse = role === "student" || role === "alumni";
@@ -171,7 +184,7 @@ export default function SignUpScreen() {
         jnvState,
         jnvName,
         house:       (needsHouse ? house : "Aravali") as any,
-        class:       role === "student" ? studentClass : undefined,
+        class:       role === "student" ? (builtClass || studentClass) : undefined,
         passoutYear: role === "alumni"  ? passoutBatch : undefined,
         profession:  role === "alumni"  ? profession   : undefined,
         designation: role === "official"? principalName: undefined,
@@ -272,7 +285,34 @@ export default function SignUpScreen() {
 
               {/* Role-specific extras */}
               {role === "student" && (
-                <BluePicker placeholder="Select Class" value={studentClass} options={CLASSES} onSelect={setStudentClass} icon="school-outline" />
+                <BluePicker
+                  placeholder="Select Class"
+                  value={studentClass}
+                  options={CLASSES}
+                  onSelect={(v) => { setStudentClass(v); setStream(""); setSection(""); }}
+                  icon="school-outline"
+                />
+              )}
+              {/* Class 11/12 — stream picker */}
+              {role === "student" && isSenior && (
+                <BluePicker
+                  placeholder="Select Stream"
+                  value={stream}
+                  options={STREAMS}
+                  onSelect={(v) => { setStream(v); setSection(""); }}
+                  icon="git-branch-outline"
+                />
+              )}
+              {/* Section picker for all classes (after stream chosen for 11/12) */}
+              {role === "student" && (isJunior || (isSenior && stream)) && (
+                <BluePicker
+                  placeholder="Select Section"
+                  value={section}
+                  options={SECTIONS}
+                  onSelect={setSection}
+                  icon="grid-outline"
+                  labelMap={{ A: "Section A", B: "Section B" }}
+                />
               )}
 
               {/* House — only for student & alumni */}

@@ -1,0 +1,455 @@
+Enhance my already functional app “Navodaya Connect”.
+
+IMPORTANT:
+- Do NOT rebuild the app.
+- Do NOT replace the current UI, dashboards, routing, or authentication system.
+- Only extend and enhance existing functionality.
+- Reuse existing components wherever possible.
+- Keep the app lightweight, scalable, modular, mobile-friendly, and optimized for low backend/API/AI credit usage.
+- Avoid unnecessary heavy AI processing and excessive real-time operations.
+
+==================================================
+PLATFORM GOAL
+==================================================
+
+Transform the app into a trusted “Verified JNV Network” connecting:
+- students
+- teachers
+- alumni
+- school coordinators
+
+through their respective JNV schools.
+
+The platform should focus on:
+- mentorship
+- verified networking
+- school communication
+- student guidance
+- alumni engagement
+- class management
+
+NOT a generic social media app.
+
+==================================================
+USER ROLES
+==================================================
+
+Support these roles:
+- student
+- alumni
+- verified_alumni
+- teacher
+- verified_teacher
+- school_coordinator
+- admin
+- super_admin
+
+==================================================
+SCHOOL-LINKED USER SYSTEM
+==================================================
+
+Every user must belong to:
+- JNV State
+- JNV Name
+
+Organize users using:
+School → Class → Stream → Section hierarchy
+
+==================================================
+CLASS + STREAM + SECTION STRUCTURE
+==================================================
+
+For Class 6 to 10:
+students must select:
+- Section:
+  - A
+  - B
+
+Examples:
+- Class 6 A
+- Class 9 B
+- Class 10 A
+
+For Class 11 and 12:
+students must select:
+- Stream:
+  - Science
+  - Commerce
+  - Arts
+
+And optionally:
+- Section:
+  - A
+  - B
+
+Examples:
+- Class 11 Science A
+- Class 12 Commerce B
+- Class 12 Arts A
+
+Use this structure consistently everywhere:
+- dashboards
+- announcements
+- teacher assignments
+- analytics
+- notifications
+- student groups
+- mentorship groups
+- Ask Senior
+- filters/search
+- class management
+
+==================================================
+STUDENT ENROLLMENT SYSTEM
+==================================================
+
+Student fields:
+- full_name
+- class
+- stream (only for 11 & 12)
+- section
+- JNV state
+- JNV name
+
+After enrollment:
+- automatically linked to respective JNV dashboard
+- visible in school student list
+- grouped according to class/stream/section
+
+Students can:
+- view announcements
+- ask senior questions
+- access mentorship
+- participate in discussions
+
+Students cannot:
+- create official announcements
+- verify users
+- manage school data
+
+==================================================
+TEACHER SYSTEM
+==================================================
+
+Teacher fields:
+- full_name
+- subject
+- designation
+- JNV state
+- JNV name
+- optional official email
+
+Teacher verification requires:
+- school coordinator approval
+OR
+- admin approval
+
+After approval:
+- role becomes verified_teacher
+- show green verified teacher badge
+
+Verified teachers can:
+- post official announcements
+- manage assigned classes
+- answer student questions
+- host mentorship/guidance sessions
+- monitor assigned class activity
+
+==================================================
+ALUMNI SYSTEM
+==================================================
+
+Keep existing alumni dashboard.
+
+Enhance with:
+- verification status
+- verified alumni badge
+- mentorship permissions
+- school-linked alumni directory
+
+Verified alumni can:
+- mentor students
+- answer student questions
+- post opportunities
+- join alumni-only groups
+- participate in guidance sessions
+
+==================================================
+CLASS & STREAM MANAGEMENT
+==================================================
+
+Inside JNV Official Dashboard add:
+“Class & Stream Management”
+
+Allow school coordinators/admins to:
+- create class groups
+- manage sections
+- assign class teachers
+- manage stream-wise student lists
+
+==================================================
+CLASS TEACHER ASSIGNMENT
+==================================================
+
+Allow JNV officials/coordinators to assign teachers based on:
+- class
+- stream
+- section
+
+Examples:
+- Class 8 A
+- Class 10 B
+- Class 11 Science A
+- Class 12 Commerce B
+
+Assigned teachers should ONLY access assigned student groups.
+
+==================================================
+JNV OFFICIAL DASHBOARD ENHANCEMENT
+==================================================
+
+Enhance existing JNV Official Dashboard with:
+
+1. Students List
+- grouped by class/stream/section
+
+2. Teachers List
+- verified teachers
+- assigned classes
+
+3. Alumni Directory
+- verified alumni
+- batch/passout year
+- profession
+- mentorship availability
+
+4. Pending Verification Requests
+
+5. School Announcements
+
+6. Class Management
+
+7. Basic Analytics
+
+Keep analytics lightweight and optimized.
+
+==================================================
+ANNOUNCEMENT SYSTEM
+==================================================
+
+Allow verified teachers/coordinators to create announcements targeted by:
+- whole school
+- class
+- class + section
+- class + stream + section
+
+Examples:
+- “Class 9 A test notice”
+- “Class 12 Science B practical schedule”
+- “School annual function”
+
+Students should only receive relevant notifications.
+
+==================================================
+ASK SENIOR FEATURE
+==================================================
+
+Students can ask questions related to:
+- JEE
+- NEET
+- college
+- coding
+- careers
+- hostel life
+- school guidance
+
+Verified alumni and verified teachers can answer.
+
+==================================================
+SENIOR CONNECT FEATURE
+==================================================
+
+Recommend mentors using lightweight filtering:
+- same JNV
+- same stream
+- same career path
+
+Examples:
+- Science students → IIT/NEET alumni
+- Commerce students → CA/business alumni
+- Arts students → UPSC/law alumni
+
+Use simple database filtering instead of expensive AI recommendations.
+
+==================================================
+TEACHER FEEDBACK SYSTEM
+==================================================
+
+Add anonymous teacher feedback system.
+
+Students can submit feedback about:
+- teaching clarity
+- classroom behaviour
+- student interaction
+- punctuality
+
+Rules:
+- feedback anonymous to teachers
+- teachers only see average ratings
+- coordinators/admins see detailed analytics
+- prevent spam and duplicate submissions
+
+Keep feedback respectful and improvement-focused.
+
+==================================================
+VERIFIED BADGE SYSTEM
+==================================================
+
+Badges:
+- Verified Alumni → blue
+- Verified Teacher → green
+- School Coordinator → gold
+
+Show badges on:
+- profiles
+- posts
+- comments
+- announcements
+- messages
+
+==================================================
+NOTIFICATION SYSTEM
+==================================================
+
+Add lightweight notifications for:
+- announcements
+- mentor replies
+- verification updates
+- class notices
+- teacher announcements
+
+Use optimized notification handling.
+
+==================================================
+SEARCH & FILTER SYSTEM
+==================================================
+
+Allow search/filter by:
+- JNV
+- class
+- stream
+- section
+- batch
+- profession
+- teacher
+- subject
+
+==================================================
+SECURITY & ACCESS CONTROL
+==================================================
+
+Implement strong role-based access control.
+
+Rules:
+- only admins/coordinators can verify users
+- coordinators access only their own JNV
+- teachers access only assigned classes
+- users cannot modify verification status
+- protect student personal data
+- uploaded proof documents visible only to authorized admins
+- add report/block user system
+
+==================================================
+DATABASE ENHANCEMENTS
+==================================================
+
+Use optimized relational database structure.
+
+users:
+- role
+- jnv_state
+- jnv_name
+- class
+- stream nullable
+- section
+- verification_status
+- verified_by
+
+class_groups:
+- school_id
+- class
+- stream nullable
+- section
+- class_teacher_id
+
+teacher_assignments:
+- teacher_id
+- school_id
+- class
+- stream nullable
+- section
+
+announcements:
+- school_id
+- target_class
+- target_stream
+- target_section
+
+teacher_feedback:
+- teacher_id
+- school_id
+- ratings
+- written_feedback
+
+questions:
+- student_id
+- category
+- question
+
+answers:
+- question_id
+- answered_by
+- answer
+
+==================================================
+OPTIMIZATION REQUIREMENTS
+==================================================
+
+- minimize API calls
+- use pagination and lazy loading
+- cache frequently used school data
+- avoid heavy AI processing
+- use reusable components
+- optimize backend queries
+- use lightweight notifications
+- ensure fast mobile performance
+- reduce unnecessary renders and duplicate requests
+
+==================================================
+UI/UX REQUIREMENTS
+==================================================
+
+- keep existing design language
+- mobile-first responsive UI
+- lightweight dashboards
+- modern clean cards
+- easy navigation
+- simple class management
+- clear verified badges
+- fast loading experience
+
+==================================================
+FINAL PLATFORM IDENTITY
+==================================================
+
+The app should feel like:
+
+“Trusted JNV Mentorship & School Network”
+
+focused on:
+- verified identity
+- mentorship
+- school communication
+- alumni engagement
+- class organization
+- student growth

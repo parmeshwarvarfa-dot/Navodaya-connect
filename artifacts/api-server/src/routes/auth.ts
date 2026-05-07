@@ -40,7 +40,8 @@ async function createSession(userId: string) {
 router.post("/auth/signup", async (req, res) => {
   try {
     const { email, password, fullName, role, jnvState, jnvName, house, ...rest } = req.body;
-    if (!email || !password || !fullName || !role || !jnvState || !jnvName || !house) {
+    const needsHouse = role === "student" || role === "alumni";
+    if (!email || !password || !fullName || !role || !jnvState || !jnvName || (needsHouse && !house)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
@@ -55,7 +56,7 @@ router.post("/auth/signup", async (req, res) => {
       role,
       jnvState,
       jnvName,
-      house,
+      house: house || "Aravali",
       class: rest.class,
       enrollYear: rest.enrollYear,
       passoutYear: rest.passoutYear,

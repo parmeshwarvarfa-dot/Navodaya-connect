@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -125,6 +126,11 @@ export default function ProfileScreen() {
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>{roleLabel}</Text>
           </View>
+          {profile.verificationStatus === "verified" && (
+            <View style={{ marginTop: 8 }}>
+              <VerifiedBadge status={profile.verificationStatus} role={profile.role} size="md" />
+            </View>
+          )}
           {((profile as any).linkedinUrl || (profile as any).twitterUrl) && (
             <View style={styles.socialRow}>
               {(profile as any).linkedinUrl && (

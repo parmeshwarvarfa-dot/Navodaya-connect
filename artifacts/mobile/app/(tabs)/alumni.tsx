@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import type { AlumniUser } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const FILTERS = ["All", "Verified", "Engineers", "Doctors", "IAS/IPS", "Defence"];
 
@@ -144,12 +145,7 @@ export default function AlumniScreen() {
                 <View style={styles.info}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.name, { color: colors.foreground }]}>{item.fullName}</Text>
-                    {item.verificationStatus === "verified" && (
-                      <View style={styles.verifiedBadge}>
-                        <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
-                        <Text style={styles.verifiedText}>Verified</Text>
-                      </View>
-                    )}
+                    <VerifiedBadge status={item.verificationStatus} role="alumni" size="sm" />
                   </View>
                   {item.profession && (
                     <Text style={[styles.profession, { color: colors.mutedForeground }]}>

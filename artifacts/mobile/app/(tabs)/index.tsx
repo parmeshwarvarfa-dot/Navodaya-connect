@@ -18,22 +18,28 @@ import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STUDENT_ACTIONS = [
-  { label: "Ask Alumni", icon: "chatbubble-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/chats" },
-  { label: "Report Problem", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem" },
-  { label: "Find Mentor", icon: "people-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni" },
-  { label: "View Events", icon: "calendar-outline" as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(tabs)/events" },
+  { label: "Ask Senior",      icon: "help-circle-outline"    as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/ask-senior"      },
+  { label: "Senior Connect",  icon: "people-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/senior-connect"   },
+  { label: "Report Problem",  icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"   },
+  { label: "View Events",     icon: "calendar-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(tabs)/events"              },
 ];
 const TEACHER_ACTIONS = [
-  { label: "Post Update", icon: "megaphone-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news" },
-  { label: "Create Event", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events" },
-  { label: "View Problems", icon: "alert-circle-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem" },
-  { label: "My Groups", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/chats" },
+  { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
+  { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"              },
+  { label: "View Problems",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"   },
+  { label: "My Groups",       icon: "chatbubbles-outline"    as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/chats"               },
 ];
 const ALUMNI_ACTIONS = [
-  { label: "Mentor Students", icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni" },
-  { label: "Post Advice", icon: "create-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news" },
-  { label: "Community", icon: "people-outline" as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/community" },
-  { label: "Events", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events" },
+  { label: "Senior Connect",  icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/senior-connect"   },
+  { label: "Post Advice",     icon: "create-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
+  { label: "Community",       icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/community"        },
+  { label: "Events",          icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"              },
+];
+const OFFICIAL_ACTIONS = [
+  { label: "Dashboard",       icon: "grid-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
+  { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"        },
+  { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"                },
+  { label: "View Problems",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"     },
 ];
 
 const FALLBACK_NEWS: NewsItem[] = [
@@ -95,7 +101,7 @@ export default function HomeScreen() {
   const isAlumni = role === "alumni";
   const isOfficial = role === "official";
 
-  const quickActions = isTeacher || isOfficial ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
+  const quickActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
 
   const fetchData = async () => {
     try {
@@ -153,9 +159,11 @@ export default function HomeScreen() {
               <Text style={styles.welcomeJnv}>{profile?.jnvName || "JNV India"}</Text>
               <Text style={styles.welcomeRole}>{getRoleLabel(role)}</Text>
             </View>
-            <View style={styles.houseTag}>
-              <Text style={styles.houseTagText}>{profile?.house || "Aravali"}</Text>
-            </View>
+            {(role === "student" || role === "alumni") && (
+              <View style={styles.houseTag}>
+                <Text style={styles.houseTagText}>{profile?.house || "Aravali"}</Text>
+              </View>
+            )}
           </View>
           {isTeacher || isOfficial ? (
             <View style={styles.teacherStats}>
