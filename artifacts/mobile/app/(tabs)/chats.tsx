@@ -181,7 +181,7 @@ export default function ChatsScreen() {
   const house = profile?.house ?? "";
   const houseMeta = HOUSE_META[house];
 
-  const houseGroup = house
+  const houseGroup = house && (profile?.role === "student" || profile?.role === "alumni")
     ? { id: `${house.toLowerCase()}-myhouse`, icon: "home-outline" as const, name: `${house} House ${houseMeta?.emoji ?? "🏠"}`, lastMessage: `Welcome to ${house} House!`, time: "12:51 PM", color: houseMeta?.bg ?? "#EEF2FF", iconColor: houseMeta?.color ?? "#3D5AF1" }
     : null;
 
