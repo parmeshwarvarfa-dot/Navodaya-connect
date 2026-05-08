@@ -24,10 +24,10 @@ const STUDENT_ACTIONS = [
   { label: "Report Problem",  icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"  },
 ];
 const TEACHER_ACTIONS = [
+  { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-zone"     },
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
   { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"              },
-  { label: "View Problems",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"   },
-  { label: "My Groups",       icon: "chatbubbles-outline"    as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/chats"               },
+  { label: "My Classes",      icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-classes"  },
 ];
 const ALUMNI_ACTIONS = [
   { label: "Senior Connect",  icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/senior-connect"   },

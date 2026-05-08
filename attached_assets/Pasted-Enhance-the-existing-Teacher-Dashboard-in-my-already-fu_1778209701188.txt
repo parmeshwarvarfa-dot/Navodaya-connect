@@ -1,0 +1,386 @@
+Enhance the existing Teacher Dashboard in my already functional app “Navodaya Connect” by creating a dedicated “Teacher Zone” similar to the Student Study Section.
+
+IMPORTANT:
+- Do NOT rebuild the app.
+- Do NOT replace existing dashboards, authentication, or navigation.
+- Only enhance current functionality.
+- Keep the system lightweight, scalable, modular, and optimized for low backend/API usage.
+- Reuse existing UI components wherever possible.
+
+==================================================
+MAIN GOAL
+==================================================
+
+Create a centralized “Teacher Zone” where teachers can manage:
+- classes
+- assignments
+- study materials
+- announcements
+- attendance
+- results
+- student interaction
+- mentorship
+- feedback
+
+The Teacher Zone should feel like a professional academic management hub.
+
+==================================================
+TEACHER ZONE FEATURES
+==================================================
+
+Create a dedicated section:
+👨‍🏫 Teacher Zone
+
+This section should include:
+
+1. Upload Notes / Materials
+2. Create Assignments
+3. Manage Announcements
+4. Answer Student Queries
+5. Manage Attendance
+6. Publish Results
+7. Chat with Students / Teachers
+8. Manage Clubs / Activities
+9. View Student Feedback
+10. Assigned Classes Management
+
+==================================================
+1. UPLOAD NOTES / MATERIALS
+==================================================
+
+Feature:
+“Upload Notes / Materials”
+
+Teachers can upload:
+- PDFs
+- notes
+- presentations
+- PYQs
+- links
+- assignments
+- study resources
+
+Materials should be organized using:
+- Class
+- Stream
+- Section
+- Subject
+
+Examples:
+- Class 10 A → Mathematics
+- Class 12 Science B → Physics
+
+Teachers can:
+- edit uploaded materials
+- delete materials
+- pin important resources
+
+Students should only access materials relevant to their assigned class group.
+
+==================================================
+2. CREATE ASSIGNMENTS
+==================================================
+
+Feature:
+“Create Assignments”
+
+Teachers can:
+- create assignments
+- upload assignment files
+- assign deadlines
+- target specific:
+  - class
+  - stream
+  - section
+
+Examples:
+- Class 8 A Homework
+- Class 12 Science B Physics Assignment
+
+Teachers can:
+- review submissions
+- add remarks
+- mark assignments reviewed
+
+Assignment statuses:
+- pending
+- submitted
+- late
+- reviewed
+
+==================================================
+3. MANAGE ANNOUNCEMENTS
+==================================================
+
+Feature:
+“Post Announcements”
+
+Verified teachers can create announcements for:
+- entire school
+- class
+- stream
+- section
+
+Examples:
+- exam notice
+- practical schedule
+- holiday update
+- mentorship session
+
+Add:
+- priority tags
+- pinned notices
+- scheduled announcements optional
+
+==================================================
+4. ANSWER STUDENT QUERIES
+==================================================
+
+Feature:
+“Answer Queries”
+
+Teachers can:
+- answer academic doubts
+- reply to student questions
+- mark questions solved
+- provide guidance
+
+Question categories:
+- academics
+- exams
+- career guidance
+- school help
+
+Add:
+- best answer
+- upvote helpful responses
+- solved status
+
+==================================================
+5. MANAGE ATTENDANCE
+==================================================
+
+Feature:
+“Manage Attendance”
+
+Teachers can:
+- mark attendance
+- edit attendance
+- view attendance history
+
+Attendance should support:
+- class-wise
+- stream-wise
+- section-wise organization
+
+Students can only view their own attendance.
+
+==================================================
+6. PUBLISH RESULTS
+==================================================
+
+Feature:
+“Publish Results”
+
+Teachers can:
+- upload exam marks
+- publish subject results
+- generate report summaries
+
+Support:
+- exam-wise performance
+- subject-wise performance
+- downloadable report cards optional
+
+==================================================
+7. CHAT WITH STUDENTS / TEACHERS
+==================================================
+
+Feature:
+“Teacher Communication”
+
+Teachers can communicate with:
+- assigned students
+- other teachers
+- school coordinators
+
+Rules:
+- teachers only access assigned classes
+- moderated communication system
+- add report/block functionality
+- maintain communication logs
+
+Avoid open social-media style messaging.
+
+==================================================
+8. MANAGE CLUBS / ACTIVITIES
+==================================================
+
+Feature:
+“Manage Clubs / Activities”
+
+Teachers can:
+- create clubs
+- manage club discussions
+- organize workshops/events
+- post activity announcements
+
+Examples:
+- Coding Club
+- Debate Club
+- Sports Club
+- Robotics Club
+
+==================================================
+9. VIEW STUDENT FEEDBACK
+==================================================
+
+Feature:
+“View Feedback Analytics”
+
+Teachers should NOT see student identities.
+
+Teachers can only see:
+- average ratings
+- improvement insights
+- aggregated analytics
+
+Examples:
+- Teaching Clarity: 4.5/5
+- Student Interaction: 4.2/5
+- Classroom Behaviour: 4.6/5
+
+Detailed raw feedback visible only to coordinators/admins.
+
+==================================================
+10. ASSIGNED CLASS MANAGEMENT
+==================================================
+
+Feature:
+“Assigned Classes”
+
+Teachers should only manage their assigned:
+- class
+- stream
+- section
+
+Examples:
+- Class 9 A
+- Class 11 Science B
+- Class 12 Commerce A
+
+Inside assigned class management:
+- view student list
+- manage assignments
+- upload materials
+- post notices
+- manage attendance
+
+==================================================
+CLASS + STREAM + SECTION LOGIC
+==================================================
+
+For Class 6–10:
+- section required:
+  - A
+  - B
+
+Examples:
+- Class 6 A
+- Class 10 B
+
+For Class 11–12:
+- stream required:
+  - Science
+  - Commerce
+  - Arts
+- section optional:
+  - A
+  - B
+
+Examples:
+- Class 11 Science A
+- Class 12 Commerce B
+
+Apply this structure everywhere in teacher workflow.
+
+==================================================
+TEACHER DASHBOARD UI
+==================================================
+
+Teacher Zone homepage should show:
+
+Top Dashboard Widgets:
+- today’s classes
+- pending assignment reviews
+- latest announcements
+- attendance tasks
+- recent student queries
+
+Middle Section:
+- uploaded materials
+- recent class activity
+- upcoming events/tests
+
+Bottom Section:
+- quick access management cards
+
+==================================================
+SEARCH & FILTERS
+==================================================
+
+Allow filtering/search by:
+- class
+- stream
+- section
+- subject
+- student
+- assignment status
+
+==================================================
+NOTIFICATION SYSTEM
+==================================================
+
+Add lightweight notifications for:
+- assignment submissions
+- student queries
+- class announcements
+- event reminders
+- feedback updates
+
+Keep notifications optimized and lightweight.
+
+==================================================
+ROLE-BASED ACCESS CONTROL
+==================================================
+
+- teachers access only assigned classes
+- only verified teachers can create official announcements
+- teachers cannot modify verification roles
+- coordinators/admins have higher control
+- protect student data and uploaded files
+
+==================================================
+OPTIMIZATION REQUIREMENTS
+==================================================
+
+- minimize API calls
+- use reusable UI components
+- lazy load large lists/files
+- optimize backend queries
+- avoid unnecessary real-time processing
+- ensure smooth mobile performance
+
+==================================================
+FINAL GOAL
+==================================================
+
+The Teacher Zone should become a centralized academic management system where teachers can:
+- teach
+- manage classes
+- interact with students
+- organize study resources
+- handle assignments
+- monitor academic activity
+
+all from one organized professional dashboard.
