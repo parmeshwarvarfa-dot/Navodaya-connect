@@ -30,10 +30,10 @@ const TEACHER_ACTIONS = [
   { label: "My Classes",      icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-classes"  },
 ];
 const ALUMNI_ACTIONS = [
-  { label: "Senior Connect",  icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/senior-connect"   },
-  { label: "Post Advice",     icon: "create-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
-  { label: "Community",       icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/community"        },
-  { label: "Events",          icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"              },
+  { label: "Alumni Zone",     icon: "school-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-zone"       },
+  { label: "Mentorship",      icon: "people-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-mentorship" },
+  { label: "Achievements",    icon: "trophy-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/alumni-achievements"},
+  { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
   { label: "Dashboard",       icon: "grid-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },

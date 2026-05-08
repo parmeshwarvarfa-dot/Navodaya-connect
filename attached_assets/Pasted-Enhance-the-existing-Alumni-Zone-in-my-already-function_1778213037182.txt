@@ -1,0 +1,474 @@
+Enhance the existing Alumni Zone in my already functional app “Navodaya Connect”.
+
+IMPORTANT:
+- Do NOT rebuild the app.
+- Do NOT replace existing authentication, navigation, or dashboard systems.
+- Most core alumni features are already implemented.
+- Only enhance, organize, optimize, and extend the existing Alumni ecosystem.
+- Add only missing functionality and improve scalability.
+- Keep the app lightweight, modular, mobile-friendly, and optimized for low backend/API usage.
+- Reuse existing components wherever possible.
+
+==================================================
+MAIN GOAL
+==================================================
+
+Transform the Alumni Zone into a trusted and professional:
+🎓 JNV Alumni Network & Mentorship Ecosystem
+
+focused on:
+- mentorship
+- alumni networking
+- career guidance
+- school engagement
+- community building
+- trusted opportunities
+- alumni contributions
+
+NOT a generic social media platform.
+
+==================================================
+ENHANCE EXISTING ALUMNI FEATURES
+==================================================
+
+Improve and organize all existing alumni features properly.
+
+Current and required features include:
+
+1. Connect With Alumni
+2. Mentorship Program
+3. Post Updates & Memories
+4. Attend Events
+5. Donate / Support School
+6. Network Chat
+7. Alumni Directory
+8. Share Achievements
+9. Opportunities & Referrals
+10. Alumni Clubs & Communities
+11. Alumni Contribution Tracking
+12. Verified Alumni System
+
+==================================================
+1. CONNECT WITH ALUMNI
+==================================================
+
+Feature:
+“Connect With Alumni”
+
+Allow alumni to:
+- connect with same JNV alumni
+- search by profession
+- search by passout year
+- search by stream/career field
+- follow/connect with mentors
+
+Examples:
+- IIT alumni
+- doctors
+- software engineers
+- government officers
+- entrepreneurs
+
+Add:
+- lightweight networking system
+- mutual JNV connection highlights
+- suggested alumni connections
+
+Avoid open public social-media style networking.
+
+==================================================
+2. MENTORSHIP PROGRAM
+==================================================
+
+Feature:
+“Mentorship Program”
+
+Verified alumni can:
+- become mentors
+- guide juniors
+- answer career questions
+- host mentorship sessions
+- help students prepare for exams/careers
+
+Students can request mentorship based on:
+- stream
+- exam goals
+- profession
+- same JNV
+
+Examples:
+- IIT/JEE mentor
+- NEET mentor
+- UPSC mentor
+- coding mentor
+
+Add:
+- mentor availability status
+- mentorship request system
+- mentorship categories
+- completed mentorship tracking
+
+Use lightweight filtering instead of expensive AI systems.
+
+==================================================
+3. POST UPDATES & MEMORIES
+==================================================
+
+Feature:
+“Updates & Memories”
+
+Allow alumni to share:
+- school memories
+- achievements
+- experiences
+- motivational stories
+- throwback photos optional
+
+Posts should support:
+- text
+- images optional
+- likes/reactions
+- comments
+
+Keep posts:
+- educational
+- motivational
+- community-focused
+
+Avoid turning feed into random entertainment/social media.
+
+Add moderation and reporting system.
+
+==================================================
+4. ATTEND EVENTS
+==================================================
+
+Feature:
+“Alumni Events”
+
+Allow schools/alumni to organize:
+- alumni meets
+- webinars
+- mentorship sessions
+- workshops
+- career guidance events
+- school celebrations
+
+Add:
+- event registration
+- attendance confirmation
+- reminders/notifications
+- event banners
+- event discussion section optional
+
+==================================================
+5. DONATE / SUPPORT SCHOOL
+==================================================
+
+Feature:
+“Support Your JNV”
+
+Allow verified alumni to:
+- support school initiatives
+- contribute resources
+- sponsor events
+- support mentorship programs
+- donate books/equipment optional
+
+Add:
+- transparent contribution records
+- trusted donation workflow
+- coordinator/admin approval system
+
+Do NOT make donation system aggressive or commercial.
+
+==================================================
+6. NETWORK CHAT SYSTEM
+==================================================
+
+Feature:
+“Network Chat”
+
+Implement controlled communication system.
+
+Allow:
+- alumni ↔ alumni networking
+- alumni ↔ student mentorship communication
+- alumni ↔ teachers/coordinators
+
+Rules:
+- request-based communication
+- no unrestricted random messaging
+- add block/report functionality
+- maintain moderation logs
+- protect student privacy
+
+Support:
+- one-to-one mentorship chat
+- class/community discussions optional
+
+Avoid full social-media style chatting.
+
+==================================================
+7. ALUMNI DIRECTORY
+==================================================
+
+Feature:
+“Alumni Directory”
+
+Create searchable verified alumni directory.
+
+Filter/search by:
+- JNV
+- profession
+- passout year
+- stream
+- company/college
+- mentorship area
+
+Examples:
+- IIT alumni
+- doctors
+- IAS officers
+- startup founders
+
+Add:
+- verified alumni badge
+- mentor availability indicator
+- contribution highlights
+
+==================================================
+8. SHARE ACHIEVEMENTS
+==================================================
+
+Feature:
+“Achievements & Milestones”
+
+Allow alumni to share:
+- college admissions
+- placements
+- promotions
+- startup launches
+- awards
+- achievements
+
+Add:
+- achievement cards
+- featured achievers section
+- motivational spotlight
+
+Keep tone inspirational and community-focused.
+
+==================================================
+9. OPPORTUNITIES & REFERRALS
+==================================================
+
+Feature:
+“Opportunities”
+
+Verified alumni can share:
+- internships
+- referrals
+- scholarships
+- competitions
+- coding contests
+- webinars
+- career programs
+
+Allow targeted visibility:
+- school-wide
+- class
+- stream
+
+Examples:
+- Class 12 Science internship
+- coding bootcamp
+- scholarship test
+
+==================================================
+10. ALUMNI CLUBS & COMMUNITIES
+==================================================
+
+Feature:
+“Communities & Clubs”
+
+Allow alumni to join/create:
+- coding community
+- startup network
+- UPSC group
+- healthcare network
+- sports alumni group
+
+Features:
+- discussions
+- announcements
+- resource sharing
+- event updates
+
+Keep communities moderated and educational.
+
+==================================================
+11. CONTRIBUTION & RECOGNITION SYSTEM
+==================================================
+
+Feature:
+“Contribution System”
+
+Track:
+- mentorship sessions
+- answered queries
+- events attended
+- opportunities shared
+- contributions/support
+
+Add:
+- mentor badges
+- active contributor badge
+- featured alumni recognition
+- contribution points optional
+
+Keep system positive and lightweight.
+
+==================================================
+12. VERIFIED ALUMNI SYSTEM
+==================================================
+
+Feature:
+“Verified Alumni”
+
+Verification handled by:
+- school coordinator
+- admin
+
+Verified alumni receive:
+- blue verified badge
+- mentorship permissions
+- directory visibility priority
+
+Badge visible on:
+- profiles
+- posts
+- comments
+- mentorship activities
+- achievements
+
+==================================================
+ALUMNI DASHBOARD ENHANCEMENT
+==================================================
+
+Enhance Alumni Dashboard homepage with:
+
+Top Dashboard Widgets:
+- mentorship requests
+- upcoming events
+- recent student questions
+- opportunities shared
+- latest school announcements
+
+Middle Section:
+- alumni highlights
+- achievements
+- active mentorships
+- recent memories/posts
+
+Bottom Section:
+- quick access cards
+- clubs/communities
+- networking shortcuts
+
+==================================================
+SPONSORED OPPORTUNITIES SYSTEM
+==================================================
+
+Add trusted sponsorship support.
+
+Allow only:
+- educational opportunities
+- scholarships
+- webinars
+- internships
+- student programs
+- career workshops
+
+Avoid:
+- gambling
+- misleading ads
+- spam promotions
+- unrelated commercial ads
+
+Sponsored content should feel like:
+“Trusted Student Opportunities”
+
+NOT aggressive advertising.
+
+==================================================
+SEARCH & FILTERS
+==================================================
+
+Allow filtering/search by:
+- JNV
+- profession
+- passout year
+- stream
+- skills
+- company
+- mentorship category
+
+==================================================
+NOTIFICATION SYSTEM
+==================================================
+
+Add lightweight notifications for:
+- mentorship requests
+- event reminders
+- replies/comments
+- announcements
+- opportunity approvals
+- alumni connections
+
+Keep notifications optimized and lightweight.
+
+==================================================
+SECURITY & ACCESS CONTROL
+==================================================
+
+- only verified alumni access mentorship features
+- coordinators/admins manage verification
+- protect student privacy
+- add report/block system
+- moderate community posts
+- maintain role-based access control
+
+==================================================
+OPTIMIZATION REQUIREMENTS
+==================================================
+
+- minimize API calls
+- reuse components
+- lazy load large alumni lists
+- optimize queries
+- avoid heavy AI processing
+- ensure smooth mobile performance
+
+==================================================
+FINAL GOAL
+==================================================
+
+The Alumni Zone should become a trusted:
+🎓 JNV Alumni Mentorship & Networking Ecosystem
+
+where alumni can:
+- reconnect with school
+- mentor juniors
+- build professional networks
+- share achievements
+- support their JNV
+- create meaningful community impact
+
+while keeping the platform:
+- verified
+- educational
+- professional
+- safe
+- community-focused
+- scalable
