@@ -1,0 +1,184 @@
+IMPORTANT CORRECTION UPDATE
+
+Do NOT redesign, regenerate, recreate, or replace any dashboard. Do NOT create new pages unless absolutely required. Reuse existing code, components, and layouts. Focus on fixing functionality and implementing the corrections below.
+
+==================================================
+
+1. GROUPS MUST WORK LIKE REAL WHATSAPP GROUPS
+   ==================================================
+
+The current Groups section still does not behave like WhatsApp Groups.
+
+Do not create a new group system.
+
+Upgrade the existing Groups feature to support:
+
+* Real-time message delivery
+* Real-time typing indicators
+* Real-time online/offline status
+* Seen/read receipts
+* Message replies
+* Message forwarding
+* Message editing
+* Message deletion
+* Emoji reactions
+* Voice messages
+* Image sharing
+* Video sharing
+* Document sharing
+* Audio sharing
+* Pinned messages
+* Group description
+* Group settings
+* Multiple admins
+* Admin permissions
+* Search messages
+* Media gallery
+* Shared files section
+* Mention users (@user)
+* Poll creation
+* Group invite links
+* Mute notifications
+* Archive chats
+* Unread message count
+* Live notifications
+
+The user experience should feel as close as possible to WhatsApp Groups while keeping the existing app structure.
+
+==================================================
+2. PA₹AM AI IS NOT PERFORMING CORRECTLY
+=======================================
+
+The current PA₹AM AI still behaves like a basic chatbot.
+
+Upgrade PA₹AM AI to function as a full AI assistant.
+
+Requirements:
+
+* Answer general questions
+* Answer educational questions
+* Answer career questions
+* Answer current affairs questions
+* Answer JNV-related questions
+* Support long conversations
+* Maintain conversation context
+* Provide detailed responses when requested
+* Support multiple languages
+* Support follow-up questions
+* Give intelligent responses instead of predefined replies
+
+Keep the existing AI interface.
+Only improve the functionality.
+
+==================================================
+3. EVENTS SECTION CORRECTION
+============================
+
+I DID NOT request removal of the JNV Store from the sidebar.
+
+Correction:
+
+* Keep the existing sidebar unchanged.
+* Only replace the JNV Store card/button that appears inside the "Explore More" section.
+* Replace that specific Explore More item with Events.
+* Do not change any other navigation items.
+
+==================================================
+4. GAME ARENA CORRECTION
+========================
+
+Do not create a separate Game Arena section.
+
+Current requirement:
+
+* Merge Game Arena into the existing House Arena section.
+* Keep a single gaming area.
+* House Arena should become the common place for all games.
+* Do not create duplicate game modules.
+
+Users should access all games from the existing House Arena area.
+
+==================================================
+5. USER REPORTING SYSTEM CORRECTION
+===================================
+
+The current implementation is not aligned with the requirement.
+
+Requirement:
+
+Users should be able to report another user when that user performs suspicious, harmful, abusive, inappropriate, or abnormal activities.
+
+Add:
+
+* Report User button on profile pages
+* Report User option in chats/groups
+* Reason selection
+* Optional description
+* Evidence attachment if supported
+
+Reports should be sent to moderators/JNV officials for review.
+
+Do not confuse this feature with reporting technical issues.
+
+==================================================
+6. JNV OFFICIAL DASHBOARD CORRECTION
+====================================
+
+The menu item currently says:
+
+"View Problems"
+
+This is incorrect.
+
+Change it to:
+
+"Reported Problems"
+
+or
+
+"Problem Reports"
+
+because officials are reviewing submitted reports, not merely viewing problems.
+
+Update the wording throughout the dashboard wherever applicable.
+
+==================================================
+7. PRIORITY: FIX EXISTING FEATURES
+==================================
+
+Before adding new functionality:
+
+* Identify existing broken features.
+* Fix features that are not working.
+* Fix buttons with no action.
+* Fix navigation issues.
+* Fix loading issues.
+* Fix real-time features that are not updating properly.
+* Fix live chat synchronization.
+* Fix data refresh problems.
+* Fix notification delivery issues.
+
+Priority order:
+
+1. Fix broken functionality.
+2. Make live features truly live.
+3. Improve existing systems.
+4. Add requested enhancements.
+
+==================================================
+FINAL INSTRUCTION
+=================
+
+Do not redesign dashboards.
+Do not regenerate pages.
+Do not change UI themes.
+Do not create duplicate sections.
+Do not create separate Game Arena pages.
+Do not remove sidebar items unless explicitly requested.
+
+Focus on:
+
+* Correcting mistakes.
+* Fixing broken functionality.
+* Making live features work properly.
+* Implementing only the requested modifications with minimal code changes and maximum reuse of existing components.

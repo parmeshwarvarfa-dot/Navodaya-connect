@@ -15,14 +15,14 @@ const TAB_ITEMS: {
   icon: IoniconsName;
   activeIcon: IoniconsName;
 }[] = [
-  { name: "index", title: "JNV Connect", icon: "home-outline", activeIcon: "home" },
-  { name: "memories", title: "Memories", icon: "heart-outline", activeIcon: "heart" },
-  { name: "chats", title: "Chat Groups", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { name: "events", title: "Events", icon: "calendar-outline", activeIcon: "calendar" },
-  { name: "profile", title: "Profile", icon: "person-outline", activeIcon: "person" },
+  { name: "index",    title: "JNV Connect", icon: "home-outline",        activeIcon: "home"        },
+  { name: "memories", title: "Memories",    icon: "heart-outline",        activeIcon: "heart"       },
+  { name: "chats",    title: "Chat Groups", icon: "chatbubble-outline",   activeIcon: "chatbubble"  },
+  { name: "store",    title: "JNV Store",   icon: "bag-handle-outline",   activeIcon: "bag-handle"  },
+  { name: "profile",  title: "Profile",     icon: "person-outline",       activeIcon: "person"      },
 ];
 
-const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
 
 const HOUSE_COLOR: Record<string, string> = {
   Aravali:  "#1D6ADE",
