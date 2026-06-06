@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, boolean } from "drizzle-orm/pg-core";
 
 export const groupsTable = pgTable("groups", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -20,6 +20,12 @@ export const groupMessagesTable = pgTable("group_messages", {
   senderName: text("sender_name"),
   senderId: uuid("sender_id"),
   role: text("role"),
+  reactions: text("reactions"),
+  replyToId: uuid("reply_to_id"),
+  replyToText: text("reply_to_text"),
+  replyToSender: text("reply_to_sender"),
+  isEdited: boolean("is_edited").default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

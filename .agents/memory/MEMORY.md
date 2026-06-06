@@ -1,0 +1,3 @@
+- [Group chat schema additions](group-chat-schema.md) — group_messages got reactions/replyToId/replyToText/replyToSender/isEdited/deletedAt; push schema changes with `pnpm --filter @workspace/db exec drizzle-kit push --force`.
+- [Typing indicator pattern](typing-indicator.md) — in-memory Map on API server (no DB); expires 4s after last POST; poll GET /groups/:id/typing every 2s from frontend.
+- [Official quick action routing](official-routing.md) — "View Problems" in official quick actions routes to /(screens)/view-problems (not /problems tab); problem statuses: submitted/seen/in_progress/solved/rejected.

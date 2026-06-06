@@ -65,8 +65,17 @@ export const api = {
     create: (data: { name: string; subject: string; class?: string }) =>
       request<Group>("/groups", { method: "POST", body: JSON.stringify(data) }),
     getMessages: (groupId: string) => request<GroupMessage[]>(`/groups/${groupId}/messages`),
-    sendMessage: (groupId: string, text: string) =>
-      request<GroupMessage>(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify({ text }) }),
+    sendMessage: (groupId: string, text: string, reply?: { replyToId: string; replyToText: string; replyToSender: string }) =>
+      request<GroupMessage>(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify({ text, ...reply }) }),
+    editMessage: (groupId: string, msgId: string, text: string) =>
+      request<GroupMessage>(`/groups/${groupId}/messages/${msgId}`, { method: "PATCH", body: JSON.stringify({ text }) }),
+    deleteMessage: (groupId: string, msgId: string) =>
+      request<GroupMessage>(`/groups/${groupId}/messages/${msgId}`, { method: "DELETE" }),
+    reactToMessage: (groupId: string, msgId: string, emoji: string) =>
+      request<GroupMessage>(`/groups/${groupId}/messages/${msgId}/react`, { method: "POST", body: JSON.stringify({ emoji }) }),
+    getTyping: (groupId: string) => request<{ typing: string[] }>(`/groups/${groupId}/typing`),
+    setTyping: (groupId: string, typing: boolean) =>
+      request<{ ok: boolean }>(`/groups/${groupId}/typing`, { method: "POST", body: JSON.stringify({ typing }) }),
   },
   problems: {
     list: () => request<Problem[]>("/problems"),
@@ -157,10 +166,22 @@ export interface GroupMessage {
   id: string;
   groupId: string;
   text: string;
-  senderName?: string;
-  senderId?: string;
-  role?: string;
+  senderName?: string | null;
+  senderId?: string | null;
+  role?: string | null;
+  reactions?: string | null;
+  replyToId?: string | null;
+  replyToText?: string | null;
+  replyToSender?: string | null;
+  isEdited?: boolean | null;
+  deletedAt?: string | null;
   createdAt: string;
+}
+
+export interface ReactionEntry {
+  emoji: string;
+  count: number;
+  userIds: string[];
 }
 
 export interface Problem {

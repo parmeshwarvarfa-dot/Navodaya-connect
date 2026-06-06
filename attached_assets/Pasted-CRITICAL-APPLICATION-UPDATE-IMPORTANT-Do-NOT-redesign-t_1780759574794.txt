@@ -1,0 +1,217 @@
+CRITICAL APPLICATION UPDATE
+
+IMPORTANT:
+
+Do NOT redesign the application.
+Do NOT create new dashboards.
+Do NOT remove existing features.
+Do NOT replace existing workflows unless necessary.
+
+Your primary task is to make the application fully functional, production-ready, and live.
+
+=================================================
+PRIORITY 1: WHATSAPP-LIKE GROUP CHAT SYSTEM
+===========================================
+
+The current group chat system is not sufficient.
+
+Upgrade existing groups so they function similarly to WhatsApp Groups.
+
+Required functionality:
+
+* Real-time messaging
+* Instant message delivery
+* Persistent chat history
+* Messages remain after refresh, logout, and login
+* Online/offline status
+* Typing indicators
+* Read receipts
+* Message replies
+* Forward messages
+* Edit messages
+* Delete messages
+* Voice messages
+* Image sharing
+* Video sharing
+* Audio sharing
+* Document sharing
+* Emoji reactions
+* Group description
+* Multiple admins
+* Pinned messages
+* Search messages
+* Shared media section
+* Shared files section
+* Mentions (@user)
+* Polls
+* Invite links
+* Mute notifications
+* Archive chats
+* Unread message counts
+* Real-time notifications
+
+All chat data must be stored in database.
+
+No mock messaging.
+No temporary storage.
+No fake chat functionality.
+
+=================================================
+PRIORITY 2: JNV OFFICIAL - VIEW PROBLEMS
+========================================
+
+Replace:
+
+"Report Problems"
+
+with
+
+"View Problems"
+
+Reason:
+
+JNV Officials do not report problems.
+They review problems reported by users.
+
+The View Problems section must display reports submitted by:
+
+* Students
+* Teachers
+* Alumni
+
+Required functionality:
+
+* View all reports
+* View report details
+* View reported user
+* View reporter
+* View report category
+* View description
+* View evidence/attachments
+* View timestamps
+* Search reports
+* Filter reports
+* Update report status
+
+Statuses:
+
+* Pending
+* Under Review
+* Resolved
+* Rejected
+
+All updates must persist in database.
+
+Only JNV Officials can access View Problems.
+
+=================================================
+PRIORITY 3: REAL AUTHENTICATION
+===============================
+
+Implement production-grade authentication.
+
+Login and Sign Up must use real authentication.
+
+Requirements:
+
+* Real user registration
+* Real user login
+* Password hashing
+* Secure authentication
+* Session management
+* Protected routes
+* Logout functionality
+* Forgot Password
+* Reset Password
+
+Supported users:
+
+* Student
+* Teacher
+* Alumni
+* JNV Official
+
+After login:
+
+* Student → Student Dashboard
+* Teacher → Teacher Dashboard
+* Alumni → Alumni Dashboard
+* JNV Official → JNV Official Dashboard
+
+No hardcoded users.
+No fake authentication.
+No dummy login forms.
+
+Authentication must use backend APIs and database.
+
+=================================================
+PRIORITY 4: FULL APPLICATION AUDIT
+==================================
+
+Perform a complete audit of the entire application.
+
+Identify every feature, page, button, card, form, menu item, navigation link, action button, widget, dashboard section, popup, and API integration.
+
+For every feature:
+
+* Verify functionality
+* Verify backend connection
+* Verify database connection
+* Verify API responses
+* Verify data persistence
+* Verify permissions
+* Verify navigation
+* Verify error handling
+
+Fix anything that is:
+
+* Dummy
+* Placeholder
+* Incomplete
+* Broken
+* Non-functional
+* Disconnected from backend
+
+No visible feature should be fake.
+
+Every button must perform its intended action.
+
+Every page must load valid data.
+
+Every form must save data correctly.
+
+Every dashboard feature must function correctly.
+
+=================================================
+FINAL REQUIREMENT
+=================
+
+Do not consider this task complete until:
+
+✓ Authentication is fully functional
+
+✓ Groups work similarly to WhatsApp Groups
+
+✓ View Problems is fully operational
+
+✓ Every existing feature is functional
+
+✓ No dummy components remain
+
+✓ No placeholder actions remain
+
+✓ Backend APIs are connected
+
+✓ Database operations work correctly
+
+✓ Data persists after refresh and re-login
+
+✓ No broken buttons exist
+
+✓ No console errors exist
+
+✓ Application is production-ready
+
+The goal is not to add more features.
+
+The goal is to make the current application completely functional, reliable, live, and ready for real users.
