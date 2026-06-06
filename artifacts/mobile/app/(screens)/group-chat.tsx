@@ -338,6 +338,7 @@ export default function GroupChatScreen() {
               { icon: "return-down-forward-outline" as const, label: "Reply",  action: () => { setReplyTo(ctxMenu!); setCtxMenu(null); } },
               ...(isTeacher ? [{ icon: "pin-outline" as const, label: "Pin Message", action: () => pinMessage(ctxMenu!) }] : []),
               { icon: "copy-outline" as const, label: "Copy Text", action: () => setCtxMenu(null) },
+              ...(!isMe(ctxMenu?.senderId) ? [{ icon: "person-remove-outline" as const, label: `Report ${ctxMenu?.senderName ?? "User"}`, action: () => { setCtxMenu(null); router.push({ pathname: "/(screens)/report-user" as any, params: { userName: ctxMenu?.senderName ?? "" } }); } }] : []),
               { icon: "flag-outline" as const, label: "Report Message", action: () => { setCtxMenu(null); router.push("/(screens)/report-user" as any); } },
             ].map((opt) => (
               <TouchableOpacity key={opt.label} style={s.ctxRow} onPress={opt.action}>

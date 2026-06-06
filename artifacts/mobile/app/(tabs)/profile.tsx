@@ -81,7 +81,7 @@ export default function ProfileScreen() {
       ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
       : []),
     ...(profile.role !== "official"
-      ? [{ icon: "game-controller-outline" as const, label: "Game Arena", onPress: () => router.push("/(screens)/game-arena" as any) }]
+      ? [{ icon: "game-controller-outline" as const, label: "House Arena", onPress: () => router.push("/(tabs)/chats" as any) }]
       : []),
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
     { icon: "flag-outline" as const, label: "Report a User", onPress: () => router.push("/(screens)/report-user" as any) },

@@ -39,7 +39,7 @@ const OFFICIAL_ACTIONS = [
   { label: "Dashboard",       icon: "grid-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"        },
   { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"                },
-  { label: "View Problems",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"     },
+  { label: "Problem Reports", icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"     },
 ];
 
 const FALLBACK_NEWS: NewsItem[] = [
@@ -318,8 +318,8 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Explore More</Text>
           {[
             { label: "JNV Rankings", desc: "India-wide & state JNV rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
-            { label: "Events", desc: "Upcoming school, sports & cultural events", icon: "calendar-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(tabs)/events" },
-            ...(role !== "official" ? [{ label: "Game Arena", desc: "Play games with fellow Navodayans", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/game-arena" }] : []),
+            { label: "Events", desc: "Upcoming school, sports & cultural events", icon: "calendar-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(screens)/events" },
+            ...(role !== "official" ? [{ label: "House Arena", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(tabs)/chats" }] : []),
           ].map((item) => (
             <TouchableOpacity key={item.label} style={styles.exploreRow} onPress={() => router.push(item.route as any)} activeOpacity={0.75}>
               <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>
