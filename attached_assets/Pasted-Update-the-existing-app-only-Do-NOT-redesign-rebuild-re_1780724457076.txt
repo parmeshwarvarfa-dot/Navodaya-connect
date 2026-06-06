@@ -1,0 +1,71 @@
+Update the existing app only. Do NOT redesign, rebuild, regenerate, or modify any working components, layouts, styling, database schemas, authentication systems, or dashboard structures unless explicitly mentioned below. Reuse all existing code and make only the requested changes.
+
+GLOBAL CHANGES
+
+1. Replace "JNV Store" with "Events" on all dashboards.
+
+   * Rename the section only.
+   * Events should display upcoming school, cultural, sports, and academic events.
+
+2. Add a "Report User" feature.
+
+   * Allow users to report misconduct, harassment, spam, fake profiles, or inappropriate behavior.
+   * Reports should be visible to admins/JNV officials for review.
+
+3. Upgrade Groups to WhatsApp-style live groups.
+
+   * Real-time messaging.
+   * Image, video, document sharing.
+   * Voice notes.
+   * Message replies.
+   * Message reactions.
+   * Pinned messages.
+   * Group admin controls.
+   * Search messages.
+   * Live notifications.
+   * Keep existing UI as much as possible.
+
+4. Rename "Dost AI" to "PA₹AM AI".
+
+   * Replace the chatbot branding everywhere.
+   * PA₹AM AI should act as a full AI assistant/agent and answer questions like ChatGPT.
+   * Keep existing AI interface unless necessary.
+
+5. Separate News and Announcements.
+
+   * Announcements: only teachers, staff, principal, and JNV officials can post.
+   * News: display JNV-related news from online sources/articles.
+
+6. Profile Picture Management (ALL dashboards including JNV Official).
+
+   * Add upload, crop, zoom, rotate, replace, remove, and preview options inside Edit Profile.
+   * Do not change existing profile page layout unnecessarily.
+
+7. Game Arena.
+
+   * Add support for multiple games and live gameplay.
+   * Available for all user dashboards except JNV Official Dashboard.
+   * Do not show Game Arena in JNV Official Dashboard.
+
+STUDENT DASHBOARD ONLY
+
+8. Character Badge System.
+
+   * Add a Character Badge section in student profiles.
+   * Teachers can assign/update badges based on behavior and conduct.
+   * Display badge and teacher remarks in the student's profile.
+
+9. Fix Class Chat Group Naming Bug.
+
+   * Remove duplicate "Class" text.
+   * Example:
+     "Class Class 10A" -> "Class 10A"
+
+IMPORTANT:
+
+* Do not redesign any page.
+* Do not regenerate existing dashboards.
+* Do not change existing color themes.
+* Do not modify working features unrelated to the requested changes.
+* Implement only the changes listed above.
+* Reuse existing components wherever possible to minimize code changes.

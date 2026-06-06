@@ -18,11 +18,11 @@ const TAB_ITEMS: {
   { name: "index", title: "JNV Connect", icon: "home-outline", activeIcon: "home" },
   { name: "memories", title: "Memories", icon: "heart-outline", activeIcon: "heart" },
   { name: "chats", title: "Chat Groups", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { name: "store", title: "JNV Store", icon: "storefront-outline", activeIcon: "storefront" },
+  { name: "events", title: "Events", icon: "calendar-outline", activeIcon: "calendar" },
   { name: "profile", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
 
 const HOUSE_COLOR: Record<string, string> = {
   Aravali:  "#1D6ADE",
@@ -41,7 +41,7 @@ function DostAiFab() {
   return (
     <TouchableOpacity
       style={[styles.fab, { bottom }]}
-      onPress={() => router.push("/(screens)/dost-ai" as any)}
+      onPress={() => router.push("/(screens)/param-ai" as any)}
       activeOpacity={0.88}
     >
       <LinearGradient
@@ -58,7 +58,7 @@ function DostAiFab() {
       <View style={styles.fabRing} />
 
       <View style={styles.fabLabel}>
-        <Text style={styles.fabLabelText}>DOST AI</Text>
+        <Text style={styles.fabLabelText}>PA₹AM AI</Text>
       </View>
     </TouchableOpacity>
   );

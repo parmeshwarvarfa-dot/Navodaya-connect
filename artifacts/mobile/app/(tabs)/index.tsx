@@ -318,7 +318,8 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Explore More</Text>
           {[
             { label: "JNV Rankings", desc: "India-wide & state JNV rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
-            { label: "JNV Store", desc: "Merchandise, books & study notes", icon: "storefront-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(tabs)/store" },
+            { label: "Events", desc: "Upcoming school, sports & cultural events", icon: "calendar-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(tabs)/events" },
+            ...(role !== "official" ? [{ label: "Game Arena", desc: "Play games with fellow Navodayans", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/game-arena" }] : []),
           ].map((item) => (
             <TouchableOpacity key={item.label} style={styles.exploreRow} onPress={() => router.push(item.route as any)} activeOpacity={0.75}>
               <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>

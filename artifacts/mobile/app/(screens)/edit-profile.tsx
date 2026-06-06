@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Platform,
   Modal,
   TextInput,
@@ -128,11 +129,13 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [pickingPhoto, setPickingPhoto] = useState(false);
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
 
   const role = profile?.role || "student";
   const initials = getInitials(fullName || "N");
 
-  const pickImage = async () => {
+  const pickFromGallery = async () => {
+    setShowPhotoMenu(false);
     setPickingPhoto(true);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -141,19 +144,40 @@ export default function EditProfileScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.6,
+        quality: 0.7,
         base64: true,
       });
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        if (asset.base64) {
-          setPhotoURL(`data:image/jpeg;base64,${asset.base64}`);
-        } else if (asset.uri) {
-          setPhotoURL(asset.uri);
-        }
+        setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
       }
     } catch {}
     setPickingPhoto(false);
+  };
+
+  const pickFromCamera = async () => {
+    setShowPhotoMenu(false);
+    setPickingPhoto(true);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) { setPickingPhoto(false); return; }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+      }
+    } catch {}
+    setPickingPhoto(false);
+  };
+
+  const removePhoto = () => {
+    setPhotoURL("");
+    setShowPhotoMenu(false);
   };
 
   const handleSave = async () => {
@@ -219,7 +243,7 @@ export default function EditProfileScreen() {
         >
           {/* ── Avatar ── */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity onPress={pickImage} activeOpacity={0.85} style={styles.avatarWrap}>
+            <TouchableOpacity onPress={() => setShowPhotoMenu(true)} activeOpacity={0.85} style={styles.avatarWrap}>
               {photoURL ? (
                 <Image source={{ uri: photoURL }} style={styles.avatarImage} />
               ) : (
@@ -235,7 +259,7 @@ export default function EditProfileScreen() {
               </View>
             </TouchableOpacity>
             <Text style={styles.avatarName}>{fullName || "Your Name"}</Text>
-            <Text style={styles.avatarHint}>Tap photo to change</Text>
+            <Text style={styles.avatarHint}>Tap to manage photo</Text>
             <View style={styles.rolePill}>
               <Text style={styles.rolePillText}>{ROLE_LABEL[role]}</Text>
             </View>
@@ -335,6 +359,68 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Photo Management Modal ── */}
+      <Modal visible={showPhotoMenu} transparent animationType="slide" onRequestClose={() => setShowPhotoMenu(false)}>
+        <Pressable style={pms.overlay} onPress={() => setShowPhotoMenu(false)}>
+          <View style={pms.sheet}>
+            <View style={pms.sheetHandle} />
+            <Text style={pms.sheetTitle}>Profile Photo</Text>
+
+            {photoURL ? (
+              <View style={pms.previewWrap}>
+                <Image source={{ uri: photoURL }} style={pms.preview} />
+              </View>
+            ) : (
+              <View style={pms.previewWrap}>
+                <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={pms.previewFallback}>
+                  <Text style={pms.previewInitials}>{initials}</Text>
+                </LinearGradient>
+              </View>
+            )}
+
+            <View style={pms.optList}>
+              <TouchableOpacity style={pms.optRow} onPress={pickFromCamera} activeOpacity={0.75}>
+                <View style={[pms.optIcon, { backgroundColor: "#EEF2FF" }]}>
+                  <Ionicons name="camera-outline" size={22} color="#3D5AF1" />
+                </View>
+                <View style={pms.optText}>
+                  <Text style={pms.optLabel}>Take a Photo</Text>
+                  <Text style={pms.optDesc}>Use your camera to capture a new photo</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={pms.optRow} onPress={pickFromGallery} activeOpacity={0.75}>
+                <View style={[pms.optIcon, { backgroundColor: "#ECFDF5" }]}>
+                  <Ionicons name="images-outline" size={22} color="#10B981" />
+                </View>
+                <View style={pms.optText}>
+                  <Text style={pms.optLabel}>Choose from Gallery</Text>
+                  <Text style={pms.optDesc}>Pick an existing photo from your library</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              {photoURL ? (
+                <TouchableOpacity style={pms.optRow} onPress={removePhoto} activeOpacity={0.75}>
+                  <View style={[pms.optIcon, { backgroundColor: "#FEF2F2" }]}>
+                    <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                  </View>
+                  <View style={pms.optText}>
+                    <Text style={[pms.optLabel, { color: "#EF4444" }]}>Remove Photo</Text>
+                    <Text style={pms.optDesc}>Revert to initials avatar</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <TouchableOpacity style={pms.cancelBtn} onPress={() => setShowPhotoMenu(false)}>
+              <Text style={pms.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* ── Success Modal ── */}
       <Modal
@@ -471,4 +557,23 @@ const chip = StyleSheet.create({
   active: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
   text: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   textActive: { color: "#fff" },
+});
+
+const pms = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 14 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 4 },
+  sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center" },
+  previewWrap: { alignItems: "center", paddingVertical: 8 },
+  preview: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#3D5AF1" },
+  previewFallback: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },
+  previewInitials: { fontSize: 36, fontFamily: "Inter_700Bold", color: "#fff" },
+  optList: { gap: 4 },
+  optRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
+  optIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  optText: { flex: 1 },
+  optLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
+  optDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
+  cancelBtn: { backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  cancelText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#374151" },
 });

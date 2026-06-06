@@ -80,7 +80,11 @@ export default function ProfileScreen() {
     ...(profile.role !== "student"
       ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
       : []),
+    ...(profile.role !== "official"
+      ? [{ icon: "game-controller-outline" as const, label: "Game Arena", onPress: () => router.push("/(screens)/game-arena" as any) }]
+      : []),
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
+    { icon: "flag-outline" as const, label: "Report a User", onPress: () => router.push("/(screens)/report-user" as any) },
     { icon: "trophy-outline" as const, label: "Rankings", onPress: () => router.push("/(screens)/rankings" as any) },
     ...(profile.role === "alumni"
       ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-verify" as any) }]
@@ -194,6 +198,35 @@ export default function ProfileScreen() {
               : `JNV Official at ${profile.jnvName || "JNV"}`}
           </Text>
         </View>
+
+        {/* Character Badge Section — students only */}
+        {profile.role === "student" && (
+          <View style={styles.badgeCard}>
+            <View style={styles.badgeCardHeader}>
+              <Ionicons name="medal-outline" size={18} color="#F59E0B" />
+              <Text style={styles.cardTitle}>Character Badges</Text>
+            </View>
+            <Text style={styles.badgeSubtitle}>Awarded by teachers for exceptional qualities</Text>
+            <View style={styles.badgesGrid}>
+              {[
+                { emoji: "🌟", label: "Academic Star",   color: "#FEF9C3", earned: true  },
+                { emoji: "🤝", label: "Team Player",     color: "#DCFCE7", earned: true  },
+                { emoji: "🎯", label: "Goal Setter",     color: "#EEF2FF", earned: true  },
+                { emoji: "📚", label: "Bookworm",        color: "#FEF3C7", earned: false },
+                { emoji: "🏆", label: "House Champion",  color: "#FEE2E2", earned: false },
+                { emoji: "💡", label: "Innovator",       color: "#F0FDF4", earned: false },
+              ].map((b) => (
+                <View key={b.label} style={[styles.badgeItem, !b.earned && styles.badgeItemLocked]}>
+                  <View style={[styles.badgeEmoji, { backgroundColor: b.earned ? b.color : "#F3F4F6" }]}>
+                    <Text style={[styles.badgeEmojiText, !b.earned && { opacity: 0.3 }]}>{b.emoji}</Text>
+                  </View>
+                  <Text style={[styles.badgeLabel, !b.earned && { color: "#D1D5DB" }]}>{b.label}</Text>
+                  {!b.earned && <Ionicons name="lock-closed" size={10} color="#D1D5DB" style={{ marginTop: 2 }} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.menuCard}>
           {menuItems.map((item, index) => (
@@ -405,6 +438,18 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
   signOutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
+  badgeCard: {
+    backgroundColor: "#fff", borderRadius: 16, marginTop: 14,
+    padding: 16, borderWidth: 1, borderColor: "#F0F0F0",
+  },
+  badgeCardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  badgeSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 14 },
+  badgesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  badgeItem: { alignItems: "center", width: 76, gap: 4 },
+  badgeItemLocked: { opacity: 0.6 },
+  badgeEmoji: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  badgeEmojiText: { fontSize: 26 },
+  badgeLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: "#374151", textAlign: "center" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   Platform,
-  Alert,
   Modal,
   ScrollView,
 } from "react-native";
@@ -33,6 +32,7 @@ export default function GroupsScreen() {
   const [subject, setSubject] = useState("");
   const [classStr, setClassStr] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const fetchGroups = async () => {
@@ -47,9 +47,10 @@ export default function GroupsScreen() {
 
   const handleCreateGroup = async () => {
     if (!name.trim() || !subject.trim()) {
-      Alert.alert("Error", "Please fill group name and subject");
+      setCreateError("Please fill in group name and subject.");
       return;
     }
+    setCreateError("");
     setCreating(true);
     try {
       await api.groups.create({ name: name.trim(), subject: subject.trim(), class: classStr.trim() || undefined });
@@ -59,7 +60,7 @@ export default function GroupsScreen() {
       setClassStr("");
       fetchGroups();
     } catch {
-      Alert.alert("Error", "Failed to create group");
+      setCreateError("Failed to create group. Please try again.");
     }
     setCreating(false);
   };
@@ -111,7 +112,7 @@ export default function GroupsScreen() {
                 <View style={styles.groupInfo}>
                   <Text style={[styles.groupName, { color: colors.foreground }]}>{item.name}</Text>
                   <Text style={[styles.groupSub, { color: colors.mutedForeground }]}>
-                    {item.subject}{item.class ? ` • ${item.class}` : ""}
+                    {item.subject}{item.class ? ` • ${item.class.replace(/^Class\s+/i, "")}` : ""}
                   </Text>
                   <Text style={[styles.groupMeta, { color: colors.mutedForeground }]}>
                     {item.jnvName} • {item.memberCount ?? 1} members
@@ -135,7 +136,8 @@ export default function GroupsScreen() {
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
             <PremiumInput label="Group Name" value={name} onChangeText={setName} placeholder="e.g. Science Class 10" icon="people-outline" />
             <PremiumInput label="Subject" value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" icon="book-outline" />
-            <PremiumInput label="Class (optional)" value={classStr} onChangeText={setClassStr} placeholder="e.g. Class 10" icon="school-outline" />
+            <PremiumInput label="Class (optional)" value={classStr} onChangeText={setClassStr} placeholder="e.g. 10A" icon="school-outline" />
+            {createError ? <Text style={{ color: "#EF4444", fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 4 }}>{createError}</Text> : null}
             <PremiumButton title="Create Group" onPress={handleCreateGroup} loading={creating} style={{ marginTop: 8 }} />
           </ScrollView>
         </View>
