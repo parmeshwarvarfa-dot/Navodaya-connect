@@ -18,10 +18,10 @@ import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STUDENT_ACTIONS = [
-  { label: "Study Hub",       icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"   },
-  { label: "Ask Senior",      icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"      },
-  { label: "Senior Connect",  icon: "people-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/senior-connect"  },
-  { label: "Report Problem",  icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"  },
+  { label: "Study Hub",        icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"          },
+  { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"             },
+  { label: "Report Problem",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"         },
+  { label: "Rate Teacher",     icon: "star-outline"           as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/teacher-feedback-submit" },
 ];
 const TEACHER_ACTIONS = [
   { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-zone"     },
@@ -36,10 +36,10 @@ const ALUMNI_ACTIONS = [
   { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
-  { label: "Dashboard",       icon: "grid-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
-  { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"        },
-  { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"                },
-  { label: "View Problems",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"     },
+  { label: "Dashboard",       icon: "grid-outline"             as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
+  { label: "Verify Users",    icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management"    },
+  { label: "View Problems",   icon: "alert-circle-outline"    as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"      },
+  { label: "Post Update",     icon: "megaphone-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/create-news"        },
 ];
 
 const FALLBACK_NEWS: NewsItem[] = [

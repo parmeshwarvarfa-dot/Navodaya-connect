@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
-import { db, usersTable, sessionsTable } from "@workspace/db";
+import { db, usersTable, sessionsTable, verificationRequestsTable } from "@workspace/db";
 import type { UserProfile } from "./types";
 
 const router = Router();
@@ -49,6 +49,9 @@ router.post("/auth/signup", async (req, res) => {
       return res.status(409).json({ error: "Email already in use" });
     }
     const passwordHash = await bcrypt.hash(password, 12);
+    const isOfficial = role === "official";
+    const initialStatus = isOfficial ? "verified" : "pending";
+
     const [user] = await db.insert(usersTable).values({
       email: email.toLowerCase(),
       passwordHash,
@@ -64,10 +67,24 @@ router.post("/auth/signup", async (req, res) => {
       field: rest.field,
       company: rest.company,
       skills: rest.skills ? JSON.stringify(rest.skills) : null,
-      verificationStatus: role === "alumni" ? "unverified" : "unverified",
+      verificationStatus: initialStatus,
       subject: rest.subject,
       designation: rest.designation,
     }).returning();
+
+    if (!isOfficial) {
+      await db.insert(verificationRequestsTable).values({
+        userId: user.id,
+        userFullName: fullName,
+        userEmail: email.toLowerCase(),
+        role,
+        jnvName,
+        jnvState,
+        method: "official",
+        status: "pending",
+      });
+    }
+
     const token = await createSession(user.id);
     res.json({ token, profile: toProfile(user) });
   } catch (e: any) {

@@ -20,22 +20,14 @@ export async function clearToken(): Promise<void> {
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(`${getBaseUrl()}${path}`, {
-    ...options,
-    headers,
-  });
-
+  const res = await fetch(`${getBaseUrl()}${path}`, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `Request failed: ${res.status}`);
@@ -49,16 +41,14 @@ export const api = {
       request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(data) }),
     signin: (email: string, password: string) =>
       request<AuthResponse>("/auth/signin", { method: "POST", body: JSON.stringify({ email, password }) }),
-    signout: () =>
-      request<{ ok: boolean }>("/auth/signout", { method: "POST" }),
+    signout: () => request<{ ok: boolean }>("/auth/signout", { method: "POST" }),
     me: () => request<{ profile: UserProfile }>("/auth/me"),
   },
   news: {
     list: () => request<NewsItem[]>("/news"),
     create: (data: { title: string; description: string; category: string }) =>
       request<NewsItem>("/news", { method: "POST", body: JSON.stringify(data) }),
-    delete: (id: string) =>
-      request<{ ok: boolean }>(`/news/${id}`, { method: "DELETE" }),
+    delete: (id: string) => request<{ ok: boolean }>(`/news/${id}`, { method: "DELETE" }),
   },
   groups: {
     list: () => request<Group[]>("/groups"),
@@ -96,11 +86,30 @@ export const api = {
     alumni: () => request<AlumniUser[]>("/users/alumni"),
     updateMe: (data: Partial<UserProfile>) =>
       request<UserProfile>("/users/me", { method: "PATCH", body: JSON.stringify(data) }),
+    manage: () => request<ManagedUser[]>("/users/manage"),
+    suspend: (id: string, suspended: boolean) =>
+      request<ManagedUser>(`/users/${id}/suspend`, { method: "PATCH", body: JSON.stringify({ suspended }) }),
   },
   mentorRequests: {
     list: () => request<MentorRequest[]>("/mentor-requests"),
     create: (data: { mentorId: string; mentorName: string; category: string; message: string }) =>
       request<MentorRequest>("/mentor-requests", { method: "POST", body: JSON.stringify(data) }),
+  },
+  verification: {
+    myStatus: () => request<{ verificationStatus: string; request: VerificationRequest | null }>("/verification/my-status"),
+    requests: () => request<VerificationRequest[]>("/verification/requests"),
+    create: (method?: string) =>
+      request<VerificationRequest>("/verification/requests", { method: "POST", body: JSON.stringify({ method: method ?? "official" }) }),
+    review: (id: string, status: string, notes?: string, infoRequest?: string) =>
+      request<VerificationRequest>(`/verification/requests/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status, notes, infoRequest }),
+      }),
+  },
+  teacherFeedback: {
+    submit: (data: { teacherId: string; teacherName: string; subject?: string; rating: number; comment: string; anonymous: boolean }) =>
+      request<TeacherFeedbackItem>("/teacher-feedback", { method: "POST", body: JSON.stringify(data) }),
+    list: () => request<TeacherFeedbackItem[]>("/teacher-feedback"),
   },
 };
 
@@ -120,7 +129,7 @@ export interface UserProfile {
   field?: string;
   company?: string;
   skills?: string[];
-  verificationStatus?: "unverified" | "pending" | "verified";
+  verificationStatus?: "unverified" | "pending" | "verified" | "rejected" | "suspended";
   subject?: string;
   designation?: string;
   bio?: string;
@@ -234,6 +243,20 @@ export interface AlumniUser {
   verificationStatus?: string;
 }
 
+export interface ManagedUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  verificationStatus?: string;
+  class?: string;
+  profession?: string;
+  subject?: string;
+  createdAt: string;
+}
+
 export interface MentorRequest {
   id: string;
   studentId?: string;
@@ -243,5 +266,38 @@ export interface MentorRequest {
   category?: string;
   message?: string;
   status: string;
+  createdAt: string;
+}
+
+export interface VerificationRequest {
+  id: string;
+  userId: string;
+  userFullName: string;
+  userEmail: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  method: string;
+  status: string;
+  documentUrls?: string | null;
+  notes?: string | null;
+  infoRequest?: string | null;
+  reviewedBy?: string | null;
+  reviewedByName?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+}
+
+export interface TeacherFeedbackItem {
+  id: string;
+  studentId: string;
+  studentName: string;
+  teacherId: string;
+  teacherName: string;
+  jnvName: string;
+  subject?: string | null;
+  rating: number;
+  comment: string;
+  anonymous: boolean;
   createdAt: string;
 }

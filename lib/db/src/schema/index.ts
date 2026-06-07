@@ -6,3 +6,5 @@ export * from "./problems";
 export * from "./events";
 export * from "./eventRegistrations";
 export * from "./mentorRequests";
+export * from "./verificationRequests";
+export * from "./teacherFeedback";

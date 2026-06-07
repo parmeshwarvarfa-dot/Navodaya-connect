@@ -9,11 +9,8 @@ interface AuthContextType {
   user: { uid: string } | null;
   profile: UserProfile | null;
   loading: boolean;
-  signUp: (
-    email: string,
-    password: string,
-    profileData: Omit<SignupData, "email" | "password">
-  ) => Promise<void>;
+  isVerified: boolean;
+  signUp: (email: string, password: string, profileData: Omit<SignupData, "email" | "password">) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -71,9 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const user = profile ? { uid: profile.uid } : null;
+  const isVerified = profile?.role === "official" || profile?.verificationStatus === "verified";
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, isVerified, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

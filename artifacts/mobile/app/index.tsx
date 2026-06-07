@@ -5,13 +5,17 @@ import { View, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function IndexScreen() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, isVerified } = useAuth();
 
   useEffect(() => {
     if (loading) return;
     (async () => {
       if (user) {
-        router.replace("/(tabs)");
+        if (isVerified) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/(screens)/verification-center" as any);
+        }
       } else {
         const done = await AsyncStorage.getItem("onboarding_done");
         if (done) {
@@ -21,10 +25,10 @@ export default function IndexScreen() {
         }
       }
     })();
-  }, [user, loading]);
+  }, [user, loading, isVerified]);
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#4B6EF5" }}>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1A3C6E" }}>
       <ActivityIndicator color="#fff" size="large" />
     </View>
   );

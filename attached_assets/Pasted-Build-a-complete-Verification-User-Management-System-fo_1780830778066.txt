@@ -1,0 +1,172 @@
+Build a complete Verification & User Management System for Navodaya Connect.
+
+ROLES:
+
+* Student
+* Teacher
+* Alumni
+* JNV Official
+
+Do not add Parent, Staff, or any other roles.
+
+IMPORTANT:
+
+* Keep existing Registration, Login, Forgot Password, Reset Password, and Authentication flow unchanged.
+* Verification must happen AFTER registration.
+* Use real backend, real database, real APIs, and persistent data.
+* No mock data, placeholders, fake verification, or hardcoded users.
+
+USER STATUS:
+
+* Pending Verification
+* Verified
+* Rejected
+* Suspended
+
+Default status after registration = Pending Verification.
+
+VERIFICATION RULES:
+
+STUDENT:
+
+1. Student registers using existing signup flow.
+2. Verification request is automatically sent to the selected JNV Official.
+3. Official can Approve, Reject, or Request More Information.
+4. If approved:
+
+   * Status = Verified
+   * Green Verified Badge
+   * Full platform access
+   * Automatically added to Student Directory, Class List, and House List.
+
+TEACHER:
+
+1. Teacher registers using existing signup flow.
+2. Verification request is automatically sent to the selected JNV Official.
+3. Official can Approve, Reject, or Request More Information.
+4. If approved:
+
+   * Status = Verified
+   * Green Verified Badge
+   * Added to Teacher Directory.
+5. Support multiple responsibilities per teacher:
+
+   * Subject Teacher
+   * Class Teacher
+   * House Master/House Mistress
+   * Multiple assignments simultaneously.
+
+ALUMNI:
+
+1. Alumni registers using existing signup flow.
+2. Status = Pending Verification.
+3. Redirect to Verification Center.
+
+Verification methods:
+A. Self Verification
+
+* Upload Class 10 Marksheet OR Class 12 Marksheet OR approved JNV document.
+* OCR extracts JNV details.
+* Match uploaded document with selected JNV.
+* If valid, verify automatically.
+
+B. Official Verification
+
+* Request sent to selected JNV Official.
+* Official approves or rejects.
+
+C. Alumni Endorsement
+
+* Verified alumni from same JNV can endorse.
+* Verification completes when endorsement requirement is met.
+
+JNV OFFICIAL DASHBOARD:
+Manage only users belonging to their own JNV.
+
+Features:
+
+* Verify Students
+* Verify Teachers
+* Verify Alumni
+* Approve/Reject Requests
+* Request More Information
+* Suspend Users
+* Reactivate Users
+* View Verification History
+* Search and Filter Users
+* View User Profiles
+
+USER MANAGEMENT:
+Create centralized user management with:
+
+* Search
+* Filters
+* Role Filters
+* Status Filters
+* JNV Filters
+* Batch Filters
+* Pagination
+* Sorting
+
+UNVERIFIED USER RESTRICTIONS:
+Pending, Rejected, or Suspended users can:
+
+* Login
+* Edit Profile
+* Upload Verification Documents
+* Check Verification Status
+
+They cannot:
+
+* Send Messages
+* Create Groups
+* Join Groups
+* Access Feed
+* Access Events
+* Access Announcements
+* Access Networking Features
+* Use Community Features
+
+VERIFIED USER ACCESS:
+Verified users receive:
+
+* Green Verified Badge
+* Full platform access according to role permissions.
+
+TEACHER FEEDBACK:
+Students submit Teacher Feedback.
+Feedback goes only to JNV Official Dashboard.
+Teachers cannot directly access submitted feedback.
+
+VIEW PROBLEMS:
+Keep exact name: "View Problems"
+
+Only JNV Officials can access it.
+
+Features:
+
+* View Reports
+* View Reporter
+* View Reported User
+* Category
+* Description
+* Evidence
+* Status
+
+Statuses:
+
+* Pending
+* Under Review
+* Resolved
+* Rejected
+
+AUTOMATION:
+
+* Auto-create verification requests after registration.
+* Auto-notify users on approval/rejection.
+* Auto-assign verified users to appropriate directories.
+* Maintain complete verification audit logs.
+* All actions must persist in database.
+
+FINAL RULE:
+No user receives full platform access until verification is successfully completed.

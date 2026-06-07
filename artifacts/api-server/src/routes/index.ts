@@ -7,6 +7,8 @@ import problemsRouter from "./problems";
 import eventsRouter from "./events";
 import usersRouter from "./users";
 import mentorRequestsRouter from "./mentorRequests";
+import verificationRouter from "./verification";
+import teacherFeedbackRouter from "./teacherFeedback";
 
 const router: IRouter = Router();
 
@@ -18,5 +20,7 @@ router.use(problemsRouter);
 router.use(eventsRouter);
 router.use(usersRouter);
 router.use(mentorRequestsRouter);
+router.use(verificationRouter);
+router.use(teacherFeedbackRouter);
 
 export default router;
