@@ -1,0 +1,99 @@
+VERIFICATION USER EXPERIENCE FLOW
+
+Do not lock users on the Verification Center page.
+
+AFTER REGISTRATION:
+
+1. Show a Verification Center welcome page once.
+
+2. Explain:
+
+   * Verification unlocks the complete Navodaya Connect experience.
+   * Verified users receive a green verification badge.
+   * Verified users can access all community features.
+
+3. Show two buttons:
+
+   * Complete Verification
+   * Skip for Now / Enter Dashboard
+
+IF USER CLICKS COMPLETE VERIFICATION:
+
+* Open verification process.
+* User can submit required verification information.
+
+IF USER CLICKS SKIP:
+
+* Allow entry into dashboard immediately.
+* Do not trap the user on the verification page.
+
+PENDING VERIFICATION USERS:
+
+Allowed:
+
+* Dashboard access
+* Profile access
+* Settings
+* Notifications
+* View available features
+* Edit profile
+* Upload profile picture
+* Access Verification Center anytime
+
+Restricted:
+
+* Messaging
+* Groups
+* Community posting
+* Networking
+* Events participation
+* Other protected features
+
+WHEN A PENDING USER CLICKS A RESTRICTED FEATURE:
+
+Do not hide the feature.
+
+Instead show a modal, notification, or message:
+
+"Verification Required
+
+This feature is available only to verified users.
+Complete your verification to unlock full access to Navodaya Connect."
+
+Buttons:
+
+* Verify Now
+* Later
+
+AFTER VERIFICATION APPROVAL:
+
+Automatically:
+
+* Remove all restrictions
+* Enable all platform features
+* Show green verified badge
+* Update permissions immediately
+
+ALUMNI SPECIAL FLOW:
+
+Alumni should not be forced to verify immediately.
+
+After entering the dashboard:
+
+* Alumni can open Profile.
+* Profile contains a Verification section.
+* Alumni can complete self-verification from Profile at any time.
+
+Self-verification fields:
+
+* Pass-out Batch
+* Required alumni details
+* Upload Class 10 Marksheet OR Class 12 Marksheet OR approved JNV document
+
+System performs OCR validation and verification workflow.
+
+This self-verification option is available inside the Alumni Profile until verification is completed.
+
+IMPORTANT:
+Use soft restrictions, not hard locks.
+Users should be able to explore the application before verification, but restricted features must remain inaccessible until verification is approved.

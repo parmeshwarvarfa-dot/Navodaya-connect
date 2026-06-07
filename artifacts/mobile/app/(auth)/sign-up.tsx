@@ -190,7 +190,11 @@ export default function SignUpScreen() {
         designation: role === "official"? principalName: undefined,
         subject:     role === "teacher" ? subject      : undefined,
       });
-      router.replace("/(tabs)");
+      if (role === "official") {
+        router.replace("/(tabs)");
+      } else {
+        router.replace("/(screens)/verification-welcome" as any);
+      }
     } catch (err: any) {
       const msg: string = err?.message ?? "";
       setErrorMsg(

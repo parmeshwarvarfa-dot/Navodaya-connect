@@ -1,6 +1,6 @@
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -67,18 +67,12 @@ export default function TabLayout() {
   const isWeb = Platform.OS === "web";
   const tabBarHeight = isWeb ? 60 : 80;
   const paddingBottom = isWeb ? 8 : 16;
-  const { profile, isVerified } = useAuth();
+  const { profile } = useAuth();
 
   const activeColor = useMemo(
     () => HOUSE_COLOR[profile?.house ?? ""] ?? DEFAULT_COLOR,
     [profile?.house]
   );
-
-  useEffect(() => {
-    if (profile && !isVerified) {
-      router.replace("/(screens)/verification-center" as any);
-    }
-  }, [profile, isVerified]);
 
   return (
     <View style={{ flex: 1 }}>

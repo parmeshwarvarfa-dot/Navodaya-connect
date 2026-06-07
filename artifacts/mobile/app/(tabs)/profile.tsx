@@ -130,7 +130,19 @@ export default function ProfileScreen() {
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>{roleLabel}</Text>
           </View>
-          {profile.verificationStatus === "verified" && (
+          {profile.verificationStatus !== "verified" && profile.role !== "official" ? (
+            <TouchableOpacity
+              style={styles.profileVerifyBadge}
+              onPress={() => router.push("/(screens)/verification-center" as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="shield-outline" size={14} color="#FF7A00" />
+              <Text style={styles.profileVerifyText}>
+                {profile.verificationStatus === "pending" ? "Verification Pending" : "Get Verified"}
+              </Text>
+              <Ionicons name="chevron-forward" size={12} color="#FF7A00" />
+            </TouchableOpacity>
+          ) : (
             <View style={{ marginTop: 8 }}>
               <VerifiedBadge status={profile.verificationStatus} role={profile.role} size="md" />
             </View>
@@ -310,6 +322,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
+  profileVerifyBadge: {
+    flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8,
+    backgroundColor: "#FFF7ED", borderRadius: 20, paddingVertical: 5, paddingHorizontal: 12,
+    borderWidth: 1, borderColor: "#FDBA74",
+  },
+  profileVerifyText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#FF7A00" },
   avatarWrap: { marginBottom: 12, position: "relative" },
   avatarPhoto: {
     width: 96, height: 96, borderRadius: 48,

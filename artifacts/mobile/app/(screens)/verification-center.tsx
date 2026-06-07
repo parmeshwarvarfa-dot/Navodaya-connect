@@ -75,14 +75,16 @@ export default function VerificationCenterScreen() {
   const tips = ROLE_TIPS[profile?.role ?? "student"] ?? ROLE_TIPS.student;
 
   if (status === "verified") {
-    router.replace("/(tabs)");
-    return null;
+    refreshProfile();
   }
 
   return (
     <View style={s.container}>
       <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[s.header, { paddingTop: topPad + 8 }]}>
         <View style={s.headerRow}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.9)" />
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Verification Center</Text>
             <Text style={s.headerSub}>JNV · {profile?.jnvName}</Text>
@@ -215,6 +217,7 @@ const s = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
   headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center", marginRight: 4 },
   refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   statusCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", gap: 10, borderWidth: 1.5 },
   statusIconWrap: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },

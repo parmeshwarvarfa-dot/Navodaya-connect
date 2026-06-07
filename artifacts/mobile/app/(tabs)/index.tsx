@@ -16,6 +16,8 @@ import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useVerificationGate } from "@/components/VerificationGateModal";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"          },
@@ -91,7 +93,8 @@ const GRADIENT_SETS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, isVerified } = useAuth();
+  const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const topPad = Platform.OS === "web" ? 60 : insets.top;
@@ -189,6 +192,24 @@ export default function HomeScreen() {
           )}
         </LinearGradient>
 
+        {/* Verification Banner — only for non-verified non-officials */}
+        {!isVerified && role !== "official" && (
+          <TouchableOpacity
+            style={styles.verifyBanner}
+            onPress={() => router.push("/(screens)/verification-center" as any)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.verifyBannerLeft}>
+              <Ionicons name="shield-outline" size={20} color="#FF7A00" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.verifyBannerTitle}>Complete your verification</Text>
+                <Text style={styles.verifyBannerSub}>Unlock messaging, events &amp; more features</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#FF7A00" />
+          </TouchableOpacity>
+        )}
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -203,6 +224,8 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {gateModal}
 
         {/* ── ANNOUNCEMENTS SECTION ── */}
         <View style={[styles.section, { marginTop: 18 }]}>
@@ -403,6 +426,10 @@ const styles = StyleSheet.create({
   studentBadgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   studentBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   studentBadgeText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
+  verifyBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: 16, marginTop: 14, backgroundColor: "#FFF7ED", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1.5, borderColor: "#FDBA74" },
+  verifyBannerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  verifyBannerTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#C2410C" },
+  verifyBannerSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#EA580C", marginTop: 1 },
   section: { paddingHorizontal: 16, marginTop: 20 },
   sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },

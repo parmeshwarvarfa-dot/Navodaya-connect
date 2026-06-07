@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, getToken } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useVerificationGate } from "@/components/VerificationGateModal";
 
 // ─── API helpers (registrations not in lib/api yet, call directly) ────────────
 async function registerForEvent(
@@ -384,7 +385,8 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function EventsScreen() {
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, isVerified } = useAuth();
+  const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [events, setEvents] = useState<Event[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -505,7 +507,7 @@ export default function EventsScreen() {
                 ) : (
                   <TouchableOpacity
                     style={[styles.registerBtn, isReg && styles.registeredBtn]}
-                    onPress={() => isReg ? null : setRegEvent(event)}
+                    onPress={() => isReg ? null : tryAccess("Events", () => setRegEvent(event))}
                     activeOpacity={isReg ? 1 : 0.85}
                   >
                     <Ionicons name={isReg ? "checkmark-circle" : "person-add-outline"} size={17} color="#fff" />
@@ -517,6 +519,8 @@ export default function EventsScreen() {
           );
         })}
       </ScrollView>
+
+      {gateModal}
 
       <CreateEventModal
         visible={showCreate}

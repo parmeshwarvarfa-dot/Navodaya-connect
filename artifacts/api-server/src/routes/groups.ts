@@ -50,7 +50,10 @@ router.post("/groups", requireAuth, async (req, res) => {
   }
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 router.get("/groups/:id/messages", requireAuth, async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.json([]);
   try {
     const messages = await db.select().from(groupMessagesTable)
       .where(eq(groupMessagesTable.groupId, req.params.id))
@@ -64,6 +67,7 @@ router.get("/groups/:id/messages", requireAuth, async (req, res) => {
 });
 
 router.post("/groups/:id/messages", requireAuth, async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "invalid group id" });
   try {
     const user = getUser(req);
     const { text, replyToId, replyToText, replyToSender } = req.body;

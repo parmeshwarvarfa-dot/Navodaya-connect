@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { useVerificationGate } from "@/components/VerificationGateModal";
 
 const ALL_NAVODAYANS = { id: "all-navodayans", icon: "chatbubbles-outline" as const, name: "All Navodayans", lastMessage: "United by JNV spirit!", time: "12:51 PM", color: "#FFF7ED", iconColor: "#F59E0B" };
 
@@ -76,7 +77,8 @@ const QUIZ_QUESTIONS: QuizQ[] = [
 
 export default function ChatsScreen() {
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, isVerified } = useAuth();
+  const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [joinedExplore, setJoinedExplore] = useState<Set<string>>(new Set());
@@ -210,6 +212,7 @@ export default function ChatsScreen() {
   };
 
   const toggleExplore = (id: string, name: string) => {
+    if (!tryAccess("Group Chat")) return;
     if (joinedExplore.has(id)) {
       setLeaveConfirm({ id, name });
     } else {
@@ -264,7 +267,7 @@ export default function ChatsScreen() {
               <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(true)}>
                 <Ionicons name="search-outline" size={20} color="#3D5AF1" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => setShowNewGroup(true)}>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => tryAccess("Group Chat", () => setShowNewGroup(true))}>
                 <Ionicons name="add" size={22} color="#3D5AF1" />
               </TouchableOpacity>
             </View>
@@ -286,7 +289,7 @@ export default function ChatsScreen() {
                 key={group.id}
                 style={styles.groupRow}
                 activeOpacity={0.7}
-                onPress={() => router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name: encodeURIComponent(group.name) } })}
+                onPress={() => tryAccess("Group Chat", () => router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name: encodeURIComponent(group.name) } }))}
               >
                 <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
                   <Ionicons name={group.icon} size={22} color={group.iconColor} />
@@ -424,6 +427,8 @@ export default function ChatsScreen() {
           </>
         )}
       </ScrollView>
+
+      {gateModal}
 
       {/* ─── QUIZ MODAL ─── */}
       <Modal visible={!!activeChallenge} animationType="slide">

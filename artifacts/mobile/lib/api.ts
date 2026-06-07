@@ -98,8 +98,8 @@ export const api = {
   verification: {
     myStatus: () => request<{ verificationStatus: string; request: VerificationRequest | null }>("/verification/my-status"),
     requests: () => request<VerificationRequest[]>("/verification/requests"),
-    create: (method?: string) =>
-      request<VerificationRequest>("/verification/requests", { method: "POST", body: JSON.stringify({ method: method ?? "official" }) }),
+    create: (method?: string, documentUrls?: string[]) =>
+      request<VerificationRequest>("/verification/requests", { method: "POST", body: JSON.stringify({ method: method ?? "official", documentUrls }) }),
     review: (id: string, status: string, notes?: string, infoRequest?: string) =>
       request<VerificationRequest>(`/verification/requests/${id}`, {
         method: "PATCH",
