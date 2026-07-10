@@ -95,6 +95,12 @@ export const api = {
     create: (data: { mentorId: string; mentorName: string; category: string; message: string }) =>
       request<MentorRequest>("/mentor-requests", { method: "POST", body: JSON.stringify(data) }),
   },
+  jobs: {
+    list: () => request<Job[]>("/jobs"),
+    create: (data: { title: string; company: string; location?: string; salary?: string; type?: string; category?: string; description?: string }) =>
+      request<Job>("/jobs", { method: "POST", body: JSON.stringify(data) }),
+    remove: (id: string) => request<{ success: boolean }>(`/jobs/${id}`, { method: "DELETE" }),
+  },
   verification: {
     myStatus: () => request<{ verificationStatus: string; request: VerificationRequest | null }>("/verification/my-status"),
     requests: () => request<VerificationRequest[]>("/verification/requests"),
@@ -266,6 +272,21 @@ export interface MentorRequest {
   category?: string;
   message?: string;
   status: string;
+  createdAt: string;
+}
+
+export interface Job {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  salary?: string | null;
+  type: string;
+  category: string;
+  description: string;
+  postedBy?: string | null;
+  postedByName?: string | null;
+  postedByJnv?: string | null;
   createdAt: string;
 }
 

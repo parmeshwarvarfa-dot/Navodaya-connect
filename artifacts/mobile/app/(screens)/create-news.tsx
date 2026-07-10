@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,19 +23,19 @@ export default function CreateNewsScreen() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("General");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
   const handlePost = async () => {
-    if (!title.trim()) { Alert.alert("Title required", "Please add a title for your post."); return; }
-    if (!description.trim()) { Alert.alert("Content required", "Please add some content to your post."); return; }
+    setError("");
+    if (!title.trim()) { setError("Please add a title for your post."); return; }
+    if (!description.trim()) { setError("Please add some content to your post."); return; }
     setSubmitting(true);
     try {
       await api.news.create({ title: title.trim(), description: description.trim(), category });
-      Alert.alert("Posted!", "Your update has been shared with the community.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      router.back();
     } catch {
-      Alert.alert("Error", "Failed to post update. Please try again.");
+      setError("Failed to post update. Please try again.");
     }
     setSubmitting(false);
   };
@@ -104,22 +103,7 @@ export default function CreateNewsScreen() {
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.attachRow}>
-          <TouchableOpacity style={styles.attachBtn} onPress={() => Alert.alert("Photo", "Photo attachment coming soon!")}>
-            <Ionicons name="image-outline" size={20} color="#3D5AF1" />
-            <Text style={styles.attachText}>Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.attachBtn} onPress={() => Alert.alert("Link", "Link attachment coming soon!")}>
-            <Ionicons name="link-outline" size={20} color="#10B981" />
-            <Text style={styles.attachText}>Link</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.attachBtn} onPress={() => Alert.alert("Poll", "Poll feature coming soon!")}>
-            <Ionicons name="stats-chart-outline" size={20} color="#F59E0B" />
-            <Text style={styles.attachText}>Poll</Text>
-          </TouchableOpacity>
-        </View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </ScrollView>
     </View>
   );
@@ -127,6 +111,7 @@ export default function CreateNewsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
+  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginTop: 4, paddingHorizontal: 4 },
   header: {
     flexDirection: "row",
     alignItems: "center",

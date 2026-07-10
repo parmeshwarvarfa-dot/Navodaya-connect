@@ -8,3 +8,4 @@ export * from "./eventRegistrations";
 export * from "./mentorRequests";
 export * from "./verificationRequests";
 export * from "./teacherFeedback";
+export * from "./jobs";

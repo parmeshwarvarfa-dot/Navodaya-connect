@@ -8,7 +8,7 @@ import {
   Platform,
   Modal,
   Image,
-  Alert,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -57,13 +57,23 @@ export default function StoreScreen() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
+  const [showSearch, setShowSearch] = useState(false);
+  const [query, setQuery] = useState("");
+  const [toast, setToast] = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+
   const featured = PRODUCTS.filter((p) => p.featured);
-  const filtered = activeFilter === "All" ? PRODUCTS : PRODUCTS.filter((p) => {
+  const byFilter = activeFilter === "All" ? PRODUCTS : PRODUCTS.filter((p) => {
     if (activeFilter === "Merch") return p.category === "Merchandise";
     return p.category === activeFilter;
   });
+  const filtered = query.trim()
+    ? byFilter.filter((p) => p.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : byFilter;
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -84,11 +94,18 @@ export default function StoreScreen() {
     });
   };
 
-  const clearCart = () => {
-    Alert.alert("Clear Cart", "Remove all items from cart?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Clear", style: "destructive", onPress: () => setCart([]) },
-    ]);
+  const clearCart = () => setConfirmClear(true);
+
+  const confirmClearCart = () => {
+    setCart([]);
+    setConfirmClear(false);
+    showToast("Cart cleared");
+  };
+
+  const placeOrder = () => {
+    setCart([]);
+    setShowCart(false);
+    setOrderPlaced(true);
   };
 
   return (
@@ -99,7 +116,7 @@ export default function StoreScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>JNV Store</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconBtn}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(true)}>
             <Ionicons name="search-outline" size={22} color="#3D5AF1" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.cartBtn} onPress={() => setShowCart(true)}>
@@ -155,10 +172,12 @@ export default function StoreScreen() {
 
         <View style={styles.productHeader}>
           <Text style={styles.productCount}>{filtered.length} products</Text>
-          <TouchableOpacity style={styles.categoryBtn}>
-            <Ionicons name="filter-outline" size={14} color="#6B7280" />
-            <Text style={styles.categoryText}>All Categories</Text>
-          </TouchableOpacity>
+          {query.trim() !== "" && (
+            <TouchableOpacity style={styles.categoryBtn} onPress={() => setQuery("")}>
+              <Ionicons name="close-circle-outline" size={14} color="#6B7280" />
+              <Text style={styles.categoryText}>Clear search</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.grid}>
@@ -258,7 +277,7 @@ export default function StoreScreen() {
               </View>
               <TouchableOpacity
                 style={styles.checkoutBtn}
-                onPress={() => Alert.alert("Checkout", "Proceeding to payment gateway...\n(Demo mode)")}
+                onPress={placeOrder}
               >
                 <Text style={styles.checkoutText}>Proceed to Checkout</Text>
               </TouchableOpacity>
@@ -269,12 +288,107 @@ export default function StoreScreen() {
           )}
         </View>
       </Modal>
+
+      <Modal visible={showSearch} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.cartModal, { paddingTop: topPad }]}>
+          <View style={styles.cartHeader}>
+            <Text style={styles.cartTitle}>Search Products</Text>
+            <TouchableOpacity onPress={() => setShowSearch(false)} style={styles.closeBtn}>
+              <Ionicons name="close" size={22} color="#111" />
+            </TouchableOpacity>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by product name..."
+              placeholderTextColor="#9CA3AF"
+              value={query}
+              onChangeText={setQuery}
+              autoFocus
+            />
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            {filtered.length === 0 ? (
+              <Text style={styles.emptyCartText}>No products match "{query}"</Text>
+            ) : (
+              filtered.map((p) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={styles.cartItem}
+                  onPress={() => { addToCart(p); setShowSearch(false); }}
+                >
+                  <Image source={{ uri: p.image }} style={styles.cartItemImage} resizeMode="cover" />
+                  <View style={styles.cartItemInfo}>
+                    <Text style={styles.cartItemName} numberOfLines={1}>{p.name}</Text>
+                    <Text style={styles.cartItemCat}>{p.category}</Text>
+                    <Text style={styles.cartItemPrice}>₹{p.price}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={confirmClear} animationType="fade" transparent>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmTitle}>Clear Cart</Text>
+            <Text style={styles.confirmText}>Remove all items from cart?</Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmClear(false)}>
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmDeleteBtn} onPress={confirmClearCart}>
+                <Text style={styles.confirmDeleteText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={orderPlaced} animationType="fade" transparent>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <Ionicons name="checkmark-circle" size={48} color="#10B981" style={{ alignSelf: "center", marginBottom: 8 }} />
+            <Text style={[styles.confirmTitle, { textAlign: "center" }]}>Order Placed!</Text>
+            <Text style={[styles.confirmText, { textAlign: "center" }]}>Your order has been received. Our team will reach out with delivery details.</Text>
+            <TouchableOpacity style={[styles.confirmDeleteBtn, { backgroundColor: "#3D5AF1", marginTop: 8 }]} onPress={() => setOrderPlaced(false)}>
+              <Text style={styles.confirmDeleteText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F6FA" },
+  toast: {
+    position: "absolute", bottom: 30, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
+  searchInput: {
+    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, paddingHorizontal: 14,
+    paddingVertical: 10, fontSize: 15, fontFamily: "Inter_400Regular", color: "#111827",
+  },
+  confirmOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 24 },
+  confirmBox: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: "100%", maxWidth: 340 },
+  confirmTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 6 },
+  confirmText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 16 },
+  confirmActions: { flexDirection: "row", gap: 10 },
+  confirmCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center", backgroundColor: "#F3F4F6" },
+  confirmCancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  confirmDeleteBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center", backgroundColor: "#EF4444" },
+  confirmDeleteText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff" },
   header: {
     flexDirection: "row",
     alignItems: "center",

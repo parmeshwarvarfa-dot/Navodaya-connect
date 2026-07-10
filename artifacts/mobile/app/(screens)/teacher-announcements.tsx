@@ -137,7 +137,7 @@ export default function TeacherAnnouncementsScreen() {
               </View>
 
               <TouchableOpacity style={styles.pinToggle} onPress={() => setPinned(!pinned)}>
-                <Ionicons name={pinned ? "checkmark-square" : "square-outline"} size={22} color={pinned ? "#3D5AF1" : "#9CA3AF"} />
+                <Ionicons name={pinned ? "checkbox" : "square-outline"} size={22} color={pinned ? "#3D5AF1" : "#9CA3AF"} />
                 <Text style={styles.pinToggleText}>Pin this announcement</Text>
               </TouchableOpacity>
 

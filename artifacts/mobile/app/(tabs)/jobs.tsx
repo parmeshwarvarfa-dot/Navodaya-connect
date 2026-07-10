@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
   Platform,
   Modal,
   ScrollView,
-  Alert,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,61 +18,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumInput } from "@/components/PremiumInput";
 import { PremiumButton } from "@/components/PremiumButton";
-
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary?: string;
-  type: "Full-time" | "Part-time" | "Remote" | "Internship" | "Contract";
-  category: string;
-  postedBy: string;
-  postedByJnv: string;
-  description: string;
-  createdAt: string;
-}
-
-const MOCK_JOBS: Job[] = [
-  {
-    id: "1", title: "Software Engineer", company: "Flipkart", location: "Bangalore",
-    salary: "₹18–24 LPA", type: "Full-time", category: "Tech",
-    postedBy: "Arjun Sharma", postedByJnv: "JNV Lucknow '14",
-    description: "Looking for passionate engineers to join our Core Platform team. B.Tech from any top college preferred.",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "2", title: "Data Analyst", company: "Razorpay", location: "Remote",
-    salary: "₹10–16 LPA", type: "Remote", category: "Tech",
-    postedBy: "Vikram Singh", postedByJnv: "JNV Patna '16",
-    description: "We need a sharp data analyst to help decode our payment data. Experience with SQL and Python required.",
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "3", title: "IAS Coaching Faculty", company: "Vajiram & Ravi", location: "Delhi",
-    salary: "₹8–12 LPA", type: "Full-time", category: "Govt",
-    postedBy: "Neha Gupta", postedByJnv: "JNV Agra '11",
-    description: "Subject matter expert needed for GS Paper 2. Prior teaching experience preferred.",
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "4", title: "Medical Officer", company: "AIIMS Bhopal", location: "Bhopal",
-    salary: "₹12–18 LPA", type: "Full-time", category: "Medical",
-    postedBy: "Dr. Priya Nair", postedByJnv: "JNV Kochi '09",
-    description: "Recruiting MBBS/MD doctors for the Emergency Department. Government accommodation provided.",
-    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "5", title: "Product Manager Intern", company: "Swiggy", location: "Bangalore",
-    salary: "₹40K/month", type: "Internship", category: "Tech",
-    postedBy: "Rohan Mishra", postedByJnv: "JNV Jabalpur '13",
-    description: "6-month PM internship. Work on core food delivery experience. MBA students preferred.",
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-];
+import { api } from "@/lib/api";
+import type { Job } from "@/lib/api";
 
 const CATEGORIES = ["All", "Tech", "Govt", "Medical", "Finance", "Other"];
-const JOB_TYPES = ["All Types", "Full-time", "Remote", "Internship", "Contract"];
 
 const CATEGORY_COLORS: Record<string, string> = {
   Tech: "#3B82F6",
@@ -94,16 +43,35 @@ export default function JobsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const [jobs, setJobs] = useState<Job[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [location, setLocation] = useState("");
   const [salary, setSalary] = useState("");
+  const [category, setCategory] = useState("Other");
   const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+
+  const fetchJobs = async () => {
+    try {
+      const data = await api.jobs.list();
+      setJobs(data);
+    } catch {
+      showToast("Failed to load jobs");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchJobs(); }, []);
 
   const filtered = jobs.filter((j) => {
     const matchSearch = !search ||
@@ -114,27 +82,41 @@ export default function JobsScreen() {
     return matchSearch && matchCat;
   });
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!title.trim() || !company.trim()) {
-      Alert.alert("Error", "Please fill in title and company");
+      showToast("Please fill in title and company");
       return;
     }
-    const newJob: Job = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      company: company.trim(),
-      location: location.trim() || "Remote",
-      salary: salary.trim() || undefined,
-      type: "Full-time",
-      category: "Other",
-      postedBy: profile?.fullName || "Navodayan",
-      postedByJnv: profile?.jnvName ? `${profile.jnvName}` : "JNV",
-      description: description.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    setJobs([newJob, ...jobs]);
-    setShowCreate(false);
-    setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription("");
+    setSubmitting(true);
+    try {
+      await api.jobs.create({
+        title: title.trim(),
+        company: company.trim(),
+        location: location.trim() || "Remote",
+        salary: salary.trim() || undefined,
+        type: "Full-time",
+        category,
+        description: description.trim(),
+      });
+      setShowCreate(false);
+      setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription(""); setCategory("Other");
+      showToast("Job posted!");
+      fetchJobs();
+    } catch {
+      showToast("Failed to post job");
+    }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (job: Job) => {
+    try {
+      await api.jobs.remove(job.id);
+      setSelectedJob(null);
+      showToast("Job removed");
+      fetchJobs();
+    } catch {
+      showToast("Failed to remove job");
+    }
   };
 
   return (
@@ -191,74 +173,132 @@ export default function JobsScreen() {
         </ScrollView>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <Text style={[styles.countText, { color: colors.mutedForeground }]}>
-            {filtered.length} openings
-          </Text>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="briefcase-outline" size={48} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No jobs found</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const catColor = CATEGORY_COLORS[item.category] || "#8B5CF6";
-          return (
-            <View style={[styles.jobCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.jobHeader}>
-                <View style={[styles.companyLogo, { backgroundColor: catColor + "18" }]}>
-                  <Text style={[styles.companyLogoText, { color: catColor }]}>
-                    {item.company.charAt(0)}
-                  </Text>
+      {loading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator color={colors.saffron} />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text style={[styles.countText, { color: colors.mutedForeground }]}>
+              {filtered.length} openings
+            </Text>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="briefcase-outline" size={48} color={colors.mutedForeground} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No jobs found</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const catColor = CATEGORY_COLORS[item.category] || "#8B5CF6";
+            return (
+              <TouchableOpacity
+                style={[styles.jobCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => setSelectedJob(item)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.jobHeader}>
+                  <View style={[styles.companyLogo, { backgroundColor: catColor + "18" }]}>
+                    <Text style={[styles.companyLogoText, { color: catColor }]}>
+                      {item.company.charAt(0)}
+                    </Text>
+                  </View>
+                  <View style={styles.jobInfo}>
+                    <Text style={[styles.jobTitle, { color: colors.foreground }]}>{item.title}</Text>
+                    <Text style={[styles.companyName, { color: colors.primary }]}>{item.company}</Text>
+                  </View>
+                  <View style={[styles.typeBadge, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.typeBadgeText, { color: colors.mutedForeground }]}>{item.type}</Text>
+                  </View>
                 </View>
-                <View style={styles.jobInfo}>
-                  <Text style={[styles.jobTitle, { color: colors.foreground }]}>{item.title}</Text>
-                  <Text style={[styles.companyName, { color: colors.primary }]}>{item.company}</Text>
-                </View>
-                <View style={[styles.typeBadge, { backgroundColor: colors.muted }]}>
-                  <Text style={[styles.typeBadgeText, { color: colors.mutedForeground }]}>{item.type}</Text>
-                </View>
-              </View>
 
+                <View style={styles.jobMeta}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.location}</Text>
+                  </View>
+                  {item.salary && (
+                    <View style={styles.metaItem}>
+                      <Ionicons name="cash-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.salary}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={[styles.jobDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                  {item.description}
+                </Text>
+
+                <View style={[styles.postedByRow, { borderTopColor: colors.border }]}>
+                  <View style={[styles.alumniDot, { backgroundColor: colors.saffron }]} />
+                  <Text style={[styles.postedByText, { color: colors.mutedForeground }]}>
+                    Posted by <Text style={[styles.postedByName, { color: colors.primary }]}>{item.postedByName}</Text> · {item.postedByJnv}
+                  </Text>
+                  <Text style={[styles.timeAgo, { color: colors.mutedForeground }]}>{timeAgo(item.createdAt)}</Text>
+                </View>
+
+                <View style={[styles.applyBtn, { backgroundColor: colors.saffron }]}>
+                  <Text style={styles.applyText}>View Details</Text>
+                  <Ionicons name="arrow-forward" size={14} color="#fff" />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+
+      <Modal visible={!!selectedJob} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setSelectedJob(null)}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>{selectedJob?.title}</Text>
+            <TouchableOpacity onPress={() => setSelectedJob(null)}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+          {selectedJob && (
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.companyName, { color: colors.primary, fontSize: 16, marginBottom: 8 }]}>{selectedJob.company}</Text>
               <View style={styles.jobMeta}>
                 <View style={styles.metaItem}>
-                  <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
-                  <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.location}</Text>
+                  <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
+                  <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{selectedJob.location}</Text>
                 </View>
-                {item.salary && (
+                {selectedJob.salary && (
                   <View style={styles.metaItem}>
-                    <Ionicons name="cash-outline" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.salary}</Text>
+                    <Ionicons name="cash-outline" size={14} color={colors.mutedForeground} />
+                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{selectedJob.salary}</Text>
                   </View>
                 )}
               </View>
-
-              <Text style={[styles.jobDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {item.description}
+              <Text style={[styles.jobDesc, { color: colors.foreground, marginTop: 16, fontSize: 14, lineHeight: 22 }]}>
+                {selectedJob.description || "No further description provided."}
               </Text>
-
-              <View style={[styles.postedByRow, { borderTopColor: colors.border }]}>
-                <View style={[styles.alumniDot, { backgroundColor: colors.saffron }]} />
-                <Text style={[styles.postedByText, { color: colors.mutedForeground }]}>
-                  Posted by <Text style={[styles.postedByName, { color: colors.primary }]}>{item.postedBy}</Text> · {item.postedByJnv}
-                </Text>
-                <Text style={[styles.timeAgo, { color: colors.mutedForeground }]}>{timeAgo(item.createdAt)}</Text>
-              </View>
-
-              <TouchableOpacity style={[styles.applyBtn, { backgroundColor: colors.saffron }]}>
-                <Text style={styles.applyText}>Apply Now</Text>
-                <Ionicons name="arrow-forward" size={14} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+              <Text style={[styles.postedByText, { color: colors.mutedForeground, marginTop: 16 }]}>
+                Posted by {selectedJob.postedByName} · {selectedJob.postedByJnv} · {timeAgo(selectedJob.createdAt)}
+              </Text>
+              {selectedJob.postedBy === profile?.uid ? (
+                <PremiumButton
+                  title="Remove Posting"
+                  variant="outline"
+                  onPress={() => handleDelete(selectedJob)}
+                  style={{ marginTop: 20 }}
+                />
+              ) : (
+                <PremiumButton
+                  title="Reach Out via Chats"
+                  onPress={() => { setSelectedJob(null); showToast(`Look for ${selectedJob.postedByName} in Alumni directory to connect`); }}
+                  style={{ marginTop: 20 }}
+                />
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
@@ -273,6 +313,21 @@ export default function JobsScreen() {
             <PremiumInput label="Company" value={company} onChangeText={setCompany} placeholder="E.g. Google, ISRO, AIIMS" icon="business-outline" />
             <PremiumInput label="Location" value={location} onChangeText={setLocation} placeholder="E.g. Bangalore / Remote" icon="location-outline" />
             <PremiumInput label="Salary (optional)" value={salary} onChangeText={setSalary} placeholder="E.g. ₹12–18 LPA" icon="cash-outline" />
+            <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Category</Text>
+            <View style={styles.catPickRow}>
+              {CATEGORIES.filter((c) => c !== "All").map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setCategory(c)}
+                  style={[
+                    styles.filterChip,
+                    { backgroundColor: category === c ? colors.saffron : colors.muted, borderColor: category === c ? colors.saffron : colors.border },
+                  ]}
+                >
+                  <Text style={[styles.filterChipText, { color: category === c ? "#fff" : colors.mutedForeground }]}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <PremiumInput
               label="Job Description"
               value={description}
@@ -283,10 +338,16 @@ export default function JobsScreen() {
               style={{ minHeight: 80, textAlignVertical: "top" }}
               icon="create-outline"
             />
-            <PremiumButton title="Post Job" onPress={handlePost} style={{ marginTop: 8 }} />
+            <PremiumButton title="Post Job" onPress={handlePost} loading={submitting} style={{ marginTop: 8 }} />
           </ScrollView>
         </View>
       </Modal>
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -333,4 +394,11 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   modalContent: { padding: 20 },
+  fieldLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 8, marginTop: 4 },
+  catPickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+  toast: {
+    position: "absolute", bottom: 100, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
 });

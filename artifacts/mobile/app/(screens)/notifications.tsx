@@ -62,8 +62,8 @@ export default function NotificationsScreen() {
               <PremiumCard
                 style={[
                   styles.notifCard,
-                  !item.read && { borderLeftWidth: 3, borderLeftColor: colors.primary },
-                ]}
+                  !item.read ? { borderLeftWidth: 3, borderLeftColor: colors.primary } : {},
+                ] as any}
               >
                 <View style={styles.notifRow}>
                   <View style={[styles.iconBg, { backgroundColor: config.color + "15" }]}>

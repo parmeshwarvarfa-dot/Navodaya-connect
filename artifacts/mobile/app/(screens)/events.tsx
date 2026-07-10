@@ -8,7 +8,6 @@ import {
   Platform,
   Modal,
   ScrollView,
-  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,6 +33,7 @@ export default function EventsScreen() {
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const canCreate = profile?.role === "teacher" || profile?.role === "official";
 
@@ -48,8 +48,9 @@ export default function EventsScreen() {
   useEffect(() => { fetchEvents(); }, []);
 
   const handleCreate = async () => {
+    setFormError("");
     if (!title.trim() || !date.trim()) {
-      Alert.alert("Error", "Please fill title and date");
+      setFormError("Please fill title and date");
       return;
     }
     setSubmitting(true);
@@ -64,7 +65,7 @@ export default function EventsScreen() {
       setTitle(""); setDescription(""); setDate(""); setLocation("");
       fetchEvents();
     } catch {
-      Alert.alert("Error", "Failed to create event");
+      setFormError("Failed to create event. Please try again.");
     }
     setSubmitting(false);
   };
@@ -151,6 +152,7 @@ export default function EventsScreen() {
               style={{ minHeight: 80, textAlignVertical: "top" }}
               icon="create-outline"
             />
+            {formError ? <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 8 }}>{formError}</Text> : null}
             <PremiumButton title="Create Event" onPress={handleCreate} loading={submitting} style={{ marginTop: 8 }} />
           </ScrollView>
         </View>

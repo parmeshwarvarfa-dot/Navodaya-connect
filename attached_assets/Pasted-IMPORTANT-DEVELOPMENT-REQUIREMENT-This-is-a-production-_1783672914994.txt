@@ -1,0 +1,60 @@
+IMPORTANT DEVELOPMENT REQUIREMENT
+
+This is a production-level application, not a UI prototype.
+
+Every screen, button, card, menu item, icon, tab, floating action button, list item, navigation element, form, dropdown, search bar, filter, dialog, profile option, settings option, and feature in the entire Navodaya Connect app MUST be fully functional and connected to real application logic.
+
+Do NOT leave any placeholder buttons, dummy pages, fake interactions, or non-functional UI.
+
+Every user interaction must perform a real action.
+
+Examples:
+• Every button should trigger its intended function.
+• Every navigation item should open its correct screen.
+• Every form should validate input and save data to Firebase.
+• Every Create button should actually create a document in Firestore.
+• Every Edit button should update existing data.
+• Every Delete button should delete the selected data after confirmation.
+• Every Join button should add the current user to the selected group.
+• Every Leave button should remove the user from the group.
+• Every Like, Comment, Reply, Share, Bookmark, Follow, and Save action should update the database.
+• Every Search bar should perform real-time searching.
+• Every Filter should return filtered results.
+• Every Notification should open the related content.
+• Every Profile should display real user information.
+• Every image picker should upload images to Firebase Storage.
+• Every file upload should work correctly.
+• Every chat should send and receive messages in real time.
+• Every status should update immediately in Firestore.
+• Every loading state should display a progress indicator.
+• Every success or error should show an appropriate message.
+
+If any feature cannot be implemented exactly as planned because of platform limitations, DO NOT leave it disabled.
+
+Instead:
+- Design and implement the closest fully working alternative.
+- Replace incomplete functionality with a practical working solution.
+- Never leave dead buttons or empty pages.
+- Never generate placeholder screens unless absolutely necessary.
+
+Every feature in the application must be usable by the end user.
+
+Perform an internal audit before completing the app:
+
+✓ Check every screen.
+✓ Check every button.
+✓ Check every menu.
+✓ Check every navigation path.
+✓ Check every form.
+✓ Check every database operation.
+✓ Check every Firebase connection.
+✓ Check every permission.
+✓ Check every role (Student, Alumni, Teacher, Official).
+
+Automatically fix any broken, missing, or disconnected functionality.
+
+The final application should behave like a real production-ready mobile application, not a visual concept or prototype.
+
+Quality is more important than speed.
+
+Do not stop until every feature that can reasonably be implemented is fully interactive, connected, and working.

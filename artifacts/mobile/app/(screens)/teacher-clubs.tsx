@@ -7,11 +7,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-const INITIAL_CLUBS = [
-  { id: "1", name: "Coding Club",    icon: "code-slash-outline"     as const, color: "#3D5AF1", bg: "#EEF2FF", members: 42, description: "Programming, hackathons, projects.",      managed: true,  nextEvent: "Hackathon Prep — 12 May"  },
-  { id: "2", name: "Science Club",   icon: "flask-outline"          as const, color: "#0891B2", bg: "#E0F2FE", members: 35, description: "Experiments, Olympiad preparation.",       managed: true,  nextEvent: "Olympiad Mock — 11 May"   },
-  { id: "3", name: "Debate Society", icon: "mic-outline"            as const, color: "#8B5CF6", bg: "#F5F3FF", members: 28, description: "Parliamentary debates, MUN, public speaking.",managed: false, nextEvent: "Debate on AI — 15 May"    },
-  { id: "4", name: "Robotics Club",  icon: "hardware-chip-outline"  as const, color: "#F59E0B", bg: "#FFFBEB", members: 19, description: "Arduino, robotics competitions.",           managed: false, nextEvent: "Arduino Workshop — 18 May" },
+type ClubIcon = React.ComponentProps<typeof Ionicons>["name"];
+interface Club {
+  id: string; name: string; icon: ClubIcon; color: string; bg: string;
+  members: number; description: string; managed: boolean; nextEvent: string;
+}
+
+const INITIAL_CLUBS: Club[] = [
+  { id: "1", name: "Coding Club",    icon: "code-slash-outline",     color: "#3D5AF1", bg: "#EEF2FF", members: 42, description: "Programming, hackathons, projects.",      managed: true,  nextEvent: "Hackathon Prep — 12 May"  },
+  { id: "2", name: "Science Club",   icon: "flask-outline",          color: "#0891B2", bg: "#E0F2FE", members: 35, description: "Experiments, Olympiad preparation.",       managed: true,  nextEvent: "Olympiad Mock — 11 May"   },
+  { id: "3", name: "Debate Society", icon: "mic-outline",            color: "#8B5CF6", bg: "#F5F3FF", members: 28, description: "Parliamentary debates, MUN, public speaking.",managed: false, nextEvent: "Debate on AI — 15 May"    },
+  { id: "4", name: "Robotics Club",  icon: "hardware-chip-outline",  color: "#F59E0B", bg: "#FFFBEB", members: 19, description: "Arduino, robotics competitions.",           managed: false, nextEvent: "Arduino Workshop — 18 May" },
 ];
 
 const ANNOUNCEMENTS = [
@@ -41,7 +47,7 @@ export default function TeacherClubsScreen() {
 
   const createClub = () => {
     if (!name.trim() || !desc.trim()) { setFormErr("Name and description required."); return; }
-    setClubs((p) => [...p, { id: Date.now().toString(), name, icon: "star-outline" as const, color: "#EC4899", bg: "#FDF2F8", members: 0, description: desc, managed: true, nextEvent: "No events yet" }]);
+    setClubs((p) => [...p, { id: Date.now().toString(), name, icon: "star-outline", color: "#EC4899", bg: "#FDF2F8", members: 0, description: desc, managed: true, nextEvent: "No events yet" }]);
     setName(""); setDesc(""); setFormErr("");
     setShowCreate(false);
     showToast("Club created!");

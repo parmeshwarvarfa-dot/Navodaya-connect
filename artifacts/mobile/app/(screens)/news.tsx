@@ -169,7 +169,7 @@ export default function NewsScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <PremiumCard style={[styles.newsCard, isAnnouncement(item) && styles.announceCard]}>
+          <PremiumCard style={[styles.newsCard, isAnnouncement(item) ? styles.announceCard : {}] as any}>
             {isAnnouncement(item) && <View style={styles.announceStripe} />}
             <View style={styles.cardMeta}>
               <View style={[styles.catBadge, {

@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   Platform,
-  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -61,7 +60,10 @@ export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [joined, setJoined] = useState<string[]>([]);
+  const [toast, setToast] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
   useEffect(() => {
     if (profile?.profession) {
@@ -77,7 +79,7 @@ export default function CommunityScreen() {
       setJoined(joined.filter((j) => j !== groupId));
     } else {
       setJoined([...joined, groupId]);
-      Alert.alert("Joined!", "You've joined this community group.");
+      showToast("You've joined this community group.");
     }
   };
 
@@ -128,12 +130,23 @@ export default function CommunityScreen() {
           );
         }}
       />
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  toast: {
+    position: "absolute", bottom: 30, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },

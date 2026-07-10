@@ -172,7 +172,7 @@ export default function StudyFeedbackScreen() {
 
           {/* Anonymous toggle */}
           <TouchableOpacity style={styles.anonToggle} onPress={() => setAnonymous(!anonymous)}>
-            <Ionicons name={anonymous ? "checkmark-square" : "square-outline"} size={22} color={anonymous ? "#3D5AF1" : "#9CA3AF"} />
+            <Ionicons name={anonymous ? "checkbox" : "square-outline"} size={22} color={anonymous ? "#3D5AF1" : "#9CA3AF"} />
             <View style={{ flex: 1 }}>
               <Text style={styles.anonLabel}>Submit Anonymously</Text>
               <Text style={styles.anonSub}>{anonymous ? "Your name will NOT be visible to anyone" : "Your name will be attached to this feedback"}</Text>

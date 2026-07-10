@@ -10,10 +10,11 @@ import {
   Dimensions,
   Modal,
   TextInput,
-  Alert,
+  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
@@ -61,7 +62,33 @@ export default function MemoriesScreen() {
   const [uploadCaption, setUploadCaption] = useState("");
   const [uploadCategory, setUploadCategory] = useState("Sports");
   const [memories, setMemories] = useState(MEMORIES);
+  const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const [toast, setToast] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+
+  const pickPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { showToast("Photo library permission denied"); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setPickedUri(result.assets[0].uri);
+    }
+  };
+
+  const handleShare = async (caption: string, uri: string) => {
+    try {
+      await Share.share({ message: `${caption} — shared from Navodaya Connect`, url: uri });
+    } catch {
+      showToast("Could not open share sheet");
+    }
+  };
 
   const filtered = activeCategory === "All"
     ? memories
@@ -77,21 +104,26 @@ export default function MemoriesScreen() {
 
   const handleUpload = () => {
     if (!uploadCaption.trim()) {
-      Alert.alert("Caption required", "Please add a caption for your memory.");
+      showToast("Please add a caption for your memory.");
+      return;
+    }
+    if (!pickedUri) {
+      showToast("Please choose a photo first.");
       return;
     }
     const newMemory: MemoryItem = {
       id: `u${Date.now()}`,
       category: uploadCategory,
-      uri: `https://picsum.photos/seed/upload${Date.now()}/400/400`,
+      uri: pickedUri,
       caption: uploadCaption.trim(),
       likes: 0,
     };
     setMemories((prev) => [newMemory, ...prev]);
     setUploadCaption("");
     setUploadCategory("Sports");
+    setPickedUri(null);
     setShowUpload(false);
-    Alert.alert("Uploaded!", "Your memory has been shared with the community.");
+    showToast("Your memory has been shared with the community.");
   };
 
   return (
@@ -187,11 +219,11 @@ export default function MemoriesScreen() {
                       {selected.likes + (likedItems.has(selected.id) ? 1 : 0)}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.lightboxAction} onPress={() => Alert.alert("Share", "Sharing feature coming soon!")}>
+                  <TouchableOpacity style={styles.lightboxAction} onPress={() => handleShare(selected.caption, selected.uri)}>
                     <Ionicons name="share-outline" size={24} color="#fff" />
                     <Text style={styles.lightboxActionText}>Share</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.lightboxAction} onPress={() => Alert.alert("Download", "Downloading memory...")}>
+                  <TouchableOpacity style={styles.lightboxAction} onPress={() => handleShare(selected.caption, selected.uri)}>
                     <Ionicons name="download-outline" size={24} color="#fff" />
                     <Text style={styles.lightboxActionText}>Save</Text>
                   </TouchableOpacity>
@@ -212,9 +244,13 @@ export default function MemoriesScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.uploadBody} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity style={styles.photoPickerBtn} onPress={() => Alert.alert("Photo Library", "Photo picker would open here.\n(In production, this uses expo-image-picker)")}>
-              <Ionicons name="image-outline" size={40} color="#3D5AF1" />
-              <Text style={styles.photoPickerText}>Tap to choose a photo</Text>
+            <TouchableOpacity style={styles.photoPickerBtn} onPress={pickPhoto}>
+              {pickedUri ? (
+                <Image source={{ uri: pickedUri }} style={{ width: 96, height: 96, borderRadius: 12, marginBottom: 8 }} />
+              ) : (
+                <Ionicons name="image-outline" size={40} color="#3D5AF1" />
+              )}
+              <Text style={styles.photoPickerText}>{pickedUri ? "Change photo" : "Tap to choose a photo"}</Text>
               <Text style={styles.photoPickerSub}>JPG, PNG up to 10MB</Text>
             </TouchableOpacity>
 
@@ -249,12 +285,23 @@ export default function MemoriesScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
+  toast: {
+    position: "absolute", bottom: 30, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

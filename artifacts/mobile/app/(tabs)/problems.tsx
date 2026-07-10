@@ -8,15 +8,14 @@ import {
   Platform,
   Modal,
   ScrollView,
-  Alert,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { api } from "@/lib/api";
-import type { Problem } from "@/lib/api";
+import type { Problem, ProblemWithComments } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
@@ -51,7 +50,15 @@ export default function ProblemsScreen() {
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ProblemWithComments | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const fetchProblems = async () => {
     try {
@@ -65,7 +72,7 @@ export default function ProblemsScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      Alert.alert("Error", "Please fill in title and description");
+      showToast("Please fill in title and description");
       return;
     }
     setSubmitting(true);
@@ -77,11 +84,53 @@ export default function ProblemsScreen() {
       setCategory("Academic");
       setPriority("medium");
       setAnonymous(false);
+      showToast("Problem submitted");
       fetchProblems();
     } catch {
-      Alert.alert("Error", "Failed to submit problem");
+      showToast("Failed to submit problem");
     }
     setSubmitting(false);
+  };
+
+  const openDetail = async (id: string) => {
+    setSelectedId(id);
+    setDetailLoading(true);
+    try {
+      const data = await api.problems.get(id);
+      setDetail(data);
+    } catch {
+      showToast("Failed to load problem");
+    }
+    setDetailLoading(false);
+  };
+
+  const closeDetail = () => { setSelectedId(null); setDetail(null); setCommentText(""); };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim() || !selectedId) return;
+    setCommentSubmitting(true);
+    try {
+      await api.problems.addComment(selectedId, commentText.trim());
+      setCommentText("");
+      const data = await api.problems.get(selectedId);
+      setDetail(data);
+    } catch {
+      showToast("Failed to add comment");
+    }
+    setCommentSubmitting(false);
+  };
+
+  const handleUpdateStatus = async (status: string) => {
+    if (!selectedId) return;
+    try {
+      await api.problems.updateStatus(selectedId, status);
+      const data = await api.problems.get(selectedId);
+      setDetail(data);
+      fetchProblems();
+      showToast("Status updated");
+    } catch {
+      showToast("Failed to update status");
+    }
   };
 
   return (
@@ -117,7 +166,7 @@ export default function ProblemsScreen() {
           const statusCfg = STATUS_CONFIG[item.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.submitted;
           const priorityCfg = PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
           return (
-            <TouchableOpacity activeOpacity={0.85}>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => openDetail(item.id)}>
               <PremiumCard style={styles.card}>
                 <View style={styles.cardHeader}>
                   <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
@@ -200,12 +249,100 @@ export default function ProblemsScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <Modal visible={!!selectedId} animationType="slide" presentationStyle="formSheet" onRequestClose={closeDetail}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Problem Details</Text>
+            <TouchableOpacity onPress={closeDetail}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+          {detailLoading || !detail ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+              <View style={styles.cardHeader}>
+                <View style={[styles.statusBadge, { backgroundColor: (STATUS_CONFIG[detail.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.submitted).bg }]}>
+                  <Text style={[styles.statusText, { color: (STATUS_CONFIG[detail.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.submitted).color }]}>
+                    {(STATUS_CONFIG[detail.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.submitted).label}
+                  </Text>
+                </View>
+                <Text style={[styles.priorityText, { color: (PRIORITY_CONFIG[detail.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium).color }]}>
+                  {(PRIORITY_CONFIG[detail.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium).label} priority
+                </Text>
+              </View>
+              <Text style={[styles.cardTitle, { color: colors.foreground, fontSize: 17, marginTop: 6 }]}>{detail.title}</Text>
+              <Text style={[styles.cardDesc, { color: colors.foreground, marginTop: 6 }]}>{detail.description}</Text>
+              <Text style={[styles.submittedBy, { color: colors.mutedForeground, marginTop: 8 }]}>
+                {detail.anonymous ? "Anonymous" : detail.submittedByName} · {detail.category}
+              </Text>
+
+              {(profile?.role === "teacher" || profile?.role === "official") && (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Update Status</Text>
+                  <View style={styles.priorityRow}>
+                    {Object.keys(STATUS_CONFIG).map((s) => (
+                      <TouchableOpacity
+                        key={s}
+                        onPress={() => handleUpdateStatus(s)}
+                        style={[styles.priorityBtn, { backgroundColor: detail.status === s ? colors.primary : colors.muted, borderRadius: 10 }]}
+                      >
+                        <Text style={[styles.priorityBtnText, { color: detail.status === s ? "#fff" : colors.foreground, fontSize: 11 }]}>
+                          {STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
+                Comments ({detail.comments?.length || 0})
+              </Text>
+              {(detail.comments || []).map((c) => (
+                <View key={c.id} style={[styles.commentItem, { borderColor: colors.border }]}>
+                  <Text style={[styles.commentAuthor, { color: colors.foreground }]}>{c.authorName} <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>· {c.role}</Text></Text>
+                  <Text style={[styles.commentText, { color: colors.foreground }]}>{c.text}</Text>
+                </View>
+              ))}
+              <PremiumInput
+                label="Add a comment"
+                value={commentText}
+                onChangeText={setCommentText}
+                placeholder="Write a helpful comment…"
+                multiline
+                numberOfLines={3}
+                style={{ minHeight: 60, textAlignVertical: "top" }}
+                icon="chatbubble-outline"
+              />
+              <PremiumButton title="Post Comment" onPress={handleAddComment} loading={commentSubmitting} style={{ marginTop: 8, marginBottom: 20 }} />
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  toast: {
+    position: "absolute", bottom: 100, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
+  commentItem: { borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 8 },
+  commentAuthor: { fontSize: 12, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
+  commentText: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },

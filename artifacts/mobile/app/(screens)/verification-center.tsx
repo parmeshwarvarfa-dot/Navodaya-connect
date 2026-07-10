@@ -37,7 +37,7 @@ export default function VerificationCenterScreen() {
   const { profile, refreshProfile, signOut } = useAuth();
 
   const [request, setRequest]   = useState<VerificationRequest | null>(null);
-  const [status, setStatus]     = useState(profile?.verificationStatus ?? "pending");
+  const [status, setStatus]     = useState<string>(profile?.verificationStatus ?? "pending");
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast]       = useState("");

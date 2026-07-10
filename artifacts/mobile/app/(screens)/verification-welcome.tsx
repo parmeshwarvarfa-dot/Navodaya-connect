@@ -38,8 +38,8 @@ export default function VerificationWelcomeScreen() {
 
   const markShownAndGo = async (destination: "/(screens)/verification-center" | "/(tabs)") => {
     try {
-      if (profile?.id) {
-        await AsyncStorage.setItem(`verification_welcome_shown_${profile.id}`, "1");
+      if (profile?.uid) {
+        await AsyncStorage.setItem(`verification_welcome_shown_${profile.uid}`, "1");
       }
     } catch {}
     router.replace(destination as any);

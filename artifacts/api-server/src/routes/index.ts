@@ -9,6 +9,7 @@ import usersRouter from "./users";
 import mentorRequestsRouter from "./mentorRequests";
 import verificationRouter from "./verification";
 import teacherFeedbackRouter from "./teacherFeedback";
+import jobsRouter from "./jobs";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(usersRouter);
 router.use(mentorRequestsRouter);
 router.use(verificationRouter);
 router.use(teacherFeedbackRouter);
+router.use(jobsRouter);
 
 export default router;

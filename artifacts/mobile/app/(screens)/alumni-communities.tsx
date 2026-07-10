@@ -7,15 +7,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-const INITIAL_COMMUNITIES = [
-  { id: "1", name: "JNV Coders",       icon: "code-slash-outline"     as const, color: "#3D5AF1", bg: "#EEF2FF", members: 312, description: "Programming, open source, hackathons, career in tech.",    joined: true,  posts: 8,  category: "Tech"        },
-  { id: "2", name: "Startup Network",  icon: "rocket-outline"         as const, color: "#F59E0B", bg: "#FFFBEB", members: 145, description: "Founders, side projects, funding, startup ecosystem.",       joined: false, posts: 14, category: "Startup"     },
-  { id: "3", name: "UPSC Prep Group",  icon: "library-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", members: 267, description: "UPSC preparation, current affairs, strategy, motivation.",   joined: true,  posts: 22, category: "Gov/UPSC"    },
-  { id: "4", name: "Healthcare Alums", icon: "medkit-outline"         as const, color: "#10B981", bg: "#ECFDF5", members: 198, description: "Doctors, nurses, medical research alumni network.",           joined: false, posts: 5,  category: "Medicine"    },
-  { id: "5", name: "Defence Heroes",   icon: "shield-outline"         as const, color: "#6366F1", bg: "#EEF2FF", members: 134, description: "Army, Navy, Air Force alumni — inspiring stories & tips.",  joined: false, posts: 11, category: "Defence"     },
-  { id: "6", name: "Research & PhDs",  icon: "flask-outline"          as const, color: "#0891B2", bg: "#E0F2FE", members: 87,  description: "PhD scholars, researchers, academic career guidance.",      joined: false, posts: 3,  category: "Research"    },
-  { id: "7", name: "Sports Champions", icon: "football-outline"       as const, color: "#EC4899", bg: "#FDF2F8", members: 76,  description: "JNV sports alumni — athletics, national competitions.",     joined: false, posts: 7,  category: "Sports"      },
-  { id: "8", name: "JNV Arts & Culture",icon: "color-palette-outline" as const, color: "#D97706", bg: "#FFFBEB", members: 59,  description: "Music, art, literature, cultural events from JNV life.",    joined: false, posts: 4,  category: "Arts"        },
+type CommunityIcon = React.ComponentProps<typeof Ionicons>["name"];
+interface Community {
+  id: string; name: string; icon: CommunityIcon; color: string; bg: string;
+  members: number; description: string; joined: boolean; posts: number; category: string;
+}
+
+const INITIAL_COMMUNITIES: Community[] = [
+  { id: "1", name: "JNV Coders",       icon: "code-slash-outline",     color: "#3D5AF1", bg: "#EEF2FF", members: 312, description: "Programming, open source, hackathons, career in tech.",    joined: true,  posts: 8,  category: "Tech"        },
+  { id: "2", name: "Startup Network",  icon: "rocket-outline",         color: "#F59E0B", bg: "#FFFBEB", members: 145, description: "Founders, side projects, funding, startup ecosystem.",       joined: false, posts: 14, category: "Startup"     },
+  { id: "3", name: "UPSC Prep Group",  icon: "library-outline",        color: "#8B5CF6", bg: "#F5F3FF", members: 267, description: "UPSC preparation, current affairs, strategy, motivation.",   joined: true,  posts: 22, category: "Gov/UPSC"    },
+  { id: "4", name: "Healthcare Alums", icon: "medkit-outline",         color: "#10B981", bg: "#ECFDF5", members: 198, description: "Doctors, nurses, medical research alumni network.",           joined: false, posts: 5,  category: "Medicine"    },
+  { id: "5", name: "Defence Heroes",   icon: "shield-outline",         color: "#6366F1", bg: "#EEF2FF", members: 134, description: "Army, Navy, Air Force alumni — inspiring stories & tips.",  joined: false, posts: 11, category: "Defence"     },
+  { id: "6", name: "Research & PhDs",  icon: "flask-outline",          color: "#0891B2", bg: "#E0F2FE", members: 87,  description: "PhD scholars, researchers, academic career guidance.",      joined: false, posts: 3,  category: "Research"    },
+  { id: "7", name: "Sports Champions", icon: "football-outline",       color: "#EC4899", bg: "#FDF2F8", members: 76,  description: "JNV sports alumni — athletics, national competitions.",     joined: false, posts: 7,  category: "Sports"      },
+  { id: "8", name: "JNV Arts & Culture",icon: "color-palette-outline", color: "#D97706", bg: "#FFFBEB", members: 59,  description: "Music, art, literature, cultural events from JNV life.",    joined: false, posts: 4,  category: "Arts"        },
 ];
 
 const RECENT_DISCUSSIONS = [
@@ -47,7 +53,7 @@ export default function AlumniCommunitiesScreen() {
 
   const createCommunity = () => {
     if (!name.trim() || !desc.trim()) return;
-    setCommunities((p) => [...p, { id: Date.now().toString(), name, icon: "star-outline" as const, color: "#6B7280", bg: "#F3F4F6", members: 1, description: desc, joined: true, posts: 0, category }]);
+    setCommunities((p) => [...p, { id: Date.now().toString(), name, icon: "star-outline", color: "#6B7280", bg: "#F3F4F6", members: 1, description: desc, joined: true, posts: 0, category }]);
     setName(""); setDesc(""); setShowCreate(false);
     showToast("Community created! Invite fellow alumni to join.");
   };

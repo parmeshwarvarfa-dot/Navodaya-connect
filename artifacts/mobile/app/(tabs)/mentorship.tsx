@@ -8,7 +8,6 @@ import {
   Platform,
   Modal,
   ScrollView,
-  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,7 +34,10 @@ export default function MentorshipScreen() {
   const [message, setMessage] = useState("");
   const [selectedMentor, setSelectedMentor] = useState<AlumniUser | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState("");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const fetchMentors = async () => {
     try {
@@ -58,7 +60,7 @@ export default function MentorshipScreen() {
 
   const handleRequest = async () => {
     if (!message.trim()) {
-      Alert.alert("Error", "Please write a message");
+      showToast("Please write a message");
       return;
     }
     if (!selectedMentor) return;
@@ -72,10 +74,10 @@ export default function MentorshipScreen() {
       });
       setShowRequest(false);
       setMessage("");
-      Alert.alert("Success", "Mentorship request sent!");
+      showToast("Mentorship request sent!");
       fetchRequests();
     } catch {
-      Alert.alert("Error", "Failed to send request");
+      showToast("Failed to send request");
     }
     setSubmitting(false);
   };
@@ -229,12 +231,23 @@ export default function MentorshipScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {!!toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  toast: {
+    position: "absolute", bottom: 100, left: 20, right: 20,
+    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+  },
+  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   header: { paddingHorizontal: 20, paddingBottom: 0 },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 16 },
   tabRow: { flexDirection: "row", gap: 4, marginBottom: 0 },
