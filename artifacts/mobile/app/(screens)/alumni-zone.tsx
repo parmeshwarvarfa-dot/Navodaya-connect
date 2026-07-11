@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import type { Event } from "@/lib/api";
+import EventCard from "@/components/EventCard";
 
 const FEATURES = [
   { label: "Connect",        icon: "people-outline"           as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-connect"       },
@@ -50,6 +53,11 @@ export default function AlumniZoneScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
   const isVerified = profile?.verificationStatus === "verified";
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    api.events.list().then((data) => setUpcomingEvents(data.slice(0, 2))).catch(() => {});
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -120,22 +128,26 @@ export default function AlumniZoneScreen() {
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-            {UPCOMING_EVENTS.map((e, i) => (
-              <View key={i} style={styles.eventCard}>
-                <Text style={styles.eventType}>{e.type}</Text>
-                <Text style={styles.eventTitle}>{e.title}</Text>
-                <View style={styles.eventMeta}>
-                  <Ionicons name="calendar-outline" size={12} color="#6B7280" />
-                  <Text style={styles.eventDate}>{e.date}</Text>
-                  <Text style={styles.eventDivider}>·</Text>
-                  <Ionicons name="people-outline" size={12} color="#6B7280" />
-                  <Text style={styles.eventDate}>{e.attendees}</Text>
-                </View>
-                <View style={styles.rsvpBtn}><Text style={styles.rsvpBtnText}>RSVP</Text></View>
-              </View>
-            ))}
-          </ScrollView>
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event, i) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                index={i}
+                showRegisterButton={false}
+              />
+            ))
+          ) : (
+            <TouchableOpacity
+              style={styles.eventEmptyCard}
+              onPress={() => router.push("/(tabs)/events" as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={24} color="#9CA3AF" />
+              <Text style={styles.eventEmptyText}>Tap to browse upcoming events</Text>
+              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Recent Achievements */}

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Dimensions,
+  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Dimensions, ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,9 +51,14 @@ export default function VerificationWelcomeScreen() {
 
       <Animated.View
         style={[
-          s.content,
-          { paddingTop: topPad + 20, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          s.contentWrap,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
+      >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[s.content, { paddingTop: topPad + 20 }]}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Badge icon */}
         <Animated.View style={[s.badgeWrap, { transform: [{ scale: scaleAnim }] }]}>

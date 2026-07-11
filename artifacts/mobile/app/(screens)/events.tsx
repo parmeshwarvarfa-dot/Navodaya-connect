@@ -3,11 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Platform,
   Modal,
-  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,17 +17,15 @@ import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
-import { PremiumCard } from "@/components/PremiumCard";
-import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
+import EventCard from "@/components/EventCard";
 
 export default function EventsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -46,6 +45,12 @@ export default function EventsScreen() {
   };
 
   useEffect(() => { fetchEvents(); }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchEvents();
+    setRefreshing(false);
+  };
 
   const handleCreate = async () => {
     setFormError("");
@@ -71,76 +76,71 @@ export default function EventsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={[colors.gradientStart, colors.gradientEnd]}
-        style={[styles.header, { paddingTop: topPad + 8 }]}
-      >
+    <View style={styles.container}>
+      <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Events</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Events</Text>
+            <Text style={styles.headerSub}>JNV functions, webinars &amp; reunions</Text>
+          </View>
           {canCreate && (
             <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
-              <Ionicons name="add" size={22} color="#fff" />
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addBtnText}>Organise</Text>
             </TouchableOpacity>
           )}
         </View>
       </LinearGradient>
 
-      <FlatList
-        data={events}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 40 }]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading ? (
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color="#3D5AF1" size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
+        >
+          {events.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No events yet</Text>
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <PremiumCard style={styles.eventCard}>
-            <View style={styles.eventHeader}>
-              <View style={[styles.dateBox, { backgroundColor: colors.primary }]}>
-                <Text style={styles.dateText}>{item.date?.split(" ")[0] || "TBD"}</Text>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="calendar-outline" size={40} color="#9CA3AF" />
               </View>
-              <View style={styles.eventInfo}>
-                <Text style={[styles.eventTitle, { color: colors.foreground }]}>{item.title}</Text>
-                {item.location && (
-                  <View style={styles.locationRow}>
-                    <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.locationText, { color: colors.mutedForeground }]}>{item.location}</Text>
-                  </View>
-                )}
-                <Text style={[styles.organizerText, { color: colors.mutedForeground }]}>
-                  By {item.organizer}
-                </Text>
-              </View>
-            </View>
-            {item.description ? (
-              <Text style={[styles.eventDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {item.description}
+              <Text style={styles.emptyTitle}>No Events Yet</Text>
+              <Text style={styles.emptyText}>
+                {canCreate
+                  ? "Tap + Organise to create the first event for your JNV."
+                  : "Check back later for upcoming events and programmes."}
               </Text>
-            ) : null}
-          </PremiumCard>
-        )}
-      />
+            </View>
+          ) : (
+            events.map((event, idx) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                index={idx}
+                showRegisterButton={false}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
 
-      <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Create Event</Text>
-            <TouchableOpacity onPress={() => setShowCreate(false)}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+      <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowCreate(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Create Event</Text>
+            <TouchableOpacity onPress={() => setShowCreate(false)} style={styles.closeBtn}>
+              <Ionicons name="close" size={22} color="#374151" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
             <PremiumInput label="Event Title" value={title} onChangeText={setTitle} placeholder="Event name" icon="calendar-outline" />
-            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="e.g. Jan 15, 2026 at 10:00 AM" icon="time-outline" />
+            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="e.g. 2026-01-15T10:00:00Z" icon="time-outline" />
             <PremiumInput label="Location" value={location} onChangeText={setLocation} placeholder="e.g. School Auditorium" icon="location-outline" />
             <PremiumInput
               label="Description"
@@ -152,8 +152,24 @@ export default function EventsScreen() {
               style={{ minHeight: 80, textAlignVertical: "top" }}
               icon="create-outline"
             />
-            {formError ? <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 8 }}>{formError}</Text> : null}
-            <PremiumButton title="Create Event" onPress={handleCreate} loading={submitting} style={{ marginTop: 8 }} />
+            {formError ? (
+              <Text style={styles.formError}>{formError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+              onPress={handleCreate}
+              disabled={submitting}
+              activeOpacity={0.85}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="add-circle-outline" size={20} color="#fff" />
+                  <Text style={styles.submitBtnText}>Publish Event</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </Modal>
@@ -162,27 +178,47 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
-  addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  listContent: { padding: 16 },
-  eventCard: { marginBottom: 12 },
-  eventHeader: { flexDirection: "row", gap: 12, marginBottom: 10 },
-  dateBox: { width: 52, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  dateText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold", textAlign: "center" },
-  eventInfo: { flex: 1 },
-  eventTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 },
-  locationText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  organizerText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  eventDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  modalContainer: { flex: 1 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+  },
+  headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
+  headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  addBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.3)",
+  },
+  addBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
+  emptyState: { alignItems: "center", paddingTop: 60, paddingHorizontal: 24 },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center", marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 8 },
+  emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22 },
+  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  modalHeader: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0",
+  },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
+  closeBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center",
+  },
   modalContent: { padding: 20 },
+  formError: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 8 },
+  submitBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16, marginTop: 8,
+  },
+  submitBtnDisabled: { opacity: 0.6 },
+  submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
 });

@@ -20,6 +20,7 @@ import { api, getToken } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
+import EventCard from "@/components/EventCard";
 
 // ─── API helpers (registrations not in lib/api yet, call directly) ────────────
 async function registerForEvent(
@@ -434,90 +435,16 @@ export default function EventsScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
       >
-        {displayEvents.map((event, idx) => {
-          const { day, month } = getDateParts(event.date);
-          const isOnline = event.location?.toLowerCase().includes("online") || event.location?.toLowerCase().includes("zoom") || event.location?.toLowerCase().includes("meet");
-          const isReg = registered.has(event.id);
-          const isSuccess = successEvent === event.id;
-          const grad = GRADIENT_SETS[idx % GRADIENT_SETS.length];
-
-          return (
-            <View key={event.id} style={styles.eventCard}>
-              {/* Coloured header strip */}
-              <LinearGradient colors={grad} style={styles.eventStrip}>
-                <View style={styles.dateBox}>
-                  <Text style={styles.dateDay}>{day}</Text>
-                  <Text style={styles.dateMonth}>{month}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.stripTitle} numberOfLines={2}>{event.title}</Text>
-                  {event.organizer && <Text style={styles.stripOrg}>Organised by {event.organizer}</Text>}
-                </View>
-                {isOnline && (
-                  <View style={styles.onlinePill}>
-                    <Ionicons name="videocam-outline" size={11} color="#3D5AF1" />
-                    <Text style={styles.onlinePillText}>Online</Text>
-                  </View>
-                )}
-              </LinearGradient>
-
-              {/* Body */}
-              <View style={styles.eventBody}>
-                <Text style={styles.eventDesc} numberOfLines={3}>{event.description}</Text>
-
-                <View style={styles.metaGrid}>
-                  <View style={styles.metaItem}>
-                    <View style={[styles.metaIcon, { backgroundColor: "#EEF2FF" }]}>
-                      <Ionicons name="time-outline" size={14} color="#3D5AF1" />
-                    </View>
-                    <View>
-                      <Text style={styles.metaLabel}>Date & Time</Text>
-                      <Text style={styles.metaValue}>{event.date}</Text>
-                    </View>
-                  </View>
-                  {event.location && (
-                    <View style={styles.metaItem}>
-                      <View style={[styles.metaIcon, { backgroundColor: "#FEF2F2" }]}>
-                        <Ionicons name="location-outline" size={14} color="#EF4444" />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.metaLabel}>Venue</Text>
-                        <Text style={styles.metaValue} numberOfLines={1}>{event.location}</Text>
-                      </View>
-                    </View>
-                  )}
-                  {event.jnvName && (
-                    <View style={styles.metaItem}>
-                      <View style={[styles.metaIcon, { backgroundColor: "#ECFDF5" }]}>
-                        <Ionicons name="school-outline" size={14} color="#10B981" />
-                      </View>
-                      <View>
-                        <Text style={styles.metaLabel}>Hosted By</Text>
-                        <Text style={styles.metaValue}>{event.jnvName}</Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                {isSuccess ? (
-                  <View style={styles.successBanner}>
-                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                    <Text style={styles.successBannerText}>You're registered! See you there.</Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.registerBtn, isReg && styles.registeredBtn]}
-                    onPress={() => isReg ? null : tryAccess("Events", () => setRegEvent(event))}
-                    activeOpacity={isReg ? 1 : 0.85}
-                  >
-                    <Ionicons name={isReg ? "checkmark-circle" : "person-add-outline"} size={17} color="#fff" />
-                    <Text style={styles.registerBtnText}>{isReg ? "Registered" : "Register for this Event"}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          );
-        })}
+        {displayEvents.map((event, idx) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            index={idx}
+            registered={registered.has(event.id)}
+            registrationSuccess={successEvent === event.id}
+            onRegister={() => tryAccess("Events", () => setRegEvent(event))}
+          />
+        ))}
       </ScrollView>
 
       {gateModal}
