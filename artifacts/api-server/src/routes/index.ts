@@ -10,6 +10,16 @@ import mentorRequestsRouter from "./mentorRequests";
 import verificationRouter from "./verification";
 import teacherFeedbackRouter from "./teacherFeedback";
 import jobsRouter from "./jobs";
+import announcementsRouter from "./announcements";
+import assignmentsRouter from "./assignments";
+import studyMaterialsRouter from "./studyMaterials";
+import qaRouter from "./qa";
+import connectionsRouter from "./connections";
+import memoriesRouter from "./memories";
+import achievementsRouter from "./achievements";
+import clubsRouter from "./clubs";
+import studentQueriesRouter from "./studentQueries";
+import reportsRouter from "./reports";
 
 const router: IRouter = Router();
 
@@ -24,5 +34,15 @@ router.use(mentorRequestsRouter);
 router.use(verificationRouter);
 router.use(teacherFeedbackRouter);
 router.use(jobsRouter);
+router.use(announcementsRouter);
+router.use(assignmentsRouter);
+router.use(studyMaterialsRouter);
+router.use(qaRouter);
+router.use(connectionsRouter);
+router.use(memoriesRouter);
+router.use(achievementsRouter);
+router.use(clubsRouter);
+router.use(studentQueriesRouter);
+router.use(reportsRouter);
 
 export default router;

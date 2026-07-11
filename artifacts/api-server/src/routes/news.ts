@@ -41,12 +41,12 @@ router.post("/news", requireAuth, async (req, res) => {
 router.delete("/news/:id", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
-    const [item] = await db.select().from(newsTable).where(eq(newsTable.id, req.params.id)).limit(1);
+    const [item] = await db.select().from(newsTable).where(eq(newsTable.id, req.params.id as string)).limit(1);
     if (!item) return res.status(404).json({ error: "Not found" });
     if (item.authorId !== user.id && user.role !== "official") {
       return res.status(403).json({ error: "Forbidden" });
     }
-    await db.delete(newsTable).where(eq(newsTable.id, req.params.id));
+    await db.delete(newsTable).where(eq(newsTable.id, req.params.id as string));
     res.json({ ok: true });
   } catch (e: any) {
     req.log.error(e);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,6 +6,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { Memory } from "@/lib/api";
 
 const POST_TAGS = ["Memory", "Achievement", "Advice", "Story", "Motivation"];
 const TAG_COLOR: Record<string, string> = {
@@ -22,27 +24,40 @@ const INITIAL_POSTS = [
 export default function AlumniMemoriesScreen() {
   const insets  = useSafeAreaInsets();
   const topPad  = Platform.OS === "web" ? 60 : insets.top;
-  const [posts,      setPosts]      = useState(INITIAL_POSTS);
+  const [posts,      setPosts]      = useState<Memory[]>([]);
+  const [loading,    setLoading]    = useState(true);
   const [activeTag,  setActiveTag]  = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [postText,   setPostText]   = useState("");
-  const [postTag,    setPostTag]    = useState("Memory");
+  const [submitting, setSubmitting] = useState(false);
   const [toast,      setToast]      = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const toggleLike = (id: string) => {
-    setPosts((p) => p.map((post) => post.id === id ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 } : post));
+  useEffect(() => {
+    api.memories.list().then(setPosts).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const toggleLike = async (id: string) => {
+    try {
+      const result = await api.memories.toggleLike(id);
+      setPosts((p) => p.map((post) => post.id === id ? { ...post, liked: result.liked, likes: result.likes } : post));
+    } catch { showToast("Failed to update like."); }
   };
 
-  const createPost = () => {
+  const createPost = async () => {
     if (!postText.trim()) return;
-    setPosts((p) => [{ id: Date.now().toString(), author: "You", jnv: "Your JNV", year: "Alumni", tag: postTag, text: postText, likes: 0, comments: 0, liked: false, time: "Just now", verified: false }, ...p]);
-    setPostText(""); setShowCreate(false);
-    showToast("Post shared with your JNV community!");
+    setSubmitting(true);
+    try {
+      const row = await api.memories.create({ caption: postText.trim() });
+      setPosts((p) => [row, ...p]);
+      setPostText(""); setShowCreate(false);
+      showToast("Post shared with your JNV community!");
+    } catch (e: any) { showToast(e?.message || "Failed to post."); }
+    setSubmitting(false);
   };
 
-  const filtered = activeTag === "All" ? posts : posts.filter((p) => p.tag === activeTag);
+  const filtered = posts;
 
   return (
     <View style={styles.container}>
@@ -66,25 +81,23 @@ export default function AlumniMemoriesScreen() {
       </ScrollView>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
-        {filtered.map((post) => {
-          const tagColor = TAG_COLOR[post.tag] || "#6B7280";
-          return (
+        {loading ? (
+          <Text style={{ textAlign: "center", color: "#9CA3AF", marginTop: 40 }}>Loading…</Text>
+        ) : filtered.length === 0 ? (
+          <View style={{ alignItems: "center", paddingTop: 60 }}><Text style={{ fontSize: 40, marginBottom: 12 }}>📝</Text><Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" }}>No posts yet. Share your memory!</Text></View>
+        ) : filtered.map((post) => (
             <View key={post.id} style={styles.postCard}>
               <View style={styles.postHeader}>
-                <View style={styles.authorAvatar}><Text style={styles.authorAvatarText}>{post.author[0]}</Text></View>
+                <View style={styles.authorAvatar}><Text style={styles.authorAvatarText}>{(post.authorName || "A")[0]}</Text></View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.authorRow}>
-                    <Text style={styles.authorName}>{post.author}</Text>
-                    {post.verified && <Ionicons name="checkmark-circle" size={14} color="#3D5AF1" />}
+                    <Text style={styles.authorName}>{post.authorName || "Alumni"}</Text>
                   </View>
-                  <Text style={styles.authorMeta}>{post.jnv} · {post.year} batch · {post.time}</Text>
-                </View>
-                <View style={[styles.tagPill, { backgroundColor: tagColor + "18" }]}>
-                  <Text style={[styles.tagText, { color: tagColor }]}>{post.tag}</Text>
+                  <Text style={styles.authorMeta}>{post.jnvName || "JNV"} · {new Date(post.createdAt).toLocaleDateString()}</Text>
                 </View>
               </View>
 
-              <Text style={styles.postText}>{post.text}</Text>
+              {post.caption ? <Text style={styles.postText}>{post.caption}</Text> : null}
 
               <View style={styles.postActions}>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => toggleLike(post.id)}>
@@ -92,20 +105,15 @@ export default function AlumniMemoriesScreen() {
                   <Text style={[styles.actionCount, post.liked && { color: "#EF4444" }]}>{post.likes}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtn}>
-                  <Ionicons name="chatbubble-outline" size={18} color="#9CA3AF" />
-                  <Text style={styles.actionCount}>{post.comments}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
                   <Ionicons name="share-social-outline" size={18} color="#9CA3AF" />
                   <Text style={styles.actionCount}>Share</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: "/(screens)/report-user", params: { userId: post.authorId, userName: post.authorName || "" } })}>
                   <Ionicons name="flag-outline" size={16} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
             </View>
-          );
-        })}
+          ))}
       </ScrollView>
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
@@ -116,26 +124,15 @@ export default function AlumniMemoriesScreen() {
               <TouchableOpacity onPress={() => setShowCreate(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-              <Text style={styles.fieldLabel}>Post Type</Text>
-              <View style={styles.tagGrid}>
-                {POST_TAGS.map((t) => {
-                  const tc = TAG_COLOR[t] || "#6B7280";
-                  return (
-                    <TouchableOpacity key={t} style={[styles.tagCard, postTag === t && { borderColor: tc, backgroundColor: tc + "10" }]} onPress={() => setPostTag(t)}>
-                      <Text style={[styles.tagCardText, postTag === t && { color: tc }]}>{t}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={styles.fieldLabel}>Your Post *</Text>
+              <Text style={styles.fieldLabel}>Your Memory / Update *</Text>
               <TextInput style={[styles.input, { minHeight: 140 }]} placeholder="Share a memory, achievement, advice or story with your JNV community…" placeholderTextColor="#9CA3AF" value={postText} onChangeText={setPostText} multiline textAlignVertical="top" />
               <View style={styles.guideNote}>
                 <Ionicons name="shield-checkmark-outline" size={14} color="#3D5AF1" />
-                <Text style={styles.guideNoteText}>Posts are moderated. Keep content educational and community-focused.</Text>
+                <Text style={styles.guideNoteText}>Posts are visible to your JNV community. Keep content educational and community-focused.</Text>
               </View>
-              <TouchableOpacity style={styles.confirmBtn} onPress={createPost}>
+              <TouchableOpacity style={[styles.confirmBtn, submitting && { opacity: 0.6 }]} onPress={createPost} disabled={submitting}>
                 <Ionicons name="share-social-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Share Post</Text>
+                <Text style={styles.confirmBtnText}>{submitting ? "Posting…" : "Share Post"}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

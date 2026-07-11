@@ -74,7 +74,7 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
     if (!allowedStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
 
     const [existing] = await db.select().from(verificationRequestsTable)
-      .where(eq(verificationRequestsTable.id, req.params.id)).limit(1);
+      .where(eq(verificationRequestsTable.id, req.params.id as string)).limit(1);
     if (!existing) return res.status(404).json({ error: "Request not found" });
     if (existing.jnvName !== user.jnvName) return res.status(403).json({ error: "Not your JNV" });
 
@@ -90,21 +90,21 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
 
     const [updated] = await db.update(verificationRequestsTable)
       .set(updates)
-      .where(eq(verificationRequestsTable.id, req.params.id))
+      .where(eq(verificationRequestsTable.id, req.params.id as string))
       .returning();
 
     if (status === "approved") {
       await db.update(usersTable)
         .set({ verificationStatus: "verified" })
-        .where(eq(usersTable.id, existing.userId));
+        .where(eq(usersTable.id, existing.userId as string));
     } else if (status === "rejected") {
       await db.update(usersTable)
         .set({ verificationStatus: "rejected" })
-        .where(eq(usersTable.id, existing.userId));
+        .where(eq(usersTable.id, existing.userId as string));
     } else if (status === "pending") {
       await db.update(usersTable)
         .set({ verificationStatus: "pending" })
-        .where(eq(usersTable.id, existing.userId));
+        .where(eq(usersTable.id, existing.userId as string));
     }
 
     res.json(updated);
@@ -119,13 +119,13 @@ router.patch("/users/:id/suspend", requireAuth, async (req, res) => {
     const official = getUser(req);
     if (official.role !== "official") return res.status(403).json({ error: "Officials only" });
     const { suspended } = req.body;
-    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id)).limit(1);
+    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id as string)).limit(1);
     if (!target) return res.status(404).json({ error: "User not found" });
     if (target.jnvName !== official.jnvName) return res.status(403).json({ error: "Not your JNV" });
     const newStatus = suspended ? "suspended" : "verified";
     const [updated] = await db.update(usersTable)
       .set({ verificationStatus: newStatus })
-      .where(eq(usersTable.id, req.params.id))
+      .where(eq(usersTable.id, req.params.id as string))
       .returning();
     const { passwordHash, ...safe } = updated;
     res.json(safe);

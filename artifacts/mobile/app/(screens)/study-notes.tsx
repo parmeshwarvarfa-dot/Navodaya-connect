@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Platform, TextInput,
@@ -6,23 +6,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { StudyMaterial } from "@/lib/api";
 
 const SUBJECTS = ["All", "Physics", "Chemistry", "Maths", "English", "Biology", "History"];
 const TYPES    = ["All", "PDF", "Notes", "PYQ", "Slides", "Link"];
 
-const NOTES = [
-  { id: "1", title: "Electromagnetic Waves — Complete Chapter",  subject: "Physics",   type: "PDF",   teacher: "Mr. Ramesh Kumar",  date: "Today",     class: "Class 11 Science A", size: "2.4 MB",  bookmarked: true  },
-  { id: "2", title: "Trigonometry Identities & Formulas",        subject: "Maths",     type: "Notes", teacher: "Ms. Asha Sharma",   date: "Yesterday", class: "Class 11 Science A", size: "450 KB",  bookmarked: false },
-  { id: "3", title: "Organic Chemistry — Hydrocarbons",          subject: "Chemistry", type: "PDF",   teacher: "Ms. Pooja Devi",    date: "2 days ago",class: "Class 11 Science A", size: "3.1 MB",  bookmarked: true  },
-  { id: "4", title: "Essay Writing — Structure & Examples",      subject: "English",   type: "Notes", teacher: "Mr. Sunil Tiwari",  date: "3 days ago",class: "Class 11 Science A", size: "320 KB",  bookmarked: false },
-  { id: "5", title: "JEE PYQs — Physics 2018–2024",             subject: "Physics",   type: "PYQ",   teacher: "Mr. Ramesh Kumar",  date: "4 days ago",class: "Class 11 Science A", size: "5.7 MB",  bookmarked: false },
-  { id: "6", title: "Calculus — Differential Equations",         subject: "Maths",     type: "PDF",   teacher: "Ms. Asha Sharma",   date: "5 days ago",class: "Class 11 Science A", size: "1.8 MB",  bookmarked: false },
-  { id: "7", title: "Cell Biology — NCERT + Extra Notes",        subject: "Biology",   type: "Notes", teacher: "Dr. Meera Verma",   date: "1 week ago",class: "Class 11 Science A", size: "900 KB",  bookmarked: true  },
-  { id: "8", title: "Modern History — Freedom Movement Slides",  subject: "History",   type: "Slides",teacher: "Mr. Arjun Das",     date: "1 week ago",class: "Class 11 Science A", size: "3.8 MB",  bookmarked: false },
-  { id: "9", title: "NEET Biology PYQs 2015–2024",              subject: "Biology",   type: "PYQ",   teacher: "Dr. Meera Verma",   date: "2 weeks ago",class: "Class 11 Science A", size: "6.2 MB",  bookmarked: false },
-];
-
-const TYPE_ICON: Record<string, keyof typeof import("@expo/vector-icons").Ionicons.glyphMap> = {
+const TYPE_ICON: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   PDF: "document-outline", Notes: "document-text-outline",
   PYQ: "school-outline",   Slides: "easel-outline",
   Link: "link-outline",
@@ -34,20 +24,32 @@ const TYPE_COLOR: Record<string, string> = {
 export default function StudyNotesScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const [materials,   setMaterials]   = useState<StudyMaterial[]>([]);
+  const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
   const [activeSubj,  setActiveSubj]  = useState("All");
   const [activeType,  setActiveType]  = useState("All");
-  const [bookmarks,   setBookmarks]   = useState<Set<string>>(new Set(NOTES.filter((n) => n.bookmarked).map((n) => n.id)));
   const [toast,       setToast]       = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
-  const toggleBM  = (id: string, title: string) => {
-    setBookmarks((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    showToast(bookmarks.has(id) ? "Bookmark removed" : `"${title}" bookmarked!`);
+
+  const fetchMaterials = async () => {
+    try { setMaterials(await api.studyMaterials.list()); } catch {}
+    setLoading(false);
   };
 
-  const filtered = NOTES.filter((n) => {
-    const matchS = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.subject.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => { fetchMaterials(); }, []);
+
+  const toggleBM = async (id: string, title: string, bookmarked: boolean) => {
+    try {
+      const result = await api.studyMaterials.toggleBookmark(id);
+      setMaterials((p) => p.map((m) => m.id === id ? { ...m, bookmarked: result.bookmarked } : m));
+      showToast(result.bookmarked ? `"${title}" bookmarked!` : "Bookmark removed");
+    } catch { showToast("Failed to update bookmark."); }
+  };
+
+  const filtered = materials.filter((n) => {
+    const matchS    = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.subject.toLowerCase().includes(search.toLowerCase());
     const matchSubj = activeSubj === "All" || n.subject === activeSubj;
     const matchType = activeType === "All" || n.type === activeType;
     return matchS && matchSubj && matchType;
@@ -60,8 +62,8 @@ export default function StudyNotesScreen() {
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Study Notes</Text>
-        <TouchableOpacity style={styles.bookmarkToggle} onPress={() => { setActiveSubj("All"); setActiveType("All"); }}>
-          <Ionicons name="bookmark-outline" size={20} color="#3D5AF1" />
+        <TouchableOpacity style={styles.bookmarkToggle} onPress={() => { setActiveSubj("All"); setActiveType("All"); setSearch(""); }}>
+          <Ionicons name="refresh-outline" size={20} color="#3D5AF1" />
         </TouchableOpacity>
       </View>
 
@@ -71,7 +73,6 @@ export default function StudyNotesScreen() {
         {search ? <TouchableOpacity onPress={() => setSearch("")}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity> : null}
       </View>
 
-      {/* Subject chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
         {SUBJECTS.map((s) => (
           <TouchableOpacity key={s} style={[styles.chip, activeSubj === s && styles.chipActive]} onPress={() => setActiveSubj(s)}>
@@ -80,7 +81,6 @@ export default function StudyNotesScreen() {
         ))}
       </ScrollView>
 
-      {/* Type chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, { paddingTop: 0 }]} style={{ flexGrow: 0 }}>
         {TYPES.map((t) => (
           <TouchableOpacity key={t} style={[styles.chip, activeType === t && { ...styles.chipActive, backgroundColor: TYPE_COLOR[t] || "#3D5AF1" }]} onPress={() => setActiveType(t)}>
@@ -90,9 +90,13 @@ export default function StudyNotesScreen() {
       </ScrollView>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
-        <Text style={styles.resultCount}>{filtered.length} materials found</Text>
+        {loading ? (
+          <Text style={styles.resultCount}>Loading materials…</Text>
+        ) : (
+          <Text style={styles.resultCount}>{filtered.length} materials found</Text>
+        )}
 
-        {filtered.length === 0 ? (
+        {!loading && filtered.length === 0 ? (
           <View style={styles.empty}><Text style={styles.emptyIcon}>📂</Text><Text style={styles.emptyText}>No materials found</Text></View>
         ) : filtered.map((note) => (
           <View key={note.id} style={styles.noteCard}>
@@ -105,22 +109,28 @@ export default function StudyNotesScreen() {
               <View style={styles.noteTitleRow}>
                 <Text style={styles.noteTitle} numberOfLines={2}>{note.title}</Text>
               </View>
-              <Text style={styles.noteMeta}>{note.subject} · {note.teacher}</Text>
+              <Text style={styles.noteMeta}>{note.subject} · {note.authorName || "Teacher"}</Text>
               <View style={styles.noteFooter}>
                 <View style={[styles.typePill, { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" }]}>
                   <Text style={[styles.typePillText, { color: TYPE_COLOR[note.type] || "#3D5AF1" }]}>{note.type}</Text>
                 </View>
-                <Text style={styles.noteSize}>{note.size}</Text>
-                <Text style={styles.noteDate}>{note.date}</Text>
+                {note.size ? <Text style={styles.noteSize}>{note.size}</Text> : null}
+                <Text style={styles.noteDate}>{new Date(note.createdAt).toLocaleDateString()}</Text>
               </View>
             </View>
             <View style={styles.noteActions}>
-              <TouchableOpacity onPress={() => toggleBM(note.id, note.title)} style={styles.actionBtn}>
-                <Ionicons name={bookmarks.has(note.id) ? "bookmark" : "bookmark-outline"} size={18} color={bookmarks.has(note.id) ? "#3D5AF1" : "#9CA3AF"} />
+              <TouchableOpacity onPress={() => toggleBM(note.id, note.title, note.bookmarked)} style={styles.actionBtn}>
+                <Ionicons name={note.bookmarked ? "bookmark" : "bookmark-outline"} size={18} color={note.bookmarked ? "#3D5AF1" : "#9CA3AF"} />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" }]}>
-                <Ionicons name="download-outline" size={16} color={TYPE_COLOR[note.type] || "#3D5AF1"} />
-              </TouchableOpacity>
+              {note.url ? (
+                <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" }]}>
+                  <Ionicons name="open-outline" size={16} color={TYPE_COLOR[note.type] || "#3D5AF1"} />
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.downloadBtn, { backgroundColor: "#F3F4F6" }]}>
+                  <Ionicons name="document-outline" size={16} color="#9CA3AF" />
+                </View>
+              )}
             </View>
           </View>
         ))}

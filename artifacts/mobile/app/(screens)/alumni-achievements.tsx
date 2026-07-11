@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,49 +6,51 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { Achievement } from "@/lib/api";
 
-const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award"];
+const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award", "Career"];
 const CAT_COLOR: Record<string, string> = {
   "Placement": "#10B981", "College Admission": "#3D5AF1", "UPSC/Gov": "#8B5CF6",
   "Startup": "#F59E0B", "Research": "#0891B2", "Sports": "#EC4899", "Award": "#D97706",
+  "Career": "#3D5AF1",
 };
 
 const FEATURED = [
-  { name: "Kavita Singh",   achievement: "UPSC AIR 47",        category: "UPSC/Gov",         detail: "IAS Officer · 2012 Batch",   emoji: "🎖️", jnv: "JNV Patna"    },
-  { name: "Rahul Verma",    achievement: "Google SWE",          category: "Placement",         detail: "Software Engineer · 2018",   emoji: "🏆", jnv: "JNV Lucknow"  },
-  { name: "Dr. Meera Iyer", achievement: "AIIMS Delhi",         category: "College Admission", detail: "MBBS, AIIMS · 2015 Batch",   emoji: "⭐", jnv: "JNV Kochi"    },
-];
-
-const ACHIEVEMENTS = [
-  { id: "1", name: "Arjun Sharma",    year: "2020", jnv: "JNV Jaipur",   category: "College Admission", title: "JEE Advanced AIR 204 – IIT Bombay CSE",   description: "Cleared JEE Advanced with AIR 204 after one year of self-study at JNV!", likes: 89,  liked: false, time: "2 days ago",  verified: true  },
-  { id: "2", name: "Sneha Dubey",     year: "2021", jnv: "JNV Varanasi", category: "Research",          title: "PhD Scholarship at IISc Bangalore",        description: "Awarded full scholarship for PhD in Computational Biology at IISc!",       likes: 56,  liked: false, time: "3 days ago",  verified: false },
-  { id: "3", name: "Vivek Nair",      year: "2014", jnv: "JNV Thrissur", category: "Award",             title: "Gallantry Award – Indian Army Captain",    description: "Honoured with Sena Medal for outstanding service in Siachen Glacier.",    likes: 213, liked: true,  time: "1 week ago",  verified: true  },
-  { id: "4", name: "Priti Gupta",     year: "2016", jnv: "JNV Bhopal",   category: "Placement",        title: "Selected as Public Prosecutor – Govt of MP", description: "Cleared MPPSC Law exam and appointed as District Public Prosecutor.",    likes: 74,  liked: false, time: "2 weeks ago", verified: false },
-  { id: "5", name: "Manish Kumar",    year: "2013", jnv: "JNV Ranchi",   category: "Startup",           title: "EdTech Startup reaches 50,000 Students",   description: "My EdTech startup Shiksha.ai now serves 50K+ students across 12 states!", likes: 167, liked: false, time: "3 weeks ago", verified: true  },
+  { name: "Kavita Singh",   achievement: "UPSC AIR 47",   category: "UPSC/Gov",         detail: "IAS Officer · 2012 Batch", emoji: "🎖️", jnv: "JNV Patna"   },
+  { name: "Rahul Verma",    achievement: "Google SWE",     category: "Placement",         detail: "Engineer · 2018",          emoji: "🏆", jnv: "JNV Lucknow" },
+  { name: "Dr. Meera Iyer", achievement: "AIIMS Delhi",    category: "College Admission", detail: "MBBS, AIIMS · 2015",       emoji: "⭐", jnv: "JNV Kochi"   },
 ];
 
 export default function AlumniAchievementsScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 60 : insets.top;
-  const [achievements, setAchievements] = useState(ACHIEVEMENTS);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loading,      setLoading]      = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
   const [showShare,    setShowShare]    = useState(false);
   const [shareTitle,   setShareTitle]   = useState("");
   const [shareDesc,    setShareDesc]    = useState("");
   const [shareCat,     setShareCat]     = useState("Placement");
   const [toast,        setToast]        = useState("");
+  const [submitting,   setSubmitting]   = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const toggleLike = (id: string) => {
-    setAchievements((p) => p.map((a) => a.id === id ? { ...a, liked: !a.liked, likes: a.liked ? a.likes - 1 : a.likes + 1 } : a));
-  };
+  useEffect(() => {
+    api.achievements.list().then(setAchievements).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
-  const shareAchievement = () => {
+  const shareAchievement = async () => {
     if (!shareTitle.trim() || !shareDesc.trim()) return;
-    setAchievements((p) => [{ id: Date.now().toString(), name: "You", year: "Alumni", jnv: "Your JNV", category: shareCat, title: shareTitle, description: shareDesc, likes: 0, liked: false, time: "Just now", verified: false }, ...p]);
-    setShareTitle(""); setShareDesc(""); setShowShare(false);
-    showToast("Achievement shared! Inspiring the community 🎉");
+    setSubmitting(true);
+    try {
+      const row = await api.achievements.create({ title: shareTitle.trim(), description: shareDesc.trim(), category: shareCat });
+      setAchievements((p) => [row, ...p]);
+      setShareTitle(""); setShareDesc(""); setShowShare(false);
+      showToast("Achievement shared! Inspiring the community 🎉");
+    } catch (e: any) { showToast(e?.message || "Failed to share."); }
+    setSubmitting(false);
   };
 
   const filtered = activeFilter === "All" ? achievements : achievements.filter((a) => a.category === activeFilter);
@@ -96,18 +98,21 @@ export default function AlumniAchievementsScreen() {
         </ScrollView>
 
         <View style={{ paddingHorizontal: 16 }}>
-          {filtered.map((a) => {
+          {loading ? (
+            <Text style={{ textAlign: "center", color: "#9CA3AF", marginTop: 20 }}>Loading achievements…</Text>
+          ) : filtered.length === 0 ? (
+            <View style={{ alignItems: "center", paddingTop: 40 }}><Text style={{ fontSize: 40, marginBottom: 10 }}>🏆</Text><Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" }}>No achievements yet. Be the first!</Text></View>
+          ) : filtered.map((a) => {
             const cc = CAT_COLOR[a.category] || "#6B7280";
             return (
               <View key={a.id} style={styles.achCard}>
                 <View style={styles.achHeader}>
-                  <View style={styles.achAvatar}><Text style={styles.achAvatarText}>{a.name[0]}</Text></View>
+                  <View style={styles.achAvatar}><Text style={styles.achAvatarText}>{(a.authorName || "A")[0]}</Text></View>
                   <View style={{ flex: 1 }}>
                     <View style={styles.achNameRow}>
-                      <Text style={styles.achName}>{a.name}</Text>
-                      {a.verified && <Ionicons name="checkmark-circle" size={14} color="#3D5AF1" />}
+                      <Text style={styles.achName}>{a.authorName || "Alumni"}</Text>
                     </View>
-                    <Text style={styles.achMeta}>{a.jnv} · {a.year} · {a.time}</Text>
+                    <Text style={styles.achMeta}>{a.jnvName || "JNV"}{a.batch ? ` · ${a.batch} batch` : ""} · {new Date(a.createdAt).toLocaleDateString()}</Text>
                   </View>
                   <View style={[styles.catPill, { backgroundColor: cc + "18" }]}>
                     <Text style={[styles.catText, { color: cc }]}>{a.category}</Text>
@@ -116,10 +121,6 @@ export default function AlumniAchievementsScreen() {
                 <Text style={styles.achTitle}>{a.title}</Text>
                 <Text style={styles.achDesc}>{a.description}</Text>
                 <View style={styles.achFooter}>
-                  <TouchableOpacity style={styles.likeBtn} onPress={() => toggleLike(a.id)}>
-                    <Ionicons name={a.liked ? "heart" : "heart-outline"} size={16} color={a.liked ? "#EF4444" : "#9CA3AF"} />
-                    <Text style={[styles.likeCount, a.liked && { color: "#EF4444" }]}>{a.likes}</Text>
-                  </TouchableOpacity>
                   <TouchableOpacity style={styles.inspireBtnWrap}>
                     <Text style={styles.inspireBtn}>🙌 Inspiring!</Text>
                   </TouchableOpacity>
@@ -153,9 +154,9 @@ export default function AlumniAchievementsScreen() {
               <TextInput style={styles.input} placeholder="e.g. Cleared UPSC AIR 47" placeholderTextColor="#9CA3AF" value={shareTitle} onChangeText={setShareTitle} />
               <Text style={styles.fieldLabel}>Your Story *</Text>
               <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Share your journey — inspire your JNV juniors!" placeholderTextColor="#9CA3AF" value={shareDesc} onChangeText={setShareDesc} multiline textAlignVertical="top" />
-              <TouchableOpacity style={styles.confirmBtn} onPress={shareAchievement}>
+              <TouchableOpacity style={[styles.confirmBtn, submitting && { opacity: 0.6 }]} onPress={shareAchievement} disabled={submitting}>
                 <Ionicons name="trophy-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Share Achievement</Text>
+                <Text style={styles.confirmBtnText}>{submitting ? "Sharing…" : "Share Achievement"}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

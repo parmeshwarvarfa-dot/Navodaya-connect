@@ -53,10 +53,10 @@ router.post("/groups", requireAuth, async (req, res) => {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 router.get("/groups/:id/messages", requireAuth, async (req, res) => {
-  if (!UUID_RE.test(req.params.id)) return res.json([]);
+  if (!UUID_RE.test(req.params.id as string)) return res.json([]);
   try {
     const messages = await db.select().from(groupMessagesTable)
-      .where(eq(groupMessagesTable.groupId, req.params.id))
+      .where(eq(groupMessagesTable.groupId, req.params.id as string))
       .orderBy(asc(groupMessagesTable.createdAt))
       .limit(200);
     res.json(messages);
@@ -67,13 +67,13 @@ router.get("/groups/:id/messages", requireAuth, async (req, res) => {
 });
 
 router.post("/groups/:id/messages", requireAuth, async (req, res) => {
-  if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "invalid group id" });
+  if (!UUID_RE.test(req.params.id as string)) return res.status(400).json({ error: "invalid group id" });
   try {
     const user = getUser(req);
     const { text, replyToId, replyToText, replyToSender } = req.body;
     if (!text?.trim()) return res.status(400).json({ error: "text required" });
     const [msg] = await db.insert(groupMessagesTable).values({
-      groupId: req.params.id,
+      groupId: req.params.id as string,
       text: text.trim(),
       senderName: user.fullName,
       senderId: user.id,
@@ -95,12 +95,12 @@ router.patch("/groups/:id/messages/:msgId", requireAuth, async (req, res) => {
     const { text } = req.body;
     if (!text?.trim()) return res.status(400).json({ error: "text required" });
     const [existing] = await db.select().from(groupMessagesTable)
-      .where(eq(groupMessagesTable.id, req.params.msgId)).limit(1);
+      .where(eq(groupMessagesTable.id, req.params.msgId as string)).limit(1);
     if (!existing) return res.status(404).json({ error: "Message not found" });
     if (existing.senderId !== user.id) return res.status(403).json({ error: "You can only edit your own messages" });
     const [updated] = await db.update(groupMessagesTable)
       .set({ text: text.trim(), isEdited: true })
-      .where(eq(groupMessagesTable.id, req.params.msgId))
+      .where(eq(groupMessagesTable.id, req.params.msgId as string))
       .returning();
     res.json(updated);
   } catch (e: any) {
@@ -113,14 +113,14 @@ router.delete("/groups/:id/messages/:msgId", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const [existing] = await db.select().from(groupMessagesTable)
-      .where(eq(groupMessagesTable.id, req.params.msgId)).limit(1);
+      .where(eq(groupMessagesTable.id, req.params.msgId as string)).limit(1);
     if (!existing) return res.status(404).json({ error: "Message not found" });
     if (existing.senderId !== user.id && user.role !== "teacher" && user.role !== "official") {
       return res.status(403).json({ error: "Cannot delete this message" });
     }
     const [deleted] = await db.update(groupMessagesTable)
       .set({ deletedAt: new Date() })
-      .where(eq(groupMessagesTable.id, req.params.msgId))
+      .where(eq(groupMessagesTable.id, req.params.msgId as string))
       .returning();
     res.json(deleted);
   } catch (e: any) {
@@ -135,7 +135,7 @@ router.post("/groups/:id/messages/:msgId/react", requireAuth, async (req, res) =
     const { emoji } = req.body;
     if (!emoji) return res.status(400).json({ error: "emoji required" });
     const [existing] = await db.select().from(groupMessagesTable)
-      .where(eq(groupMessagesTable.id, req.params.msgId)).limit(1);
+      .where(eq(groupMessagesTable.id, req.params.msgId as string)).limit(1);
     if (!existing) return res.status(404).json({ error: "Message not found" });
 
     type ReactionEntry = { emoji: string; count: number; userIds: string[] };
@@ -160,7 +160,7 @@ router.post("/groups/:id/messages/:msgId/react", requireAuth, async (req, res) =
 
     const [updated] = await db.update(groupMessagesTable)
       .set({ reactions: JSON.stringify(reactions) })
-      .where(eq(groupMessagesTable.id, req.params.msgId))
+      .where(eq(groupMessagesTable.id, req.params.msgId as string))
       .returning();
     res.json(updated);
   } catch (e: any) {
@@ -172,8 +172,8 @@ router.post("/groups/:id/messages/:msgId/react", requireAuth, async (req, res) =
 router.get("/groups/:id/typing", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
-    cleanTyping(req.params.id);
-    const group = typingStore.get(req.params.id);
+    cleanTyping(req.params.id as string);
+    const group = typingStore.get(req.params.id as string);
     const typers: string[] = [];
     if (group) {
       for (const [uid, data] of group) {
@@ -191,8 +191,8 @@ router.post("/groups/:id/typing", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const { typing } = req.body;
-    if (!typingStore.has(req.params.id)) typingStore.set(req.params.id, new Map());
-    const group = typingStore.get(req.params.id)!;
+    if (!typingStore.has(req.params.id as string)) typingStore.set(req.params.id as string, new Map());
+    const group = typingStore.get(req.params.id as string)!;
     if (typing) {
       group.set(user.id, { name: user.fullName, expiresAt: Date.now() + 4000 });
     } else {

@@ -6,6 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { api } from "@/lib/api";
 
 const REASONS = [
   { id: "harassment",  label: "Harassment or Bullying",    icon: "hand-left-outline"      as const, color: "#EF4444" },
@@ -28,9 +29,25 @@ export default function ReportUserScreen() {
   const [details,  setDetails]    = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = () => {
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState("");
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+
+  const handleSubmit = async () => {
     if (!selected) return;
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await api.reports.submit({
+        reportedUserId: params.userId,
+        reportedUserName: params.userName ? decodeURIComponent(params.userName) : undefined,
+        reason: REASONS.find((r) => r.id === selected)?.label || selected,
+        details: details.trim() || undefined,
+      });
+      setSubmitted(true);
+    } catch (e: any) {
+      showToast(e?.message || "Failed to submit report. Try again.");
+    }
+    setSubmitting(false);
   };
 
   if (submitted) {
@@ -107,10 +124,11 @@ export default function ReportUserScreen() {
           <Text style={styles.privacyText}>Reports are anonymous and handled confidentially by JNV officials. False reports may result in action against the reporter.</Text>
         </View>
 
+        {toast ? <View style={styles.toast} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
         <TouchableOpacity
-          style={[styles.submitBtn, !selected && styles.submitBtnDisabled]}
+          style={[styles.submitBtn, (!selected || submitting) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={!selected}
+          disabled={!selected || submitting}
         >
           <Ionicons name="flag" size={18} color="#fff" />
           <Text style={styles.submitBtnText}>Submit Report</Text>
@@ -153,4 +171,6 @@ const styles = StyleSheet.create({
   successNoteText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: "#3730A3" },
   doneBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 48 },
   doneBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
+  toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
+  toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },
 });

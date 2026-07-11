@@ -41,7 +41,7 @@ router.get("/events/:id/registrations", requireAuth, async (req, res) => {
     const regs = await db
       .select()
       .from(eventRegistrationsTable)
-      .where(eq(eventRegistrationsTable.eventId, req.params.id))
+      .where(eq(eventRegistrationsTable.eventId, req.params.id as string))
       .orderBy(desc(eventRegistrationsTable.createdAt));
     res.json(regs);
   } catch (e: any) {
@@ -60,7 +60,7 @@ router.post("/events/:id/register", requireAuth, async (req, res) => {
     } = req.body;
     if (!fullName) return res.status(400).json({ error: "fullName required" });
     const [reg] = await db.insert(eventRegistrationsTable).values({
-      eventId: req.params.id,
+      eventId: req.params.id as string,
       userId: user.id,
       role: user.role,
       fullName,

@@ -117,6 +117,79 @@ export const api = {
       request<TeacherFeedbackItem>("/teacher-feedback", { method: "POST", body: JSON.stringify(data) }),
     list: () => request<TeacherFeedbackItem[]>("/teacher-feedback"),
   },
+  announcements: {
+    list: () => request<Announcement[]>("/announcements"),
+    create: (data: { title: string; body: string; target?: string; priority?: string; pinned?: boolean }) =>
+      request<Announcement>("/announcements", { method: "POST", body: JSON.stringify(data) }),
+    togglePin: (id: string, pinned: boolean) =>
+      request<Announcement>(`/announcements/${id}/pin`, { method: "PATCH", body: JSON.stringify({ pinned }) }),
+    delete: (id: string) => request<{ success: boolean }>(`/announcements/${id}`, { method: "DELETE" }),
+  },
+  assignments: {
+    list: () => request<AssignmentWithSubs[]>("/assignments"),
+    create: (data: { title: string; subject: string; targetClass: string; dueDate: string; description?: string }) =>
+      request<AssignmentWithSubs>("/assignments", { method: "POST", body: JSON.stringify(data) }),
+    submit: (id: string, note?: string) =>
+      request<AssignmentSubmission>(`/assignments/${id}/submit`, { method: "POST", body: JSON.stringify({ note }) }),
+    review: (id: string, subId: string, remarks: string) =>
+      request<AssignmentSubmission>(`/assignments/${id}/submissions/${subId}/review`, { method: "PATCH", body: JSON.stringify({ remarks }) }),
+  },
+  studyMaterials: {
+    list: () => request<StudyMaterial[]>("/study-materials"),
+    create: (data: { title: string; subject: string; type?: string; url?: string; size?: string; targetClass?: string }) =>
+      request<StudyMaterial>("/study-materials", { method: "POST", body: JSON.stringify(data) }),
+    toggleBookmark: (id: string) =>
+      request<{ bookmarked: boolean }>(`/study-materials/${id}/bookmark`, { method: "POST" }),
+  },
+  qa: {
+    list: () => request<QaQuestion[]>("/qa"),
+    ask: (data: { question: string; category?: string }) =>
+      request<QaQuestion>("/qa", { method: "POST", body: JSON.stringify(data) }),
+    answer: (id: string, answer: string) =>
+      request<QaAnswer>(`/qa/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
+  },
+  connections: {
+    list: () => request<Connection[]>("/connections"),
+    request: (toId: string) =>
+      request<Connection>("/connections/request", { method: "POST", body: JSON.stringify({ toId }) }),
+    accept: (id: string) =>
+      request<Connection>(`/connections/${id}/accept`, { method: "PATCH" }),
+  },
+  memories: {
+    list: () => request<Memory[]>("/memories"),
+    create: (data: { caption?: string; imageUrl?: string }) =>
+      request<Memory>("/memories", { method: "POST", body: JSON.stringify(data) }),
+    toggleLike: (id: string) =>
+      request<{ liked: boolean; likes: number }>(`/memories/${id}/like`, { method: "POST" }),
+  },
+  achievements: {
+    list: () => request<Achievement[]>("/achievements"),
+    create: (data: { title: string; description: string; category?: string }) =>
+      request<Achievement>("/achievements", { method: "POST", body: JSON.stringify(data) }),
+  },
+  clubs: {
+    list: () => request<ClubWithMeta[]>("/clubs"),
+    create: (data: { name: string; description: string; icon?: string; color?: string; bg?: string }) =>
+      request<ClubWithMeta>("/clubs", { method: "POST", body: JSON.stringify(data) }),
+    toggleJoin: (id: string) =>
+      request<{ joined: boolean }>(`/clubs/${id}/join`, { method: "POST" }),
+    postAnnouncement: (id: string, text: string) =>
+      request<ClubAnnouncement>(`/clubs/${id}/announcements`, { method: "POST", body: JSON.stringify({ text }) }),
+    takeOver: (id: string) =>
+      request<ClubWithMeta>(`/clubs/${id}/manager`, { method: "PATCH" }),
+  },
+  studentQueries: {
+    list: () => request<StudentQueryWithAnswers[]>("/student-queries"),
+    create: (data: { question: string; subject?: string; category?: string }) =>
+      request<StudentQueryWithAnswers>("/student-queries", { method: "POST", body: JSON.stringify(data) }),
+    answer: (id: string, answer: string) =>
+      request<QueryAnswer>(`/student-queries/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
+  },
+  reports: {
+    submit: (data: { reportedUserId?: string; reportedUserName?: string; reason: string; details?: string }) =>
+      request<Report>("/reports", { method: "POST", body: JSON.stringify(data) }),
+    list: () => request<Report[]>("/reports"),
+  },
 };
 
 export interface UserProfile {
@@ -320,5 +393,177 @@ export interface TeacherFeedbackItem {
   rating: number;
   comment: string;
   anonymous: boolean;
+  createdAt: string;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  target: string;
+  priority: string;
+  pinned: boolean;
+  authorId?: string;
+  authorName?: string;
+  jnvName?: string;
+  createdAt: string;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  studentName?: string;
+  note?: string;
+  status: string;
+  remarks?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+}
+
+export interface AssignmentWithSubs {
+  id: string;
+  title: string;
+  subject: string;
+  targetClass: string;
+  dueDate: string;
+  description?: string;
+  authorId?: string;
+  authorName?: string;
+  jnvName?: string;
+  createdAt: string;
+  submissions: AssignmentSubmission[];
+}
+
+export interface StudyMaterial {
+  id: string;
+  title: string;
+  subject: string;
+  type: string;
+  url?: string;
+  size?: string;
+  authorId?: string;
+  authorName?: string;
+  jnvName?: string;
+  targetClass?: string;
+  createdAt: string;
+  bookmarked: boolean;
+}
+
+export interface QaAnswer {
+  id: string;
+  questionId: string;
+  answer: string;
+  answeredById?: string;
+  answeredByName?: string;
+  answeredByRole?: string;
+  batch?: string;
+  subject?: string;
+  createdAt: string;
+}
+
+export interface QaQuestion {
+  id: string;
+  question: string;
+  category: string;
+  askedById?: string;
+  askedByName?: string;
+  askedByClass?: string;
+  jnvName?: string;
+  createdAt: string;
+  answers: QaAnswer[];
+}
+
+export interface Connection {
+  id: string;
+  fromId: string;
+  toId: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface Memory {
+  id: string;
+  caption?: string;
+  imageUrl?: string;
+  authorId?: string;
+  authorName?: string;
+  jnvName?: string;
+  likes: number;
+  createdAt: string;
+  liked: boolean;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  authorId?: string;
+  authorName?: string;
+  jnvName?: string;
+  batch?: string;
+  createdAt: string;
+}
+
+export interface ClubAnnouncement {
+  id: string;
+  clubId: string;
+  text: string;
+  authorId?: string;
+  authorName?: string;
+  createdAt: string;
+}
+
+export interface ClubWithMeta {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  bg: string;
+  members: number;
+  managerId?: string;
+  managerName?: string;
+  jnvName?: string;
+  nextEvent: string;
+  createdAt: string;
+  managed: boolean;
+  joined: boolean;
+  announcements: ClubAnnouncement[];
+}
+
+export interface QueryAnswer {
+  id: string;
+  queryId: string;
+  answer: string;
+  answeredById?: string;
+  answeredByName?: string;
+  createdAt: string;
+}
+
+export interface StudentQueryWithAnswers {
+  id: string;
+  question: string;
+  subject: string;
+  category: string;
+  studentId?: string;
+  studentName?: string;
+  studentClass?: string;
+  jnvName?: string;
+  solved: boolean;
+  createdAt: string;
+  answers: QueryAnswer[];
+}
+
+export interface Report {
+  id: string;
+  reportedUserId?: string;
+  reportedUserName?: string;
+  reason: string;
+  details?: string;
+  reporterId?: string;
+  reporterName?: string;
+  status: string;
   createdAt: string;
 }

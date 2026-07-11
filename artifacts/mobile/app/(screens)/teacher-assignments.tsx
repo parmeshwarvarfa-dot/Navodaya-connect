@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,40 +6,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { AssignmentWithSubs } from "@/lib/api";
 
 const CLASSES  = ["Class 11 Sci A", "Class 12 Sci B", "Class 10 A", "Class 9 A", "Class 8 B"];
 const SUBJECTS = ["Physics", "Chemistry", "Maths", "English", "Biology"];
-
-const INITIAL_ASSIGNMENTS = [
-  {
-    id: "1", title: "Newton's Laws — 10 Problems", subject: "Physics", class: "Class 11 Sci A",
-    due: "08 May 2026", created: "04 May 2026",
-    submissions: [
-      { name: "Ananya Sharma", status: "submitted", time: "5 May, 10:30 AM", remarks: "" },
-      { name: "Rohit Kumar",   status: "submitted", time: "6 May, 2:15 PM",  remarks: "" },
-      { name: "Priya Mehta",   status: "reviewed",  time: "4 May, 9:00 AM",  remarks: "Excellent work!" },
-      { name: "Rahul Singh",   status: "pending",   time: "",                remarks: "" },
-      { name: "Kavya Nair",    status: "pending",   time: "",                remarks: "" },
-    ],
-  },
-  {
-    id: "2", title: "Organic Chemistry Reactions", subject: "Chemistry", class: "Class 12 Sci B",
-    due: "10 May 2026", created: "05 May 2026",
-    submissions: [
-      { name: "Meera Iyer",   status: "submitted", time: "6 May, 11:00 AM", remarks: "" },
-      { name: "Arjun Das",    status: "reviewed",  time: "5 May, 4:00 PM",  remarks: "Good, improve reaction mechanisms." },
-      { name: "Sneha Gupta",  status: "pending",   time: "",                remarks: "" },
-    ],
-  },
-  {
-    id: "3", title: "Essay — Technology in Modern Life", subject: "English", class: "Class 10 A",
-    due: "12 May 2026", created: "06 May 2026",
-    submissions: [
-      { name: "Dev Patel",    status: "submitted", time: "7 May, 8:45 AM",  remarks: "" },
-      { name: "Tanya Verma",  status: "pending",   time: "",                remarks: "" },
-    ],
-  },
-];
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Pending"   },
@@ -51,14 +22,15 @@ const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> =
 export default function TeacherAssignmentsScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 60 : insets.top;
-  const [assignments, setAssignments] = useState(INITIAL_ASSIGNMENTS);
+  const [assignments, setAssignments] = useState<AssignmentWithSubs[]>([]);
+  const [loading,     setLoading]     = useState(true);
   const [expanded,    setExpanded]    = useState<string | null>(null);
   const [showCreate,  setShowCreate]  = useState(false);
   const [toast,       setToast]       = useState("");
-  const [remarkTarget, setRemarkTarget] = useState<{ aId: string; sName: string } | null>(null);
+  const [remarkTarget, setRemarkTarget] = useState<{ aId: string; subId: string; name: string } | null>(null);
   const [remarkText,  setRemarkText]  = useState("");
+  const [submitting,  setSubmitting]  = useState(false);
 
-  // Create form
   const [title,    setTitle]    = useState("");
   const [subject,  setSubject]  = useState("");
   const [cls,      setCls]      = useState("");
@@ -67,21 +39,46 @@ export default function TeacherAssignmentsScreen() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const handleCreate = () => {
-    if (!title.trim() || !subject || !cls || !dueDate.trim()) { setFormErr("Fill all fields."); return; }
-    setAssignments((p) => [{ id: Date.now().toString(), title, subject, class: cls, due: dueDate, created: "Today", submissions: [] }, ...p]);
-    setTitle(""); setSubject(""); setCls(""); setDueDate(""); setFormErr("");
-    setShowCreate(false);
-    showToast("Assignment created!");
+  const fetchAssignments = async () => {
+    try {
+      const data = await api.assignments.list();
+      setAssignments(data);
+    } catch {}
+    setLoading(false);
   };
 
-  const markReviewed = (aId: string, sName: string) => {
-    if (!remarkText.trim()) { showToast("Enter a remark first."); return; }
-    setAssignments((prev) => prev.map((a) =>
-      a.id !== aId ? a : { ...a, submissions: a.submissions.map((s) => s.name === sName ? { ...s, status: "reviewed", remarks: remarkText } : s) }
-    ));
-    setRemarkTarget(null); setRemarkText("");
-    showToast("Marked as reviewed!");
+  useEffect(() => { fetchAssignments(); }, []);
+
+  const handleCreate = async () => {
+    if (!title.trim() || !subject || !cls || !dueDate.trim()) { setFormErr("Fill all fields."); return; }
+    setSubmitting(true);
+    try {
+      const row = await api.assignments.create({ title: title.trim(), subject, targetClass: cls, dueDate: dueDate.trim() });
+      setAssignments((p) => [row, ...p]);
+      setTitle(""); setSubject(""); setCls(""); setDueDate(""); setFormErr("");
+      setShowCreate(false);
+      showToast("Assignment created!");
+    } catch (e: any) {
+      setFormErr(e?.message || "Failed to create.");
+    }
+    setSubmitting(false);
+  };
+
+  const markReviewed = async () => {
+    if (!remarkText.trim() || !remarkTarget) { showToast("Enter a remark first."); return; }
+    try {
+      await api.assignments.review(remarkTarget.aId, remarkTarget.subId, remarkText);
+      setAssignments((prev) => prev.map((a) =>
+        a.id !== remarkTarget.aId ? a : {
+          ...a,
+          submissions: a.submissions.map((s) =>
+            s.id === remarkTarget.subId ? { ...s, status: "reviewed", remarks: remarkText } : s
+          ),
+        }
+      ));
+      setRemarkTarget(null); setRemarkText("");
+      showToast("Marked as reviewed!");
+    } catch { showToast("Failed to review."); }
   };
 
   return (
@@ -97,7 +94,9 @@ export default function TeacherAssignmentsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
-        {assignments.map((a) => {
+        {loading ? <Text style={styles.loadingText}>Loading…</Text> : assignments.length === 0 ? (
+          <View style={styles.empty}><Text style={styles.emptyIcon}>📋</Text><Text style={styles.emptyText}>No assignments yet.</Text></View>
+        ) : assignments.map((a) => {
           const submitted = a.submissions.filter((s) => s.status !== "pending").length;
           const reviewed  = a.submissions.filter((s) => s.status === "reviewed").length;
           const isEx = expanded === a.id;
@@ -108,7 +107,7 @@ export default function TeacherAssignmentsScreen() {
                   <View style={styles.cardIcon}><Ionicons name="checkbox-outline" size={20} color="#F59E0B" /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{a.title}</Text>
-                    <Text style={styles.cardMeta}>{a.subject} · {a.class} · Due {a.due}</Text>
+                    <Text style={styles.cardMeta}>{a.subject} · {a.targetClass} · Due {a.dueDate}</Text>
                   </View>
                   <Ionicons name={isEx ? "chevron-up" : "chevron-down"} size={16} color="#9CA3AF" />
                 </View>
@@ -135,18 +134,19 @@ export default function TeacherAssignmentsScreen() {
                   ) : a.submissions.map((s) => {
                     const cfg = STATUS_CFG[s.status] || STATUS_CFG.pending;
                     return (
-                      <View key={s.name} style={styles.subRow}>
-                        <View style={styles.subAvatar}><Text style={styles.subAvatarText}>{s.name[0]}</Text></View>
+                      <View key={s.id} style={styles.subRow}>
+                        <View style={styles.subAvatar}><Text style={styles.subAvatarText}>{(s.studentName || "?")[0]}</Text></View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.subName}>{s.name}</Text>
-                          {s.time ? <Text style={styles.subTime}>{s.time}</Text> : null}
+                          <Text style={styles.subName}>{s.studentName || "Student"}</Text>
+                          {s.submittedAt ? <Text style={styles.subTime}>{new Date(s.submittedAt).toLocaleString()}</Text> : null}
                           {s.remarks ? <Text style={styles.subRemarks}>"{s.remarks}"</Text> : null}
+                          {s.note ? <Text style={styles.subTime}>Note: {s.note}</Text> : null}
                         </View>
                         <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
                           <Text style={[styles.statusPillText, { color: cfg.color }]}>{cfg.label}</Text>
                         </View>
                         {s.status === "submitted" && (
-                          <TouchableOpacity style={styles.reviewBtn} onPress={() => { setRemarkTarget({ aId: a.id, sName: s.name }); setRemarkText(""); }}>
+                          <TouchableOpacity style={styles.reviewBtn} onPress={() => { setRemarkTarget({ aId: a.id, subId: s.id, name: s.studentName || "Student" }); setRemarkText(""); }}>
                             <Text style={styles.reviewBtnText}>Review</Text>
                           </TouchableOpacity>
                         )}
@@ -160,7 +160,6 @@ export default function TeacherAssignmentsScreen() {
         })}
       </ScrollView>
 
-      {/* Create Modal */}
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.modal}>
@@ -193,22 +192,16 @@ export default function TeacherAssignmentsScreen() {
               <Text style={styles.fieldLabel}>Due Date *</Text>
               <TextInput style={styles.input} placeholder="e.g. 15 May 2026" placeholderTextColor="#9CA3AF" value={dueDate} onChangeText={setDueDate} />
 
-              <TouchableOpacity style={styles.uploadBox}>
-                <Ionicons name="attach-outline" size={24} color="#3D5AF1" />
-                <Text style={styles.uploadBoxText}>Attach Assignment File (optional)</Text>
-              </TouchableOpacity>
-
               {formErr ? <Text style={styles.errText}>{formErr}</Text> : null}
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleCreate}>
+              <TouchableOpacity style={[styles.confirmBtn, submitting && { opacity: 0.6 }]} onPress={handleCreate} disabled={submitting}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Create Assignment</Text>
+                <Text style={styles.confirmBtnText}>{submitting ? "Creating…" : "Create Assignment"}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Remark Modal */}
       <Modal visible={!!remarkTarget} animationType="slide" presentationStyle="formSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.modal}>
@@ -217,9 +210,9 @@ export default function TeacherAssignmentsScreen() {
               <TouchableOpacity onPress={() => setRemarkTarget(null)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
-              <Text style={styles.fieldLabel}>Remark for {remarkTarget?.sName}</Text>
+              <Text style={styles.fieldLabel}>Remark for {remarkTarget?.name}</Text>
               <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="e.g. Excellent work! Grade: A" placeholderTextColor="#9CA3AF" value={remarkText} onChangeText={setRemarkText} multiline textAlignVertical="top" />
-              <TouchableOpacity style={styles.confirmBtn} onPress={() => remarkTarget && markReviewed(remarkTarget.aId, remarkTarget.sName)}>
+              <TouchableOpacity style={styles.confirmBtn} onPress={markReviewed}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
                 <Text style={styles.confirmBtnText}>Mark as Reviewed</Text>
               </TouchableOpacity>
@@ -239,6 +232,10 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
+  empty: { alignItems: "center", paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#F0F0F0" },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
   cardIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" },
@@ -271,8 +268,6 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
   pillText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   pillTextActive: { color: "#fff" },
-  uploadBox: { borderWidth: 2, borderColor: "#C7D2FE", borderStyle: "dashed", borderRadius: 14, padding: 18, alignItems: "center", gap: 6, marginBottom: 20, backgroundColor: "#FAFBFF" },
-  uploadBoxText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   errText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 12 },
   confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
   confirmBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },

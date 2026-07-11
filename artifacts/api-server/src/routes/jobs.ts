@@ -44,12 +44,12 @@ router.post("/jobs", requireAuth, async (req, res) => {
 router.delete("/jobs/:id", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
-    const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, req.params.id)).limit(1);
+    const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, req.params.id as string)).limit(1);
     if (!job) return res.status(404).json({ error: "Not found" });
     if (job.postedBy !== user.id && user.role !== "official") {
       return res.status(403).json({ error: "Forbidden" });
     }
-    await db.delete(jobsTable).where(eq(jobsTable.id, req.params.id));
+    await db.delete(jobsTable).where(eq(jobsTable.id, req.params.id as string));
     res.json({ success: true });
   } catch (e: any) {
     req.log.error(e);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, KeyboardAvoidingView,
@@ -6,24 +6,19 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { StudentQueryWithAnswers } from "@/lib/api";
 
 const CATEGORIES = ["All", "Academics", "Exams", "Career", "School Help"];
 const CATEGORY_COLOR: Record<string, string> = {
   "Academics": "#3D5AF1", "Exams": "#EF4444", "Career": "#10B981", "School Help": "#8B5CF6",
 };
 
-const INITIAL_QUERIES = [
-  { id: "1", student: "Ananya Sharma", class: "Class 11 Sci A", subject: "Physics",  category: "Academics",   question: "Can you explain electromagnetic induction in simple terms? I'm confused about Faraday's law.",                 time: "2h ago",     solved: false, answers: [] as string[] },
-  { id: "2", student: "Rohit Kumar",   class: "Class 11 Sci A", subject: "Physics",  category: "Academics",   question: "What is the difference between NPN and PNP transistors? When do we use each one?",                       time: "5h ago",     solved: false, answers: [] as string[] },
-  { id: "3", student: "Priya Mehta",   class: "Class 12 Sci B", subject: "Maths",    category: "Exams",       question: "How to solve quadratic equations with complex roots? Will this come in board exam?",                       time: "Yesterday",  solved: false, answers: ["Yes, complex roots are part of the Class 12 syllabus. Use the quadratic formula and simplify. I'll cover this in Thursday's class."] },
-  { id: "4", student: "Kavya Nair",    class: "Class 12 Sci A", subject: "General",  category: "Career",      question: "Should I prepare for JEE or focus on NEET? I like both Physics and Biology equally.",                      time: "2 days ago", solved: true,  answers: ["Based on your profile, NEET might suit you better. Let's discuss in our next mentorship session — I'll guide you through the process."] },
-  { id: "5", student: "Dev Patel",     class: "Class 10 A",     subject: "General",  category: "School Help", question: "How do I apply for the scholarship exam? Is there any preparation material available?",                    time: "3 days ago", solved: false, answers: [] as string[] },
-];
-
 export default function TeacherQueriesScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 60 : insets.top;
-  const [queries,    setQueries]    = useState(INITIAL_QUERIES);
+  const [queries,    setQueries]    = useState<StudentQueryWithAnswers[]>([]);
+  const [loading,    setLoading]    = useState(true);
   const [activeTab,  setActiveTab]  = useState("All");
   const [expanded,   setExpanded]   = useState<string | null>(null);
   const [answerText, setAnswerText] = useState("");
@@ -32,16 +27,29 @@ export default function TeacherQueriesScreen() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const submitAnswer = (id: string) => {
+  const fetchQueries = async () => {
+    try { setQueries(await api.studentQueries.list()); } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchQueries(); }, []);
+
+  const submitAnswer = async (id: string) => {
     if (!answerText.trim()) return;
-    setQueries((p) => p.map((q) => q.id === id ? { ...q, answers: [...q.answers, answerText], solved: true } : q));
-    setAnswerText("");
-    showToast("Answer posted! Query marked as solved.");
+    try {
+      await api.studentQueries.answer(id, answerText.trim());
+      setQueries((p) => p.map((q) => q.id === id
+        ? { ...q, solved: true, answers: [...q.answers, { id: Date.now().toString(), queryId: id, answer: answerText, createdAt: new Date().toISOString() }] }
+        : q
+      ));
+      setAnswerText("");
+      showToast("Answer posted! Query marked as solved.");
+    } catch (e: any) { showToast(e?.message || "Failed to post answer."); }
   };
 
   const filtered = queries.filter((q) => {
     const matchCat = activeTab === "All" || q.category === activeTab;
-    const matchS   = !search || q.question.toLowerCase().includes(search.toLowerCase()) || q.student.toLowerCase().includes(search.toLowerCase());
+    const matchS   = !search || q.question.toLowerCase().includes(search.toLowerCase()) || (q.studentName || "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchS;
   });
 
@@ -76,38 +84,40 @@ export default function TeacherQueriesScreen() {
         </ScrollView>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
-          {filtered.map((q) => {
+          {loading ? <Text style={styles.loadingText}>Loading…</Text> : filtered.length === 0 ? (
+            <View style={styles.empty}><Text style={styles.emptyIcon}>🙋</Text><Text style={styles.emptyText}>No queries found</Text></View>
+          ) : filtered.map((q) => {
             const catColor = CATEGORY_COLOR[q.category] || "#6B7280";
             const isEx     = expanded === q.id;
             return (
               <View key={q.id} style={[styles.card, q.solved && styles.cardSolved]}>
                 <TouchableOpacity onPress={() => setExpanded(isEx ? null : q.id)} activeOpacity={0.85}>
                   <View style={styles.cardTop}>
-                    <View style={styles.avatar}><Text style={styles.avatarText}>{q.student[0]}</Text></View>
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{(q.studentName || "?")[0]}</Text></View>
                     <View style={{ flex: 1 }}>
                       <View style={styles.nameRow}>
-                        <Text style={styles.studentName}>{q.student}</Text>
+                        <Text style={styles.studentName}>{q.studentName || "Student"}</Text>
                         {q.solved && <View style={styles.solvedBadge}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={styles.solvedText}>Solved</Text></View>}
                       </View>
-                      <Text style={styles.classMeta}>{q.class} · {q.subject}</Text>
+                      <Text style={styles.classMeta}>{q.studentClass || ""} · {q.subject}</Text>
                     </View>
                     <View style={[styles.catPill, { backgroundColor: catColor + "18" }]}>
                       <Text style={[styles.catPillText, { color: catColor }]}>{q.category}</Text>
                     </View>
                   </View>
                   <Text style={styles.question} numberOfLines={isEx ? undefined : 2}>{q.question}</Text>
-                  <Text style={styles.timeText}>{q.time} · {q.answers.length} answer{q.answers.length !== 1 ? "s" : ""}</Text>
+                  <Text style={styles.timeText}>{new Date(q.createdAt).toLocaleDateString()} · {q.answers.length} answer{q.answers.length !== 1 ? "s" : ""}</Text>
                 </TouchableOpacity>
 
                 {isEx && (
                   <View style={styles.expanded}>
-                    {q.answers.map((ans, i) => (
-                      <View key={i} style={styles.answerBox}>
+                    {q.answers.map((ans) => (
+                      <View key={ans.id} style={styles.answerBox}>
                         <View style={styles.answerHeader}>
                           <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                          <Text style={styles.answerLabel}>Your Answer</Text>
+                          <Text style={styles.answerLabel}>{ans.answeredByName || "Teacher"}'s Answer</Text>
                         </View>
-                        <Text style={styles.answerText}>{ans}</Text>
+                        <Text style={styles.answerText}>{ans.answer}</Text>
                       </View>
                     ))}
 
@@ -149,6 +159,10 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   unsolvedBadge: { backgroundColor: "#FFFBEB", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: "#FDE68A" },
   unsolvedText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#F59E0B" },
+  loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
+  empty: { alignItems: "center", paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   searchWrap: { flexDirection: "row", alignItems: "center", margin: 14, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   tabs: { paddingHorizontal: 16, gap: 8, paddingBottom: 14 },

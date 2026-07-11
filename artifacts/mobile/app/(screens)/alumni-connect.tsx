@@ -1,50 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import type { AlumniUser, Connection } from "@/lib/api";
 
 const PROFESSIONS = ["All", "Engineering", "Medicine", "IAS/IPS", "Defence", "Startup", "Law", "Research"];
 const YEARS       = ["All", "2024", "2023", "2022", "2021", "2020", "2018", "2016", "2014", "2012", "2010"];
 
-const ALUMNI_LIST = [
-  { id: "1", name: "Rahul Verma",       jnv: "JNV Lucknow",    year: "2018", profession: "Engineering", role: "SWE at Google",               mutual: 12, connected: false, verified: true  },
-  { id: "2", name: "Dr. Meera Iyer",    jnv: "JNV Kochi",      year: "2015", profession: "Medicine",    role: "MBBS, AIIMS Delhi",           mutual: 8,  connected: true,  verified: true  },
-  { id: "3", name: "Kavita Singh",      jnv: "JNV Patna",      year: "2012", profession: "IAS/IPS",     role: "IAS Officer – AIR 47",        mutual: 5,  connected: false, verified: true  },
-  { id: "4", name: "Arjun Sharma",      jnv: "JNV Jaipur",     year: "2020", profession: "Startup",     role: "Founder – EdTech Startup",    mutual: 3,  connected: false, verified: true  },
-  { id: "5", name: "Priti Gupta",       jnv: "JNV Bhopal",     year: "2016", profession: "Law",         role: "Advocate, Delhi High Court",  mutual: 6,  connected: false, verified: false },
-  { id: "6", name: "Vivek Nair",        jnv: "JNV Thrissur",   year: "2014", profession: "Defence",     role: "Captain, Indian Army",        mutual: 9,  connected: false, verified: true  },
-  { id: "7", name: "Sneha Dubey",       jnv: "JNV Varanasi",   year: "2021", profession: "Research",    role: "PhD Scholar – IISc Bangalore", mutual: 4, connected: false, verified: false },
-  { id: "8", name: "Manish Kumar",      jnv: "JNV Ranchi",     year: "2013", profession: "Engineering", role: "Tech Lead at Microsoft",      mutual: 7,  connected: true,  verified: true  },
-];
-
-const SUGGESTED = ALUMNI_LIST.filter((a) => !a.connected).slice(0, 3);
-
 export default function AlumniConnectScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const [alumni,      setAlumni]      = useState<AlumniUser[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
   const [profFilter,  setProfFilter]  = useState("All");
   const [yearFilter,  setYearFilter]  = useState("All");
-  const [connections, setConnections] = useState<Record<string, "connected" | "pending" | null>>({});
   const [toast,       setToast]       = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const connect = (id: string, name: string) => {
-    setConnections((p) => ({ ...p, [id]: "pending" }));
-    showToast(`Connection request sent to ${name}!`);
+  useEffect(() => {
+    Promise.all([
+      api.users.alumni().catch(() => [] as AlumniUser[]),
+      api.connections.list().catch(() => [] as Connection[]),
+    ]).then(([a, c]) => { setAlumni(a); setConnections(c); setLoading(false); });
+  }, []);
+
+  const getConnectionStatus = (toId: string): "connected" | "pending" | null => {
+    if (!profile) return null;
+    const conn = connections.find(
+      (c) => (c.fromId === profile.uid && c.toId === toId) || (c.toId === profile.uid && c.fromId === toId)
+    );
+    if (!conn) return null;
+    return conn.status as "connected" | "pending";
   };
 
-  const filtered = ALUMNI_LIST.filter((a) => {
-    const s  = search.toLowerCase();
-    const matchS = !s || a.name.toLowerCase().includes(s) || a.role.toLowerCase().includes(s) || a.jnv.toLowerCase().includes(s);
-    const matchP = profFilter === "All" || a.profession === profFilter;
-    const matchY = yearFilter === "All" || a.year === yearFilter;
+  const connect = async (toId: string, name: string) => {
+    try {
+      const row = await api.connections.request(toId);
+      setConnections((p) => [...p, row]);
+      showToast(`Connection request sent to ${name}!`);
+    } catch (e: any) {
+      showToast(e?.message || "Failed to send request.");
+    }
+  };
+
+  const filtered = alumni.filter((a) => {
+    if (profile && a.id === profile.uid) return false;
+    const s      = search.toLowerCase();
+    const matchS = !s || (a.fullName || "").toLowerCase().includes(s) || (a.profession || "").toLowerCase().includes(s) || (a.jnvName || "").toLowerCase().includes(s);
+    const matchP = profFilter === "All" || a.field === profFilter;
+    const matchY = yearFilter === "All";
     return matchS && matchP && matchY;
   });
 
-  const connectedCount = ALUMNI_LIST.filter((a) => a.connected).length + Object.values(connections).filter((v) => v === "connected").length;
+  const connectedCount = connections.filter((c) => c.status === "connected").length;
+  const SUGGESTED = filtered.filter((a) => getConnectionStatus(a.id) === null).slice(0, 3);
 
   return (
     <View style={styles.container}>
@@ -63,7 +79,6 @@ export default function AlumniConnectScreen() {
         <TextInput style={styles.searchInput} placeholder="Search by name, role, JNV…" placeholderTextColor="#9CA3AF" value={search} onChangeText={setSearch} />
       </View>
 
-      {/* Profession Filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
         {PROFESSIONS.map((p) => (
           <TouchableOpacity key={p} style={[styles.chip, profFilter === p && styles.chipActive]} onPress={() => setProfFilter(p)}>
@@ -72,72 +87,57 @@ export default function AlumniConnectScreen() {
         ))}
       </ScrollView>
 
-      {/* Year Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, { paddingTop: 0 }]} style={{ flexGrow: 0 }}>
-        {YEARS.map((y) => (
-          <TouchableOpacity key={y} style={[styles.chip, styles.chipSmall, yearFilter === y && styles.chipActiveGreen]} onPress={() => setYearFilter(y)}>
-            <Text style={[styles.chipText, yearFilter === y && styles.chipTextActive]}>{y === "All" ? "All Years" : `'${y.slice(2)}`}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
+        {loading ? <Text style={{ color: "#9CA3AF", textAlign: "center", marginTop: 40 }}>Loading alumni…</Text> : (
+          <>
+            {!search && profFilter === "All" && SUGGESTED.length > 0 && (
+              <View style={styles.suggestedSection}>
+                <Text style={styles.sectionLabel}>🤝 Suggested for You</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                  {SUGGESTED.map((a) => {
+                    const state = getConnectionStatus(a.id);
+                    return (
+                      <View key={a.id} style={styles.suggestCard}>
+                        <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{(a.fullName || "?")[0]}</Text></View>
+                        {a.verificationStatus === "verified" && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                        <Text style={styles.suggestName} numberOfLines={1}>{a.fullName}</Text>
+                        <Text style={styles.suggestRole} numberOfLines={1}>{a.profession || a.field || "Alumni"}</Text>
+                        <TouchableOpacity style={[styles.connectBtn, state && styles.connectBtnDone]} onPress={() => !state && connect(a.id, a.fullName || "")}>
+                          <Text style={[styles.connectBtnText, state && styles.connectBtnTextDone]}>{state === "connected" ? "Connected" : state === "pending" ? "Pending" : "Connect"}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
-        {/* Suggested */}
-        {!search && profFilter === "All" && (
-          <View style={styles.suggestedSection}>
-            <Text style={styles.sectionLabel}>🤝 Suggested for You</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {SUGGESTED.map((a) => {
-                const state = connections[a.id] || (a.connected ? "connected" : null);
-                return (
-                  <View key={a.id} style={styles.suggestCard}>
-                    <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{a.name[0]}</Text></View>
-                    {a.verified && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
-                    <Text style={styles.suggestName} numberOfLines={1}>{a.name}</Text>
-                    <Text style={styles.suggestRole} numberOfLines={1}>{a.role}</Text>
-                    <Text style={styles.suggestMutual}>{a.mutual} mutual</Text>
-                    <TouchableOpacity
-                      style={[styles.connectBtn, state && styles.connectBtnDone]}
-                      onPress={() => !state && connect(a.id, a.name)}
-                    >
-                      <Text style={[styles.connectBtnText, state && styles.connectBtnTextDone]}>{state === "connected" ? "Connected" : state === "pending" ? "Pending" : "Connect"}</Text>
-                    </TouchableOpacity>
+            <Text style={styles.resultCount}>{filtered.length} alumni found</Text>
+
+            {filtered.map((a) => {
+              const state = getConnectionStatus(a.id);
+              return (
+                <View key={a.id} style={styles.alumniCard}>
+                  <View style={styles.alumniAvatarWrap}>
+                    <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{(a.fullName || "?")[0]}</Text></View>
+                    {a.verificationStatus === "verified" && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
                   </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        <Text style={styles.resultCount}>{filtered.length} alumni found</Text>
-
-        {filtered.map((a) => {
-          const state = connections[a.id] || (a.connected ? "connected" : null);
-          return (
-            <View key={a.id} style={styles.alumniCard}>
-              <View style={styles.alumniAvatarWrap}>
-                <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{a.name[0]}</Text></View>
-                {a.verified && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.alumniName}>{a.name}</Text>
-                <Text style={styles.alumniRole}>{a.role}</Text>
-                <View style={styles.alumniMetaRow}>
-                  <Ionicons name="school-outline" size={11} color="#9CA3AF" />
-                  <Text style={styles.alumniMeta}>{a.jnv} · {a.year}</Text>
-                  <Text style={styles.alumniMutual}>· {a.mutual} mutual</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.alumniName}>{a.fullName}</Text>
+                    <Text style={styles.alumniRole}>{a.profession || a.field || "Alumni"}</Text>
+                    <View style={styles.alumniMetaRow}>
+                      <Ionicons name="school-outline" size={11} color="#9CA3AF" />
+                      <Text style={styles.alumniMeta}>{a.jnvName || "JNV"}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={[styles.cardConnectBtn, state && styles.cardConnectBtnDone]} onPress={() => !state && connect(a.id, a.fullName || "")}>
+                    <Ionicons name={state === "connected" ? "checkmark" : state === "pending" ? "time-outline" : "person-add-outline"} size={15} color={state ? "#10B981" : "#3D5AF1"} />
+                  </TouchableOpacity>
                 </View>
-              </View>
-              <TouchableOpacity
-                style={[styles.cardConnectBtn, state && styles.cardConnectBtnDone]}
-                onPress={() => !state && connect(a.id, a.name)}
-              >
-                <Ionicons name={state === "connected" ? "checkmark" : state === "pending" ? "time-outline" : "person-add-outline"} size={15} color={state ? "#10B981" : "#3D5AF1"} />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+              );
+            })}
+          </>
+        )}
       </ScrollView>
 
       {toast ? <View style={styles.toast} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
@@ -155,9 +155,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 10 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipSmall: { paddingHorizontal: 10, paddingVertical: 5 },
   chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
-  chipActiveGreen: { backgroundColor: "#10B981", borderColor: "#10B981" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   chipTextActive: { color: "#fff" },
   suggestedSection: { marginBottom: 16 },
@@ -168,7 +166,6 @@ const styles = StyleSheet.create({
   verifiedDot: { position: "absolute", top: 10, right: 24 },
   suggestName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", textAlign: "center", width: "100%" },
   suggestRole: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", width: "100%" },
-  suggestMutual: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
   connectBtn: { backgroundColor: "#EEF2FF", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, marginTop: 4 },
   connectBtnDone: { backgroundColor: "#ECFDF5" },
   connectBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
@@ -183,7 +180,6 @@ const styles = StyleSheet.create({
   alumniRole: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 4 },
   alumniMetaRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   alumniMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  alumniMutual: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
   cardConnectBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   cardConnectBtnDone: { backgroundColor: "#ECFDF5" },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },

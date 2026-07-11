@@ -41,10 +41,10 @@ router.post("/problems", requireAuth, async (req, res) => {
 
 router.get("/problems/:id", requireAuth, async (req, res) => {
   try {
-    const [problem] = await db.select().from(problemsTable).where(eq(problemsTable.id, req.params.id)).limit(1);
+    const [problem] = await db.select().from(problemsTable).where(eq(problemsTable.id, req.params.id as string)).limit(1);
     if (!problem) return res.status(404).json({ error: "Not found" });
     const comments = await db.select().from(problemCommentsTable)
-      .where(eq(problemCommentsTable.problemId, req.params.id))
+      .where(eq(problemCommentsTable.problemId, req.params.id as string))
       .orderBy(asc(problemCommentsTable.createdAt));
     res.json({ ...problem, comments });
   } catch (e: any) {
@@ -59,7 +59,7 @@ router.post("/problems/:id/comments", requireAuth, async (req, res) => {
     const { text } = req.body;
     if (!text?.trim()) return res.status(400).json({ error: "text required" });
     const [comment] = await db.insert(problemCommentsTable).values({
-      problemId: req.params.id,
+      problemId: req.params.id as string,
       text: text.trim(),
       authorId: user.id,
       authorName: user.fullName,
@@ -81,7 +81,7 @@ router.patch("/problems/:id/status", requireAuth, async (req, res) => {
     const { status } = req.body;
     const [problem] = await db.update(problemsTable)
       .set({ status })
-      .where(eq(problemsTable.id, req.params.id))
+      .where(eq(problemsTable.id, req.params.id as string))
       .returning();
     res.json(problem);
   } catch (e: any) {

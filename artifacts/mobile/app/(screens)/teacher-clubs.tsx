@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,58 +6,64 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-
-type ClubIcon = React.ComponentProps<typeof Ionicons>["name"];
-interface Club {
-  id: string; name: string; icon: ClubIcon; color: string; bg: string;
-  members: number; description: string; managed: boolean; nextEvent: string;
-}
-
-const INITIAL_CLUBS: Club[] = [
-  { id: "1", name: "Coding Club",    icon: "code-slash-outline",     color: "#3D5AF1", bg: "#EEF2FF", members: 42, description: "Programming, hackathons, projects.",      managed: true,  nextEvent: "Hackathon Prep — 12 May"  },
-  { id: "2", name: "Science Club",   icon: "flask-outline",          color: "#0891B2", bg: "#E0F2FE", members: 35, description: "Experiments, Olympiad preparation.",       managed: true,  nextEvent: "Olympiad Mock — 11 May"   },
-  { id: "3", name: "Debate Society", icon: "mic-outline",            color: "#8B5CF6", bg: "#F5F3FF", members: 28, description: "Parliamentary debates, MUN, public speaking.",managed: false, nextEvent: "Debate on AI — 15 May"    },
-  { id: "4", name: "Robotics Club",  icon: "hardware-chip-outline",  color: "#F59E0B", bg: "#FFFBEB", members: 19, description: "Arduino, robotics competitions.",           managed: false, nextEvent: "Arduino Workshop — 18 May" },
-];
-
-const ANNOUNCEMENTS = [
-  { clubId: "1", text: "Hackathon prep session this Saturday 10AM in Computer Lab.", time: "2h ago" },
-  { clubId: "2", text: "Olympiad mock test materials uploaded. Check study notes.", time: "Yesterday" },
-];
+import { api } from "@/lib/api";
+import type { ClubWithMeta } from "@/lib/api";
 
 export default function TeacherClubsScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 60 : insets.top;
-  const [clubs,     setClubs]     = useState(INITIAL_CLUBS);
-  const [expanded,  setExpanded]  = useState<string | null>(null);
+  const [clubs,      setClubs]      = useState<ClubWithMeta[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [expanded,   setExpanded]   = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [toast,     setToast]     = useState("");
+  const [toast,      setToast]      = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Create form
   const [name,    setName]    = useState("");
   const [desc,    setDesc]    = useState("");
   const [formErr, setFormErr] = useState("");
 
-  // Post announcement
-  const [annTarget,  setAnnTarget]  = useState<string | null>(null);
-  const [annText,    setAnnText]    = useState("");
-  const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS);
+  const [annTarget, setAnnTarget] = useState<string | null>(null);
+  const [annText,   setAnnText]   = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const createClub = () => {
-    if (!name.trim() || !desc.trim()) { setFormErr("Name and description required."); return; }
-    setClubs((p) => [...p, { id: Date.now().toString(), name, icon: "star-outline", color: "#EC4899", bg: "#FDF2F8", members: 0, description: desc, managed: true, nextEvent: "No events yet" }]);
-    setName(""); setDesc(""); setFormErr("");
-    setShowCreate(false);
-    showToast("Club created!");
+  const fetchClubs = async () => {
+    try { setClubs(await api.clubs.list()); } catch {}
+    setLoading(false);
   };
 
-  const postAnnouncement = (clubId: string) => {
+  useEffect(() => { fetchClubs(); }, []);
+
+  const createClub = async () => {
+    if (!name.trim() || !desc.trim()) { setFormErr("Name and description required."); return; }
+    setSubmitting(true);
+    try {
+      const row = await api.clubs.create({ name: name.trim(), description: desc.trim() });
+      setClubs((p) => [row, ...p]);
+      setName(""); setDesc(""); setFormErr("");
+      setShowCreate(false);
+      showToast("Club created!");
+    } catch (e: any) { setFormErr(e?.message || "Failed."); }
+    setSubmitting(false);
+  };
+
+  const postAnnouncement = async (clubId: string) => {
     if (!annText.trim()) return;
-    setAnnouncements((p) => [{ clubId, text: annText, time: "Just now" }, ...p]);
-    setAnnTarget(null); setAnnText("");
-    showToast("Announcement posted to club!");
+    try {
+      const row = await api.clubs.postAnnouncement(clubId, annText.trim());
+      setClubs((p) => p.map((c) => c.id === clubId ? { ...c, announcements: [row, ...c.announcements] } : c));
+      setAnnTarget(null); setAnnText("");
+      showToast("Announcement posted to club!");
+    } catch { showToast("Failed to post."); }
+  };
+
+  const takeOver = async (club: ClubWithMeta) => {
+    try {
+      await api.clubs.takeOver(club.id);
+      setClubs((p) => p.map((c) => c.id === club.id ? { ...c, managed: true } : c));
+      showToast(`Now managing ${club.name}`);
+    } catch { showToast("Failed."); }
   };
 
   return (
@@ -73,22 +79,21 @@ export default function TeacherClubsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
-
-        {/* Managed clubs */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Clubs</Text>
+          <Text style={styles.sectionTitle}>Clubs</Text>
           <View style={styles.managedBadge}><Text style={styles.managedBadgeText}>{clubs.filter((c) => c.managed).length} managed</Text></View>
         </View>
 
-        {clubs.map((club) => {
-          const isEx     = expanded === club.id;
-          const clubAnns = announcements.filter((a) => a.clubId === club.id);
+        {loading ? <Text style={styles.loadingText}>Loading…</Text> : clubs.length === 0 ? (
+          <View style={styles.empty}><Text style={styles.emptyIcon}>🏫</Text><Text style={styles.emptyText}>No clubs yet.</Text></View>
+        ) : clubs.map((club) => {
+          const isEx = expanded === club.id;
           return (
             <View key={club.id} style={[styles.clubCard, club.managed && styles.clubCardManaged]}>
               <TouchableOpacity onPress={() => setExpanded(isEx ? null : club.id)} activeOpacity={0.85}>
                 <View style={styles.clubTop}>
                   <View style={[styles.clubIcon, { backgroundColor: club.bg }]}>
-                    <Ionicons name={club.icon} size={24} color={club.color} />
+                    <Ionicons name={club.icon as any} size={24} color={club.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={styles.clubNameRow}>
@@ -110,16 +115,15 @@ export default function TeacherClubsScreen() {
 
               {isEx && (
                 <View style={styles.expandedBody}>
-                  {/* Recent announcements */}
-                  {clubAnns.length > 0 && (
+                  {club.announcements.length > 0 && (
                     <>
                       <Text style={styles.annHeader}>Recent Announcements</Text>
-                      {clubAnns.map((a, i) => (
-                        <View key={i} style={styles.annRow}>
+                      {club.announcements.map((a) => (
+                        <View key={a.id} style={styles.annRow}>
                           <Ionicons name="megaphone-outline" size={14} color={club.color} />
                           <View style={{ flex: 1 }}>
                             <Text style={styles.annText}>{a.text}</Text>
-                            <Text style={styles.annTime}>{a.time}</Text>
+                            <Text style={styles.annTime}>{new Date(a.createdAt).toLocaleDateString()}</Text>
                           </View>
                         </View>
                       ))}
@@ -134,7 +138,7 @@ export default function TeacherClubsScreen() {
                   )}
 
                   {!club.managed && (
-                    <TouchableOpacity style={styles.manageBtn} onPress={() => { setClubs((p) => p.map((c) => c.id === club.id ? { ...c, managed: true } : c)); showToast(`Now managing ${club.name}`); }}>
+                    <TouchableOpacity style={styles.manageBtn} onPress={() => takeOver(club)}>
                       <Text style={styles.manageBtnText}>Take Over Management</Text>
                     </TouchableOpacity>
                   )}
@@ -145,7 +149,6 @@ export default function TeacherClubsScreen() {
         })}
       </ScrollView>
 
-      {/* Create Club Modal */}
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.modal}>
@@ -159,16 +162,15 @@ export default function TeacherClubsScreen() {
               <Text style={styles.fieldLabel}>Description *</Text>
               <TextInput style={[styles.input, { minHeight: 80 }]} placeholder="What is this club about?" placeholderTextColor="#9CA3AF" value={desc} onChangeText={setDesc} multiline textAlignVertical="top" />
               {formErr ? <Text style={styles.errText}>{formErr}</Text> : null}
-              <TouchableOpacity style={styles.confirmBtn} onPress={createClub}>
+              <TouchableOpacity style={[styles.confirmBtn, submitting && { opacity: 0.6 }]} onPress={createClub} disabled={submitting}>
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Create Club</Text>
+                <Text style={styles.confirmBtnText}>{submitting ? "Creating…" : "Create Club"}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Post Announcement Modal */}
       <Modal visible={!!annTarget} animationType="slide" presentationStyle="formSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.modal}>
@@ -198,6 +200,10 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EC4899", alignItems: "center", justifyContent: "center" },
+  loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
+  empty: { alignItems: "center", paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827" },
   managedBadge: { backgroundColor: "#EEF2FF", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },

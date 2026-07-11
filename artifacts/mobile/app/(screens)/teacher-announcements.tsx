@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,6 +6,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api } from "@/lib/api";
+import type { Announcement } from "@/lib/api";
 
 const TARGETS = ["Whole School", "Class 11 Sci A", "Class 12 Sci B", "Class 10 A", "Class 9 A", "Class 8 B"];
 const PRIORITIES = ["normal", "important", "urgent"] as const;
@@ -15,17 +17,11 @@ const PRIORITY_CFG: Record<string, { color: string; bg: string; label: string }>
   urgent:    { color: "#EF4444", bg: "#FEF2F2", label: "Urgent"    },
 };
 
-const INITIAL = [
-  { id: "1", title: "Unit Test – Physics", body: "Unit test for Class 11 Sci A will be held on 10 May. Syllabus: Chapters 1–4.", target: "Class 11 Sci A", priority: "important", date: "Today",     pinned: true  },
-  { id: "2", title: "Holiday Notice",      body: "School will remain closed on 15 May for regional festival. Resume 16 May.", target: "Whole School",  priority: "normal",    date: "Yesterday", pinned: false },
-  { id: "3", title: "Practical Schedule",  body: "Chemistry practicals for Class 12 Sci B scheduled for 14 May. Report by 8 AM.", target: "Class 12 Sci B", priority: "urgent",    date: "2 days ago", pinned: false },
-  { id: "4", title: "Parent Meeting",      body: "Parent-Teacher meeting on 17 May at 10 AM in the school auditorium.", target: "Whole School",  priority: "important", date: "3 days ago", pinned: false },
-];
-
 export default function TeacherAnnouncementsScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 60 : insets.top;
-  const [items,     setItems]     = useState(INITIAL);
+  const [items,     setItems]     = useState<Announcement[]>([]);
+  const [loading,   setLoading]   = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [toast,     setToast]     = useState("");
   const [title,     setTitle]     = useState("");
@@ -34,21 +30,48 @@ export default function TeacherAnnouncementsScreen() {
   const [priority,  setPriority]  = useState<typeof PRIORITIES[number]>("normal");
   const [pinned,    setPinned]    = useState(false);
   const [formErr,   setFormErr]   = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const handlePost = () => {
-    if (!title.trim() || !body.trim()) { setFormErr("Title and body are required."); return; }
-    setItems((p) => [{ id: Date.now().toString(), title, body, target, priority, date: "Just now", pinned }, ...p]
-      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
-    setTitle(""); setBody(""); setTarget("Whole School"); setPriority("normal"); setPinned(false); setFormErr("");
-    setShowModal(false);
-    showToast("Announcement posted!");
+  const fetchItems = async () => {
+    try {
+      const data = await api.announcements.list();
+      setItems(data.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
+    } catch {}
+    setLoading(false);
   };
 
-  const deleteItem = (id: string) => { setItems((p) => p.filter((i) => i.id !== id)); showToast("Deleted."); };
-  const togglePin  = (id: string) => {
-    setItems((p) => p.map((i) => i.id === id ? { ...i, pinned: !i.pinned } : i).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
+  useEffect(() => { fetchItems(); }, []);
+
+  const handlePost = async () => {
+    if (!title.trim() || !body.trim()) { setFormErr("Title and body are required."); return; }
+    setSubmitting(true);
+    try {
+      const row = await api.announcements.create({ title: title.trim(), body: body.trim(), target, priority, pinned });
+      setItems((p) => [row, ...p].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
+      setTitle(""); setBody(""); setTarget("Whole School"); setPriority("normal"); setPinned(false); setFormErr("");
+      setShowModal(false);
+      showToast("Announcement posted!");
+    } catch (e: any) {
+      setFormErr(e?.message || "Failed to post. Try again.");
+    }
+    setSubmitting(false);
+  };
+
+  const deleteItem = async (id: string) => {
+    try {
+      await api.announcements.delete(id);
+      setItems((p) => p.filter((i) => i.id !== id));
+      showToast("Deleted.");
+    } catch { showToast("Failed to delete."); }
+  };
+
+  const togglePin = async (item: Announcement) => {
+    try {
+      const updated = await api.announcements.togglePin(item.id, !item.pinned);
+      setItems((p) => p.map((i) => i.id === item.id ? updated : i).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
+    } catch { showToast("Failed to update pin."); }
   };
 
   return (
@@ -64,8 +87,12 @@ export default function TeacherAnnouncementsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
-        {items.map((item) => {
-          const cfg = PRIORITY_CFG[item.priority];
+        {loading ? (
+          <Text style={styles.loadingText}>Loading announcements…</Text>
+        ) : items.length === 0 ? (
+          <View style={styles.empty}><Text style={styles.emptyIcon}>📢</Text><Text style={styles.emptyText}>No announcements yet.</Text></View>
+        ) : items.map((item) => {
+          const cfg = PRIORITY_CFG[item.priority] || PRIORITY_CFG.normal;
           return (
             <View key={item.id} style={[styles.card, item.pinned && styles.cardPinned]}>
               <View style={styles.cardTop}>
@@ -84,11 +111,11 @@ export default function TeacherAnnouncementsScreen() {
                     <View style={[styles.priorityPill, { backgroundColor: cfg.bg }]}>
                       <Text style={[styles.priorityText, { color: cfg.color }]}>{cfg.label}</Text>
                     </View>
-                    <Text style={styles.dateText}>{item.date}</Text>
+                    <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                   </View>
                 </View>
                 <View style={styles.cardActions}>
-                  <TouchableOpacity onPress={() => togglePin(item.id)} style={styles.actionBtn}>
+                  <TouchableOpacity onPress={() => togglePin(item)} style={styles.actionBtn}>
                     <Ionicons name={item.pinned ? "pin" : "pin-outline"} size={16} color={item.pinned ? "#3D5AF1" : "#9CA3AF"} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteItem(item.id)} style={styles.actionBtn}>
@@ -142,9 +169,9 @@ export default function TeacherAnnouncementsScreen() {
               </TouchableOpacity>
 
               {formErr ? <Text style={styles.errText}>{formErr}</Text> : null}
-              <TouchableOpacity style={styles.confirmBtn} onPress={handlePost}>
+              <TouchableOpacity style={[styles.confirmBtn, submitting && { opacity: 0.6 }]} onPress={handlePost} disabled={submitting}>
                 <Ionicons name="megaphone-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Post Announcement</Text>
+                <Text style={styles.confirmBtnText}>{submitting ? "Posting…" : "Post Announcement"}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -162,6 +189,10 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
+  loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
+  empty: { alignItems: "center", paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   cardPinned: { borderColor: "#C7D2FE", borderWidth: 1.5 },
   cardTop: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
