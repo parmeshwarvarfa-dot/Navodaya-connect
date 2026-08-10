@@ -121,6 +121,7 @@ export default function VerificationWelcomeScreen() {
         <Text style={s.footnote}>
           You can always complete verification later from your Profile
         </Text>
+      </ScrollView>
       </Animated.View>
     </View>
   );
