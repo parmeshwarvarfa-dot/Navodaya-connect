@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useVerificationGate } from "@/components/VerificationGateModal";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -67,7 +68,8 @@ export default function TabLayout() {
   const isWeb = Platform.OS === "web";
   const tabBarHeight = isWeb ? 60 : 80;
   const paddingBottom = isWeb ? 8 : 16;
-  const { profile } = useAuth();
+  const { profile, isVerified } = useAuth();
+  const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
 
   const activeColor = useMemo(
     () => HOUSE_COLOR[profile?.house ?? ""] ?? DEFAULT_COLOR,
@@ -103,6 +105,14 @@ export default function TabLayout() {
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
+            listeners={tab.name === "chats" ? {
+              tabPress: (event) => {
+                if (!isVerified) {
+                  event.preventDefault();
+                  tryAccess("Chat Groups");
+                }
+              },
+            } : undefined}
             options={{
               title: tab.title,
               tabBarIcon: ({ color, focused }) => (
@@ -116,6 +126,7 @@ export default function TabLayout() {
         ))}
       </Tabs>
 
+      {gateModal}
       <DostAiFab />
     </View>
   );

@@ -1,3 +1,3 @@
-- [Verification System](verification-system.md) — auto-pending on signup, officials verified immediately, unverified users redirect to verification-center screen.
+- [Verification System](verification-system.md) — auto-pending on signup; unverified users may skip to a limited dashboard, with protected features gated until verification.
 - [Alert.alert blocked on web](alert-web.md) — use inline toast banners (Animated overlay, setToast/setTimeout) instead of Alert.alert in all mobile screens.
 - [DB migration command](db-migration.md) — always run `pnpm --filter @workspace/db exec drizzle-kit push --force` after schema changes, then restart API server workflow.

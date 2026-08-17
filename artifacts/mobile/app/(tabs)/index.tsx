@@ -108,6 +108,15 @@ export default function HomeScreen() {
   const isOfficial = role === "official";
 
   const quickActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
+  const limitedActionLabels = role === "student" ? new Set(["Study Hub", "Report Problem"]) : new Set<string>();
+
+  const openFeature = (route: string, featureName: string, limited = false) => {
+    if (limited || isVerified) {
+      router.push(route as any);
+      return;
+    }
+    tryAccess(featureName, () => router.push(route as any));
+  };
 
   const fetchData = async () => {
     setNewsError(false);
@@ -243,9 +252,19 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             {quickActions.map((action) => (
-              <TouchableOpacity key={action.label} style={styles.actionCard} activeOpacity={0.75} onPress={() => router.push(action.route as any)}>
+              <TouchableOpacity
+                key={action.label}
+                style={styles.actionCard}
+                activeOpacity={0.75}
+                onPress={() => openFeature(action.route, action.label, limitedActionLabels.has(action.label))}
+              >
                 <View style={[styles.actionIcon, { backgroundColor: action.bg }]}>
                   <Ionicons name={action.icon} size={22} color={action.color} />
+                  {!isVerified && !limitedActionLabels.has(action.label) && (
+                    <View style={styles.actionLock}>
+                      <Ionicons name="lock-closed" size={9} color="#fff" />
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.actionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -372,7 +391,12 @@ export default function HomeScreen() {
             { label: "Events", desc: "Upcoming school, sports & cultural events", icon: "calendar-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(screens)/events" },
             ...(role !== "official" ? [{ label: "House Arena", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(tabs)/chats" }] : []),
           ].map((item) => (
-            <TouchableOpacity key={item.label} style={styles.exploreRow} onPress={() => router.push(item.route as any)} activeOpacity={0.75}>
+            <TouchableOpacity
+              key={item.label}
+              style={styles.exploreRow}
+              onPress={() => openFeature(item.route, item.label, item.label === "JNV Rankings")}
+              activeOpacity={0.75}
+            >
               <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>
                 <Ionicons name={item.icon} size={22} color={item.iconColor} />
               </View>
@@ -380,6 +404,7 @@ export default function HomeScreen() {
                 <Text style={styles.exploreLabel}>{item.label}</Text>
                 <Text style={styles.exploreDesc}>{item.desc}</Text>
               </View>
+              {item.label !== "JNV Rankings" && !isVerified && <Ionicons name="lock-closed" size={14} color="#9CA3AF" />}
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </TouchableOpacity>
           ))}
@@ -389,7 +414,7 @@ export default function HomeScreen() {
         <View style={[styles.section, { marginTop: 18 }]}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Available Mentors</Text>
-            <TouchableOpacity onPress={() => router.push("/(screens)/alumni" as any)}>
+            <TouchableOpacity onPress={() => openFeature("/(screens)/alumni", "Alumni mentors")}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -400,7 +425,7 @@ export default function HomeScreen() {
               { id: "3", name: "Neha R.", field: "Medicine" },
               { id: "4", name: "Raj M.", field: "Research" },
             ].map((m) => (
-              <TouchableOpacity key={m.id} style={styles.mentorCard} activeOpacity={0.8} onPress={() => router.push("/(screens)/alumni" as any)}>
+              <TouchableOpacity key={m.id} style={styles.mentorCard} activeOpacity={0.8} onPress={() => openFeature("/(screens)/alumni", "Alumni mentors")}>
                 <View style={styles.mentorAvatarWrap}>
                   <View style={styles.mentorAvatar}>
                     <Text style={styles.mentorInitial}>{m.name[0]}</Text>
@@ -476,7 +501,8 @@ const styles = StyleSheet.create({
     alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#F0F0F0",
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-  actionIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  actionIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", position: "relative" },
+  actionLock: { position: "absolute", right: -4, top: -4, width: 17, height: 17, borderRadius: 9, backgroundColor: "#6B7280", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#fff" },
   actionLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#111827", textAlign: "center" },
 
   // Announcements

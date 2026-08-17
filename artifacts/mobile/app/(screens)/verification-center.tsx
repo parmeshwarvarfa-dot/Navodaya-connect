@@ -195,6 +195,26 @@ export default function VerificationCenterScreen() {
           ))}
         </View>
 
+        {status !== "verified" && profile?.role !== "official" && (
+          <View style={s.skipCard}>
+            <View style={s.skipIconWrap}>
+              <Ionicons name="arrow-forward-circle-outline" size={22} color="#3D5AF1" />
+            </View>
+            <Text style={s.skipTitle}>Want to explore Navodaya Connect?</Text>
+            <Text style={s.skipText}>
+              You can use limited dashboard features now. Complete verification later to unlock messaging, events, communities, and all member features.
+            </Text>
+            <TouchableOpacity
+              style={s.skipBtn}
+              onPress={() => router.replace("/(tabs)" as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={s.skipBtnText}>Skip for Now · Go to Dashboard</Text>
+              <Ionicons name="arrow-forward" size={17} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Sign Out */}
         <TouchableOpacity style={s.signOutBtn} onPress={signOut}>
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />
@@ -251,6 +271,12 @@ const s = StyleSheet.create({
   allowedCard: { backgroundColor: "#ECFDF5", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#A7F3D0" },
   allowedRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
   allowedText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#065F46" },
+  skipCard: { backgroundColor: "#EEF2FF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#C7D2FE" },
+  skipIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  skipTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1E3A8A", marginBottom: 5 },
+  skipText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#4B5CC4", lineHeight: 19, marginBottom: 14 },
+  skipBtn: { backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  skipBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
   signOutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, alignItems: "center" },
