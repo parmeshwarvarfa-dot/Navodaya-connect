@@ -1,0 +1,38 @@
+Add a real AI backend to Param AI, replacing the hardcoded pattern-matching responses.
+
+CONTEXT: Param AI currently works via a local KNOWLEDGE_BASE array of regex 
+patterns in artifacts/mobile/app/(screens)/param-ai.tsx (function getResponse). 
+Replace this entirely with real LLM-backed responses. Do NOT redesign the UI — 
+keep all existing styling, animations, and layout exactly as is.
+
+BACKEND (artifacts/api-server/):
+1. Create a new route file src/routes/paramAi.ts with a POST /api/param-ai/chat 
+   endpoint, protected by requireAuth.
+2. It should accept { message: string, history: {role: "user"|"assistant", text: string}[] }
+   and call the Anthropic API (@anthropic-ai/sdk) using process.env.ANTHROPIC_API_KEY 
+   (add this as a Replit Secret — do not hardcode it).
+3. Use model "claude-sonnet-4-6". System prompt: "You are Param AI, a friendly, 
+   knowledgeable assistant inside Navodaya Connect, an app for JNV (Jawahar Navodaya 
+   Vidyalaya) alumni, students, teachers and officials. You can help with any question 
+   the user asks — academics, exam prep (JEE/NEET/UPSC), career guidance, general 
+   knowledge, coding help, casual conversation, etc. Give clear, well-formatted, 
+   genuinely helpful answers. You are not limited to a fixed topic list."
+4. Convert the history array into the Anthropic messages format and send it along 
+   with the new message for conversational context.
+5. Return { reply: string } as JSON. Handle errors gracefully (return a friendly 
+   fallback message if the API call fails, and log the error).
+6. Register the new router in the main Express app alongside the other routes.
+
+FRONTEND (artifacts/mobile/app/(screens)/param-ai.tsx):
+1. Remove the KNOWLEDGE_BASE array and getResponse function entirely.
+2. In sendMessage, replace the local getResponse(...) call with a real fetch to 
+   POST ${EXPO_PUBLIC_DOMAIN}/api/param-ai/chat, sending { message: text, history: 
+   messages.slice(-10) } (last 10 messages for context, formatted as role/text).
+3. Use the existing auth token (from AuthContext / lib/api.ts pattern already used 
+   elsewhere in the app) in the Authorization header.
+4. Keep the existing loading/typing indicator state while the request is in flight.
+5. On success, push the returned reply as an assistant message exactly like before.
+6. On failure, show a friendly error message in the chat instead of crashing.
+
+Do not touch dost-ai.tsx or any other screen. Only modify param-ai.tsx and add the 
+new backend route.

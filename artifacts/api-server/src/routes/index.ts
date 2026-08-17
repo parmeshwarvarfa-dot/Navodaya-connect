@@ -20,6 +20,7 @@ import achievementsRouter from "./achievements";
 import clubsRouter from "./clubs";
 import studentQueriesRouter from "./studentQueries";
 import reportsRouter from "./reports";
+import paramAiRouter from "./paramAi";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(achievementsRouter);
 router.use(clubsRouter);
 router.use(studentQueriesRouter);
 router.use(reportsRouter);
+router.use(paramAiRouter);
 
 export default router;
