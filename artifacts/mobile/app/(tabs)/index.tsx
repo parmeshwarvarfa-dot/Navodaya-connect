@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -97,6 +98,8 @@ export default function HomeScreen() {
   const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsError, setNewsError] = useState(false);
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
   const role = profile?.role ?? "student";
@@ -107,10 +110,15 @@ export default function HomeScreen() {
   const quickActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
 
   const fetchData = async () => {
+    setNewsError(false);
     try {
       const n = await api.news.list();
       setAllNews(n);
-    } catch {}
+    } catch {
+      setNewsError(true);
+    } finally {
+      setNewsLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -207,6 +215,26 @@ export default function HomeScreen() {
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FF7A00" />
+          </TouchableOpacity>
+        )}
+
+        {newsLoading && (
+          <View style={styles.syncRow}>
+            <ActivityIndicator size="small" color="#3D5AF1" />
+            <Text style={styles.syncText}>Updating your community feed…</Text>
+          </View>
+        )}
+
+        {newsError && (
+          <TouchableOpacity style={styles.retryBanner} onPress={fetchData} activeOpacity={0.8}>
+            <View style={styles.retryIcon}>
+              <Ionicons name="cloud-offline-outline" size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.retryTitle}>Feed needs a refresh</Text>
+              <Text style={styles.retryText}>Showing the latest available updates for now.</Text>
+            </View>
+            <Text style={styles.retryAction}>Retry</Text>
           </TouchableOpacity>
         )}
 
@@ -430,6 +458,13 @@ const styles = StyleSheet.create({
   verifyBannerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
   verifyBannerTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#C2410C" },
   verifyBannerSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#EA580C", marginTop: 1 },
+  syncRow: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginTop: 14, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "#EEF2FF", borderRadius: 10 },
+  syncText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#4B5CC4" },
+  retryBanner: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 16, marginTop: 14, padding: 12, backgroundColor: "#FFFBEB", borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A" },
+  retryIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+  retryTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#92400E" },
+  retryText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#A16207", marginTop: 2 },
+  retryAction: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#B45309" },
   section: { paddingHorizontal: 16, marginTop: 20 },
   sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },

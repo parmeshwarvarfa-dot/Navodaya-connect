@@ -130,6 +130,7 @@ export default function VerificationWelcomeScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   bg: { ...StyleSheet.absoluteFillObject },
+  contentWrap: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: 22,

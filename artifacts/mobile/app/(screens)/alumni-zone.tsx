@@ -241,6 +241,8 @@ const styles = StyleSheet.create({
   acceptBtn: { backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   acceptBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#10B981" },
   eventCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, width: 200, borderWidth: 1, borderColor: "#F0F0F0", gap: 5 },
+  eventEmptyCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#fff", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#F0F0F0" },
+  eventEmptyText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   eventType: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#10B981", textTransform: "uppercase", letterSpacing: 0.5 },
   eventTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", lineHeight: 19 },
   eventMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
