@@ -1,5 +1,5 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { requireAuth } from "../lib/auth";
 import { logger } from "../lib/logger";
 
@@ -36,28 +36,37 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "Message is required" });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    logger.error("Param AI is unavailable because ANTHROPIC_API_KEY is not configured");
+  if (!process.env.GEMINI_API_KEY) {
+    logger.error("Param AI is unavailable because GEMINI_API_KEY is not configured");
     return res.status(503).json({ reply: getFallbackReply() });
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [
-        ...history.map((item) => ({ role: item.role, content: item.text })),
-        { role: "user" as const, content: message },
-      ],
+    const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = gemini.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    const reply = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("\n")
-      .trim();
+    const chatHistory: Content[] = history
+      .map((item) => ({
+        role: item.role === "assistant" ? "model" : "user",
+        parts: [{ text: item.text }],
+      }))
+      .slice(-10);
+
+    while (chatHistory[0]?.role === "model") {
+      chatHistory.shift();
+    }
+
+    const chat = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 8192,
+      },
+    });
+    const result = await chat.sendMessage(message);
+    const reply = result.response.text().trim();
 
     if (!reply) {
       return res.status(502).json({ reply: getFallbackReply() });
