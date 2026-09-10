@@ -58,7 +58,6 @@
   "dependencies": {
     "@expo-google-fonts/pacifico": "^0.4.1",
     "expo-apple-authentication": "^8.0.8",
-    "expo-auth-session": "^7.0.11",
     "firebase": "^12.18.0"
   }
 }

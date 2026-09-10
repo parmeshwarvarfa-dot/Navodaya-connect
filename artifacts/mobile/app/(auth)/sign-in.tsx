@@ -163,18 +163,21 @@ export default function SignInScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google */}
-            <TouchableOpacity
-              style={styles.socialBtn}
-              activeOpacity={0.85}
-              onPress={() => handleSocial("Google")}
-              disabled={loading}
-            >
-              <View style={styles.socialIconWrap}>
-                <Text style={styles.googleG}>G</Text>
-              </View>
-              <Text style={styles.socialBtnText}>Continue with Google</Text>
-            </TouchableOpacity>
+            {/* Google sign-in is available in the web build until native OAuth
+                client IDs are configured. */}
+            {Platform.OS === "web" && (
+              <TouchableOpacity
+                style={styles.socialBtn}
+                activeOpacity={0.85}
+                onPress={() => handleSocial("Google")}
+                disabled={loading}
+              >
+                <View style={styles.socialIconWrap}>
+                  <Text style={styles.googleG}>G</Text>
+                </View>
+                <Text style={styles.socialBtnText}>Continue with Google</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Apple */}
             <TouchableOpacity
