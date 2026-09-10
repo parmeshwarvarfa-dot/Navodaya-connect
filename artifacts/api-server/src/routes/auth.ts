@@ -7,6 +7,41 @@ import type { UserProfile } from "./types";
 
 const router = Router();
 
+type FirebaseProfileData = {
+  fullName?: string;
+  role?: string;
+  jnvState?: string;
+  jnvName?: string;
+  house?: string;
+  class?: string;
+  passoutYear?: string;
+  profession?: string;
+  designation?: string;
+  subject?: string;
+};
+
+async function verifyFirebaseToken(idToken: string) {
+  const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+  if (!apiKey) throw new Error("Firebase API key is not configured");
+
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    },
+  );
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as {
+    users?: Array<{ localId?: string; email?: string; displayName?: string; photoUrl?: string }>;
+  };
+  const identity = data.users?.[0];
+  if (!identity?.localId || !identity.email) return null;
+  return identity;
+}
+
 function toProfile(user: typeof usersTable.$inferSelect): UserProfile {
   return {
     uid: user.id,
@@ -90,6 +125,69 @@ router.post("/auth/signup", async (req, res) => {
   } catch (e: any) {
     req.log.error(e);
     res.status(500).json({ error: "Signup failed" });
+  }
+});
+
+router.post("/auth/firebase", async (req, res) => {
+  try {
+    const idToken = typeof req.body?.idToken === "string" ? req.body.idToken : "";
+    const profileData = (req.body?.profileData ?? {}) as FirebaseProfileData;
+    if (!idToken) return res.status(400).json({ error: "Firebase identity token required" });
+
+    const identity = await verifyFirebaseToken(idToken);
+    if (!identity) return res.status(401).json({ error: "Firebase authentication failed" });
+
+    const email = identity.email!.toLowerCase();
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    let user = existing;
+
+    if (!user) {
+      const role = profileData.role;
+      if (!profileData.fullName || !role || !profileData.jnvState || !profileData.jnvName) {
+        return res.status(422).json({
+          code: "PROFILE_REQUIRED",
+          error: "Complete your profile before continuing",
+          email,
+        });
+      }
+
+      const isOfficial = role === "official";
+      [user] = await db.insert(usersTable).values({
+        email,
+        passwordHash: await bcrypt.hash(randomUUID(), 12),
+        fullName: profileData.fullName,
+        role,
+        jnvState: profileData.jnvState,
+        jnvName: profileData.jnvName,
+        house: profileData.house || "Aravali",
+        class: profileData.class,
+        passoutYear: profileData.passoutYear,
+        profession: profileData.profession,
+        designation: profileData.designation,
+        subject: profileData.subject,
+        verificationStatus: isOfficial ? "verified" : "pending",
+        photoURL: identity.photoUrl,
+      }).returning();
+
+      if (!isOfficial) {
+        await db.insert(verificationRequestsTable).values({
+          userId: user.id,
+          userFullName: user.fullName,
+          userEmail: user.email,
+          role,
+          jnvName: user.jnvName,
+          jnvState: user.jnvState,
+          method: "official",
+          status: "pending",
+        });
+      }
+    }
+
+    const token = await createSession(user.id);
+    return res.json({ token, profile: toProfile(user) });
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).json({ error: "Firebase authentication failed" });
   }
 });
 

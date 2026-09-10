@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, forgotPassword } = useAuth();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -40,7 +40,7 @@ export default function SignInScreen() {
     } catch (err: any) {
       const msg: string = err?.message ?? "";
       setErrorMsg(
-        msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials")
+        msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials") || msg.includes("auth/invalid")
           ? "Invalid email or password. Please try again."
           : msg.toLowerCase().includes("network")
           ? "Network error. Check your connection."
@@ -51,9 +51,39 @@ export default function SignInScreen() {
     }
   };
 
-  const handleSocial = (provider: "Google" | "Apple") => {
-    setSocialToast(`${provider} sign-in coming soon!`);
-    setTimeout(() => setSocialToast(""), 2500);
+  const handleForgotPassword = async () => {
+    setErrorMsg("");
+    if (!email.trim()) {
+      setErrorMsg("Enter your email address first.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await forgotPassword(email.trim());
+      setSocialToast("Password reset email sent. Check your inbox.");
+      setTimeout(() => setSocialToast(""), 3500);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Unable to send the password reset email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocial = async (provider: "Google" | "Apple") => {
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      if (provider === "Google") await signInWithGoogle();
+      else await signInWithApple();
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      if (err?.code === "auth/popup-closed-by-user" || err?.code === "ERR_REQUEST_CANCELED") {
+        return;
+      }
+      setErrorMsg(err?.message || `${provider} sign-in couldn't be completed. Please try again.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,7 +152,7 @@ export default function SignInScreen() {
               <Text style={styles.loginBtnText}>{loading ? "Logging in..." : "Login"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.forgotBtn}>
+            <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword} disabled={loading}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
@@ -138,6 +168,7 @@ export default function SignInScreen() {
               style={styles.socialBtn}
               activeOpacity={0.85}
               onPress={() => handleSocial("Google")}
+              disabled={loading}
             >
               <View style={styles.socialIconWrap}>
                 <Text style={styles.googleG}>G</Text>
@@ -150,6 +181,7 @@ export default function SignInScreen() {
               style={[styles.socialBtn, styles.appleSocialBtn]}
               activeOpacity={0.85}
               onPress={() => handleSocial("Apple")}
+              disabled={loading}
             >
               <View style={[styles.socialIconWrap, styles.appleIconWrap]}>
                 <Ionicons name="logo-apple" size={20} color="#fff" />

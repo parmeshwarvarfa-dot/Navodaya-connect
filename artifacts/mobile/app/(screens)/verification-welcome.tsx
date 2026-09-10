@@ -22,6 +22,7 @@ const FEATURES = [
 export default function VerificationWelcomeScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
   const { profile } = useAuth();
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -57,7 +58,7 @@ export default function VerificationWelcomeScreen() {
       >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[s.content, { paddingTop: topPad + 20 }]}
+        contentContainerStyle={[s.content, { paddingTop: topPad + 20, paddingBottom: 32 + bottomPad + 16 }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Badge icon */}
@@ -134,7 +135,6 @@ const s = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 22,
-    paddingBottom: 32,
     alignItems: "center",
   },
   badgeWrap: {

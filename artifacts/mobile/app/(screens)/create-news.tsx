@@ -21,6 +21,7 @@ export default function CreateNewsScreen() {
   const { profile } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [category, setCategory] = useState("General");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -30,9 +31,17 @@ export default function CreateNewsScreen() {
     setError("");
     if (!title.trim()) { setError("Please add a title for your post."); return; }
     if (!description.trim()) { setError("Please add some content to your post."); return; }
+    if (!sourceUrl.trim()) { setError("Add the original source URL for this update."); return; }
+    try {
+      const url = new URL(sourceUrl.trim());
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+    } catch {
+      setError("Enter a valid http or https source URL.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.news.create({ title: title.trim(), description: description.trim(), category });
+      await api.news.create({ title: title.trim(), description: description.trim(), category, sourceUrl: sourceUrl.trim() });
       router.back();
     } catch {
       setError("Failed to post update. Please try again.");
@@ -48,9 +57,9 @@ export default function CreateNewsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Post</Text>
         <TouchableOpacity
-          style={[styles.postBtn, (!title.trim() || !description.trim() || submitting) && styles.postBtnDisabled]}
+           style={[styles.postBtn, (!title.trim() || !description.trim() || !sourceUrl.trim() || submitting) && styles.postBtnDisabled]}
           onPress={handlePost}
-          disabled={!title.trim() || !description.trim() || submitting}
+           disabled={!title.trim() || !description.trim() || !sourceUrl.trim() || submitting}
         >
           <Text style={styles.postBtnText}>{submitting ? "Posting..." : "Post"}</Text>
         </TouchableOpacity>
@@ -84,6 +93,16 @@ export default function CreateNewsScreen() {
           onChangeText={setDescription}
           multiline
           textAlignVertical="top"
+        />
+
+        <TextInput
+          style={styles.sourceInput}
+          placeholder="Original source URL (https://...)"
+          placeholderTextColor="#9CA3AF"
+          value={sourceUrl}
+          onChangeText={setSourceUrl}
+          autoCapitalize="none"
+          keyboardType="url"
         />
 
         <View style={styles.divider} />
@@ -151,6 +170,18 @@ const styles = StyleSheet.create({
     fontSize: 15, fontFamily: "Inter_400Regular",
     color: "#374151", lineHeight: 24,
     minHeight: 160,
+  },
+  sourceInput: {
+    marginHorizontal: 20,
+    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#374151",
   },
   divider: { height: 1, backgroundColor: "#F0F0F0", marginHorizontal: 20, marginVertical: 16 },
   sectionWrap: { paddingHorizontal: 20 },

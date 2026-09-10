@@ -167,8 +167,8 @@ export default function SignUpScreen() {
       setErrorMsg("Passwords do not match. Please try again.");
       return;
     }
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setErrorMsg("Password must be at least 8 characters.");
       return;
     }
     if (needsHouse && !house) {

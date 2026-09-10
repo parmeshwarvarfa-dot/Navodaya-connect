@@ -59,12 +59,17 @@ export const api = {
       request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(data) }),
     signin: (email: string, password: string) =>
       request<AuthResponse>("/auth/signin", { method: "POST", body: JSON.stringify({ email, password }) }),
+    firebase: (idToken: string, profileData?: Partial<SignupData>) =>
+      request<AuthResponse>("/auth/firebase", {
+        method: "POST",
+        body: JSON.stringify({ idToken, profileData }),
+      }),
     signout: () => request<{ ok: boolean }>("/auth/signout", { method: "POST" }),
     me: () => request<{ profile: UserProfile }>("/auth/me"),
   },
   news: {
     list: () => request<NewsItem[]>("/news"),
-    create: (data: { title: string; description: string; category: string }) =>
+    create: (data: { title: string; description: string; category: string; sourceName?: string; sourceUrl?: string; imageUrl?: string; publishedAt?: string }) =>
       request<NewsItem>("/news", { method: "POST", body: JSON.stringify(data) }),
     delete: (id: string) => request<{ ok: boolean }>(`/news/${id}`, { method: "DELETE" }),
   },
@@ -253,6 +258,11 @@ export interface NewsItem {
   authorName?: string;
   jnvName?: string;
   createdAt: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  imageUrl?: string;
+  publishedAt?: string;
+  isLive?: boolean;
 }
 
 export interface Group {

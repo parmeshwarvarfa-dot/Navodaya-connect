@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Platform,
   FlatList,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,19 +44,6 @@ const OFFICIAL_ACTIONS = [
   { label: "Verify Users",    icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management"    },
   { label: "View Problems",   icon: "alert-circle-outline"    as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"      },
   { label: "Post Update",     icon: "megaphone-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/create-news"        },
-];
-
-const FALLBACK_NEWS: NewsItem[] = [
-  { id: "fn1", title: "JNV Selection Test 2025 Results Announced", description: "The National Testing Agency has released the JNVST 2025 results. Over 2.9 lakh students qualified for admission across 661 JNVs in India. Check the official NTA portal for your result.", category: "Exam", authorName: "NTA / NCERT", jnvName: "National", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "fn2", title: "Annual Sports Day Inter-JNV Tournament 2025", description: "Navodaya Vidyalaya Samiti announces the 31st inter-JNV National Sports Tournament. Events include Athletics, Football, Volleyball, and Kabaddi. Registrations open till 30th June.", category: "Sports", authorName: "NVS Headquarters", jnvName: "National", createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "fn3", title: "CBSE Board Results 2025 — JNV Students Excel", description: "JNV students once again outperformed the national average in Class 10 and Class 12 CBSE board examinations with a 98.7% pass rate. Several students secured top district ranks.", category: "Academic", authorName: "NVS Academic Cell", jnvName: "National", createdAt: new Date(Date.now() - 86400000 * 8).toISOString() },
-  { id: "fn4", title: "Navodaya Alumni Global Connect 2025", description: "The NVS Alumni Association is organising its annual Global Connect event on 15th August 2025. Alumni from over 40 countries are expected to participate virtually.", category: "Event", authorName: "NVS Alumni Association", jnvName: "National", createdAt: new Date(Date.now() - 86400000 * 12).toISOString() },
-];
-
-const FALLBACK_ANNOUNCEMENTS: NewsItem[] = [
-  { id: "fa1", title: "Holiday Notice: Schools Closed on 15th August", description: "All Jawahar Navodaya Vidyalayas will remain closed on 15th August 2025 on account of Independence Day. Flag hoisting ceremony will be held at 8:00 AM. All students must attend in formal dress.", category: "Announcement", authorName: "Principal", jnvName: "JNV India", createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: "fa2", title: "Mid-Term Examinations Schedule Released", description: "Mid-term examinations for Classes 6–12 will be held from 1st to 10th August 2025. Timetable has been displayed on the school notice board. Students are advised to start preparation immediately.", category: "Announcement", authorName: "Exam Coordinator", jnvName: "JNV India", createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "fa3", title: "Annual Prize Distribution Ceremony – 20th August", description: "The Annual Prize Distribution Ceremony will be held on 20th August 2025 at 10:00 AM in the school auditorium. Parents and guardians are cordially invited. Best dress code is mandatory.", category: "Announcement", authorName: "JNV Official", jnvName: "JNV India", createdAt: new Date(Date.now() - 86400000 * 6).toISOString() },
 ];
 
 const ANNOUNCEMENT_CATEGORIES = ["announcement", "notice", "official", "circular"];
@@ -100,6 +88,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
+  const [newsLinkError, setNewsLinkError] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
 
   const role = profile?.role ?? "student";
@@ -138,6 +127,22 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
+  const openArticle = async (item: NewsItem) => {
+    if (!item.sourceUrl) {
+      setNewsLinkError("This item does not have an original source link.");
+      setTimeout(() => setNewsLinkError(""), 3000);
+      return;
+    }
+    try {
+      const url = new URL(item.sourceUrl);
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      await Linking.openURL(url.toString());
+    } catch {
+      setNewsLinkError("Unable to open the original source article.");
+      setTimeout(() => setNewsLinkError(""), 3000);
+    }
+  };
+
   const announcements = allNews.filter((n) =>
     ANNOUNCEMENT_CATEGORIES.includes(n.category?.toLowerCase() || "")
   );
@@ -145,8 +150,8 @@ export default function HomeScreen() {
     !ANNOUNCEMENT_CATEGORIES.includes(n.category?.toLowerCase() || "")
   );
 
-  const displayNews = jnvNews.length > 0 ? jnvNews : FALLBACK_NEWS;
-  const displayAnnouncements = announcements.length > 0 ? announcements : FALLBACK_ANNOUNCEMENTS;
+  const displayNews = jnvNews;
+  const displayAnnouncements = announcements;
 
   const featuredNews = displayNews[0];
   const moreNews = displayNews.slice(1);
@@ -289,7 +294,7 @@ export default function HomeScreen() {
           </View>
 
           {displayAnnouncements.slice(0, 3).map((item) => (
-            <TouchableOpacity key={item.id} style={styles.announceCard} activeOpacity={0.8} onPress={() => router.push("/(screens)/news" as any)}>
+            <TouchableOpacity key={item.id} style={styles.announceCard} activeOpacity={0.8} onPress={() => openArticle(item)}>
               <View style={styles.announceStripe} />
               <View style={styles.announceBody}>
                 <View style={styles.announceTop}>
@@ -315,6 +320,9 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           ))}
+          {displayAnnouncements.length === 0 && !newsLoading && (
+            <Text style={styles.emptyNewsText}>No official announcements are available right now.</Text>
+          )}
         </View>
 
         {/* ── JNV NEWS SECTION ── */}
@@ -333,7 +341,7 @@ export default function HomeScreen() {
 
           {/* Featured news card */}
           {featuredNews && (
-            <TouchableOpacity activeOpacity={0.88} onPress={() => router.push("/(screens)/news" as any)} style={styles.featuredCard}>
+          <TouchableOpacity activeOpacity={0.88} onPress={() => openArticle(featuredNews)} style={styles.featuredCard}>
               <LinearGradient colors={GRADIENT_SETS[0]} style={styles.featuredGradient}>
                 <View style={styles.featuredCatTag}>
                   <Text style={styles.featuredCatText}>{featuredNews.category || "News"}</Text>
@@ -364,7 +372,7 @@ export default function HomeScreen() {
                 const grad = GRADIENT_SETS[(index + 1) % GRADIENT_SETS.length];
                 const catStyle = getCategoryStyle(item.category);
                 return (
-                  <TouchableOpacity style={styles.newsCard} activeOpacity={0.82} onPress={() => router.push("/(screens)/news" as any)}>
+                  <TouchableOpacity style={styles.newsCard} activeOpacity={0.82} onPress={() => openArticle(item)}>
                     <LinearGradient colors={grad} style={styles.newsCardHeader}>
                       <View style={styles.newsCardCatTag}>
                         <Text style={styles.newsCardCatText}>{item.category || "News"}</Text>
@@ -464,6 +472,7 @@ const styles = StyleSheet.create({
   },
   headerGreeting: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
+  emptyNewsText: { color: "#9CA3AF", fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 10 },
   bellBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   bellDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
   welcomeCard: { marginHorizontal: 16, marginTop: 16, borderRadius: 18, padding: 18 },

@@ -1,0 +1,476 @@
+NAVODAYA CONNECT — PRODUCTION IMPROVEMENT & BUG-FIX PROMPT
+
+Treat this as a serious production application. Do not only modify the UI. Inspect the existing app architecture, authentication flow, navigation, Firebase configuration, database structure, and existing components before making changes.
+
+IMPORTANT:
+Do not break any existing working feature while implementing these changes.
+
+==================================================
+1. PROPER PRODUCTION AUTHENTICATION
+==================================================
+
+Implement a complete and reliable authentication system for Navodaya Connect.
+
+Supported authentication methods:
+
+A. Email + Password
+B. Google Sign-In
+C. Sign in with Apple / iPhone Apple ID
+
+The authentication system must use proper Firebase Authentication.
+
+EMAIL/PASSWORD:
+- Signup must create a Firebase Auth account.
+- Login must authenticate the user.
+- Password must never be stored manually in Firestore.
+- Add proper email validation.
+- Add password validation.
+- Show clear errors for incorrect credentials.
+- Add Forgot Password functionality.
+- Send password-reset email through Firebase.
+- Prevent duplicate account problems.
+- Show loading state while authentication is processing.
+- Prevent multiple simultaneous login requests.
+- Automatically maintain the authenticated session.
+
+GOOGLE SIGN-IN:
+- Implement real Google OAuth/Firebase Google Authentication.
+- Do NOT create a fake Google login button.
+- Tapping "Continue with Google" must actually open the Google authentication flow.
+- After successful authentication, check whether the user already has a Firestore profile.
+- If the profile exists, take the user to the correct dashboard.
+- If the profile does not exist, take the user to profile/JNV onboarding.
+- Handle cancellation and authentication errors gracefully.
+
+APPLE SIGN-IN:
+- Implement real "Sign in with Apple" using Firebase Authentication and Apple's authentication flow.
+- This must work properly on iPhone/iOS.
+- Do NOT make it a dummy button.
+- Correctly handle Apple's private relay email when applicable.
+- Link the Apple credential to the Firebase user.
+- If the same person previously registered using another provider, avoid unnecessary duplicate profiles where Firebase account linking can safely be used.
+- Handle cancellation and authentication errors properly.
+
+AUTH STATE:
+Create a centralized authentication state.
+
+The app must correctly detect:
+- Logged out user
+- Logged in user
+- New authenticated user without profile
+- Existing authenticated user with completed profile
+- User whose verification is pending
+- User whose verification is completed
+
+On app launch:
+1. Check Firebase authentication state.
+2. If logged out → Login screen.
+3. If authenticated but profile is incomplete → onboarding/profile completion.
+4. If authenticated and profile is complete → appropriate dashboard.
+5. Never randomly send authenticated users back to login.
+
+SECURITY:
+- Use Firebase Security Rules appropriately.
+- Users must only be able to modify data they are authorized to modify.
+- Never expose Firebase private credentials in client code.
+- Do not store passwords in Firestore.
+- Validate important operations on the backend/security-rule level where possible.
+
+==================================================
+2. COMPLETE VERIFICATION PAGE — FIX MOBILE UI
+==================================================
+
+There is currently a "Complete Verification" button near the bottom of the verification/profile page.
+
+The button is too close to the phone's bottom system navigation area / gesture bar.
+
+This creates a bad UX because users may accidentally trigger the phone's back/home gesture instead of tapping the button.
+
+FIX THIS PROPERLY.
+
+The verification page must be vertically scrollable.
+
+Requirements:
+
+- The entire page must support vertical scrolling.
+- The "Complete Verification" button must NOT be permanently attached directly to the physical bottom edge of the screen.
+- Add proper bottom safe-area padding.
+- Respect iOS safe-area insets.
+- Respect Android navigation/gesture-bar insets.
+- The button must have sufficient spacing below it.
+- Users should be able to comfortably tap the button without accidentally triggering system gestures.
+- The button should remain reachable even on smaller phones.
+- The keyboard must not cover important form fields or the button.
+- When the keyboard opens, the page should adjust/scroll automatically when necessary.
+- Make sure the final button can always be reached by scrolling to the bottom.
+
+Recommended behavior:
+
+[Verification fields]
+        ↓
+[Additional information]
+        ↓
+[Verification details]
+        ↓
+[Complete Verification button]
+        ↓
+[Safe bottom spacing]
+        ↓
+[System gesture/navigation area]
+
+Do NOT simply reduce the button size.
+
+The correct solution is:
+- ScrollView / equivalent scrolling container
+- SafeArea handling
+- Proper contentContainer bottom padding
+- Keyboard-aware layout where needed
+
+The user should clearly see the button and have enough empty space below it.
+
+Test this on:
+- iPhone with home indicator
+- iPhone with different screen sizes
+- Android devices with gesture navigation
+- Android devices with navigation buttons
+
+==================================================
+3. COMPLETE VERIFICATION BUTTON MUST ACTUALLY WORK
+==================================================
+
+When the user taps "Complete Verification":
+
+1. Validate every required field.
+2. Display validation errors next to the relevant fields.
+3. Prevent submission if required information is missing.
+4. Show a loading state.
+5. Save the correct information to Firestore.
+6. Update the user's verification/onboarding status.
+7. Prevent accidental duplicate submissions.
+8. Show success feedback.
+9. Navigate to the correct next screen.
+10. Persist the completed state so the user does not have to repeat verification after reopening the app.
+
+If verification requires admin/community review:
+- Save status as "pending".
+- Show the user that verification has been submitted.
+- Do not falsely show the user as verified.
+- Display the current verification status correctly.
+
+==================================================
+4. LIVE JNV NEWS SYSTEM
+==================================================
+
+The News section must NOT contain permanently hardcoded fake/dummy news.
+
+Navodaya Connect needs a live news experience focused on:
+
+- Jawahar Navodaya Vidyalaya
+- Navodaya Vidyalayas
+- JNV students
+- JNV admissions
+- JNV examinations
+- JNV results
+- JNV achievements
+- JNV events
+- NVS announcements
+- Scholarships relevant to JNV students
+- Competitions relevant to JNV students
+- Educational opportunities relevant to JNV students
+
+The News section should display current/recent relevant information.
+
+IMPORTANT:
+Do not invent news articles.
+
+Do not generate fake headlines and present them as real news.
+
+==================================================
+5. NEWS DATA ARCHITECTURE
+==================================================
+
+If the current platform/backend supports a reliable external news/API/RSS integration:
+
+- Implement a proper news data source.
+- Fetch relevant JNV/NVS/student-related news.
+- Store/cache articles appropriately if needed.
+- Handle API failures gracefully.
+- Display loading state.
+- Display empty state.
+- Display error state.
+- Avoid duplicate articles.
+- Sort articles by publication date.
+- Refresh news when appropriate.
+
+If a direct external news API cannot safely/reliably be used from the mobile client:
+
+Implement a production-friendly alternative:
+
+Create a Firestore-based News collection.
+
+Suggested structure:
+
+news/
+  articleId
+    title
+    summary
+    imageUrl
+    sourceName
+    sourceUrl
+    publishedAt
+    category
+    isPublished
+    createdAt
+
+Official/authorized users should be able to publish verified news links.
+
+The app should then display these published articles dynamically.
+
+DO NOT make the news section look live by simply changing hardcoded text.
+
+The architecture must allow new news to appear without rebuilding the entire app.
+
+==================================================
+6. NEWS CARD INTERACTION
+==================================================
+
+Every news card must be clickable.
+
+When a user taps a news article:
+
+- Open the ORIGINAL source article.
+- Use the article's actual sourceUrl.
+- Redirect/open the original website using the appropriate external browser/in-app browser mechanism.
+- Do NOT create a fake internal article page pretending to be the original source.
+- Do NOT fabricate URLs.
+- If sourceUrl is missing or invalid, show an appropriate error instead of navigating to a random page.
+
+Every article should clearly show:
+- Headline
+- Source
+- Published date/time where available
+- Relevant image where available
+- Category
+- Short summary
+
+The user should know which website published the article.
+
+==================================================
+7. NEWS RELEVANCE
+==================================================
+
+Prioritize news using relevant keywords/topics such as:
+
+"Jawahar Navodaya Vidyalaya"
+"JNV"
+"Navodaya Vidyalaya"
+"Navodaya students"
+"Navodaya admission"
+"NVS"
+"Navodaya result"
+"Navodaya exam"
+"Navodaya entrance"
+"JNVST"
+"Navodaya scholarship"
+"Navodaya achievement"
+
+Do not fill the News section with unrelated general education news unless it is clearly useful to JNV students.
+
+==================================================
+8. NEWS UI
+==================================================
+
+Keep the existing premium Navodaya Connect design language.
+
+Use:
+- Clean Apple-style interface
+- Rounded cards
+- Soft shadows
+- Proper spacing
+- Blue-accent theme
+- Smooth loading animations
+- Skeleton loading where appropriate
+- Responsive layouts
+
+News should feel like a real modern news feed.
+
+Use:
+- Featured/latest article
+- News cards
+- Category labels
+- Publication dates
+- Source names
+
+Avoid clutter.
+
+==================================================
+9. ERROR HANDLING
+==================================================
+
+Every network/database/authentication operation must have proper states:
+
+LOADING
+SUCCESS
+EMPTY
+ERROR
+RETRY
+
+Never leave the user staring at a blank screen.
+
+Examples:
+
+If news fails:
+"Unable to load news. Try again."
+
+Provide a Retry button.
+
+If Google authentication fails:
+"Google sign-in couldn't be completed. Please try again."
+
+If Apple authentication fails:
+"Apple sign-in couldn't be completed. Please try again."
+
+If Firebase fails:
+Show a user-friendly error, but log the technical error appropriately for debugging.
+
+==================================================
+10. GLOBAL FUNCTIONALITY AUDIT
+==================================================
+
+While implementing these changes, inspect the ENTIRE Navodaya Connect app.
+
+Every visible interactive element must work.
+
+Audit:
+
+- Login
+- Signup
+- Google login
+- Apple login
+- Logout
+- Forgot password
+- Profile
+- Profile editing
+- JNV selection
+- State selection
+- House selection
+- Verification
+- Complete Verification
+- Dashboard navigation
+- News
+- News article links
+- Groups
+- Chat
+- Mentorship
+- Problems
+- Rankings
+- Events
+- Store
+- Notifications
+- Search
+- Filters
+- Buttons
+- Tabs
+- Menus
+- Settings
+- Forms
+- Image uploads
+- Firebase database operations
+
+If you find a button that only looks functional but does nothing:
+
+FIX IT.
+
+If you find a page that is only a visual placeholder:
+
+IMPLEMENT THE FUNCTIONALITY.
+
+If a planned feature cannot be implemented exactly because of a technical/platform limitation:
+
+DO NOT leave a broken button.
+
+Instead:
+1. Determine the limitation.
+2. Implement the closest practical working alternative.
+3. Make the UI accurately represent what the feature can actually do.
+4. Never pretend that a non-working feature is working.
+
+==================================================
+11. FINAL QA REQUIREMENT
+==================================================
+
+Before considering this task complete, perform a full functional audit.
+
+Test:
+
+AUTHENTICATION
+✓ Email signup
+✓ Email login
+✓ Logout
+✓ Forgot password
+✓ Google login
+✓ Apple login
+✓ Existing-user login
+✓ New-user onboarding
+✓ Session persistence
+
+VERIFICATION
+✓ Form validation
+✓ Scroll behavior
+✓ Keyboard behavior
+✓ Safe-area spacing
+✓ Complete Verification button
+✓ Firestore save
+✓ Verification status
+✓ Navigation after submission
+
+NEWS
+✓ Dynamic news loading
+✓ JNV relevance
+✓ Loading state
+✓ Error state
+✓ Retry
+✓ Article card interaction
+✓ Original source URL opening
+✓ Publication information
+✓ No fake news
+
+UI
+✓ iPhone safe areas
+✓ Android safe areas
+✓ Small screens
+✓ Large screens
+✓ No buttons hidden behind system navigation
+✓ No accidental gesture conflicts
+✓ No overlapping elements
+✓ No dead buttons
+
+DATABASE
+✓ Correct Firestore reads
+✓ Correct Firestore writes
+✓ Correct update operations
+✓ Correct permissions
+✓ No duplicate records
+✓ Proper authentication-based access
+
+IMPORTANT FINAL INSTRUCTION:
+
+Do not just tell me what you changed.
+
+Actually implement the changes in the existing Navodaya Connect codebase.
+
+Inspect the existing implementation first, reuse existing architecture where appropriate, and make the smallest safe changes necessary.
+
+Do not replace working features unnecessarily.
+
+Do not create mock implementations where real functionality is possible.
+
+The final result must feel like a real production application rather than a UI prototype.
+
+TAKE THIS REQUIREMENT SERIOUSLY:
+A button that looks clickable but does nothing is considered a BUG.
+A feature that appears implemented but is not connected to real data is considered INCOMPLETE.
+A news article that does not open its original source is considered INCOMPLETE.
+An authentication button that does not perform real authentication is considered INCOMPLETE.
+
+Finish with all realistically implementable functionality working end-to-end.

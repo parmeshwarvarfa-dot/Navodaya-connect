@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const newsTable = pgTable("news", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -8,6 +8,11 @@ export const newsTable = pgTable("news", {
   authorId: uuid("author_id"),
   authorName: text("author_name"),
   jnvName: text("jnv_name"),
+  sourceName: text("source_name"),
+  sourceUrl: text("source_url"),
+  imageUrl: text("image_url"),
+  publishedAt: timestamp("published_at"),
+  isPublished: boolean("is_published").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

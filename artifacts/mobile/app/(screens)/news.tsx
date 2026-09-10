@@ -8,6 +8,7 @@ import {
   Platform,
   Modal,
   ScrollView,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,11 +48,13 @@ export default function NewsScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle]       = useState("");
   const [description, setDescription] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [category, setCategory] = useState("General");
   const [submitting, setSubmitting] = useState(false);
   const [postError, setPostError]   = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<NewsItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [newsLinkError, setNewsLinkError] = useState("");
   const topPad   = Platform.OS === "web" ? 67 : insets.top;
   const canPost  = profile?.role === "teacher" || profile?.role === "official";
 
@@ -73,10 +76,11 @@ export default function NewsScreen() {
     setPostError("");
     setSubmitting(true);
     try {
-      await api.news.create({ title: title.trim(), description: description.trim(), category });
+      await api.news.create({ title: title.trim(), description: description.trim(), category, sourceUrl: sourceUrl.trim() || undefined });
       setShowCreate(false);
       setTitle("");
       setDescription("");
+      setSourceUrl("");
       setCategory("General");
       fetchNews();
     } catch {
@@ -93,6 +97,22 @@ export default function NewsScreen() {
     } catch {}
     setDeleting(false);
     setDeleteConfirm(null);
+  };
+
+  const openArticle = async (item: NewsItem) => {
+    if (!item.sourceUrl) {
+      setNewsLinkError("This article does not have a valid original source link.");
+      setTimeout(() => setNewsLinkError(""), 3000);
+      return;
+    }
+    try {
+      const url = new URL(item.sourceUrl);
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      await Linking.openURL(url.toString());
+    } catch {
+      setNewsLinkError("Unable to open the original source article.");
+      setTimeout(() => setNewsLinkError(""), 3000);
+    }
   };
 
   const newsItems         = news.filter((n) => !isAnnouncement(n));
@@ -169,7 +189,8 @@ export default function NewsScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <PremiumCard style={[styles.newsCard, isAnnouncement(item) ? styles.announceCard : {}] as any}>
+            <TouchableOpacity activeOpacity={0.86} onPress={() => openArticle(item)}>
+            <PremiumCard style={[styles.newsCard, isAnnouncement(item) ? styles.announceCard : {}] as any}>
             {isAnnouncement(item) && <View style={styles.announceStripe} />}
             <View style={styles.cardMeta}>
               <View style={[styles.catBadge, {
@@ -184,7 +205,7 @@ export default function NewsScreen() {
                   {item.category}
                 </Text>
               </View>
-              {canPost && (
+              {canPost && !item.isLive && (
                 <TouchableOpacity onPress={() => setDeleteConfirm(item)}>
                   <Ionicons name="trash-outline" size={16} color={colors.destructive} />
                 </TouchableOpacity>
@@ -194,9 +215,15 @@ export default function NewsScreen() {
             <Text style={[styles.newsDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
             <View style={styles.cardFooter}>
               <Ionicons name="person-circle-outline" size={14} color={colors.mutedForeground} />
-              <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>{item.authorName}</Text>
+              <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>{item.sourceName || item.authorName || "JNV News"}</Text>
+              {(item.publishedAt || item.createdAt) && (
+                <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>
+                  {new Date(item.publishedAt || item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </Text>
+              )}
             </View>
           </PremiumCard>
+            </TouchableOpacity>
         )}
       />
 
@@ -230,6 +257,14 @@ export default function NewsScreen() {
               numberOfLines={5}
               style={{ minHeight: 100, textAlignVertical: "top" }}
               icon="create-outline"
+            />
+            <PremiumInput
+              label="Original Source URL"
+              value={sourceUrl}
+              onChangeText={setSourceUrl}
+              placeholder="https://source-website.example/article"
+              keyboardType="url"
+              icon="link-outline"
             />
 
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Category</Text>
@@ -286,6 +321,13 @@ export default function NewsScreen() {
           </View>
         </View>
       </Modal>
+
+      {newsLinkError ? (
+        <View style={styles.linkError} pointerEvents="none">
+          <Ionicons name="alert-circle-outline" size={16} color="#fff" />
+          <Text style={styles.linkErrorText}>{newsLinkError}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -340,4 +382,6 @@ const styles = StyleSheet.create({
   confirmCancelText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#374151" },
   confirmDelete: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: "#EF4444", alignItems: "center" },
   confirmDeleteText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  linkError: { position: "absolute", bottom: 24, left: 20, right: 20, backgroundColor: "#1F2937", borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 8 },
+  linkErrorText: { flex: 1, color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium" },
 });
