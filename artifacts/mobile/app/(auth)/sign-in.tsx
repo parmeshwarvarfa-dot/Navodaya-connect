@@ -86,7 +86,7 @@ export default function SignInScreen() {
         err?.code === "auth/operation-not-allowed"
           ? `Continue with ${provider} is not enabled in the Firebase project.`
           : err?.code === "auth/unauthorized-domain"
-          ? "This app domain is not authorized in Firebase Authentication."
+          ? `Add ${typeof window !== "undefined" ? window.location.hostname : "this app domain"} in Firebase Console → Authentication → Settings → Authorized domains.`
           : err?.code === "auth/popup-blocked"
           ? "Your browser blocked the sign-in window. Allow pop-ups and try again."
           : err?.code === "auth/api-key-not-valid"
