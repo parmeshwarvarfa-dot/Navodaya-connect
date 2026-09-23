@@ -40,7 +40,9 @@ export default function SignInScreen() {
     } catch (err: any) {
       const msg: string = err?.message ?? "";
       setErrorMsg(
-        msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials") || msg.includes("auth/invalid")
+        msg.includes("auth/api-key-not-valid")
+          ? "Firebase sign-in is not configured correctly. Please reload the app and try again."
+          : msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials") || msg.includes("auth/invalid")
           ? "Invalid email or password. Please try again."
           : msg.toLowerCase().includes("network")
           ? "Network error. Check your connection."
@@ -80,7 +82,17 @@ export default function SignInScreen() {
       if (err?.code === "auth/popup-closed-by-user" || err?.code === "ERR_REQUEST_CANCELED") {
         return;
       }
-      setErrorMsg(err?.message || `${provider} sign-in couldn't be completed. Please try again.`);
+      const providerError =
+        err?.code === "auth/operation-not-allowed"
+          ? `Continue with ${provider} is not enabled in the Firebase project.`
+          : err?.code === "auth/unauthorized-domain"
+          ? "This app domain is not authorized in Firebase Authentication."
+          : err?.code === "auth/popup-blocked"
+          ? "Your browser blocked the sign-in window. Allow pop-ups and try again."
+          : err?.code === "auth/api-key-not-valid"
+          ? "Firebase configuration was not accepted. Reload the app and try again."
+          : err?.message || `${provider} sign-in couldn't be completed. Please try again.`;
+      setErrorMsg(providerError);
     } finally {
       setLoading(false);
     }

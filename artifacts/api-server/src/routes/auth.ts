@@ -21,7 +21,10 @@ type FirebaseProfileData = {
 };
 
 async function verifyFirebaseToken(idToken: string) {
-  const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+  const apiKey = (process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .trim();
   if (!apiKey) throw new Error("Firebase API key is not configured");
 
   const response = await fetch(
