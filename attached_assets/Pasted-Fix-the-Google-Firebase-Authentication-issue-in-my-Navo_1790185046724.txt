@@ -1,0 +1,62 @@
+Fix the Google Firebase Authentication issue in my Navodaya Connect project.
+
+IMPORTANT: Firebase Console already has these two Replit domains under:
+Firebase Console → Authentication → Settings → Authorized domains
+
+1. 1b9e9505-1d15-491d-ad37-98893beb33fb-00-261zhm4vi460.expo.pike.replit.dev
+2. 1b9e9505-1d15-491d-ad37-98893beb33fb-00-261zhm4vi460.pike.replit.dev
+
+The app still repeatedly shows:
+
+"Add 1b9e9505-1d15-491d-ad37-98893beb33fb-00-261zhm4vi460.expo.pike.replit.dev in Firebase Console → Authentication → Settings → Authorized domains."
+
+DO NOT simply tell me to add the domain again. It is already added.
+
+Please investigate the actual cause and fix it.
+
+Check the entire authentication implementation and verify:
+
+1. Firebase projectId is:
+   navodaya-connect-c774
+
+2. Firebase authDomain is:
+   navodaya-connect-c774.firebaseapp.com
+
+3. The Firebase API key/configuration being used at runtime belongs to the same Firebase project.
+
+4. Check all environment variables for Firebase configuration and look for outdated, duplicated, or incorrect Firebase values.
+
+5. Check whether the application is accidentally initializing Firebase more than once with different configurations.
+
+6. Check the actual Firebase Auth instance used by the Google login button.
+
+7. Check for any hard-coded authDomain, project ID, Replit hostname, OAuth URL, or Firebase configuration that could be overriding the correct configuration.
+
+8. Check the Google authentication implementation and OAuth redirect flow.
+
+9. Check whether the application is using Firebase's standard Google authentication correctly for the current platform/framework.
+
+10. Check whether the Replit preview hostname is being incorrectly used as Firebase's authDomain. If so, correct it.
+
+11. Do NOT disable Firebase Authentication security.
+12. Do NOT bypass Firebase authorized-domain security.
+13. Do NOT expose or print private credentials, API secrets, or tokens.
+
+Before changing anything, inspect the existing code and configuration and identify the most likely cause.
+
+Then make the necessary code/configuration changes to fix the issue.
+
+After making the changes:
+- restart/reload the application if necessary
+- verify that Firebase initializes with the correct project
+- verify that Google Sign-In uses the correct Firebase Auth instance
+- verify that the current Replit hostname is handled correctly
+
+Finally, give me a concise report containing:
+1. What caused the error
+2. What files/configuration you changed
+3. What you changed
+4. Whether I need to change anything manually in Firebase Console
+5. How I should test Google Sign-In
+
+Do not repeatedly ask me to add the same authorized domain because it is already present in Firebase Console.
