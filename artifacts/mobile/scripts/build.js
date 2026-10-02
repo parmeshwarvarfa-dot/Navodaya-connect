@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
 
@@ -507,6 +507,20 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
 
 async function main() {
   console.log("Building static Expo Go deployment...");
+
+  if (
+    !process.env.REPLIT_INTERNAL_APP_DOMAIN &&
+    !process.env.REPLIT_DEV_DOMAIN &&
+    !process.env.EXPO_PUBLIC_DOMAIN
+  ) {
+    const expoCli = require.resolve("expo/bin/cli", { paths: [projectRoot] });
+    const result = spawnSync(
+      process.execPath,
+      [expoCli, "export", "--platform", "web", "--output-dir", "dist"],
+      { cwd: projectRoot, env: process.env, stdio: "inherit" },
+    );
+    process.exit(result.status ?? 1);
+  }
 
   setupSignalHandlers();
 

@@ -3,9 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const TOKEN_KEY = "auth_token";
 
 function getBaseUrl(): string {
+  const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configuredApiUrl) return configuredApiUrl.replace(/\/+$/, "");
+
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
   if (domain) return `https://${domain}/api`;
-  return "http://localhost:80/api";
+  return "http://localhost:3001/api";
 }
 
 export async function getToken(): Promise<string | null> {
@@ -48,7 +51,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `Request failed: ${res.status}`);
+    const error = new Error(body.error || `Request failed: ${res.status}`) as Error & {
+      code?: string;
+      status?: number;
+    };
+    error.code = body.code;
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }

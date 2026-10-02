@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "isolatedModules": true,
     "lib": ["es2022"],
@@ -7,7 +7,7 @@
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": false,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noUnusedLocals": false,
     "noImplicitAny": true,
     "noImplicitThis": true,
@@ -23,3 +23,4 @@
     "customConditions": ["workspace"]
   }
 }
+

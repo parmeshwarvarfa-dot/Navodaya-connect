@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { requireAuth } from "../lib/auth";
 import { logger } from "../lib/logger";
@@ -6,7 +6,7 @@ import { logger } from "../lib/logger";
 const router = Router();
 
 const SYSTEM_PROMPT =
-  "You are Param AI, a friendly, knowledgeable assistant inside Navodaya Connect, an app for JNV (Jawahar Navodaya Vidyalaya) alumni, students, teachers and officials. You can help with any question the user asks — academics, exam prep (JEE/NEET/UPSC), career guidance, general knowledge, coding help, casual conversation, etc. Give clear, well-formatted, genuinely helpful answers. You are not limited to a fixed topic list.";
+  "You are Param AI, a friendly, knowledgeable assistant inside Navodaya Connect, an app for JNV (Jawahar Navodaya Vidyalaya) alumni, students, teachers and officials. You can help with any question the user asks - academics, exam prep (JEE/NEET/UPSC), career guidance, general knowledge, coding help, casual conversation, etc. Give clear, well-formatted, genuinely helpful answers. You are not limited to a fixed topic list.";
 
 type HistoryMessage = {
   role: "user" | "assistant";
@@ -14,7 +14,7 @@ type HistoryMessage = {
 };
 
 function getFallbackReply() {
-  return "I’m having trouble reaching my AI service right now. Please try again in a moment.";
+  return "I'm having trouble reaching my AI service right now. Please try again in a moment.";
 }
 
 router.post("/param-ai/chat", requireAuth, async (req, res) => {
@@ -28,8 +28,8 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
         ((item as HistoryMessage).role === "user" || (item as HistoryMessage).role === "assistant") &&
         typeof (item as HistoryMessage).text === "string",
     )
-    .map((item) => ({ role: item.role, text: item.text.trim() }))
-    .filter((item) => item.text.length > 0)
+    .map((item: { role: string; text: string }) => ({ role: item.role, text: item.text.trim() }))
+    .filter((item: { role: string; text: string }) => item.text.length > 0)
     .slice(-10);
 
   if (!message) {
@@ -49,7 +49,7 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
     });
 
     const chatHistory: Content[] = history
-      .map((item) => ({
+      .map((item: { role: string; text: string }) => ({
         role: item.role === "assistant" ? "model" : "user",
         parts: [{ text: item.text }],
       }))

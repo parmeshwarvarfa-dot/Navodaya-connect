@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, achievementsTable } from "@workspace/db";
-import { requireAuth } from "../lib/auth";
+import { getUser, requireAuth } from "../lib/auth";
 import { desc } from "drizzle-orm";
 
 const router = Router();
@@ -9,19 +9,21 @@ router.get("/achievements", requireAuth, async (_req, res) => {
   try {
     const rows = await db.select().from(achievementsTable)
       .orderBy(desc(achievementsTable.createdAt));
-    res.json(rows);
+    return res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: "Failed to fetch achievements" });
+    return res.status(500).json({ error: "Failed to fetch achievements" });
   }
 });
 
 router.post("/achievements", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
     const { title, description, category } = req.body;
+
     if (!title?.trim() || !description?.trim()) {
       return res.status(400).json({ error: "Title and description required" });
     }
+
     const [row] = await db.insert(achievementsTable).values({
       title: title.trim(),
       description: description.trim(),
@@ -31,9 +33,10 @@ router.post("/achievements", requireAuth, async (req, res) => {
       jnvName: user.jnvName,
       batch: user.passoutYear,
     }).returning();
-    res.json(row);
+
+    return res.json(row);
   } catch (e) {
-    res.status(500).json({ error: "Failed to post achievement" });
+    return res.status(500).json({ error: "Failed to post achievement" });
   }
 });
 

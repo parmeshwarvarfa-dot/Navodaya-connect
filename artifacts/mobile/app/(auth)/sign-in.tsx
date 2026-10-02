@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { signIn, signInWithGoogle, signInWithApple, forgotPassword } = useAuth();
+  const { signIn, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -26,6 +26,10 @@ export default function SignInScreen() {
   const [socialToast, setSocialToast] = useState("");
   const topPad    = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
+
+  useEffect(() => {
+    if (pendingProfile) router.replace("/(auth)/sign-up?completeProfile=1" as any);
+  }, [pendingProfile]);
 
   const handleSignIn = async () => {
     setErrorMsg("");
@@ -71,14 +75,19 @@ export default function SignInScreen() {
     }
   };
 
-  const handleSocial = async (provider: "Google" | "Apple") => {
+  const handleSocial = async (provider: "Google" | "Facebook" | "Apple") => {
     setErrorMsg("");
     setLoading(true);
     try {
       if (provider === "Google") await signInWithGoogle();
+      else if (provider === "Facebook") await signInWithFacebook();
       else await signInWithApple();
       router.replace("/(tabs)");
     } catch (err: any) {
+      if (err?.code === "PROFILE_REQUIRED") {
+        router.replace("/(auth)/sign-up?completeProfile=1" as any);
+        return;
+      }
       if (err?.code === "auth/popup-closed-by-user" || err?.code === "ERR_REQUEST_CANCELED") {
         return;
       }
@@ -188,6 +197,20 @@ export default function SignInScreen() {
                   <Text style={styles.googleG}>G</Text>
                 </View>
                 <Text style={styles.socialBtnText}>Continue with Google</Text>
+              </TouchableOpacity>
+            )}
+
+            {Platform.OS === "web" && (
+              <TouchableOpacity
+                style={styles.socialBtn}
+                activeOpacity={0.85}
+                onPress={() => handleSocial("Facebook")}
+                disabled={loading}
+              >
+                <View style={styles.socialIconWrap}>
+                  <Text style={[styles.googleG, { color: "#1877F2" }]}>f</Text>
+                </View>
+                <Text style={styles.socialBtnText}>Continue with Facebook</Text>
               </TouchableOpacity>
             )}
 

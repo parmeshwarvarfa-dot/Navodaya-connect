@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -86,10 +86,10 @@ function BluePicker({
 }
 
 function BlueInput({
-  placeholder, value, onChangeText, icon, secureTextEntry, keyboardType,
+  placeholder, value, onChangeText, icon, secureTextEntry, keyboardType, editable,
 }: {
   placeholder: string; value: string; onChangeText: (t: string) => void;
-  icon: keyof typeof Ionicons.glyphMap; secureTextEntry?: boolean; keyboardType?: any;
+  icon: keyof typeof Ionicons.glyphMap; secureTextEntry?: boolean; keyboardType?: any; editable?: boolean;
 }) {
   const [show, setShow] = useState(false);
   return (
@@ -101,6 +101,7 @@ function BlueInput({
         placeholderTextColor="rgba(255,255,255,0.65)"
         value={value}
         onChangeText={onChangeText}
+        editable={editable}
         secureTextEntry={secureTextEntry && !show}
         keyboardType={keyboardType}
         autoCapitalize="none"
@@ -117,7 +118,9 @@ function BlueInput({
 
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
-  const { signUp } = useAuth();
+  const params = useLocalSearchParams<{ completeProfile?: string }>();
+  const isCompletingProfile = params.completeProfile === "1";
+  const { signUp, completeProfile, pendingProfile } = useAuth();
   const topPad    = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
@@ -126,8 +129,8 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [fullName,       setFullName]       = useState("");
-  const [email,          setEmail]          = useState("");
+  const [fullName,       setFullName]       = useState(pendingProfile?.fullName ?? "");
+  const [email,          setEmail]          = useState(pendingProfile?.email ?? "");
   const [password,       setPassword]       = useState("");
   const [confirmPwd,     setConfirmPwd]     = useState("");
   const [jnvState,       setJnvState]       = useState("");
@@ -141,6 +144,12 @@ export default function SignUpScreen() {
   const [principalName,  setPrincipalName]  = useState("");
   const [jnvEmail,       setJnvEmail]       = useState("");
   const [subject,        setSubject]        = useState("");
+
+  useEffect(() => {
+    if (!pendingProfile) return;
+    setEmail(pendingProfile.email);
+    if (pendingProfile.fullName) setFullName((current) => current || pendingProfile.fullName);
+  }, [pendingProfile]);
 
   const classNum = studentClass ? parseInt(studentClass.replace("Class ", ""), 10) : 0;
   const isSenior = classNum >= 11;
@@ -159,15 +168,15 @@ export default function SignUpScreen() {
   const handleSignUp = async () => {
     setErrorMsg("");
 
-    if (!fullName.trim() || !email.trim() || !password || !jnvState || !jnvName) {
+    if (!fullName.trim() || !email.trim() || (!isCompletingProfile && !password) || !jnvState || !jnvName) {
       setErrorMsg("Please fill in all required fields.");
       return;
     }
-    if (password !== confirmPwd) {
+    if (!isCompletingProfile && password !== confirmPwd) {
       setErrorMsg("Passwords do not match. Please try again.");
       return;
     }
-    if (password.length < 8) {
+    if (!isCompletingProfile && password.length < 8) {
       setErrorMsg("Password must be at least 8 characters.");
       return;
     }
@@ -178,7 +187,7 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      await signUp(email.trim(), password, {
+      const profileData = {
         fullName:    fullName.trim(),
         role:        role!,
         jnvState,
@@ -189,7 +198,12 @@ export default function SignUpScreen() {
         profession:  role === "alumni"  ? profession   : undefined,
         designation: role === "official"? principalName: undefined,
         subject:     role === "teacher" ? subject      : undefined,
-      });
+      };
+      if (isCompletingProfile) {
+        await completeProfile(profileData);
+      } else {
+        await signUp(email.trim(), password, profileData);
+      }
       if (role === "official") {
         router.replace("/(tabs)");
       } else {
@@ -225,8 +239,8 @@ export default function SignUpScreen() {
             <Ionicons name="arrow-back" size={20} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={styles.roleScreenTitle}>Select Your Role</Text>
-          <Text style={styles.roleScreenSub}>Choose how you want to join JNV Connect</Text>
+          <Text style={styles.roleScreenTitle}>{isCompletingProfile ? "Complete Your Profile" : "Select Your Role"}</Text>
+          <Text style={styles.roleScreenSub}>{isCompletingProfile ? "Choose your role and JNV details to continue" : "Choose how you want to join JNV Connect"}</Text>
 
           <View style={styles.roleCards}>
             {ROLES.map((r) => (
@@ -263,18 +277,20 @@ export default function SignUpScreen() {
               <Ionicons name="arrow-back" size={20} color="#fff" />
             </TouchableOpacity>
 
-            <Text style={styles.formTitle}>{roleTitles[role!]}</Text>
-            <Text style={styles.formSub}>Create your JNV Connect account</Text>
+            <Text style={styles.formTitle}>{isCompletingProfile ? `${roleTitles[role!].replace(" Registration", "")} Profile` : roleTitles[role!]}</Text>
+            <Text style={styles.formSub}>{isCompletingProfile ? "Finish setting up your JNV Connect account" : "Create your JNV Connect account"}</Text>
 
             <View style={styles.form}>
               {/* Common fields */}
               <BlueInput placeholder="Full Name"  value={fullName} onChangeText={setFullName} icon="person-outline" />
-              <BlueInput placeholder="Email"       value={email}    onChangeText={setEmail}    icon="mail-outline" keyboardType="email-address" />
-              <BlueInput placeholder="Password"   value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
-              <BlueInput placeholder="Confirm Password" value={confirmPwd} onChangeText={setConfirmPwd} icon="shield-checkmark-outline" secureTextEntry />
+              <BlueInput placeholder="Email" value={email} onChangeText={setEmail} icon="mail-outline" keyboardType="email-address" editable={!isCompletingProfile} />
+              {!isCompletingProfile && <>
+                <BlueInput placeholder="Password" value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
+                <BlueInput placeholder="Confirm Password" value={confirmPwd} onChangeText={setConfirmPwd} icon="shield-checkmark-outline" secureTextEntry />
+              </>}
 
               {/* Password match indicator */}
-              {confirmPwd.length > 0 && (
+              {!isCompletingProfile && confirmPwd.length > 0 && (
                 <View style={[styles.matchRow, { opacity: password === confirmPwd ? 1 : 0.85 }]}>
                   <Ionicons
                     name={password === confirmPwd ? "checkmark-circle" : "close-circle"}
@@ -365,7 +381,7 @@ export default function SignUpScreen() {
               ) : null}
 
               <TouchableOpacity style={styles.createBtn} onPress={handleSignUp} disabled={loading} activeOpacity={0.85}>
-                <Text style={styles.createBtnText}>{loading ? "Creating Account..." : "Create Account"}</Text>
+                <Text style={styles.createBtnText}>{loading ? "Saving Profile..." : isCompletingProfile ? "Complete Profile" : "Create Account"}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

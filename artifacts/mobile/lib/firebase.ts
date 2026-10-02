@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 
 function cleanFirebaseValue(value: string | undefined) {
   const normalized = value?.trim() ?? "";
@@ -15,22 +15,37 @@ const firebaseConfig = {
   appId: cleanFirebaseValue(process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId || !firebaseConfig.appId) {
-  throw new Error("Firebase authentication is not configured. Add the Firebase web app configuration to the Expo environment.");
-}
-
 if (__DEV__) {
   console.info("[Firebase] web configuration loaded", {
     hasApiKey: Boolean(firebaseConfig.apiKey),
     hasAuthDomain: Boolean(firebaseConfig.authDomain),
     hasProjectId: Boolean(firebaseConfig.projectId),
     hasAppId: Boolean(firebaseConfig.appId),
+    configured: Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId),
   });
 }
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId,
+);
 
-// The API session is persisted by the API client. Firebase remains the
-// source of truth for the current credential.
-export { app as firebaseApp };
-export const firebaseAuth = getAuth(app);
+const firebaseApp = isFirebaseConfigured
+  ? getApps().length > 0
+    ? getApp()
+    : initializeApp(firebaseConfig)
+  : null;
+let firebaseAuth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;
+
+export { firebaseApp, firebaseAuth };
+
+export function requireFirebaseAuth(): Auth {
+  if (!firebaseAuth) {
+    throw new Error(
+      "Firebase authentication is not configured. Add the Firebase web app values to the local .env file.",
+    );
+  }
+  return firebaseAuth;
+}
