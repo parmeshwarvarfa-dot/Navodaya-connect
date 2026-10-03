@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Platform, TextInput, KeyboardAvoidingView,
@@ -7,6 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { api } from "@/lib/api";
+import type { PublicUserProfile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const REASONS = [
   { id: "harassment",  label: "Harassment or Bullying",    icon: "hand-left-outline"      as const, color: "#EF4444" },
@@ -22,8 +24,12 @@ const REASONS = [
 export default function ReportUserScreen() {
   const insets  = useSafeAreaInsets();
   const topPad  = Platform.OS === "web" ? 60 : insets.top;
-  const params  = useLocalSearchParams<{ userId?: string; userName?: string }>();
-  const reportedName = params.userName ? decodeURIComponent(params.userName) : "this user";
+  const params  = useLocalSearchParams<{ userId?: string }>();
+  const targetId = typeof params.userId === "string" ? params.userId : "";
+  const { profile } = useAuth();
+  const [target, setTarget] = useState<PublicUserProfile | null>(null);
+  const [targetLoading, setTargetLoading] = useState(true);
+  const [targetError, setTargetError] = useState("");
 
   const [selected, setSelected]   = useState<string | null>(null);
   const [details,  setDetails]    = useState("");
@@ -33,13 +39,29 @@ export default function ReportUserScreen() {
   const [toast, setToast] = useState("");
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!targetId) {
+      setTargetError("A valid user profile is required to report someone.");
+      setTargetLoading(false);
+      return;
+    }
+    api.users.get(targetId)
+      .then((user) => { if (!cancelled) setTarget(user); })
+      .catch(() => { if (!cancelled) setTargetError("Unable to load this user profile."); })
+      .finally(() => { if (!cancelled) setTargetLoading(false); });
+    return () => { cancelled = true; };
+  }, [targetId]);
+
+  const targetIsSelf = !!target && target.id === profile?.uid;
+  const reportedName = target?.fullName ?? (targetLoading ? "Loading profile…" : "this user");
+
   const handleSubmit = async () => {
-    if (!selected) return;
+    if (!selected || !target || targetIsSelf) return;
     setSubmitting(true);
     try {
       await api.reports.submit({
-        reportedUserId: params.userId,
-        reportedUserName: params.userName ? decodeURIComponent(params.userName) : undefined,
+        reportedUserId: target.id,
         reason: REASONS.find((r) => r.id === selected)?.label || selected,
         details: details.trim() || undefined,
       });
@@ -82,7 +104,11 @@ export default function ReportUserScreen() {
 
         <View style={styles.targetCard}>
           <Ionicons name="flag-outline" size={20} color="#EF4444" />
-          <Text style={styles.targetText}>Reporting <Text style={styles.targetName}>{reportedName}</Text></Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.targetText}>Reporting <Text style={styles.targetName}>{reportedName}</Text></Text>
+            {targetIsSelf ? <Text style={styles.targetError}>You cannot report your own profile.</Text> : null}
+            {targetError ? <Text style={styles.targetError}>{targetError}</Text> : null}
+          </View>
         </View>
 
         <Text style={styles.sectionLabel}>Why are you reporting this user? *</Text>
@@ -128,7 +154,7 @@ export default function ReportUserScreen() {
         <TouchableOpacity
           style={[styles.submitBtn, (!selected || submitting) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={!selected || submitting}
+          disabled={!selected || submitting || targetLoading || !target || targetIsSelf}
         >
           <Ionicons name="flag" size={18} color="#fff" />
           <Text style={styles.submitBtnText}>Submit Report</Text>
@@ -146,6 +172,7 @@ const styles = StyleSheet.create({
   targetCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#FECACA" },
   targetText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#374151" },
   targetName: { fontFamily: "Inter_700Bold", color: "#EF4444" },
+  targetError: { marginTop: 4, color: "#B91C1C", fontSize: 12, fontFamily: "Inter_500Medium" },
   sectionLabel: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 14, lineHeight: 18 },
   reasonList: { gap: 8, marginBottom: 22 },

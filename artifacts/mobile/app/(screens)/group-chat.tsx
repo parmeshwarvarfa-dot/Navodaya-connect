@@ -466,7 +466,7 @@ export default function GroupChatScreen() {
               ...(isAdmin ? [{ icon: "pin-outline" as const, label: "Pin Message", action: () => { if (ctxMenu) setPinnedMsg({ id: ctxMenu.id, text: ctxMenu.text, senderName: ctxMenu.senderName || "Unknown" }); setCtxMenu(null); } }] : []),
               ...(isMe(ctxMenu?.senderId) ? [{ icon: "create-outline" as const, label: "Edit Message", action: () => { setEditingMsg(ctxMenu!); setEditText(ctxMenu?.text || ""); setCtxMenu(null); } }] : []),
               ...(isMe(ctxMenu?.senderId) || isAdmin ? [{ icon: "trash-outline" as const, label: "Delete Message", action: () => ctxMenu && handleDelete(ctxMenu), danger: true }] : []),
-              ...(!isMe(ctxMenu?.senderId) ? [{ icon: "person-remove-outline" as const, label: `Report ${ctxMenu?.senderName ?? "User"}`, action: () => { setCtxMenu(null); router.push({ pathname: "/(screens)/report-user" as any, params: { userName: ctxMenu?.senderName ?? "" } }); } }] : []),
+              ...(ctxMenu?.senderId && !isMe(ctxMenu.senderId) ? [{ icon: "person-remove-outline" as const, label: `Report ${ctxMenu.senderName ?? "User"}`, action: () => { setCtxMenu(null); router.push({ pathname: "/(screens)/report-user" as any, params: { userId: ctxMenu.senderId! } }); } }] : []),
             ].map((opt) => (
               <TouchableOpacity key={opt.label} style={s.ctxRow} onPress={opt.action}>
                 <Ionicons name={opt.icon} size={20} color={(opt as any).danger ? "#EF4444" : "#374151"} />

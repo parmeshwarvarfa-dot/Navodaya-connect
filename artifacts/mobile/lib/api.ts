@@ -116,6 +116,7 @@ export const api = {
   },
   users: {
     alumni: () => request<AlumniUser[]>("/users/alumni"),
+    get: (id: string) => request<PublicUserProfile>(`/users/profile/${encodeURIComponent(id)}`),
     updateMe: (data: Partial<UserProfile>) =>
       request<UserProfile>("/users/me", { method: "PATCH", body: JSON.stringify(data) }),
     manage: () => request<ManagedUser[]>("/users/manage"),
@@ -218,7 +219,7 @@ export const api = {
       request<QueryAnswer>(`/student-queries/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
   },
   reports: {
-    submit: (data: { reportedUserId?: string; reportedUserName?: string; reason: string; details?: string }) =>
+    submit: (data: { reportedUserId: string; reason: string; details?: string }) =>
       request<Report>("/reports", { method: "POST", body: JSON.stringify(data) }),
     list: () => request<Report[]>("/reports"),
   },
@@ -357,6 +358,26 @@ export interface AlumniUser {
   skills?: string[];
   jnvName?: string;
   verificationStatus?: string;
+}
+
+export interface PublicUserProfile {
+  id: string;
+  fullName: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  house?: string;
+  photoURL?: string;
+  class?: string;
+  passoutYear?: string;
+  profession?: string;
+  field?: string;
+  company?: string;
+  skills: string[];
+  verificationStatus?: string | null;
+  subject?: string;
+  designation?: string;
+  bio?: string;
 }
 
 export interface ManagedUser {

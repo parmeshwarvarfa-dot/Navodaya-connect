@@ -50,6 +50,10 @@ export default function AlumniConnectScreen() {
     }
   };
 
+  const openProfile = (userId: string) => {
+    router.push({ pathname: "/(screens)/user-profile", params: { userId } });
+  };
+
   const filtered = alumni.filter((a) => {
     if (profile && a.id === profile.uid) return false;
     const s      = search.toLowerCase();
@@ -98,10 +102,12 @@ export default function AlumniConnectScreen() {
                     const state = getConnectionStatus(a.id);
                     return (
                       <View key={a.id} style={styles.suggestCard}>
-                        <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                        {a.verificationStatus === "verified" && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
-                        <Text style={styles.suggestName} numberOfLines={1}>{a.fullName}</Text>
-                        <Text style={styles.suggestRole} numberOfLines={1}>{a.profession || a.field || "Alumni"}</Text>
+                        <TouchableOpacity style={styles.suggestIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
+                          <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{(a.fullName || "?")[0]}</Text></View>
+                          {a.verificationStatus === "verified" && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                          <Text style={styles.suggestName} numberOfLines={1}>{a.fullName}</Text>
+                          <Text style={styles.suggestRole} numberOfLines={1}>{a.profession || a.field || "Alumni"}</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity style={[styles.connectBtn, state && styles.connectBtnDone]} onPress={() => !state && connect(a.id, a.fullName || "")}>
                           <Text style={[styles.connectBtnText, state && styles.connectBtnTextDone]}>{state === "connected" ? "Connected" : state === "pending" ? "Pending" : "Connect"}</Text>
                         </TouchableOpacity>
@@ -118,18 +124,20 @@ export default function AlumniConnectScreen() {
               const state = getConnectionStatus(a.id);
               return (
                 <View key={a.id} style={styles.alumniCard}>
-                  <View style={styles.alumniAvatarWrap}>
-                    <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                    {a.verificationStatus === "verified" && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.alumniName}>{a.fullName}</Text>
-                    <Text style={styles.alumniRole}>{a.profession || a.field || "Alumni"}</Text>
-                    <View style={styles.alumniMetaRow}>
-                      <Ionicons name="school-outline" size={11} color="#9CA3AF" />
-                      <Text style={styles.alumniMeta}>{a.jnvName || "JNV"}</Text>
+                  <TouchableOpacity style={styles.alumniIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
+                    <View style={styles.alumniAvatarWrap}>
+                      <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{(a.fullName || "?")[0]}</Text></View>
+                      {a.verificationStatus === "verified" && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
                     </View>
-                  </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.alumniName}>{a.fullName}</Text>
+                      <Text style={styles.alumniRole}>{a.profession || a.field || "Alumni"}</Text>
+                      <View style={styles.alumniMetaRow}>
+                        <Ionicons name="school-outline" size={11} color="#9CA3AF" />
+                        <Text style={styles.alumniMeta}>{a.jnvName || "JNV"}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
                   <TouchableOpacity style={[styles.cardConnectBtn, state && styles.cardConnectBtnDone]} onPress={() => !state && connect(a.id, a.fullName || "")}>
                     <Ionicons name={state === "connected" ? "checkmark" : state === "pending" ? "time-outline" : "person-add-outline"} size={15} color={state ? "#10B981" : "#3D5AF1"} />
                   </TouchableOpacity>
@@ -161,6 +169,7 @@ const styles = StyleSheet.create({
   suggestedSection: { marginBottom: 16 },
   sectionLabel: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 10 },
   suggestCard: { backgroundColor: "#fff", borderRadius: 16, padding: 14, width: 150, borderWidth: 1, borderColor: "#F0F0F0", alignItems: "center", gap: 4 },
+  suggestIdentity: { alignItems: "center", width: "100%", gap: 4 },
   suggestAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   suggestAvatarText: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
   verifiedDot: { position: "absolute", top: 10, right: 24 },
@@ -172,6 +181,7 @@ const styles = StyleSheet.create({
   connectBtnTextDone: { color: "#10B981" },
   resultCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 10 },
   alumniCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "#F0F0F0" },
+  alumniIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   alumniAvatarWrap: { position: "relative" },
   alumniAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   alumniAvatarText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#3D5AF1" },

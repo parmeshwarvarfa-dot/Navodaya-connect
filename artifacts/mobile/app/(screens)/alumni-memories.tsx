@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { Memory } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const POST_TAGS = ["Memory", "Achievement", "Advice", "Story", "Motivation"];
 const TAG_COLOR: Record<string, string> = {
@@ -23,6 +24,7 @@ const INITIAL_POSTS = [
 
 export default function AlumniMemoriesScreen() {
   const insets  = useSafeAreaInsets();
+  const { profile } = useAuth();
   const topPad  = Platform.OS === "web" ? 60 : insets.top;
   const [posts,      setPosts]      = useState<Memory[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -108,9 +110,11 @@ export default function AlumniMemoriesScreen() {
                   <Ionicons name="share-social-outline" size={18} color="#9CA3AF" />
                   <Text style={styles.actionCount}>Share</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: "/(screens)/report-user", params: { userId: post.authorId, userName: post.authorName || "" } })}>
-                  <Ionicons name="flag-outline" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
+                {post.authorId && post.authorId !== profile?.uid ? (
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: "/(screens)/report-user", params: { userId: post.authorId! } })}>
+                    <Ionicons name="flag-outline" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
           ))}

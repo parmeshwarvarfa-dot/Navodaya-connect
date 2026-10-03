@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { AlumniUser } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
@@ -136,9 +137,10 @@ export default function AlumniScreen() {
         renderItem={({ item, index }) => {
           const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
           const initials = getInitials(item.fullName || "?");
+          const openProfile = () => router.push({ pathname: "/(screens)/user-profile", params: { userId: item.id } });
           return (
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardRow}>
+              <TouchableOpacity style={styles.cardRow} onPress={openProfile} activeOpacity={0.75}>
                 <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                   <Text style={styles.avatarText}>{initials}</Text>
                 </View>
@@ -159,7 +161,7 @@ export default function AlumniScreen() {
                     </View>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
 
               {item.skills && item.skills.length > 0 && (
                 <View style={styles.skills}>

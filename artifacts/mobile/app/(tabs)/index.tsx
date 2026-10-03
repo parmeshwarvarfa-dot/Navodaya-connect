@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
+  useWindowDimensions,
   FlatList,
   Linking,
 } from "react-native";
@@ -82,6 +83,7 @@ const GRADIENT_SETS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { profile, isVerified } = useAuth();
   const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
@@ -90,6 +92,9 @@ export default function HomeScreen() {
   const [newsError, setNewsError] = useState(false);
   const [newsLinkError, setNewsLinkError] = useState("");
   const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const quoteAreaHeight = topPad + 8;
+  const quoteFontSize = Math.min(22, width * 0.046);
+  const quoteDecorationWidth = Math.min(112, Math.max(64, width * 0.25));
 
   const role = profile?.role ?? "student";
   const isTeacher = role === "teacher";
@@ -159,6 +164,21 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
+        <View pointerEvents="none" style={[styles.headerQuoteArea, { height: quoteAreaHeight }]}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            style={[styles.headerQuote, { fontSize: quoteFontSize }]}
+          >
+            Once a Navodayan, Always a Navodayan
+          </Text>
+          <View style={[styles.headerQuoteOrnament, { width: quoteDecorationWidth }]}>
+            <View style={styles.headerQuoteLine} />
+            <Ionicons name="heart-outline" size={14} color="#F5A900" />
+            <View style={styles.headerQuoteLine} />
+          </View>
+        </View>
         <View>
           <Text style={styles.headerGreeting}>Good {getGreeting()},</Text>
           <Text style={styles.headerTitle}>{profile?.fullName?.split(" ")[0] || "Navodayan"} 👋</Text>
@@ -470,6 +490,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingBottom: 12,
     backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0",
   },
+  headerQuoteArea: {
+    position: "absolute", top: 0, left: 0, right: 0,
+    alignItems: "center", justifyContent: "center", paddingHorizontal: 14, gap: 1,
+  },
+  headerQuote: {
+    width: "100%", textAlign: "center", lineHeight: 29,
+    fontFamily: "Pacifico_400Regular", color: "#102A72",
+  },
+  headerQuoteOrnament: { flexDirection: "row", alignItems: "center", gap: 6, height: 14 },
+  headerQuoteLine: { flex: 1, height: 1, backgroundColor: "#F5A900" },
   headerGreeting: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   emptyNewsText: { color: "#9CA3AF", fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 10 },

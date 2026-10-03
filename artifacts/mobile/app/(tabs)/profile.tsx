@@ -84,7 +84,6 @@ export default function ProfileScreen() {
       ? [{ icon: "game-controller-outline" as const, label: "House Arena", onPress: () => router.push("/(tabs)/chats" as any) }]
       : []),
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
-    { icon: "flag-outline" as const, label: "Report a User", onPress: () => router.push("/(screens)/report-user" as any) },
     { icon: "trophy-outline" as const, label: "Rankings", onPress: () => router.push("/(screens)/rankings" as any) },
     ...(profile.role === "alumni"
       ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-verify" as any) }]

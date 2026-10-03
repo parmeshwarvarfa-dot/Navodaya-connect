@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { requireAuth, getUser } from "../lib/auth";
+import { isValidUserId } from "./user-validation";
 
 const router = Router();
 
@@ -17,6 +18,39 @@ router.get("/users/alumni", requireAuth, async (req, res) => {
   } catch (e: any) {
     req.log.error(e);
     res.status(500).json({ error: "Failed to fetch alumni" });
+  }
+});
+
+router.get("/users/profile/:id", requireAuth, async (req, res) => {
+  const userId = req.params.id as string;
+  if (!isValidUserId(userId)) return res.status(400).json({ error: "Invalid user ID" });
+
+  try {
+    const [user] = await db.select({
+      id: usersTable.id,
+      fullName: usersTable.fullName,
+      role: usersTable.role,
+      jnvName: usersTable.jnvName,
+      jnvState: usersTable.jnvState,
+      house: usersTable.house,
+      photoURL: usersTable.photoURL,
+      class: usersTable.class,
+      passoutYear: usersTable.passoutYear,
+      profession: usersTable.profession,
+      field: usersTable.field,
+      company: usersTable.company,
+      skills: usersTable.skills,
+      verificationStatus: usersTable.verificationStatus,
+      subject: usersTable.subject,
+      designation: usersTable.designation,
+      bio: usersTable.bio,
+    }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ ...user, skills: user.skills ? JSON.parse(user.skills) : [] });
+  } catch (e: any) {
+    req.log.error(e);
+    res.status(500).json({ error: "Failed to fetch user profile" });
   }
 });
 

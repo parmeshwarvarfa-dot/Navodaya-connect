@@ -2,11 +2,26 @@ import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, newsTable } from "@workspace/db";
 import { requireAuth, getUser } from "../lib/auth";
+import { isOfficialNavodayaSource, isRelevantNavodayaNews } from "./news-relevance";
 
 const router = Router();
 
-const LIVE_FEED_URL =
-  "https://news.google.com/rss/search?q=%28%22Jawahar+Navodaya+Vidyalaya%22+OR+%22Navodaya+Vidyalaya%22+OR+JNVST+OR+NVS%29&hl=en-IN&gl=IN&ceid=IN%3Aen";
+const LIVE_FEED_QUERY = [
+  '"Jawahar Navodaya Vidyalaya"',
+  '"Jawahar Navodaya Vidyalayas"',
+  '"Navodaya Vidyalaya Samiti"',
+  '"Navodaya Vidyalaya"',
+  '"Navodaya schools"',
+  '"Navodaya students"',
+  '"Navodaya teachers"',
+  '"Navodaya alumni"',
+  '"Navodaya community"',
+  "JNVST",
+  '"JNV school"',
+  '"JNV students"',
+  "(NVS AND (Navodaya OR Vidyalaya OR JNV))",
+].join(" OR ");
+const LIVE_FEED_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(LIVE_FEED_QUERY)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
 const LIVE_CACHE_MS = 5 * 60 * 1000;
 let liveCache: { expiresAt: number; items: Array<Record<string, unknown>> } = { expiresAt: 0, items: [] };
 
@@ -57,7 +72,7 @@ async function fetchLiveNews() {
     if (!response.ok) throw new Error(`Live news feed returned ${response.status}`);
     const xml = await response.text();
     const items = xml.match(/<item>[\s\S]*?<\/item>/gi) ?? [];
-    const parsed = items.slice(0, 15).map((item, index) => {
+    const parsed = items.slice(0, 50).map((item, index) => {
       const source = readSource(item);
       return {
         id: `live-${index}-${Buffer.from(readTag(item, "title")).toString("base64url").slice(0, 16)}`,
@@ -67,17 +82,23 @@ async function fetchLiveNews() {
         authorName: source.name,
         sourceName: source.name,
         sourceUrl: readTag(item, "link"),
+        publisherUrl: source.url,
         publishedAt: new Date(readTag(item, "pubDate")).toISOString(),
         createdAt: new Date(readTag(item, "pubDate")).toISOString(),
         isLive: true,
       };
-    }).filter((item) => item.title && item.sourceUrl);
+    }).filter((item) =>
+      item.title &&
+      item.sourceUrl &&
+      isRelevantNavodayaNews(item.title, item.description, [item.publisherUrl, item.sourceUrl])
+    );
 
     const resolved = await Promise.all(
       parsed.map(async (item) => ({ ...item, sourceUrl: await resolveArticleUrl(item.sourceUrl as string) })),
     );
-    liveCache = { expiresAt: Date.now() + LIVE_CACHE_MS, items: resolved };
-    return resolved;
+    const publicItems = resolved.map(({ publisherUrl: _publisherUrl, ...item }) => item);
+    liveCache = { expiresAt: Date.now() + LIVE_CACHE_MS, items: publicItems };
+    return publicItems;
   } catch {
     return [];
   }
@@ -97,7 +118,12 @@ router.get("/news", requireAuth, async (req, res) => {
       isLive: false,
     }));
     const items = [...stored, ...liveItems]
-      .sort((a, b) => new Date(String(b.publishedAt ?? b.createdAt ?? 0)).getTime() - new Date(String(a.publishedAt ?? a.createdAt ?? 0)).getTime())
+      .sort((a, b) =>
+        Number(isOfficialNavodayaSource([String(b.sourceUrl ?? "")])) -
+          Number(isOfficialNavodayaSource([String(a.sourceUrl ?? "")])) ||
+        new Date(String(b.publishedAt ?? b.createdAt ?? 0)).getTime() -
+          new Date(String(a.publishedAt ?? a.createdAt ?? 0)).getTime()
+      )
       .slice(0, 50);
     res.json(items);
   } catch (e: any) {
