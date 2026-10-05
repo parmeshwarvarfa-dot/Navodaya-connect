@@ -7,7 +7,7 @@ const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 
 // Include the monorepo root so Metro can resolve pnpm-hoisted packages
-config.watchFolders = [workspaceRoot];
+config.watchFolders = [...new Set([...(config.watchFolders ?? []), workspaceRoot])];
 
 // Set the project root explicitly
 config.projectRoot = projectRoot;

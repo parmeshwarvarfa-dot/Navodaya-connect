@@ -147,6 +147,8 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # Expo SDK 54 expects expo-constants 18.0.14; keep expo-asset on the same compatible patch.
+  "expo-asset>expo-constants": "18.0.14"
 
 allowBuilds:
   '@firebase/util': false

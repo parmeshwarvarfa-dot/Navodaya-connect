@@ -3,3 +3,4 @@
 - [DB migration command](db-migration.md) — always run `pnpm --filter @workspace/db exec drizzle-kit push --force` after schema changes, then restart API server workflow.
 - [Firebase native OAuth](firebase-auth-native-oauth.md) — native Google sign-in needs OAuth client IDs beyond the Firebase web configuration.
 - [Firebase config normalization](firebase-config-normalization.md) — trim and validate Firebase web config values before initializing Expo auth.
+- [Expo pnpm relinking](expo-pnpm-relinking.md) — a missing declared Expo module can indicate stale workspace links; clean-relink from the lockfile before changing dependencies.
