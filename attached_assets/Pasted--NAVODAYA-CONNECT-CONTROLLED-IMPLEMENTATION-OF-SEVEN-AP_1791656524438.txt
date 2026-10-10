@@ -1,0 +1,501 @@
+# NAVODAYA CONNECT — CONTROLLED IMPLEMENTATION OF SEVEN APPROVED CHANGES
+
+## 1. ROLE AND OBJECTIVE
+
+Act as a senior full-stack software engineer working on my existing Navodaya Connect application.
+
+Your task is to implement the seven explicitly approved change groups defined in this document. Work directly within the existing codebase, extending existing functionality instead of rebuilding the application.
+
+**The objective is to complete these seven changes while preserving all unrelated existing functionality, UI, business logic, configuration, and user data.**
+
+This is a strictly scoped modification task, not a complete application redesign.
+
+## 2. NON-NEGOTIABLE SCOPE RESTRICTIONS
+
+These restrictions take priority over implementation preferences.
+
+### 2.1 Only seven approved changes are authorized
+
+You may modify only the functionality required for:
+
+1. Memories social-post system.
+2. Complete JNV directory and state-based school selection.
+3. Achievements on all four role dashboards.
+4. Replacing Store with Events in bottom navigation.
+5. Fixing specified mobile layout and navigation-label problems.
+6. Memories search and the complete social-post creation workflow.
+7. Follow requests, public/private profiles, and direct messaging.
+
+Changes 1 and 6 are related and should be implemented as one coherent Memories system rather than two competing implementations.
+
+### 2.2 Preserve everything else
+
+Do not redesign, replace, remove, rename, or refactor unrelated parts of the application.
+
+Preserve the existing:
+
+* Authentication, sign-in, registration, and onboarding flows.
+* Firebase configuration and working authentication.
+* PostgreSQL/Neon database and Drizzle ORM architecture.
+* API-server architecture and existing API contracts.
+* Four role definitions and existing role-specific permissions.
+* Existing profile fields, account records, and user data.
+* Branding, colors, typography, icons, and visual identity.
+* Dashboard cards, widgets, sections, and layouts except where a specified change requires an adjustment.
+* Existing working features, navigation destinations, and business logic.
+* Project scripts, dependencies, build configuration, and environment variables.
+* Working Events, Chats, Profiles, and other existing functionality.
+
+Do not introduce new features beyond the seven approved change groups.
+
+Do not perform general modernization, broad refactoring, unnecessary dependency upgrades, or unrelated security work.
+
+Do not delete working functionality simply because implementing an alternative is easier.
+
+### 2.3 Smallest-change principle
+
+Before modifying a file, establish why the change is necessary.
+
+Reuse existing components, APIs, database models, services, and UI patterns wherever possible. Prefer small, targeted, backward-compatible changes.
+
+You may modify shared components or backend files when a direct dependency requires it, but their unrelated behavior must remain unchanged.
+
+Do not expose, print, replace, or overwrite secrets. Do not commit local environment files or credentials.
+
+## 3. EXISTING APPLICATION CONTEXT
+
+Navodaya Connect supports four roles:
+
+1. Student.
+2. Alumni.
+3. JNV Official.
+4. Teacher.
+
+The application already uses Firebase Authentication and a PostgreSQL/Neon database with Drizzle ORM and an API server.
+
+Inspect the actual repository before relying on these assumptions or deciding what already exists. Reuse the current implementation and conventions.
+
+Do not replace the existing authentication provider, database, ORM, routing framework, or API architecture.
+
+---
+
+# CHANGE 1 — MEMORIES AS A COMPLETE SOCIAL-POST SYSTEM
+
+Transform the existing Memories functionality into a working social feed for Navodaya Connect. Do not create a disconnected second feed or duplicate post system.
+
+## 1A. Supported post types
+
+Implement the following initial post types:
+
+* Single-photo posts.
+* Multiple-photo carousel posts.
+* Video posts.
+* Text-only posts.
+* Polls.
+* Achievement-related posts.
+* Relevant school-event and community posts.
+
+Use an extensible structure compatible with the existing database and codebase. Stories and Reels-style features are optional future work and are not required for this implementation.
+
+## 1B. Post creation and media handling
+
+Users should be able to create a post, select a supported format, attach media where applicable, add details, review it, and publish it.
+
+Support:
+
+* Photo and video selection/upload.
+* Multiple photos in one post.
+* Previewing selected media.
+* Reordering carousel media.
+* Cropping and adjusting images using existing or appropriately lightweight functionality.
+* Removing individual media items before publication.
+* Captions, hashtags/topics, permitted user tags, and optional JNV/school association.
+* Optional location information when appropriate.
+* Privacy/audience selection.
+* Comment-permission settings.
+* Draft cancellation and confirmation before discarding unfinished work.
+* Upload progress and publication status.
+* Validation errors, retry handling, and clear success/error feedback.
+
+Do not claim unsupported media-processing features work when they have not been implemented and tested.
+
+## 1C. Post interactions
+
+Implement real, backend-connected operations for:
+
+* Like and unlike.
+* Accurate like counts.
+* Add comments and view comment counts.
+* Reply to comments.
+* Edit/delete one's own comments, subject to permissions.
+* Share posts within the application and through existing chat/group functionality where supported.
+* Copy permitted shareable post links.
+* Save and unsave bookmarked posts.
+* Open post details and the author's profile.
+* Edit and delete posts by their owner.
+* Report posts, comments, and users.
+* Appropriate notifications for likes, comments, replies, mentions, and other supported interactions.
+
+Prevent unauthorized users from modifying another user's content.
+
+Engagement counts must reflect actual stored data, not fabricated or hardcoded values.
+
+## 1D. Feed behavior
+
+Support:
+
+* Recent posts.
+* Relevant categories, including Sports, Cultural, Academic, Farewell, and Other.
+* Smooth scrolling.
+* Pagination or infinite loading.
+* Correct loading, empty, error, and retry states.
+* Appropriate image loading and video playback.
+* Proper interaction between feed items, post details, profiles, notifications, and the database.
+
+Reuse existing UI components and API endpoints where possible.
+
+---
+
+# CHANGE 2 — COMPLETE JNV DIRECTORY WITH STATE-BASED SELECTION
+
+Replace the current incomplete, incorrectly generated, or duplicated JNV selector with a structured directory containing the **661 JNV entries required for this project**.
+
+Reference source:
+
+https://en.wikipedia.org/wiki/List_of_Jawahar_Navodaya_Vidyalayas
+
+Treat the 661 entries as the required target dataset. Inspect the current source and validate the final records against official Navodaya Vidyalaya Samiti information before release. Do not fabricate missing records or declare the dataset complete without verification.
+
+## 2A. Required selection flow
+
+The user must follow this exact flow:
+
+**Step 1: Select JNV State/Union Territory.**
+
+**Step 2: Search for and select JNV Name.**
+
+Region selection must not be required before the state selection.
+
+## 2B. Dataset requirements
+
+* Include all 661 required JNV entries after dataset validation.
+* Associate every school with the correct State/UT.
+* Populate the selector from structured data, not a manually hardcoded list scattered across screens.
+* Preserve legitimate separate schools such as Ratlam-I and Ratlam-II when they appear as distinct entries.
+* Never generate artificial school names merely by combining a district name with a number.
+* Remove accidental duplicate records without merging distinct schools.
+* Use accurate canonical school names.
+* Store a stable school ID and canonical school name in the user's profile.
+* Keep the dataset maintainable so incorrect names or administrative associations can be corrected later.
+
+## 2C. Selection behavior
+
+* Display only schools associated with the selected State/UT.
+* Support searching by school name and district when the dataset contains district information.
+* Avoid forcing users to scroll through hundreds of schools.
+* When the user changes the selected state, clear the previous school selection.
+* Use the same selector wherever the existing registration/profile flows require JNV selection.
+* Preserve existing onboarding and profile-editing behavior except where the new selector must replace the old one.
+
+Do not introduce artificial entries to reach the requested count. If verification reveals discrepancies in the source count, report the exact discrepancy rather than inventing data.
+
+---
+
+# CHANGE 3 — ACHIEVEMENTS ON ALL FOUR DASHBOARDS
+
+The existing Achievements section appears on the Alumni dashboard. Preserve and improve the existing implementation where required, and add the same shared functionality to:
+
+* Student dashboard.
+* Alumni dashboard.
+* JNV Official dashboard.
+* Teacher dashboard.
+
+## Requirements
+
+Display notable Navodayan accomplishments in areas such as:
+
+* Academic achievements and competitive examinations.
+* Sports.
+* Cultural activities.
+* Innovation and projects.
+* Career and professional accomplishments.
+* Other significant school or community achievements.
+
+Where available, show the achievement title, description, achiever's name, date, JNV association, and supporting media or links.
+
+Provide a detail view and suitable reporting/moderation for submitted achievements.
+
+Use a shared achievement system and consistent presentation across all four dashboards. Do not create four unrelated achievement databases or duplicate the same records for each role.
+
+Respect existing permissions and expose only permitted information.
+
+Do not redesign other dashboard sections.
+
+---
+
+# CHANGE 4 — REPLACE STORE WITH EVENTS ON ALL FOUR DASHBOARDS
+
+Remove Store from the bottom-navigation bar and replace it with Events.
+
+Apply this change consistently to Student, Alumni, JNV Official, and Teacher dashboards.
+
+## Exact bottom-navigation order
+
+**Home → Memories → Chats → Events → Profile**
+
+Use the existing preferred labels where appropriate, including JNV Connect for Home and Chat Groups for Chats if that is already established in the application.
+
+## Requirements
+
+* Events occupies the fourth position.
+* Store no longer appears in the bottom navigation.
+* The Events tab opens the existing Events functionality.
+* Preserve existing events and registrations.
+* Display relevant event information, dates, times, venues or online links, and organizers where supported.
+* Use appropriate role permissions for event creation, editing, and management.
+* Avoid creating a second disconnected Events system.
+* Preserve unrelated Store functionality outside the bottom navigation unless another existing requirement makes a change necessary.
+
+The same navigation order and behavior must apply to all four role dashboards.
+
+---
+
+# CHANGE 5 — FIX THE SPECIFIED MOBILE LAYOUT PROBLEMS
+
+Fix the mobile UI issues shown in the supplied screenshots without redesigning the rest of the application.
+
+Apply the necessary corrections consistently to all four dashboards.
+
+## 5A. Bottom-navigation visibility
+
+Ensure all five icons and their labels remain fully visible and readable:
+
+1. Home / JNV Connect.
+2. Memories.
+3. Chats / Chat Groups.
+4. Events.
+5. Profile.
+
+No label should be clipped, hidden, truncated unnecessarily, or placed beneath the phone's home-indicator area.
+
+## 5B. Responsive layout
+
+* Correct excessive unused vertical space.
+* Use appropriate responsive spacing, sizing, and alignment.
+* Apply safe-area and status-bar insets correctly.
+* Keep content scrollable where necessary.
+* Prevent dashboard content from hiding behind bottom navigation.
+* Prevent overlapping with the phone's home indicator.
+* Ensure the floating AI assistant button does not cover important text, buttons, or post controls.
+* Prevent clipped cards, inaccessible controls, and unexpected overlaps.
+* Preserve the existing design language and dashboard content.
+
+Fix the actual layout cause instead of adding arbitrary blank space or hardcoded margins.
+
+Test representative small and large mobile viewport sizes. Apply changes only where necessary to solve these specified problems.
+
+---
+
+# CHANGE 6 — MEMORIES SEARCH AND INSTAGRAM-FAMILIAR POSTING WORKFLOW
+
+Implement this together with Change 1, using one shared Memories feed, composer, post model, and interaction system.
+
+## 6A. Memories search bar
+
+Add a prominent search bar to Memories on all four dashboards.
+
+Search should support permitted discovery of:
+
+* Student profiles.
+* Alumni profiles.
+* Teacher profiles.
+* JNV Official profiles.
+* Public/otherwise permitted posts and media.
+* Captions and topics/hashtags.
+* JNV names and relevant school-related content.
+
+Use the existing user and post data. Do not build a fake search interface or hardcode result lists.
+
+Results must respect privacy, permissions, blocked users, and post visibility. A user must not be able to retrieve private content by guessing an ID or modifying a request.
+
+## 6B. Familiar posting flow
+
+The experience should feel familiar to users of established social-media applications, including Instagram, without copying Instagram branding, assets, or protected design assets.
+
+Implement this sequence:
+
+1. Tap Create/+.
+2. Choose a supported post type.
+3. Select or upload media if applicable.
+4. Preview the selection.
+5. Reorder, crop/adjust, or remove selected media.
+6. Add a caption and hashtags/topics.
+7. Optionally tag permitted users and associate a JNV/school or location.
+8. Choose audience/privacy and comment permissions.
+9. Review the completed post.
+10. Publish, showing upload progress and useful errors/retry options.
+11. Show confirmation and make the post available in the appropriate feed/profile.
+
+Text-only and poll posts should not require media uploads.
+
+## 6C. Fully connected user experience
+
+Connect search results, profiles, posts, comments, replies, likes, bookmarks, shares, notifications, reports, and owner controls to the real backend.
+
+The interface must not show buttons that have no working action.
+
+Preserve existing navigation and branding except where this change requires a new control or screen.
+
+---
+
+# CHANGE 7 — FOLLOW REQUESTS, PROFILES, AND DIRECT MESSAGING
+
+Implement a connected follow and direct-messaging system for all four user roles.
+
+## 7A. Follow system
+
+Support:
+
+* Follow and unfollow.
+* Public profiles with immediate following where configured.
+* Private profiles with follow requests.
+* Accept/decline requests.
+* Cancel pending requests.
+* Remove followers.
+* Follower and following lists/counts.
+* Notifications for relevant follow activity.
+* User privacy settings.
+
+Prevent duplicate, contradictory, or unauthorized follow relationships.
+
+## 7B. Profile visibility and access
+
+Users should be able to open permitted profiles and view profile information, Memories, photos/videos, and achievements according to the owner's settings.
+
+For private profiles, enforce access restrictions consistently across search, feed, profile details, direct links, shares, and backend endpoints.
+
+Following someone must not automatically grant permission to see every private field or restricted post.
+
+Preserve all existing profile fields and profile-editing workflows unrelated to this change.
+
+## 7C. Direct messages
+
+Support:
+
+* One-to-one conversations.
+* Text messages.
+* Approved media attachments where feasible within the existing architecture.
+* Message requests from non-connections according to privacy settings.
+* Accept/decline message requests.
+* Conversation lists and unread indicators.
+* Loading, sending, failure, and retry states.
+* Appropriate conversation-management controls.
+* Reporting and blocking.
+
+Enforce messaging permissions and blocking on the backend.
+
+A frontend check alone is not sufficient to protect a conversation.
+
+Keep existing group-chat behavior working. Do not replace group chats with direct messaging.
+
+---
+
+# 8. SHARED SECURITY AND DATA-INTEGRITY REQUIREMENTS
+
+Apply only the security measures needed to safely support these seven changes.
+
+* Verify authenticated identity on protected API endpoints.
+* Enforce ownership, role, follow, messaging, and privacy permissions on the server.
+* Never trust client-supplied role, owner ID, or permission flags.
+* Validate submitted fields and supported uploaded media.
+* Use safe parameterized database operations.
+* Prevent unauthorized edits, deletions, data exposure, and access to private content.
+* Prevent duplicate poll votes and duplicate relationship records where applicable.
+* Use suitable rate limiting for abuse-prone operations.
+* Return safe, understandable errors without leaking secrets or internal database details.
+* Keep server secrets out of the client bundle and repository.
+* Preserve existing database records and relationships.
+* Use safe, backward-compatible migrations where possible.
+* Avoid collecting unnecessary personal information.
+
+Do not initiate an unrelated, application-wide security redesign.
+
+---
+
+# 9. REQUIRED IMPLEMENTATION METHOD
+
+Follow these instructions to minimize unnecessary AI work and reduce regression risk.
+
+## Step 1 — Inspect, then implement
+
+Inspect the affected screens, shared components, API routes, database models, and current dependencies.
+
+Identify existing working functionality that can be reused. Focus only on the seven approved change groups.
+
+Do not spend the task producing a lengthy report or repeatedly asking for approval. Proceed with the implementation.
+
+## Step 2 — Implement in controlled phases
+
+Use this order:
+
+1. JNV directory and selector.
+2. Shared post/database/API functionality required by Changes 1 and 6.
+3. Memories composer, feed, search, and interactions.
+4. Follow requests, privacy-aware profiles, direct messaging, and notifications.
+5. Shared Achievements functionality on all four dashboards.
+6. Replace Store with Events on all four dashboards.
+7. Fix the specified responsive-layout problems.
+8. Run tests and verify no unrelated regressions.
+
+Reuse existing implementations and avoid duplicated systems.
+
+## Step 3 — Protect existing functionality
+
+* Do not overwrite the entire project.
+* Do not revert existing user work.
+* Do not delete database tables or user records unnecessarily.
+* Do not replace working APIs with mock implementations.
+* Do not change unrelated screens.
+* Do not upgrade dependencies without a specific, necessary compatibility reason.
+* Do not overwrite environment configuration.
+* Do not introduce a new external service unless essential and supported by the project's existing configuration.
+* If an essential service or credential is missing, report the exact requirement rather than pretending the feature is complete.
+
+## Step 4 — Test the actual behavior
+
+Run the existing relevant type checks and tests.
+
+Verify:
+
+* Existing authentication still works.
+* The JNV selector uses validated data and filters correctly by State/UT.
+* Posts can be created and loaded using real persisted data.
+* Likes, comments, replies, polls, bookmarks, and owner controls work correctly.
+* Search returns permitted real data.
+* Follow requests and private-profile restrictions work.
+* Direct messages follow the required permissions.
+* Achievements appear on all four dashboards.
+* Events replaces Store in the required bottom-navigation position on all four dashboards.
+* Navigation labels and mobile content are not clipped.
+* Existing unrelated screens and features remain functional.
+
+Fix regressions caused by the implementation before finishing.
+
+Do not claim that an untested feature is complete.
+
+---
+
+# 10. FINAL ACCEPTANCE CRITERIA
+
+The implementation is accepted only when the seven approved change groups are addressed and tested.
+
+The final report must be concise and state:
+
+1. What was implemented under each of the seven changes.
+2. Which relevant existing components/files were modified.
+3. Which database migrations were applied, if any.
+4. Which tests passed.
+5. Any remaining incomplete items and the precise reason they remain incomplete.
+6. Confirmation that unrelated features and configurations were left unchanged, based on a scope review.
+
+**FINAL DIRECTIVE: Implement only the seven approved changes. Preserve everything else. When an enhancement is not necessary for these requirements, leave it untouched.**
