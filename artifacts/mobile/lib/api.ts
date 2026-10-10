@@ -11,6 +11,10 @@ function getBaseUrl(): string {
   return "http://localhost:3001/api";
 }
 
+export function getApiOrigin(): string {
+  return getBaseUrl().replace(/\/api\/?$/, "");
+}
+
 export async function getToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }

@@ -15,6 +15,7 @@ export * from "./studyMaterials";
 export * from "./qaQuestions";
 export * from "./connections";
 export * from "./memories";
+export * from "./social";
 export * from "./achievements";
 export * from "./clubs";
 export * from "./studentQueries";

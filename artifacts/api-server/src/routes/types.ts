@@ -5,6 +5,8 @@ export interface UserProfile {
   role: "student" | "alumni" | "teacher" | "official";
   jnvState: string;
   jnvName: string;
+  jnvId?: string;
+  profileVisibility?: "public" | "private";
   house: "Aravali" | "Nilgiri" | "Shivalik" | "Udaygiri";
   photoURL?: string;
   class?: string;

@@ -8,3 +8,237 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type CreateMemoryRequestPostType =
+  (typeof CreateMemoryRequestPostType)[keyof typeof CreateMemoryRequestPostType];
+
+export const CreateMemoryRequestPostType = {
+  text: "text",
+  photo: "photo",
+  video: "video",
+  poll: "poll",
+  achievement: "achievement",
+  event: "event",
+} as const;
+
+export type CreateMemoryRequestVisibility =
+  (typeof CreateMemoryRequestVisibility)[keyof typeof CreateMemoryRequestVisibility];
+
+export const CreateMemoryRequestVisibility = {
+  public: "public",
+  followers: "followers",
+} as const;
+
+export interface CreateMemoryRequest {
+  /** @maxLength 4000 */
+  caption: string;
+  postType?: CreateMemoryRequestPostType;
+  mediaUrls?: string[];
+  pollOptions?: string[];
+  visibility?: CreateMemoryRequestVisibility;
+  commentsEnabled?: boolean;
+}
+
+export type UpdateMemoryRequestVisibility =
+  (typeof UpdateMemoryRequestVisibility)[keyof typeof UpdateMemoryRequestVisibility];
+
+export const UpdateMemoryRequestVisibility = {
+  public: "public",
+  followers: "followers",
+} as const;
+
+export interface UpdateMemoryRequest {
+  /** @maxLength 4000 */
+  caption?: string;
+  visibility?: UpdateMemoryRequestVisibility;
+  commentsEnabled?: boolean;
+}
+
+export interface SocialMemory {
+  id: string;
+  caption?: string;
+  postType: string;
+  mediaUrls: string[];
+  pollOptions: string[];
+  pollVotes: number[];
+  viewerVote?: number;
+  visibility: string;
+  commentsEnabled: boolean;
+  likes: number;
+  commentsCount: number;
+  liked: boolean;
+  bookmarked: boolean;
+  authorId?: string;
+  authorName?: string;
+  authorPhotoUrl?: string;
+  jnvName?: string;
+  createdAt: string;
+}
+
+export interface MemoryFeedPage {
+  items: SocialMemory[];
+  nextCursor?: string;
+  hasMore: boolean;
+}
+
+export interface MemoryComment {
+  id: string;
+  memoryId: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoUrl?: string;
+  parentId?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface CreateMemoryCommentRequest {
+  /** @maxLength 2000 */
+  content: string;
+  parentId?: string;
+}
+
+export interface PollVoteRequest {
+  /** @minimum 0 */
+  optionIndex: number;
+}
+
+export interface PollResult {
+  pollVotes: number[];
+  viewerVote?: number;
+}
+
+export interface ReportRequest {
+  reason: string;
+  /** @maxLength 1000 */
+  details?: string;
+}
+
+export interface ActionResult {
+  success: boolean;
+  status?: string;
+}
+
+export interface LikeResult {
+  liked: boolean;
+  likes: number;
+}
+
+export interface SocialProfile {
+  id: string;
+  fullName: string;
+  photoURL?: string;
+  jnvName?: string;
+}
+
+export interface SocialStatus {
+  profileVisibility: string;
+  followStatus: string;
+  isFollowing: boolean;
+  followsYou: boolean;
+  isBlocked: boolean;
+}
+
+export interface FollowRequest {
+  id: string;
+  followerId: string;
+  followerName: string;
+  followerPhotoUrl?: string;
+  createdAt: string;
+}
+
+export type FollowDecisionRequestDecision =
+  (typeof FollowDecisionRequestDecision)[keyof typeof FollowDecisionRequestDecision];
+
+export const FollowDecisionRequestDecision = {
+  accept: "accept",
+  decline: "decline",
+} as const;
+
+export interface FollowDecisionRequest {
+  decision: FollowDecisionRequestDecision;
+}
+
+export interface CreateDirectMessageRequest {
+  recipientId: string;
+  /** @maxLength 2000 */
+  content: string;
+}
+
+export interface DirectMessageRequest {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  content: string;
+  status: string;
+  createdAt: string;
+}
+
+export type MessageRequestDecisionDecision =
+  (typeof MessageRequestDecisionDecision)[keyof typeof MessageRequestDecisionDecision];
+
+export const MessageRequestDecisionDecision = {
+  accept: "accept",
+  decline: "decline",
+} as const;
+
+export interface MessageRequestDecision {
+  decision: MessageRequestDecisionDecision;
+}
+
+export interface DirectConversation {
+  id: string;
+  peerId: string;
+  peerName: string;
+  peerPhotoUrl?: string;
+  lastMessage?: string;
+  updatedAt: string;
+}
+
+export interface CreateDirectMessage {
+  /** @maxLength 2000 */
+  content: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
+export type UpdatePrivacyRequestProfileVisibility =
+  (typeof UpdatePrivacyRequestProfileVisibility)[keyof typeof UpdatePrivacyRequestProfileVisibility];
+
+export const UpdatePrivacyRequestProfileVisibility = {
+  public: "public",
+  private: "private",
+} as const;
+
+export interface UpdatePrivacyRequest {
+  profileVisibility: UpdatePrivacyRequestProfileVisibility;
+}
+
+export interface SocialNotification {
+  id: string;
+  type: string;
+  actorId: string;
+  actorName: string;
+  entityId?: string;
+  message: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export type ListMemoriesParams = {
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  cursor?: string;
+  search?: string;
+  type?: string;
+};

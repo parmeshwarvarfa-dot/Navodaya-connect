@@ -14,3 +14,428 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List community posts
+ */
+export const listMemoriesQueryLimitMax = 50;
+
+export const ListMemoriesQueryParams = zod.object({
+  limit: zod.coerce.number().min(1).max(listMemoriesQueryLimitMax).optional(),
+  cursor: zod.coerce.string().optional(),
+  search: zod.coerce.string().optional(),
+  type: zod.coerce.string().optional(),
+});
+
+export const ListMemoriesResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      caption: zod.string().optional(),
+      postType: zod.string(),
+      mediaUrls: zod.array(zod.string()),
+      pollOptions: zod.array(zod.string()),
+      pollVotes: zod.array(zod.number()),
+      viewerVote: zod.number().optional(),
+      visibility: zod.string(),
+      commentsEnabled: zod.boolean(),
+      likes: zod.number(),
+      commentsCount: zod.number(),
+      liked: zod.boolean(),
+      bookmarked: zod.boolean(),
+      authorId: zod.string().uuid().optional(),
+      authorName: zod.string().optional(),
+      authorPhotoUrl: zod.string().optional(),
+      jnvName: zod.string().optional(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  nextCursor: zod.string().optional(),
+  hasMore: zod.boolean(),
+});
+
+/**
+ * @summary Create a community post
+ */
+export const createMemoryBodyCaptionMax = 4000;
+
+export const createMemoryBodyPollOptionsItemMax = 100;
+
+export const CreateMemoryBody = zod.object({
+  caption: zod.string().max(createMemoryBodyCaptionMax),
+  postType: zod
+    .enum(["text", "photo", "video", "poll", "achievement", "event"])
+    .optional(),
+  mediaUrls: zod.array(zod.string().url()).optional(),
+  pollOptions: zod
+    .array(zod.string().max(createMemoryBodyPollOptionsItemMax))
+    .optional(),
+  visibility: zod.enum(["public", "followers"]).optional(),
+  commentsEnabled: zod.boolean().optional(),
+});
+
+/**
+ * @summary Update your post
+ */
+export const UpdateMemoryParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const updateMemoryBodyCaptionMax = 4000;
+
+export const UpdateMemoryBody = zod.object({
+  caption: zod.string().max(updateMemoryBodyCaptionMax).optional(),
+  visibility: zod.enum(["public", "followers"]).optional(),
+  commentsEnabled: zod.boolean().optional(),
+});
+
+export const UpdateMemoryResponse = zod.object({
+  id: zod.string().uuid(),
+  caption: zod.string().optional(),
+  postType: zod.string(),
+  mediaUrls: zod.array(zod.string()),
+  pollOptions: zod.array(zod.string()),
+  pollVotes: zod.array(zod.number()),
+  viewerVote: zod.number().optional(),
+  visibility: zod.string(),
+  commentsEnabled: zod.boolean(),
+  likes: zod.number(),
+  commentsCount: zod.number(),
+  liked: zod.boolean(),
+  bookmarked: zod.boolean(),
+  authorId: zod.string().uuid().optional(),
+  authorName: zod.string().optional(),
+  authorPhotoUrl: zod.string().optional(),
+  jnvName: zod.string().optional(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete your post
+ */
+export const DeleteMemoryParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const DeleteMemoryResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Like or unlike a post
+ */
+export const ToggleMemoryLikeParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const ToggleMemoryLikeResponse = zod.object({
+  liked: zod.boolean(),
+  likes: zod.number(),
+});
+
+/**
+ * @summary List comments and replies
+ */
+export const ListMemoryCommentsParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const ListMemoryCommentsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  memoryId: zod.string().uuid(),
+  authorId: zod.string().uuid(),
+  authorName: zod.string(),
+  authorPhotoUrl: zod.string().optional(),
+  parentId: zod.string().uuid().optional(),
+  content: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMemoryCommentsResponse = zod.array(
+  ListMemoryCommentsResponseItem,
+);
+
+/**
+ * @summary Add a comment or reply
+ */
+export const CreateMemoryCommentParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const createMemoryCommentBodyContentMax = 2000;
+
+export const CreateMemoryCommentBody = zod.object({
+  content: zod.string().max(createMemoryCommentBodyContentMax),
+  parentId: zod.string().uuid().optional(),
+});
+
+/**
+ * @summary Bookmark or remove a bookmark
+ */
+export const ToggleMemoryBookmarkParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const ToggleMemoryBookmarkResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Vote in a post poll
+ */
+export const VoteInMemoryPollParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const voteInMemoryPollBodyOptionIndexMin = 0;
+
+export const VoteInMemoryPollBody = zod.object({
+  optionIndex: zod.number().min(voteInMemoryPollBodyOptionIndexMin),
+});
+
+export const VoteInMemoryPollResponse = zod.object({
+  pollVotes: zod.array(zod.number()),
+  viewerVote: zod.number().optional(),
+});
+
+/**
+ * @summary Report a post
+ */
+export const ReportMemoryParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const reportMemoryBodyDetailsMax = 1000;
+
+export const ReportMemoryBody = zod.object({
+  reason: zod.string(),
+  details: zod.string().max(reportMemoryBodyDetailsMax).optional(),
+});
+
+/**
+ * @summary Get profile visibility and follow state
+ */
+export const GetSocialStatusParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const GetSocialStatusResponse = zod.object({
+  profileVisibility: zod.string(),
+  followStatus: zod.string(),
+  isFollowing: zod.boolean(),
+  followsYou: zod.boolean(),
+  isBlocked: zod.boolean(),
+});
+
+/**
+ * @summary Follow a public profile or request access to a private profile
+ */
+export const FollowUserParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const FollowUserResponse = zod.object({
+  profileVisibility: zod.string(),
+  followStatus: zod.string(),
+  isFollowing: zod.boolean(),
+  followsYou: zod.boolean(),
+  isBlocked: zod.boolean(),
+});
+
+/**
+ * @summary Unfollow a profile or cancel a request
+ */
+export const UnfollowUserParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const UnfollowUserResponse = zod.object({
+  profileVisibility: zod.string(),
+  followStatus: zod.string(),
+  isFollowing: zod.boolean(),
+  followsYou: zod.boolean(),
+  isBlocked: zod.boolean(),
+});
+
+/**
+ * @summary List incoming follow requests
+ */
+export const ListFollowRequestsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  followerId: zod.string().uuid(),
+  followerName: zod.string(),
+  followerPhotoUrl: zod.string().optional(),
+  createdAt: zod.coerce.date(),
+});
+export const ListFollowRequestsResponse = zod.array(
+  ListFollowRequestsResponseItem,
+);
+
+/**
+ * @summary Accept or decline a follow request
+ */
+export const DecideFollowRequestParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const DecideFollowRequestBody = zod.object({
+  decision: zod.enum(["accept", "decline"]),
+});
+
+export const DecideFollowRequestResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Block a profile
+ */
+export const BlockUserParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const BlockUserResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Unblock a profile
+ */
+export const UnblockUserParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const UnblockUserResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary List blocked profiles
+ */
+export const ListBlockedUsersResponseItem = zod.object({
+  id: zod.string().uuid(),
+  fullName: zod.string(),
+  photoURL: zod.string().optional(),
+  jnvName: zod.string().optional(),
+});
+export const ListBlockedUsersResponse = zod.array(ListBlockedUsersResponseItem);
+
+/**
+ * @summary List incoming message requests
+ */
+export const ListDirectMessageRequestsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  senderId: zod.string().uuid(),
+  senderName: zod.string(),
+  recipientId: zod.string().uuid(),
+  content: zod.string(),
+  status: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListDirectMessageRequestsResponse = zod.array(
+  ListDirectMessageRequestsResponseItem,
+);
+
+/**
+ * @summary Request to message a profile
+ */
+export const createDirectMessageRequestBodyContentMax = 2000;
+
+export const CreateDirectMessageRequestBody = zod.object({
+  recipientId: zod.string().uuid(),
+  content: zod.string().max(createDirectMessageRequestBodyContentMax),
+});
+
+/**
+ * @summary Accept or decline a message request
+ */
+export const DecideDirectMessageRequestParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const DecideDirectMessageRequestBody = zod.object({
+  decision: zod.enum(["accept", "decline"]),
+});
+
+export const DecideDirectMessageRequestResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary List direct conversations
+ */
+export const ListDirectConversationsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  peerId: zod.string().uuid(),
+  peerName: zod.string(),
+  peerPhotoUrl: zod.string().optional(),
+  lastMessage: zod.string().optional(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListDirectConversationsResponse = zod.array(
+  ListDirectConversationsResponseItem,
+);
+
+/**
+ * @summary List messages in a conversation
+ */
+export const ListDirectMessagesParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const ListDirectMessagesResponseItem = zod.object({
+  id: zod.string().uuid(),
+  conversationId: zod.string().uuid(),
+  senderId: zod.string().uuid(),
+  content: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListDirectMessagesResponse = zod.array(
+  ListDirectMessagesResponseItem,
+);
+
+/**
+ * @summary Send a direct message
+ */
+export const CreateDirectMessageParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const createDirectMessageBodyContentMax = 2000;
+
+export const CreateDirectMessageBody = zod.object({
+  content: zod.string().max(createDirectMessageBodyContentMax),
+});
+
+/**
+ * @summary Change profile visibility
+ */
+export const UpdateProfilePrivacyBody = zod.object({
+  profileVisibility: zod.enum(["public", "private"]),
+});
+
+export const UpdateProfilePrivacyResponse = zod.object({
+  success: zod.boolean(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary List social notifications
+ */
+export const ListSocialNotificationsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  type: zod.string(),
+  actorId: zod.string().uuid(),
+  actorName: zod.string(),
+  entityId: zod.string().uuid().optional(),
+  message: zod.string(),
+  createdAt: zod.coerce.date(),
+  readAt: zod.coerce.date().optional(),
+});
+export const ListSocialNotificationsResponse = zod.array(
+  ListSocialNotificationsResponseItem,
+);

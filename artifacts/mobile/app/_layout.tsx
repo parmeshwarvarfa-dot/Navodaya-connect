@@ -13,11 +13,16 @@ import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { getApiOrigin, getToken } from "@/lib/api";
 
 SplashScreen.preventAutoHideAsync();
+
+setBaseUrl(getApiOrigin());
+setAuthTokenGetter(getToken);
 
 const queryClient = new QueryClient();
 

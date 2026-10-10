@@ -6,4 +6,34 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./actionResult";
+export * from "./createDirectMessage";
+export * from "./createDirectMessageRequest";
+export * from "./createMemoryCommentRequest";
+export * from "./createMemoryRequest";
+export * from "./createMemoryRequestPostType";
+export * from "./createMemoryRequestVisibility";
+export * from "./directConversation";
+export * from "./directMessage";
+export * from "./directMessageRequest";
+export * from "./followDecisionRequest";
+export * from "./followDecisionRequestDecision";
+export * from "./followRequest";
 export * from "./healthStatus";
+export * from "./likeResult";
+export * from "./listMemoriesParams";
+export * from "./memoryComment";
+export * from "./memoryFeedPage";
+export * from "./messageRequestDecision";
+export * from "./messageRequestDecisionDecision";
+export * from "./pollResult";
+export * from "./pollVoteRequest";
+export * from "./reportRequest";
+export * from "./socialMemory";
+export * from "./socialNotification";
+export * from "./socialProfile";
+export * from "./socialStatus";
+export * from "./updateMemoryRequest";
+export * from "./updateMemoryRequestVisibility";
+export * from "./updatePrivacyRequest";
+export * from "./updatePrivacyRequestProfileVisibility";

@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: memories
+    description: Community posts and replies
+  - name: social
+    description: Follows, privacy, direct messages, and notifications
 paths:
   /healthz:
     get:
@@ -24,7 +28,494 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [memories]
+      summary: List community posts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of posts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryFeedPage"
+    post:
+      operationId: createMemory
+      tags: [memories]
+      summary: Create a community post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemoryRequest"
+      responses:
+        "201":
+          description: The created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialMemory"
+  /memories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    patch:
+      operationId: updateMemory
+      tags: [memories]
+      summary: Update your post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemoryRequest"
+      responses:
+        "200":
+          description: The updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialMemory"
+    delete:
+      operationId: deleteMemory
+      tags: [memories]
+      summary: Delete your post
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /memories/{id}/like:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: toggleMemoryLike
+      tags: [memories]
+      summary: Like or unlike a post
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated like state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResult"
+  /memories/{id}/comments:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    get:
+      operationId: listMemoryComments
+      tags: [memories]
+      summary: List comments and replies
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Post comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MemoryComment"
+    post:
+      operationId: createMemoryComment
+      tags: [memories]
+      summary: Add a comment or reply
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemoryCommentRequest"
+      responses:
+        "201":
+          description: The created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryComment"
+  /memories/{id}/bookmark:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: toggleMemoryBookmark
+      tags: [memories]
+      summary: Bookmark or remove a bookmark
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated bookmark state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /memories/{id}/poll-votes:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: voteInMemoryPoll
+      tags: [memories]
+      summary: Vote in a post poll
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PollVoteRequest"
+      responses:
+        "200":
+          description: Updated poll results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollResult"
+  /memories/{id}/report:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: reportMemory
+      tags: [memories]
+      summary: Report a post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportRequest"
+      responses:
+        "201":
+          description: The report was submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /users/{id}/social-status:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    get:
+      operationId: getSocialStatus
+      tags: [social]
+      summary: Get profile visibility and follow state
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Relationship status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialStatus"
+  /users/{id}/follow:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: followUser
+      tags: [social]
+      summary: Follow a public profile or request access to a private profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated follow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialStatus"
+    delete:
+      operationId: unfollowUser
+      tags: [social]
+      summary: Unfollow a profile or cancel a request
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated follow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialStatus"
+  /follow-requests:
+    get:
+      operationId: listFollowRequests
+      tags: [social]
+      summary: List incoming follow requests
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Incoming requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowRequest"
+  /follow-requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    patch:
+      operationId: decideFollowRequest
+      tags: [social]
+      summary: Accept or decline a follow request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowDecisionRequest"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /users/{id}/block:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: blockUser
+      tags: [social]
+      summary: Block a profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Block state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+    delete:
+      operationId: unblockUser
+      tags: [social]
+      summary: Unblock a profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Block state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /blocked-users:
+    get:
+      operationId: listBlockedUsers
+      tags: [social]
+      summary: List blocked profiles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Blocked profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialProfile"
+  /direct-message-requests:
+    get:
+      operationId: listDirectMessageRequests
+      tags: [social]
+      summary: List incoming message requests
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Message requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectMessageRequest"
+    post:
+      operationId: createDirectMessageRequest
+      tags: [social]
+      summary: Request to message a profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDirectMessageRequest"
+      responses:
+        "201":
+          description: The message request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectMessageRequest"
+  /direct-message-requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    patch:
+      operationId: decideDirectMessageRequest
+      tags: [social]
+      summary: Accept or decline a message request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageRequestDecision"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /direct-conversations:
+    get:
+      operationId: listDirectConversations
+      tags: [social]
+      summary: List direct conversations
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectConversation"
+  /direct-conversations/{id}/messages:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    get:
+      operationId: listDirectMessages
+      tags: [social]
+      summary: List messages in a conversation
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectMessage"
+    post:
+      operationId: createDirectMessage
+      tags: [social]
+      summary: Send a direct message
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDirectMessage"
+      responses:
+        "201":
+          description: The sent message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectMessage"
+  /users/me/privacy:
+    patch:
+      operationId: updateProfilePrivacy
+      tags: [social]
+      summary: Change profile visibility
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePrivacyRequest"
+      responses:
+        "200":
+          description: Updated privacy setting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /social-notifications:
+    get:
+      operationId: listSocialNotifications
+      tags: [social]
+      summary: List social notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialNotification"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    EntityId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +524,344 @@ components:
           type: string
       required:
         - status
+    CreateMemoryRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+          maxLength: 4000
+        postType:
+          type: string
+          enum: [text, photo, video, poll, achievement, event]
+        mediaUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        pollOptions:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+        visibility:
+          type: string
+          enum: [public, followers]
+        commentsEnabled:
+          type: boolean
+      required: [caption]
+    UpdateMemoryRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+          maxLength: 4000
+        visibility:
+          type: string
+          enum: [public, followers]
+        commentsEnabled:
+          type: boolean
+    SocialMemory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        caption:
+          type: string
+        postType:
+          type: string
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        pollOptions:
+          type: array
+          items:
+            type: string
+        pollVotes:
+          type: array
+          items:
+            type: integer
+        viewerVote:
+          type: integer
+        visibility:
+          type: string
+        commentsEnabled:
+          type: boolean
+        likes:
+          type: integer
+        commentsCount:
+          type: integer
+        liked:
+          type: boolean
+        bookmarked:
+          type: boolean
+        authorId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        authorPhotoUrl:
+          type: string
+        jnvName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, postType, mediaUrls, pollOptions, pollVotes, visibility, commentsEnabled, likes, commentsCount, liked, bookmarked, createdAt]
+    MemoryFeedPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialMemory"
+        nextCursor:
+          type: string
+        hasMore:
+          type: boolean
+      required: [items, hasMore]
+    MemoryComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        memoryId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        authorPhotoUrl:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, memoryId, authorId, authorName, content, createdAt]
+    CreateMemoryCommentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+        parentId:
+          type: string
+          format: uuid
+      required: [content]
+    PollVoteRequest:
+      type: object
+      properties:
+        optionIndex:
+          type: integer
+          minimum: 0
+      required: [optionIndex]
+    PollResult:
+      type: object
+      properties:
+        pollVotes:
+          type: array
+          items:
+            type: integer
+        viewerVote:
+          type: integer
+      required: [pollVotes]
+    ReportRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        details:
+          type: string
+          maxLength: 1000
+      required: [reason]
+    ActionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+      required: [success]
+    LikeResult:
+      type: object
+      properties:
+        liked:
+          type: boolean
+        likes:
+          type: integer
+      required: [liked, likes]
+    SocialProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        photoURL:
+          type: string
+        jnvName:
+          type: string
+      required: [id, fullName]
+    SocialStatus:
+      type: object
+      properties:
+        profileVisibility:
+          type: string
+        followStatus:
+          type: string
+        isFollowing:
+          type: boolean
+        followsYou:
+          type: boolean
+        isBlocked:
+          type: boolean
+      required: [profileVisibility, followStatus, isFollowing, followsYou, isBlocked]
+    FollowRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        followerId:
+          type: string
+          format: uuid
+        followerName:
+          type: string
+        followerPhotoUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, followerId, followerName, createdAt]
+    FollowDecisionRequest:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [accept, decline]
+      required: [decision]
+    CreateDirectMessageRequest:
+      type: object
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 2000
+      required: [recipientId, content]
+    DirectMessageRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        senderName:
+          type: string
+        recipientId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, senderId, senderName, recipientId, content, status, createdAt]
+    MessageRequestDecision:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [accept, decline]
+      required: [decision]
+    DirectConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        peerId:
+          type: string
+          format: uuid
+        peerName:
+          type: string
+        peerPhotoUrl:
+          type: string
+        lastMessage:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, peerId, peerName, updatedAt]
+    CreateDirectMessage:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+      required: [content]
+    DirectMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, conversationId, senderId, content, createdAt]
+    UpdatePrivacyRequest:
+      type: object
+      properties:
+        profileVisibility:
+          type: string
+          enum: [public, private]
+      required: [profileVisibility]
+    SocialNotification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        actorId:
+          type: string
+          format: uuid
+        actorName:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+      required: [id, type, actorId, actorName, message, createdAt]
 

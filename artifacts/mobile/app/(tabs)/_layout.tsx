@@ -18,11 +18,11 @@ const TAB_ITEMS: {
   { name: "index",    title: "JNV Connect", icon: "home-outline",        activeIcon: "home"        },
   { name: "memories", title: "Memories",    icon: "heart-outline",        activeIcon: "heart"       },
   { name: "chats",    title: "Chat Groups", icon: "chatbubble-outline",   activeIcon: "chatbubble"  },
-  { name: "store",    title: "JNV Store",   icon: "bag-handle-outline",   activeIcon: "bag-handle"  },
+  { name: "events",   title: "Events",      icon: "calendar-outline",     activeIcon: "calendar"    },
   { name: "profile",  title: "Profile",     icon: "person-outline",       activeIcon: "person"      },
 ];
 
-const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "events"];
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
 
 const HOUSE_COLOR: Record<string, string> = {
   Aravali:  "#1D6ADE",
@@ -35,8 +35,8 @@ const DEFAULT_COLOR = "#3D5AF1";
 
 function DostAiFab() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = Platform.OS === "web" ? 60 : 80;
-  const bottom = tabBarHeight + insets.bottom + 12;
+  const tabBarHeight = Platform.OS === "web" ? 60 : 80 + insets.bottom;
+  const bottom = tabBarHeight + 12;
 
   return (
     <TouchableOpacity
@@ -66,8 +66,10 @@ function DostAiFab() {
 
 export default function TabLayout() {
   const isWeb = Platform.OS === "web";
-  const tabBarHeight = isWeb ? 60 : 80;
-  const paddingBottom = isWeb ? 8 : 16;
+  const insets = useSafeAreaInsets();
+  const bottomInset = isWeb ? 0 : insets.bottom;
+  const tabBarHeight = (isWeb ? 60 : 80) + bottomInset;
+  const paddingBottom = isWeb ? 8 : Math.max(12, bottomInset);
   const { profile, isVerified } = useAuth();
   const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
 
@@ -90,11 +92,13 @@ export default function TabLayout() {
             elevation: 8,
             height: tabBarHeight,
             paddingBottom,
-            paddingTop: 8,
+            paddingTop: isWeb ? 6 : 8,
           },
           tabBarLabelStyle: {
             fontSize: 10,
+            lineHeight: 12,
             fontFamily: "Inter_500Medium",
+            includeFontPadding: false,
           },
           tabBarBackground: () => (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fff" }]} />

@@ -1,392 +1,389 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Platform,
-  Dimensions,
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
   Modal,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  Text,
   TextInput,
-  Share,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  listMemories,
+  useCreateMemory,
+  useDeleteMemory,
+  useReportMemory,
+  useToggleMemoryBookmark,
+  useToggleMemoryLike,
+  useUpdateMemory,
+  useVoteInMemoryPoll,
+} from "@workspace/api-client-react";
+import type { CreateMemoryRequest, SocialMemory } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
+import MemoryComposer from "@/components/memories/MemoryComposer";
+import MemoryPostCard from "@/components/memories/MemoryPostCard";
 
-const { width } = Dimensions.get("window");
-const COL = 3;
-const ITEM_SIZE = (width - 4) / COL;
-
-const CATEGORIES = ["All", "Sports", "Cultural", "Academic", "Farewell"];
-
-const MEMORIES = [
-  { id: "1", category: "Sports", uri: "https://picsum.photos/seed/sports1/400/400", caption: "Sports Day 2023", likes: 34 },
-  { id: "2", category: "Cultural", uri: "https://picsum.photos/seed/culture1/400/400", caption: "Annual Day", likes: 67 },
-  { id: "3", category: "Academic", uri: "https://picsum.photos/seed/study1/400/400", caption: "Science Fair", likes: 22 },
-  { id: "4", category: "Sports", uri: "https://picsum.photos/seed/cricket1/400/400", caption: "Cricket Match", likes: 45 },
-  { id: "5", category: "Farewell", uri: "https://picsum.photos/seed/farewell1/400/400", caption: "Farewell 2024", likes: 112 },
-  { id: "6", category: "Cultural", uri: "https://picsum.photos/seed/dance1/400/400", caption: "Dance Night", likes: 78 },
-  { id: "7", category: "Academic", uri: "https://picsum.photos/seed/lab1/400/400", caption: "Lab Work", likes: 19 },
-  { id: "8", category: "Sports", uri: "https://picsum.photos/seed/football1/400/400", caption: "Football Final", likes: 56 },
-  { id: "9", category: "Farewell", uri: "https://picsum.photos/seed/class2024/400/400", caption: "Last Day", likes: 203 },
-  { id: "10", category: "Cultural", uri: "https://picsum.photos/seed/festival1/400/400", caption: "Navratri Fest", likes: 89 },
-  { id: "11", category: "Academic", uri: "https://picsum.photos/seed/library1/400/400", caption: "Library Hour", likes: 14 },
-  { id: "12", category: "Sports", uri: "https://picsum.photos/seed/kabaddi1/400/400", caption: "Kabaddi Finals", likes: 61 },
-];
-
-const topPicks = [
-  { id: "a", uri: "https://picsum.photos/seed/jnvmemo1/600/300", caption: "Best Memories of 2024", likes: 142 },
-  { id: "b", uri: "https://picsum.photos/seed/jnvmemo2/600/300", caption: "Sports Meet Champions", likes: 98 },
-  { id: "c", uri: "https://picsum.photos/seed/jnvmemo3/600/300", caption: "Annual Day Highlights", likes: 76 },
-];
-
-interface MemoryItem {
-  id: string;
-  category: string;
-  uri: string;
-  caption: string;
-  likes: number;
-}
+type ReportReason = "spam" | "harassment" | "inappropriate content";
 
 export default function MemoriesScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [selected, setSelected] = useState<MemoryItem | null>(null);
-  const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
-  const [showUpload, setShowUpload] = useState(false);
-  const [uploadCaption, setUploadCaption] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("Sports");
-  const [memories, setMemories] = useState(MEMORIES);
-  const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [composerVisible, setComposerVisible] = useState(false);
+  const [editingPost, setEditingPost] = useState<SocialMemory | null>(null);
+  const [commentsPost, setCommentsPost] = useState<SocialMemory | null>(null);
+  const [menuPost, setMenuPost] = useState<SocialMemory | null>(null);
+  const [deletePost, setDeletePost] = useState<SocialMemory | null>(null);
+  const [reportPost, setReportPost] = useState<SocialMemory | null>(null);
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  const feed = useInfiniteQuery({
+    queryKey: ["/api/memories", search.trim()],
+    queryFn: ({ pageParam, signal }) => listMemories({
+      limit: 20,
+      ...(typeof pageParam === "string" ? { cursor: pageParam } : {}),
+      ...(search.trim() ? { search: search.trim() } : {}),
+    }, { signal }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.hasMore ? page.nextCursor : undefined,
+  });
 
-  const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { showToast("Photo library permission denied"); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setPickedUri(result.assets[0].uri);
-    }
+  const memories = useMemo(() => feed.data?.pages.flatMap((page) => page.items) ?? [], [feed.data]);
+  const createMemory = useCreateMemory();
+  const updateMemory = useUpdateMemory();
+  const deleteMemory = useDeleteMemory();
+  const toggleLike = useToggleMemoryLike();
+  const toggleBookmark = useToggleMemoryBookmark();
+  const voteInPoll = useVoteInMemoryPoll();
+  const reportMemory = useReportMemory();
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(""), 2600);
   };
 
-  const handleShare = async (caption: string, uri: string) => {
+  const refreshFeed = () => queryClient.invalidateQueries({ queryKey: ["/api/memories"] });
+
+  const submitPost = async (data: CreateMemoryRequest) => {
+    if (editingPost) {
+      await updateMemory.mutateAsync({ id: editingPost.id, data });
+      setEditingPost(null);
+      showToast("Post updated.");
+    } else {
+      await createMemory.mutateAsync({ data });
+      showToast("Your post is now in Memories.");
+    }
+    await refreshFeed();
+  };
+
+  const handleLike = async (memory: SocialMemory) => {
     try {
-      await Share.share({ message: `${caption} — shared from Navodaya Connect`, url: uri });
-    } catch {
-      showToast("Could not open share sheet");
+      await toggleLike.mutateAsync({ id: memory.id });
+      await refreshFeed();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update your like.");
     }
   };
 
-  const filtered = activeCategory === "All"
-    ? memories
-    : memories.filter((m) => m.category === activeCategory);
-
-  const toggleLike = (id: string) => {
-    setLikedItems((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  const handleBookmark = async (memory: SocialMemory) => {
+    try {
+      await toggleBookmark.mutateAsync({ id: memory.id });
+      await refreshFeed();
+      showToast(memory.bookmarked ? "Bookmark removed." : "Post saved.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not save this post.");
+    }
   };
 
-  const handleUpload = () => {
-    if (!uploadCaption.trim()) {
-      showToast("Please add a caption for your memory.");
-      return;
+  const handleVote = async (memory: SocialMemory, optionIndex: number) => {
+    try {
+      await voteInPoll.mutateAsync({ id: memory.id, data: { optionIndex } });
+      await refreshFeed();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not submit your vote.");
     }
-    if (!pickedUri) {
-      showToast("Please choose a photo first.");
-      return;
-    }
-    const newMemory: MemoryItem = {
-      id: `u${Date.now()}`,
-      category: uploadCategory,
-      uri: pickedUri,
-      caption: uploadCaption.trim(),
-      likes: 0,
-    };
-    setMemories((prev) => [newMemory, ...prev]);
-    setUploadCaption("");
-    setUploadCategory("Sports");
-    setPickedUri(null);
-    setShowUpload(false);
-    showToast("Your memory has been shared with the community.");
   };
+
+  const confirmDelete = async () => {
+    if (!deletePost) return;
+    try {
+      await deleteMemory.mutateAsync({ id: deletePost.id });
+      setDeletePost(null);
+      await refreshFeed();
+      showToast("Post deleted.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not delete the post.");
+    }
+  };
+
+  const submitReport = async (reason: ReportReason) => {
+    if (!reportPost) return;
+    try {
+      await reportMemory.mutateAsync({ id: reportPost.id, data: { reason } });
+      setReportPost(null);
+      showToast("Thanks. The post was reported for review.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not submit the report.");
+    }
+  };
+
+  const startEdit = (memory: SocialMemory) => {
+    setMenuPost(null);
+    setEditingPost(memory);
+    setComposerVisible(true);
+  };
+
+  const openComposer = () => {
+    setEditingPost(null);
+    setComposerVisible(true);
+  };
+
+  const headerTop = Math.max(insets.top, Platform.OS === "web" ? 12 : 6);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <Text style={styles.headerTitle}>Memories</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowUpload(true)}>
-          <Ionicons name="add" size={22} color="#3D5AF1" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Featured</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 20, paddingRight: 8 }}>
-            {topPicks.map((pick) => (
-              <TouchableOpacity
-                key={pick.id}
-                style={styles.featuredCard}
-                activeOpacity={0.9}
-                onPress={() => setSelected({ id: pick.id, category: "Featured", uri: pick.uri, caption: pick.caption, likes: pick.likes })}
-              >
-                <Image source={{ uri: pick.uri }} style={styles.featuredImage} />
-                <View style={styles.featuredOverlay}>
-                  <Text style={styles.featuredCaption}>{pick.caption}</Text>
-                  <View style={styles.featuredLikes}>
-                    <Ionicons name="heart" size={13} color="#fff" />
-                    <Text style={styles.featuredLikesText}>{pick.likes}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.section}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScroll}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.catChip, activeCategory === cat && styles.catChipActive]}
-                onPress={() => setActiveCategory(cat)}
-              >
-                <Text style={[styles.catText, activeCategory === cat && styles.catTextActive]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.grid}>
-          {filtered.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.gridItem}
-              activeOpacity={0.85}
-              onPress={() => setSelected(item)}
-            >
-              <Image source={{ uri: item.uri }} style={styles.gridImage} />
-              {likedItems.has(item.id) && (
-                <View style={styles.likedBadge}>
-                  <Ionicons name="heart" size={12} color="#fff" />
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-
-      {/* Lightbox Modal */}
-      <Modal visible={!!selected} animationType="fade" transparent statusBarTranslucent>
-        <View style={styles.lightbox}>
-          <TouchableOpacity style={styles.lightboxClose} onPress={() => setSelected(null)}>
-            <Ionicons name="close" size={26} color="#fff" />
+      <View style={[styles.header, { paddingTop: headerTop + 8 }]}>
+        <View style={styles.titleRow}>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>Memories</Text>
+            <Text style={styles.subtitle}>Stories and updates from the JNV community</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.headerIcon}
+            onPress={() => router.push("/(screens)/social-inbox" as any)}
+            accessibilityLabel="Open social inbox"
+          >
+            <Ionicons name="mail-unread-outline" size={20} color="#355BE5" />
           </TouchableOpacity>
-          {selected && (
-            <>
-              <Image source={{ uri: selected.uri }} style={styles.lightboxImage} resizeMode="contain" />
-              <View style={styles.lightboxFooter}>
-                <View style={styles.lightboxInfo}>
-                  <Text style={styles.lightboxCaption}>{selected.caption}</Text>
-                  <View style={styles.lightboxCatBadge}>
-                    <Text style={styles.lightboxCatText}>{selected.category}</Text>
-                  </View>
-                </View>
-                <View style={styles.lightboxActions}>
-                  <TouchableOpacity style={styles.lightboxAction} onPress={() => toggleLike(selected.id)}>
-                    <Ionicons
-                      name={likedItems.has(selected.id) ? "heart" : "heart-outline"}
-                      size={24}
-                      color={likedItems.has(selected.id) ? "#EF4444" : "#fff"}
-                    />
-                    <Text style={styles.lightboxActionText}>
-                      {selected.likes + (likedItems.has(selected.id) ? 1 : 0)}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.lightboxAction} onPress={() => handleShare(selected.caption, selected.uri)}>
-                    <Ionicons name="share-outline" size={24} color="#fff" />
-                    <Text style={styles.lightboxActionText}>Share</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.lightboxAction} onPress={() => handleShare(selected.caption, selected.uri)}>
-                    <Ionicons name="download-outline" size={24} color="#fff" />
-                    <Text style={styles.lightboxActionText}>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </>
+          <TouchableOpacity style={styles.createButton} onPress={openComposer} accessibilityLabel="Create a post">
+            <Ionicons name="add" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={18} color="#8994A8" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search memories, people, or JNV"
+            placeholderTextColor="#98A2B3"
+            returnKeyType="search"
+            onSubmitEditing={Keyboard.dismiss}
+            style={styles.searchInput}
+          />
+          {!!search && (
+            <TouchableOpacity onPress={() => setSearch("")} accessibilityLabel="Clear search">
+              <Ionicons name="close-circle" size={18} color="#A7B0C0" />
+            </TouchableOpacity>
           )}
         </View>
-      </Modal>
+      </View>
 
-      {/* Upload Modal */}
-      <Modal visible={showUpload} animationType="slide" presentationStyle="formSheet">
-        <View style={styles.uploadModal}>
-          <View style={styles.uploadHeader}>
-            <Text style={styles.uploadTitle}>Share a Memory</Text>
-            <TouchableOpacity onPress={() => setShowUpload(false)}>
-              <Ionicons name="close" size={24} color="#111" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.uploadBody} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity style={styles.photoPickerBtn} onPress={pickPhoto}>
-              {pickedUri ? (
-                <Image source={{ uri: pickedUri }} style={{ width: 96, height: 96, borderRadius: 12, marginBottom: 8 }} />
-              ) : (
-                <Ionicons name="image-outline" size={40} color="#3D5AF1" />
-              )}
-              <Text style={styles.photoPickerText}>{pickedUri ? "Change photo" : "Tap to choose a photo"}</Text>
-              <Text style={styles.photoPickerSub}>JPG, PNG up to 10MB</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.formLabel}>Caption</Text>
-            <TextInput
-              style={styles.captionInput}
-              placeholder="What's the story behind this memory?"
-              placeholderTextColor="#9CA3AF"
-              value={uploadCaption}
-              onChangeText={setUploadCaption}
-              multiline
-              numberOfLines={3}
+      {feed.isLoading ? (
+        <View style={styles.state}>
+          <ActivityIndicator size="small" color="#355BE5" />
+          <Text style={styles.stateText}>Loading community posts…</Text>
+        </View>
+      ) : feed.isError ? (
+        <View style={styles.state}>
+          <View style={styles.stateIcon}><Ionicons name="cloud-offline-outline" size={23} color="#68758D" /></View>
+          <Text style={styles.stateTitle}>Memories could not load</Text>
+          <Text style={styles.stateText}>Check your connection and try again.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => feed.refetch()}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={memories}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <MemoryPostCard
+              memory={item}
+              currentUserId={profile?.uid}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
+              onComments={setCommentsPost}
+              onMore={setMenuPost}
+              onVote={handleVote}
+              onOpenProfile={(userId) => router.push({ pathname: "/(screens)/user-profile", params: { userId } })}
+              onMessage={showToast}
             />
+          )}
+          contentContainerStyle={[styles.list, memories.length === 0 && styles.emptyList]}
+          refreshControl={<RefreshControl refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => feed.refetch()} tintColor="#355BE5" />}
+          onEndReached={() => {
+            if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
+          }}
+          onEndReachedThreshold={0.45}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={(
+            <View style={styles.feedIntro}>
+              <View style={styles.introMark}><Ionicons name="people-outline" size={17} color="#355BE5" /></View>
+              <Text style={styles.introText}>A shared space for JNV stories, achievements, events, and conversations.</Text>
+            </View>
+          )}
+          ListEmptyComponent={(
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}><Ionicons name="images-outline" size={28} color="#355BE5" /></View>
+              <Text style={styles.emptyTitle}>{search.trim() ? "No matching posts" : "Start the conversation"}</Text>
+              <Text style={styles.emptyText}>{search.trim() ? "Try a different name, JNV, or keyword." : "Share the first memory or update with your JNV community."}</Text>
+              {!search.trim() && <TouchableOpacity style={styles.emptyButton} onPress={openComposer}><Text style={styles.emptyButtonText}>Create a post</Text></TouchableOpacity>}
+            </View>
+          )}
+          ListFooterComponent={feed.isFetchingNextPage ? (
+            <View style={styles.footerLoading}><ActivityIndicator color="#355BE5" /><Text style={styles.stateText}>Loading more posts…</Text></View>
+          ) : feed.hasNextPage ? (
+            <TouchableOpacity style={styles.loadMore} onPress={() => void feed.fetchNextPage()}><Text style={styles.loadMoreText}>Load more</Text></TouchableOpacity>
+          ) : memories.length > 0 ? (
+            <Text style={styles.endText}>You’re all caught up.</Text>
+          ) : <View style={{ height: 20 }} />}
+        />
+      )}
 
-            <Text style={styles.formLabel}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 24 }}>
-              {CATEGORIES.filter((c) => c !== "All").map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.catChip, uploadCategory === cat && styles.catChipActive]}
-                  onPress={() => setUploadCategory(cat)}
-                >
-                  <Text style={[styles.catText, uploadCategory === cat && styles.catTextActive]}>{cat}</Text>
+      {!!toast && <View style={[styles.toast, { bottom: Math.max(insets.bottom, 18) + 78 }]} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View>}
+
+      <MemoryComposer
+        visible={composerVisible}
+        onClose={() => {
+          setComposerVisible(false);
+          setEditingPost(null);
+        }}
+        onSubmit={submitPost}
+        initial={editingPost}
+        onMessage={showToast}
+      />
+      <MemoryCommentsSheet
+        visible={!!commentsPost}
+        memory={commentsPost}
+        onClose={() => setCommentsPost(null)}
+        onMessage={showToast}
+      />
+
+      <Modal visible={!!menuPost} animationType="fade" transparent onRequestClose={() => setMenuPost(null)}>
+        <TouchableOpacity style={styles.scrim} activeOpacity={1} onPress={() => setMenuPost(null)}>
+          <View style={[styles.actionSheet, { paddingBottom: Math.max(insets.bottom, 18) + 16 }]} onStartShouldSetResponder={() => true}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Post options</Text>
+            {menuPost?.authorId === profile?.uid ? (
+              <>
+                <TouchableOpacity style={styles.sheetOption} onPress={() => menuPost && startEdit(menuPost)}>
+                  <Ionicons name="create-outline" size={19} color="#42516B" /><Text style={styles.sheetOptionText}>Edit post</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                <TouchableOpacity style={styles.sheetOption} onPress={() => { setDeletePost(menuPost); setMenuPost(null); }}>
+                  <Ionicons name="trash-outline" size={19} color="#C74353" /><Text style={[styles.sheetOptionText, styles.dangerText]}>Delete post</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity style={styles.sheetOption} onPress={() => { setReportPost(menuPost); setMenuPost(null); }}>
+                <Ionicons name="flag-outline" size={19} color="#42516B" /><Text style={styles.sheetOptionText}>Report post</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setMenuPost(null)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
-            <TouchableOpacity style={styles.uploadBtn} onPress={handleUpload}>
-              <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-              <Text style={styles.uploadBtnText}>Share Memory</Text>
-            </TouchableOpacity>
-          </ScrollView>
+      <Modal visible={!!deletePost} animationType="fade" transparent onRequestClose={() => setDeletePost(null)}>
+        <View style={styles.scrim}>
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmIcon}><Ionicons name="trash-outline" size={22} color="#C74353" /></View>
+            <Text style={styles.confirmTitle}>Delete this post?</Text>
+            <Text style={styles.confirmText}>This will permanently remove the post, its comments, likes, bookmarks, and poll votes.</Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity style={styles.confirmSecondary} onPress={() => setDeletePost(null)}><Text style={styles.confirmSecondaryText}>Keep post</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.confirmDanger} onPress={confirmDelete} disabled={deleteMemory.isPending}>
+                <Text style={styles.confirmDangerText}>{deleteMemory.isPending ? "Deleting…" : "Delete"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
-      {!!toast && (
-        <View style={styles.toast}>
-          <Text style={styles.toastText}>{toast}</Text>
+      <Modal visible={!!reportPost} animationType="fade" transparent onRequestClose={() => setReportPost(null)}>
+        <View style={styles.scrim}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>Report this post</Text>
+            <Text style={styles.confirmText}>Choose the reason that best describes your concern.</Text>
+            {([
+              ["inappropriate content", "Inappropriate content"],
+              ["harassment", "Harassment or bullying"],
+              ["spam", "Spam or misleading"],
+            ] as [ReportReason, string][]).map(([reason, label]) => (
+              <TouchableOpacity key={reason} style={styles.reportChoice} onPress={() => submitReport(reason)} disabled={reportMemory.isPending}>
+                <Text style={styles.reportChoiceText}>{label}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#8894A8" />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setReportPost(null)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  toast: {
-    position: "absolute", bottom: 30, left: 20, right: 20,
-    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
-  },
-  toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  section: { paddingTop: 16 },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", paddingHorizontal: 20, marginBottom: 12 },
-  featuredCard: { width: 260, height: 150, borderRadius: 14, overflow: "hidden" },
-  featuredImage: { width: "100%", height: "100%" },
-  featuredOverlay: {
-    position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "rgba(0,0,0,0.45)", padding: 12,
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-  },
-  featuredCaption: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", flex: 1 },
-  featuredLikes: { flexDirection: "row", alignItems: "center", gap: 4 },
-  featuredLikesText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
-  catScroll: { paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
-  catChip: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
-  catChipActive: { backgroundColor: "#3D5AF1" },
-  catText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
-  catTextActive: { color: "#fff" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingHorizontal: 2 },
-  gridItem: { width: ITEM_SIZE, height: ITEM_SIZE, position: "relative" },
-  gridImage: { width: "100%", height: "100%" },
-  likedBadge: {
-    position: "absolute", top: 4, right: 4,
-    backgroundColor: "#EF4444", width: 20, height: 20,
-    borderRadius: 10, alignItems: "center", justifyContent: "center",
-  },
-  lightbox: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.95)",
-    justifyContent: "center", alignItems: "center",
-  },
-  lightboxClose: {
-    position: "absolute", top: 56, right: 20, zIndex: 10,
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center", justifyContent: "center",
-  },
-  lightboxImage: { width: width, height: width, maxHeight: "65%" },
-  lightboxFooter: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: "rgba(0,0,0,0.6)" },
-  lightboxInfo: { marginBottom: 16 },
-  lightboxCaption: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#fff", marginBottom: 6 },
-  lightboxCatBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3,
-  },
-  lightboxCatText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#fff" },
-  lightboxActions: { flexDirection: "row", gap: 32 },
-  lightboxAction: { alignItems: "center", gap: 4 },
-  lightboxActionText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#fff" },
-  uploadModal: { flex: 1, backgroundColor: "#fff" },
-  uploadHeader: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0",
-  },
-  uploadTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  uploadBody: { flex: 1, padding: 20 },
-  photoPickerBtn: {
-    backgroundColor: "#EEF2FF", borderRadius: 16, borderWidth: 2,
-    borderColor: "#3D5AF1", borderStyle: "dashed",
-    alignItems: "center", justifyContent: "center",
-    paddingVertical: 32, marginBottom: 20, gap: 8,
-  },
-  photoPickerText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  photoPickerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  formLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 8 },
-  captionInput: {
-    borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827",
-    textAlignVertical: "top", minHeight: 80, marginBottom: 16,
-  },
-  uploadBtn: {
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-  },
-  uploadBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
+  container: { flex: 1, backgroundColor: "#F5F7FB" },
+  header: { backgroundColor: "#fff", paddingHorizontal: 17, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: "#E8ECF3" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 9 },
+  titleBlock: { flex: 1 },
+  title: { color: "#18243B", fontSize: 23, fontFamily: "Inter_700Bold" },
+  subtitle: { color: "#8490A4", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 3 },
+  headerIcon: { width: 38, height: 38, borderRadius: 20, backgroundColor: "#F0F3FF", alignItems: "center", justifyContent: "center" },
+  createButton: { width: 38, height: 38, borderRadius: 20, backgroundColor: "#355BE5", alignItems: "center", justifyContent: "center" },
+  searchBox: { height: 42, marginTop: 13, paddingHorizontal: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F4F6FA", borderWidth: 1, borderColor: "#EBEEF4" },
+  searchInput: { flex: 1, minWidth: 0, color: "#27334B", fontSize: 12, fontFamily: "Inter_400Regular", paddingVertical: 0 },
+  list: { paddingBottom: 135 },
+  emptyList: { flexGrow: 1 },
+  feedIntro: { flexDirection: "row", alignItems: "center", gap: 9, marginHorizontal: 14, marginTop: 13, padding: 12, borderRadius: 13, backgroundColor: "#EDF1FF" },
+  introMark: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  introText: { flex: 1, color: "#485777", fontSize: 11, lineHeight: 16, fontFamily: "Inter_500Medium" },
+  state: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
+  stateIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "#EDF0F5" },
+  stateTitle: { color: "#253149", fontSize: 16, fontFamily: "Inter_700Bold", marginTop: 5 },
+  stateText: { color: "#8994A8", fontSize: 12, fontFamily: "Inter_400Regular" },
+  retryButton: { paddingHorizontal: 17, paddingVertical: 10, borderRadius: 20, backgroundColor: "#355BE5", marginTop: 7 },
+  retryText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  emptyState: { alignItems: "center", paddingHorizontal: 30, paddingTop: 45 },
+  emptyIcon: { width: 60, height: 60, borderRadius: 20, backgroundColor: "#EDF1FF", alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  emptyTitle: { color: "#253149", fontSize: 16, fontFamily: "Inter_700Bold", textAlign: "center" },
+  emptyText: { color: "#8792A5", fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 7 },
+  emptyButton: { marginTop: 18, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, backgroundColor: "#355BE5" },
+  emptyButtonText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  footerLoading: { height: 60, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 },
+  loadMore: { alignSelf: "center", marginVertical: 16, paddingHorizontal: 18, paddingVertical: 10, borderWidth: 1, borderColor: "#D6DDF2", borderRadius: 20, backgroundColor: "#fff" },
+  loadMoreText: { color: "#355BE5", fontSize: 12, fontFamily: "Inter_700Bold" },
+  endText: { textAlign: "center", color: "#9AA4B5", fontSize: 11, fontFamily: "Inter_400Regular", paddingVertical: 20 },
+  toast: { position: "absolute", left: 20, right: 20, borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, backgroundColor: "#1B2943", zIndex: 30 },
+  toastText: { color: "#fff", fontSize: 12, textAlign: "center", fontFamily: "Inter_500Medium" },
+  scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(16,25,43,0.42)" },
+  actionSheet: { backgroundColor: "#fff", paddingHorizontal: 18, paddingTop: 10, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  sheetHandle: { width: 38, height: 4, backgroundColor: "#D7DCE5", borderRadius: 2, alignSelf: "center", marginBottom: 13 },
+  sheetTitle: { color: "#1E2940", fontSize: 15, fontFamily: "Inter_700Bold", paddingVertical: 8 },
+  sheetOption: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: 1, borderTopColor: "#F1F3F7" },
+  sheetOptionText: { color: "#344158", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  dangerText: { color: "#C74353" },
+  cancelButton: { minHeight: 44, alignItems: "center", justifyContent: "center", marginTop: 5, borderRadius: 11, backgroundColor: "#F1F3F8" },
+  cancelText: { color: "#59677E", fontSize: 13, fontFamily: "Inter_700Bold" },
+  confirmCard: { width: "88%", alignSelf: "center", padding: 20, borderRadius: 18, backgroundColor: "#fff", marginBottom: 40 },
+  confirmIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF0F1", marginBottom: 12 },
+  confirmTitle: { color: "#202B41", fontSize: 17, fontFamily: "Inter_700Bold" },
+  confirmText: { color: "#77839A", fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular", marginTop: 7, marginBottom: 13 },
+  confirmActions: { flexDirection: "row", gap: 9, marginTop: 10 },
+  confirmSecondary: { flex: 1, minHeight: 43, borderRadius: 10, backgroundColor: "#F1F3F8", alignItems: "center", justifyContent: "center" },
+  confirmSecondaryText: { color: "#59677E", fontSize: 12, fontFamily: "Inter_700Bold" },
+  confirmDanger: { flex: 1, minHeight: 43, borderRadius: 10, backgroundColor: "#C74353", alignItems: "center", justifyContent: "center" },
+  confirmDangerText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  reportChoice: { minHeight: 44, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F3F7" },
+  reportChoiceText: { color: "#344158", fontSize: 12, fontFamily: "Inter_600SemiBold" },
 });

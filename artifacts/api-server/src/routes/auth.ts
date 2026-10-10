@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db, usersTable, sessionsTable, verificationRequestsTable } from "@workspace/db";
 import type { UserProfile } from "./types";
+import { makeJnvId } from "../lib/jnv-identity";
 
 const router = Router();
 
@@ -53,6 +54,8 @@ function toProfile(user: typeof usersTable.$inferSelect): UserProfile {
     role: user.role as UserProfile["role"],
     jnvState: user.jnvState,
     jnvName: user.jnvName,
+    jnvId: user.jnvId ?? makeJnvId(user.jnvState, user.jnvName),
+    profileVisibility: (user.profileVisibility ?? "public") as UserProfile["profileVisibility"],
     house: user.house as UserProfile["house"],
     photoURL: user.photoURL ?? undefined,
     class: user.class ?? undefined,
@@ -97,6 +100,7 @@ router.post("/auth/signup", async (req, res) => {
       role,
       jnvState,
       jnvName,
+      jnvId: makeJnvId(jnvState, jnvName),
       house: house || "Aravali",
       class: rest.class,
       enrollYear: rest.enrollYear,
@@ -162,6 +166,7 @@ router.post("/auth/firebase", async (req, res) => {
         role,
         jnvState: profileData.jnvState,
         jnvName: profileData.jnvName,
+        jnvId: makeJnvId(profileData.jnvState, profileData.jnvName),
         house: profileData.house || "Aravali",
         class: profileData.class,
         passoutYear: profileData.passoutYear,
@@ -184,6 +189,13 @@ router.post("/auth/firebase", async (req, res) => {
           status: "pending",
         });
       }
+    }
+
+    if (user && !user.jnvId) {
+      [user] = await db.update(usersTable)
+        .set({ jnvId: makeJnvId(user.jnvState, user.jnvName) })
+        .where(eq(usersTable.id, user.id))
+        .returning();
     }
 
     const token = await createSession(user.id);

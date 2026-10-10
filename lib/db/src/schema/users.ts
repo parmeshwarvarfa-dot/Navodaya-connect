@@ -8,6 +8,8 @@ export const usersTable = pgTable("users", {
   role: text("role").notNull(),
   jnvState: text("jnv_state").notNull(),
   jnvName: text("jnv_name").notNull(),
+  jnvId: text("jnv_id"),
+  profileVisibility: text("profile_visibility").notNull().default("public"),
   house: text("house").notNull(),
   photoURL: text("photo_url"),
   class: text("class"),
