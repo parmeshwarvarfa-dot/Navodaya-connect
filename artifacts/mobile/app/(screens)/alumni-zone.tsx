@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import EventCard from "@/components/EventCard";
+import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const FEATURES = [
   { label: "Connect",        icon: "people-outline"           as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-connect"       },
@@ -32,12 +33,6 @@ const UPCOMING_EVENTS = [
   { title: "Annual Alumni Meet 2026",          date: "22 May",  attendees: 142, type: "Reunion"  },
   { title: "Career Guidance Webinar – IT",     date: "15 May",  attendees: 67,  type: "Webinar"  },
   { title: "JNV Scholarship Drive Workshop",   date: "18 May",  attendees: 89,  type: "Workshop" },
-];
-
-const RECENT_ACHIEVEMENTS = [
-  { name: "Rahul Verma",    achievement: "Selected at Google as SWE",       year: "2018 Batch", badge: "🏆"  },
-  { name: "Dr. Meera Iyer", achievement: "MBBS Completed – AIIMS Delhi",    year: "2015 Batch", badge: "⭐"  },
-  { name: "Kavita Singh",   achievement: "UPSC AIR 47 – IAS Officer",       year: "2012 Batch", badge: "🎖️"  },
 ];
 
 const OPPORTUNITIES = [
@@ -82,6 +77,7 @@ export default function AlumniZoneScreen() {
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}>
+        <AchievementsHighlights />
 
         {/* Stats */}
         <View style={styles.statsRow}>
@@ -148,25 +144,6 @@ export default function AlumniZoneScreen() {
               <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
             </TouchableOpacity>
           )}
-        </View>
-
-        {/* Recent Achievements */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Alumni Achievements</Text>
-            <TouchableOpacity onPress={() => router.push("/(screens)/alumni-achievements" as any)}>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {RECENT_ACHIEVEMENTS.map((a, i) => (
-            <View key={i} style={styles.achieveRow}>
-              <Text style={styles.achieveBadge}>{a.badge}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.achieveName}>{a.name} <Text style={styles.achieveYear}>· {a.year}</Text></Text>
-                <Text style={styles.achieveText}>{a.achievement}</Text>
-              </View>
-            </View>
-          ))}
         </View>
 
         {/* Opportunities */}

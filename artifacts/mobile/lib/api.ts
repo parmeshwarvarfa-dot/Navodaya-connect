@@ -246,6 +246,7 @@ export interface UserProfile {
   company?: string;
   skills?: string[];
   verificationStatus?: "unverified" | "pending" | "verified" | "rejected" | "suspended";
+  profileVisibility?: "public" | "private";
   subject?: string;
   designation?: string;
   bio?: string;
@@ -382,6 +383,8 @@ export interface PublicUserProfile {
   subject?: string;
   designation?: string;
   bio?: string;
+  profileVisibility?: "public" | "private";
+  isRestricted?: boolean;
 }
 
 export interface ManagedUser {

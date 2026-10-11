@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import type { VerificationRequest, TeacherFeedbackItem } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
+import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const ROLE_COLORS: Record<string, string> = {
   student: "#3D5AF1", teacher: "#10B981", alumni: "#8B5CF6", official: "#D97706",
@@ -153,6 +154,7 @@ export default function OfficialDashboardScreen() {
         contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: insets.bottom + 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
+        <AchievementsHighlights />
         {activeTab === "pending" && (
           loading ? <Text style={s.emptyText}>Loading...</Text>
           : pendingReqs.length === 0 ? (

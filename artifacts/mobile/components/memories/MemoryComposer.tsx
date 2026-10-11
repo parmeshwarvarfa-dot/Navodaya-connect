@@ -75,8 +75,14 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
         onMessage("Each photo or video must be under 100 MB.");
         return;
       }
+      const hasVideo = chosen.some((asset) => asset.type === "video");
+      const hasPhoto = chosen.some((asset) => asset.type === "image");
+      if (hasVideo && hasPhoto) {
+        onMessage("Choose photos or videos for a post, not both together.");
+        return;
+      }
       setAssets(chosen);
-      if (chosen.length && chosen.every((asset) => asset.type === "video")) setPostType("video");
+      if (hasVideo) setPostType("video");
       else if (chosen.length) setPostType("photo");
     }
   };

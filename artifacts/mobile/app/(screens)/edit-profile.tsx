@@ -20,6 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
+import JnvDirectoryFields from "@/components/JnvDirectoryFields";
 
 const HOUSE_OPTIONS = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASS_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"];
@@ -281,8 +282,12 @@ export default function EditProfileScreen() {
 
           {/* ── JNV Details ── */}
           <Section title="JNV Details" icon="school-outline">
-            <Field label="JNV Name" value={jnvName} onChange={setJnvName} placeholder="e.g. JNV Jaipur" icon="business-outline" />
-            <Field label="State" value={jnvState} onChange={setJnvState} placeholder="e.g. Rajasthan" icon="map-outline" />
+            <JnvDirectoryFields
+              state={jnvState}
+              school={jnvName}
+              onStateChange={setJnvState}
+              onSchoolChange={setJnvName}
+            />
             <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} labelMap={HOUSE_LABEL_MAP} />
           </Section>
 

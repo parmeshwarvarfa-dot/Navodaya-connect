@@ -21,6 +21,7 @@ import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"          },
@@ -233,6 +234,8 @@ export default function HomeScreen() {
             </View>
           )}
         </LinearGradient>
+
+        <AchievementsHighlights />
 
         {/* Verification Banner — only for non-verified non-officials */}
         {!isVerified && role !== "official" && (

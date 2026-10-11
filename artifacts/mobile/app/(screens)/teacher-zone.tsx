@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
+import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const FEATURES = [
   { label: "Upload Notes",     icon: "cloud-upload-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-upload"        },
@@ -70,6 +71,7 @@ export default function TeacherZoneScreen() {
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}>
+        <AchievementsHighlights />
 
         {/* Stats */}
         <View style={styles.statsRow}>

@@ -39,17 +39,22 @@ const HOUSE_LABEL_MAP: Record<string, string> = {
 };
 
 function BluePicker({
-  placeholder, value, options, onSelect, icon, labelMap,
+  placeholder, value, options, onSelect, icon, labelMap, searchable = false,
 }: {
   placeholder: string; value: string; options: string[];
   onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
   labelMap?: Record<string, string>;
+  searchable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const displayValue = labelMap?.[value] ?? value;
+  const filteredOptions = searchable && search.trim()
+    ? options.filter((option) => option.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+    : options;
   return (
     <>
-      <TouchableOpacity style={styles.inputWrap} onPress={() => setOpen(true)}>
+      <TouchableOpacity style={styles.inputWrap} onPress={() => { setSearch(""); setOpen(true); }}>
         <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
         <Text style={[styles.inputText, !value && styles.placeholderText]}>
           {displayValue || placeholder}
@@ -60,17 +65,34 @@ function BluePicker({
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{placeholder}</Text>
-            <TouchableOpacity onPress={() => setOpen(false)}>
+            <TouchableOpacity onPress={() => { setOpen(false); setSearch(""); }}>
               <Ionicons name="close" size={24} color="#111" />
             </TouchableOpacity>
           </View>
+          {searchable ? (
+            <View style={modalStyles.searchWrap}>
+              <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={`Search ${placeholder.toLocaleLowerCase()}…`}
+                placeholderTextColor="#9CA3AF"
+                style={modalStyles.searchInput}
+                autoFocus
+                autoCorrect={false}
+              />
+              {search ? <TouchableOpacity onPress={() => setSearch("")}><Ionicons name="close-circle" size={17} color="#9CA3AF" /></TouchableOpacity> : null}
+            </View>
+          ) : null}
           <FlatList
-            data={options}
+            data={filteredOptions}
             keyExtractor={(i) => i}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={<Text style={modalStyles.noResults}>No matching entry.</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={modalStyles.option}
-                onPress={() => { onSelect(item); setOpen(false); }}
+                onPress={() => { onSelect(item); setOpen(false); setSearch(""); }}
               >
                 <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
                   {labelMap?.[item] ?? item}
@@ -160,7 +182,12 @@ export default function SignUpScreen() {
       : [studentClass, section].filter(Boolean).join(" ")
     : "";
 
-  const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
+  const jnvOptions = jnvState
+    ? Array.from(new Map((JNV_DATA[jnvState] || []).map((name) => {
+      const normalized = name.trim().replace(/\s+/g, " ");
+      return [normalized.toLocaleLowerCase(), normalized] as const;
+    })).values())
+    : [];
   const needsHouse = role === "student" || role === "alumni";
 
   const selectRole = (r: UserRole) => { setRole(r); setStep("form"); };
@@ -346,6 +373,7 @@ export default function SignUpScreen() {
                 options={STATES}
                 onSelect={(v) => { setJnvState(v); setJnvName(""); }}
                 icon="location-outline"
+                searchable
               />
               <BluePicker
                 placeholder="Select JNV Name"
@@ -353,7 +381,11 @@ export default function SignUpScreen() {
                 options={jnvOptions}
                 onSelect={setJnvName}
                 icon="business-outline"
+                searchable
               />
+              <Text style={{ color: "rgba(255,255,255,0.72)", fontSize: 10, lineHeight: 15, marginTop: -3 }}>
+                Directory entries are still being reconciled with the official NVS school list; this selector does not indicate full coverage.
+              </Text>
 
               {role === "alumni" && (
                 <>
@@ -394,6 +426,9 @@ export default function SignUpScreen() {
 const modalStyles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   title: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111" },
+  searchWrap: { flexDirection: "row", alignItems: "center", gap: 9, margin: 14, paddingHorizontal: 12, height: 44, borderRadius: 12, backgroundColor: "#F3F4F6" },
+  searchInput: { flex: 1, height: "100%", color: "#111827", fontSize: 14 },
+  noResults: { padding: 22, textAlign: "center", color: "#7B8492", fontSize: 13 },
   option: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB" },
   optionText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#111" },
 });

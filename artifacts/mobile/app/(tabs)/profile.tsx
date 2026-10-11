@@ -76,6 +76,8 @@ export default function ProfileScreen() {
   const menuItems = [
     { icon: "person-outline" as const, label: "Edit Profile", onPress: () => router.push("/(screens)/edit-profile" as any) },
     { icon: "notifications-outline" as const, label: "Notifications", onPress: () => router.push("/(screens)/notifications" as any) },
+    { icon: "mail-unread-outline" as const, label: "Social Inbox", onPress: () => router.push("/(screens)/social-inbox" as any) },
+    { icon: "lock-closed-outline" as const, label: "Privacy & Requests", onPress: () => router.push("/(screens)/privacy-settings" as any) },
     { icon: "chatbubbles-outline" as const, label: "Chat Groups", onPress: () => router.push("/(tabs)/chats" as any) },
     ...(profile.role !== "student"
       ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
