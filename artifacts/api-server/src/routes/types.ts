@@ -1,3 +1,5 @@
+import type { AvatarConfig } from "@workspace/api-zod";
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -9,6 +11,10 @@ export interface UserProfile {
   profileVisibility?: "public" | "private";
   house: "Aravali" | "Nilgiri" | "Shivalik" | "Udaygiri";
   photoURL?: string;
+  avatarConfig?: AvatarConfig;
+  avatarThumbnailURL?: string;
+  uploadedPhotoURL?: string;
+  profileImageType?: "photo" | "avatar" | "default";
   class?: string;
   enrollYear?: string;
   passoutYear?: string;

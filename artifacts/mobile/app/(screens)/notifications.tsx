@@ -33,7 +33,7 @@ const TYPE_ICONS: Record<string, { icon: string; color: string }> = {
 export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

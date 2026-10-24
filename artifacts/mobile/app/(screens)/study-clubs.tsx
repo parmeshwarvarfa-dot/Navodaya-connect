@@ -1,42 +1,71 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api, type ClubWithMeta } from "@/lib/api";
 
 const CATEGORIES = ["All", "Tech", "Sports", "Arts", "Academic", "Social"];
 
-const CLUBS = [
-  { id: "1", name: "Coding Club",       category: "Tech",     icon: "code-slash-outline"     as const, color: "#3D5AF1", bg: "#EEF2FF", members: 42, desc: "Learn programming, build projects, compete in hackathons.", joined: false, upcoming: "Hackathon Prep — 12 May" },
-  { id: "2", name: "Football Team",     category: "Sports",   icon: "football-outline"       as const, color: "#10B981", bg: "#ECFDF5", members: 22, desc: "Inter-school football tournament practice and matches.", joined: true,  upcoming: "Practice — Tomorrow 5PM" },
-  { id: "3", name: "Debate Society",    category: "Academic", icon: "mic-outline"            as const, color: "#8B5CF6", bg: "#F5F3FF", members: 28, desc: "Parliamentary debates, MUNs, and public speaking sessions.", joined: false, upcoming: "Debate on AI — 15 May" },
-  { id: "4", name: "Science Club",      category: "Academic", icon: "flask-outline"          as const, color: "#0891B2", bg: "#E0F2FE", members: 35, desc: "Science experiments, Olympiad preparation, and projects.", joined: true,  upcoming: "Olympiad Mock Test — 11 May" },
-  { id: "5", name: "Music Band",        category: "Arts",     icon: "musical-notes-outline"  as const, color: "#EC4899", bg: "#FDF2F8", members: 18, desc: "Classical and modern music, annual cultural performances.", joined: false, upcoming: "Rehearsal — 13 May" },
-  { id: "6", name: "Eco Club",          category: "Social",   icon: "leaf-outline"           as const, color: "#16A34A", bg: "#F0FDF4", members: 31, desc: "Environmental drives, tree plantation, and sustainability projects.", joined: false, upcoming: "Plantation Drive — 16 May" },
-  { id: "7", name: "Robotics Club",     category: "Tech",     icon: "hardware-chip-outline"  as const, color: "#F59E0B", bg: "#FFFBEB", members: 19, desc: "Build robots, Arduino projects, and compete at national level.", joined: false, upcoming: "Arduino Workshop — 18 May" },
-  { id: "8", name: "Art & Craft Club",  category: "Arts",     icon: "color-palette-outline"  as const, color: "#EF4444", bg: "#FEF2F2", members: 24, desc: "Painting, sculpture, and craft exhibitions.", joined: false, upcoming: "Exhibition — 20 May" },
-];
+function categoryForClub(club: ClubWithMeta) {
+  const text = `${club.name} ${club.description}`.toLowerCase();
+  if (/code|tech|robot|computer|program/.test(text)) return "Tech";
+  if (/sport|football|cricket|athlet|game/.test(text)) return "Sports";
+  if (/music|art|dance|drama|paint|culture/.test(text)) return "Arts";
+  if (/science|study|academic|debate|math|olympiad/.test(text)) return "Academic";
+  return "Social";
+}
 
 export default function StudyClubsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeCategory, setActiveCategory] = useState("All");
-  const [joined, setJoined] = useState<Set<string>>(new Set(CLUBS.filter((c) => c.joined).map((c) => c.id)));
+  const [clubs, setClubs] = useState<ClubWithMeta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyClub, setBusyClub] = useState<string | null>(null);
   const [toast, setToast] = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
-  const toggle = (id: string, name: string) => {
-    setJoined((p) => {
-      const n = new Set(p);
-      if (n.has(id)) { n.delete(id); showToast(`Left ${name}`); }
-      else { n.add(id); showToast(`Joined ${name}! Welcome!`); }
-      return n;
-    });
+  const fetchClubs = useCallback(async () => {
+    try { setClubs(await api.clubs.list()); }
+    catch { showToast("Could not load clubs. Please try again."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => {
+    void fetchClubs();
+    const timer = setInterval(() => void fetchClubs(), 10000);
+    return () => clearInterval(timer);
+  }, [fetchClubs]);
+
+  const filtered = useMemo(() => clubs.filter((club) => activeCategory === "All" || categoryForClub(club) === activeCategory), [clubs, activeCategory]);
+  const myClubs = clubs.filter((club) => club.joined);
+
+  const handleMembership = async (club: ClubWithMeta) => {
+    setBusyClub(club.id);
+    try {
+      if (club.joined) {
+        await api.clubs.leave(club.id);
+        setClubs((current) => current.map((item) => item.id === club.id ? { ...item, joined: false, joinStatus: "none", members: Math.max(0, item.members - 1) } : item));
+        showToast(`You left ${club.name}.`);
+      } else {
+        const response = await api.clubs.toggleJoin(club.id);
+        setClubs((current) => current.map((item) => item.id === club.id ? { ...item, joined: response.joined, joinStatus: response.joinStatus as ClubWithMeta["joinStatus"] ?? "pending" } : item));
+        showToast(response.joined ? `You joined ${club.name}.` : `Join request sent to ${club.managerName || "the club teacher"}.`);
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update club membership.");
+    } finally { setBusyClub(null); }
   };
 
-  const filtered = CLUBS.filter((c) => activeCategory === "All" || c.category === activeCategory);
-  const myClubs  = CLUBS.filter((c) => joined.has(c.id));
+  const openClubChat = async (club: ClubWithMeta) => {
+    try {
+      const chat = await api.clubs.chat(club.id);
+      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: chat.id, name: chat.name } });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not open club chat.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -45,7 +74,7 @@ export default function StudyClubsScreen() {
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Clubs & Activities</Text>
-        <View style={styles.joinedBadge}><Text style={styles.joinedBadgeText}>{joined.size} joined</Text></View>
+        <View style={styles.joinedBadge}><Text style={styles.joinedBadgeText}>{clubs.filter((club) => club.joined).length} joined</Text></View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
@@ -69,7 +98,7 @@ export default function StudyClubsScreen() {
                     <Ionicons name={c.icon} size={20} color={c.color} />
                   </View>
                   <Text style={styles.myClubName}>{c.name}</Text>
-                  <Text style={styles.myClubUpcoming}>{c.upcoming}</Text>
+                  <Text style={styles.myClubUpcoming}>{c.nextEvent}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -77,24 +106,28 @@ export default function StudyClubsScreen() {
         )}
 
         <Text style={styles.sectionTitle}>All Clubs</Text>
+        {loading ? <ActivityIndicator style={{ marginTop: 32 }} color="#3D5AF1" /> : null}
+        {!loading && filtered.length === 0 ? <Text style={styles.emptyText}>No clubs available in this category yet.</Text> : null}
         {filtered.map((club) => {
-          const isJoined = joined.has(club.id);
+          const isJoined = club.joined;
+          const isPending = !isJoined && club.joinStatus === "pending";
+          const wasDenied = !isJoined && club.joinStatus === "denied";
+          const busy = busyClub === club.id;
           return (
             <View key={club.id} style={styles.clubCard}>
               <View style={styles.clubTop}>
                 <View style={[styles.clubIcon, { backgroundColor: club.bg }]}>
-                  <Ionicons name={club.icon} size={26} color={club.color} />
+                  <Ionicons name={club.icon as any} size={26} color={club.color} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.clubNameRow}>
                     <Text style={styles.clubName}>{club.name}</Text>
-                    {isJoined && (
-                      <View style={styles.memberBadge}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={styles.memberBadgeText}>Member</Text></View>
-                    )}
+                    {isJoined ? <View style={styles.memberBadge}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={styles.memberBadgeText}>Member</Text></View> : null}
+                    {isPending ? <View style={styles.pendingBadge}><Ionicons name="time-outline" size={12} color="#D97706" /><Text style={styles.pendingBadgeText}>Request pending</Text></View> : null}
                   </View>
                   <View style={styles.clubMeta}>
                     <View style={[styles.catPill, { backgroundColor: club.color + "18" }]}>
-                      <Text style={[styles.catPillText, { color: club.color }]}>{club.category}</Text>
+                      <Text style={[styles.catPillText, { color: club.color }]}>{categoryForClub(club)}</Text>
                     </View>
                     <Ionicons name="people-outline" size={12} color="#9CA3AF" />
                     <Text style={styles.memberCount}>{club.members} members</Text>
@@ -102,25 +135,26 @@ export default function StudyClubsScreen() {
                 </View>
               </View>
 
-              <Text style={styles.clubDesc}>{club.desc}</Text>
+              <Text style={styles.clubDesc}>{club.description}</Text>
 
               {isJoined && (
                 <View style={styles.upcomingRow}>
                   <Ionicons name="calendar-outline" size={13} color="#3D5AF1" />
-                  <Text style={styles.upcomingText}>{club.upcoming}</Text>
+                  <Text style={styles.upcomingText}>{club.nextEvent}</Text>
                 </View>
               )}
 
               <View style={styles.clubActions}>
                 <TouchableOpacity
                   style={[styles.joinBtn, isJoined && styles.leaveBtn, { borderColor: isJoined ? "#EF4444" : club.color }]}
-                  onPress={() => toggle(club.id, club.name)}
+                  onPress={() => void handleMembership(club)}
+                  disabled={isPending || busy}
                 >
-                  <Ionicons name={isJoined ? "exit-outline" : "add-circle-outline"} size={16} color={isJoined ? "#EF4444" : club.color} />
-                  <Text style={[styles.joinBtnText, { color: isJoined ? "#EF4444" : club.color }]}>{isJoined ? "Leave" : "Join Club"}</Text>
+                  {busy ? <ActivityIndicator size="small" color={club.color} /> : <Ionicons name={isJoined ? "exit-outline" : isPending ? "time-outline" : "add-circle-outline"} size={16} color={isJoined ? "#EF4444" : isPending ? "#D97706" : club.color} />}
+                  <Text style={[styles.joinBtnText, { color: isJoined ? "#EF4444" : isPending ? "#D97706" : club.color }]}>{isJoined ? "Leave Club" : isPending ? "Request pending" : wasDenied ? "Request again" : "Request to join"}</Text>
                 </TouchableOpacity>
                 {isJoined && (
-                  <TouchableOpacity style={[styles.chatBtn, { backgroundColor: club.color }]}>
+                  <TouchableOpacity style={[styles.chatBtn, { backgroundColor: club.color }]} onPress={() => void openClubChat(club)}>
                     <Ionicons name="chatbubbles-outline" size={15} color="#fff" />
                     <Text style={styles.chatBtnText}>Club Chat</Text>
                   </TouchableOpacity>
@@ -160,6 +194,8 @@ const styles = StyleSheet.create({
   clubName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827" },
   memberBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   memberBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#10B981" },
+  pendingBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FFFBEB", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  pendingBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#D97706" },
   clubMeta: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
   catPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   catPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
@@ -175,4 +211,5 @@ const styles = StyleSheet.create({
   chatBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },
+  emptyText: { textAlign: "center", color: "#6B7280", fontFamily: "Inter_400Regular", marginTop: 32, lineHeight: 20 },
 });

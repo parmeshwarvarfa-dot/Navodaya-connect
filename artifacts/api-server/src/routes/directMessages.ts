@@ -12,6 +12,22 @@ import { createSocialNotification, isBlockedBetween } from "../lib/social-access
 import { isValidUserId } from "./user-validation";
 
 const router = Router();
+const typingStore: Map<string, Map<string, { name: string; expiresAt: number }>> = new Map();
+
+function cleanTyping(conversationId: string) {
+  const conversation = typingStore.get(conversationId);
+  if (!conversation) return;
+  const now = Date.now();
+  for (const [userId, entry] of conversation) if (entry.expiresAt <= now) conversation.delete(userId);
+}
+
+async function getConversation(conversationId: string, userId: string) {
+  const [conversation] = await db.select().from(directConversationsTable).where(and(
+    eq(directConversationsTable.id, conversationId),
+    or(eq(directConversationsTable.userOneId, userId), eq(directConversationsTable.userTwoId, userId)),
+  )).limit(1);
+  return conversation;
+}
 
 async function getOrCreateConversation(firstId: string, secondId: string) {
   const [userOneId, userTwoId] = [firstId, secondId].sort();
@@ -193,9 +209,13 @@ router.get("/direct-conversations", requireAuth, async (req, res) => {
     ]);
     const userById = new Map(users.map((peer) => [peer.id, peer]));
     const latestMessageByConversation = new Map<string, string>();
+    const unreadByConversation = new Map<string, number>();
     for (const message of messages) {
       if (!latestMessageByConversation.has(message.conversationId)) {
         latestMessageByConversation.set(message.conversationId, message.content);
+      }
+      if (message.senderId !== user.id && !message.readAt) {
+        unreadByConversation.set(message.conversationId, (unreadByConversation.get(message.conversationId) ?? 0) + 1);
       }
     }
     return res.json(conversations.flatMap((conversation) => {
@@ -208,6 +228,7 @@ router.get("/direct-conversations", requireAuth, async (req, res) => {
         peerName: peer.fullName,
         peerPhotoUrl: peer.photoURL ?? undefined,
         lastMessage: latestMessageByConversation.get(conversation.id) ?? "",
+        unreadCount: unreadByConversation.get(conversation.id) ?? 0,
         updatedAt: conversation.updatedAt.toISOString(),
       }];
     }));
@@ -249,6 +270,42 @@ router.get("/direct-conversations/:id/messages", requireAuth, async (req, res) =
   } catch (error) {
     req.log.error(error, "Failed to list direct messages");
     return res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
+router.get("/direct-conversations/:id/typing", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const conversation = await getConversation(req.params.id as string, user.id);
+    if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+    cleanTyping(conversation.id);
+    const typing = [...(typingStore.get(conversation.id)?.entries() ?? [])]
+      .filter(([userId]) => userId !== user.id)
+      .map(([, entry]) => entry.name);
+    return res.json({ typing });
+  } catch (error) {
+    req.log.error(error, "Failed to fetch direct chat typing status");
+    return res.status(500).json({ error: "Failed to fetch typing status" });
+  }
+});
+
+router.post("/direct-conversations/:id/typing", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const conversation = await getConversation(req.params.id as string, user.id);
+    if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+    if (await isBlockedBetween(user.id, conversation.userOneId === user.id ? conversation.userTwoId : conversation.userOneId)) {
+      return res.status(403).json({ error: "Messaging is unavailable for this profile." });
+    }
+    const isTyping = req.body?.typing === true;
+    if (!typingStore.has(conversation.id)) typingStore.set(conversation.id, new Map());
+    const participants = typingStore.get(conversation.id)!;
+    if (isTyping) participants.set(user.id, { name: user.fullName, expiresAt: Date.now() + 4000 });
+    else participants.delete(user.id);
+    return res.json({ ok: true });
+  } catch (error) {
+    req.log.error(error, "Failed to update direct chat typing status");
+    return res.status(500).json({ error: "Failed to update typing status" });
   }
 });
 

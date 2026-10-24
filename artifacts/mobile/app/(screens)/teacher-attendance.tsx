@@ -24,7 +24,7 @@ const TODAY = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "s
 
 export default function TeacherAttendanceScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [activeClass,   setActiveClass]   = useState(CLASSES[0]);
   const [attendance,    setAttendance]    = useState<Record<string, AttStatus>>({});
   const [saved,         setSaved]         = useState(false);

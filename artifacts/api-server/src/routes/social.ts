@@ -1,14 +1,15 @@
 import { Router } from "express";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or } from "drizzle-orm";
 import {
   db,
+  memoriesTable,
   socialNotificationsTable,
   userBlocksTable,
   userFollowsTable,
   usersTable,
 } from "@workspace/db";
 import { getUser, requireAuth } from "../lib/auth";
-import { createSocialNotification, isBlockedBetween } from "../lib/social-access";
+import { canViewProfile, createSocialNotification, hasAcceptedFollow, isBlockedBetween } from "../lib/social-access";
 import { isValidUserId } from "./user-validation";
 
 const router = Router();
@@ -59,6 +60,84 @@ router.get("/users/:id/social-status", requireAuth, async (req, res) => {
   if (!status) return res.status(404).json({ error: "User not found" });
   return res.json(status);
 });
+
+router.get("/users/:id/profile-stats", requireAuth, async (req, res) => {
+  try {
+    const viewer = getUser(req);
+    const targetId = req.params.id as string;
+    if (!isValidUserId(targetId)) return res.status(400).json({ error: "Invalid user ID" });
+    if (await isBlockedBetween(viewer.id, targetId)) return res.status(404).json({ error: "Profile not found" });
+    const [target] = await db.select({ profileVisibility: usersTable.profileVisibility })
+      .from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+    if (!target) return res.status(404).json({ error: "Profile not found" });
+    if (!await canViewProfile(viewer.id, targetId)) {
+      return res.json({ posts: null, followers: null, following: null, restricted: true });
+    }
+
+    const [posts, followers, following] = await Promise.all([
+      db.select({ total: count() }).from(memoriesTable).where(and(
+        eq(memoriesTable.authorId, targetId),
+        ...(viewer.id === targetId
+          ? []
+          : [or(
+              eq(memoriesTable.visibility, "public"),
+              ...(await hasAcceptedFollow(viewer.id, targetId) ? [eq(memoriesTable.visibility, "followers")] : []),
+            )!]),
+      )),
+      db.select({ total: count() }).from(userFollowsTable).where(and(
+        eq(userFollowsTable.followingId, targetId), eq(userFollowsTable.status, "accepted"),
+      )),
+      db.select({ total: count() }).from(userFollowsTable).where(and(
+        eq(userFollowsTable.followerId, targetId), eq(userFollowsTable.status, "accepted"),
+      )),
+    ]);
+    return res.json({ posts: Number(posts[0]?.total ?? 0), followers: Number(followers[0]?.total ?? 0), following: Number(following[0]?.total ?? 0), restricted: false });
+  } catch (error) {
+    req.log.error(error, "Failed to load profile statistics");
+    return res.status(500).json({ error: "Failed to load profile statistics" });
+  }
+});
+
+router.get("/users/:id/followers", requireAuth, async (req, res) => listAcceptedProfiles(req, res, "followers"));
+router.get("/users/:id/following", requireAuth, async (req, res) => listAcceptedProfiles(req, res, "following"));
+
+async function listAcceptedProfiles(req: import("express").Request, res: import("express").Response, direction: "followers" | "following") {
+  try {
+    const viewer = getUser(req);
+    const targetId = req.params.id as string;
+    if (!isValidUserId(targetId)) return res.status(400).json({ error: "Invalid user ID" });
+    if (await isBlockedBetween(viewer.id, targetId) || !await canViewProfile(viewer.id, targetId)) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    const relationColumn = direction === "followers" ? userFollowsTable.followingId : userFollowsTable.followerId;
+    const personColumn = direction === "followers" ? userFollowsTable.followerId : userFollowsTable.followingId;
+    const relations = await db.select({ personId: personColumn }).from(userFollowsTable).where(and(
+      eq(relationColumn, targetId), eq(userFollowsTable.status, "accepted"),
+    ));
+    const ids = relations.map((row) => row.personId).filter((id) => id !== viewer.id && id !== targetId);
+    if (!ids.length) return res.json([]);
+    const [blocked, people] = await Promise.all([
+      db.select({ blockerId: userBlocksTable.blockerId, blockedId: userBlocksTable.blockedId })
+        .from(userBlocksTable).where(or(
+          and(eq(userBlocksTable.blockerId, viewer.id), inArray(userBlocksTable.blockedId, ids)),
+          and(inArray(userBlocksTable.blockerId, ids), eq(userBlocksTable.blockedId, viewer.id)),
+        )),
+      db.select({ id: usersTable.id, fullName: usersTable.fullName, role: usersTable.role, jnvName: usersTable.jnvName, photoURL: usersTable.photoURL, profileVisibility: usersTable.profileVisibility })
+        .from(usersTable).where(inArray(usersTable.id, ids)),
+    ]);
+    const blockedIds = new Set(blocked.map((row) => row.blockerId === viewer.id ? row.blockedId : row.blockerId));
+    const visible = await Promise.all(people.filter((person) => !blockedIds.has(person.id)).map(async (person) => {
+      if (person.profileVisibility === "private" && !await canViewProfile(viewer.id, person.id)) {
+        return { id: person.id, fullName: person.fullName, role: person.role, jnvName: person.jnvName, photoURL: person.photoURL, isRestricted: true };
+      }
+      return { id: person.id, fullName: person.fullName, role: person.role, jnvName: person.jnvName, photoURL: person.photoURL, isRestricted: false };
+    }));
+    return res.json(visible);
+  } catch (error) {
+    req.log.error(error, `Failed to list profile ${direction}`);
+    return res.status(500).json({ error: `Failed to list ${direction}` });
+  }
+}
 
 router.post("/users/:id/follow", requireAuth, async (req, res) => {
   try {

@@ -33,7 +33,7 @@ export default function GroupsScreen() {
   const [classStr, setClassStr] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchGroups = async () => {
     try {

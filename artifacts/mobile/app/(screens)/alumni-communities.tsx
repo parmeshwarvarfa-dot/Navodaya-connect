@@ -32,7 +32,7 @@ const RECENT_DISCUSSIONS = [
 
 export default function AlumniCommunitiesScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [communities, setCommunities] = useState(INITIAL_COMMUNITIES);
   const [activeTab,   setActiveTab]   = useState<"all" | "joined" | "discuss">("all");
   const [showCreate,  setShowCreate]  = useState(false);

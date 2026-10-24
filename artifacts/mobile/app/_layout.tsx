@@ -8,6 +8,7 @@ import {
 import { Pacifico_400Regular, useFonts as usePacificoFonts } from "@expo-google-fonts/pacifico";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
+import { Platform, StyleSheet, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -73,24 +74,45 @@ export default function RootLayout() {
   }, [loaded]);
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <AuthProvider>
-              <AuthNavGuard />
-              <Stack screenOptions={{ headerShown: false, animation: "fade", animationDuration: 180 }}>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </AuthProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <View style={[styles.webCanvas, Platform.OS !== "web" && styles.nativeCanvas]}>
+      <View style={[styles.mobileFrame, Platform.OS !== "web" && styles.nativeFrame]}>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView style={styles.flex}>
+                <AuthProvider>
+                  <AuthNavGuard />
+                  <Stack screenOptions={{ headerShown: false, animation: "fade", animationDuration: 180 }}>
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                </AuthProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  webCanvas: { flex: 1, alignItems: "center", backgroundColor: "#E9EDF5" },
+  nativeCanvas: { backgroundColor: "#fff" },
+  mobileFrame: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 430,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  nativeFrame: { maxWidth: "100%", borderWidth: 0 },
+});

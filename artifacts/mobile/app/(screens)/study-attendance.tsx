@@ -36,7 +36,7 @@ const progressStyles = StyleSheet.create({
 
 export default function StudyAttendanceScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeMonth, setActiveMonth] = useState("May");
   const [view, setView] = useState<"overview" | "subject" | "calendar">("overview");
 

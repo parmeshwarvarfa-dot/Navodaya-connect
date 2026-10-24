@@ -23,7 +23,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export default function StudyNotesScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [materials,   setMaterials]   = useState<StudyMaterial[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");

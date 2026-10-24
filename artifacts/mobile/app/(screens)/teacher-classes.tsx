@@ -43,7 +43,7 @@ const ATT_COLOR = (pct: number) => pct >= 85 ? "#10B981" : pct >= 75 ? "#F59E0B"
 
 export default function TeacherClassesScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [expanded, setExpanded] = useState<string | null>(ASSIGNED_CLASSES[0].id);
   const [activeTab, setActiveTab] = useState<"students" | "actions">("students");
 

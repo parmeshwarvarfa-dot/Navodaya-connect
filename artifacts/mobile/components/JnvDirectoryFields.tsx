@@ -1,34 +1,26 @@
 import React, { useMemo, useState } from "react";
 import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { JNV_DATA, STATES } from "@/data/jnvData";
+import { getJnvSchools, STATES } from "@/data/jnvData";
 
 type PickerKind = "state" | "school";
-
-function uniqueEntries(entries: string[]) {
-  const seen = new Set<string>();
-  return entries.filter((entry) => {
-    const normalized = entry.trim().replace(/\s+/g, " ").toLocaleLowerCase();
-    if (!normalized || seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-}
 
 export default function JnvDirectoryFields({
   state,
   school,
+  variant = "light",
   onStateChange,
   onSchoolChange,
 }: {
   state: string;
   school: string;
+  variant?: "light" | "blue";
   onStateChange: (value: string) => void;
   onSchoolChange: (value: string) => void;
 }) {
   const [picker, setPicker] = useState<PickerKind | null>(null);
   const [search, setSearch] = useState("");
-  const schools = useMemo(() => uniqueEntries(JNV_DATA[state] ?? []), [state]);
+  const schools = useMemo(() => getJnvSchools(state), [state]);
   const options = useMemo(
     () => picker === "state" ? STATES : schools,
     [picker, schools],
@@ -37,6 +29,7 @@ export default function JnvDirectoryFields({
     const query = search.trim().toLocaleLowerCase();
     return query ? options.filter((option) => option.toLocaleLowerCase().includes(query)) : options;
   }, [options, search]);
+  const blue = variant === "blue";
 
   const open = (kind: PickerKind) => {
     setSearch("");
@@ -55,22 +48,22 @@ export default function JnvDirectoryFields({
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity style={styles.field} onPress={() => open("state")} activeOpacity={0.8}>
-        <Ionicons name="map-outline" size={18} color="#6B7280" />
-        <Text style={[styles.fieldText, !state && styles.placeholder]} numberOfLines={1}>{state || "Select JNV State"}</Text>
-        <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+      <TouchableOpacity style={[styles.field, blue && styles.fieldBlue]} onPress={() => open("state")} activeOpacity={0.8}>
+        <Ionicons name="map-outline" size={18} color={blue ? "rgba(255,255,255,0.78)" : "#6B7280"} />
+        <Text style={[styles.fieldText, blue && styles.fieldTextBlue, !state && styles.placeholder, !state && blue && styles.placeholderBlue]} numberOfLines={1}>{state || "Select JNV State"}</Text>
+        <Ionicons name="chevron-down" size={16} color={blue ? "rgba(255,255,255,0.65)" : "#9CA3AF"} />
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.field, !state && styles.disabled]}
+        style={[styles.field, blue && styles.fieldBlue, !state && styles.disabled]}
         onPress={() => state && open("school")}
         disabled={!state}
         activeOpacity={0.8}
       >
-        <Ionicons name="school-outline" size={18} color="#6B7280" />
-        <Text style={[styles.fieldText, !school && styles.placeholder]} numberOfLines={1}>{school || (state ? "Search JNV name" : "Choose state first")}</Text>
-        <Ionicons name="search-outline" size={16} color="#9CA3AF" />
+        <Ionicons name="school-outline" size={18} color={blue ? "rgba(255,255,255,0.78)" : "#6B7280"} />
+        <Text style={[styles.fieldText, blue && styles.fieldTextBlue, !school && styles.placeholder, !school && blue && styles.placeholderBlue]} numberOfLines={1}>{school || (state ? "Search JNV name" : "Choose state first")}</Text>
+        <Ionicons name="search-outline" size={16} color={blue ? "rgba(255,255,255,0.65)" : "#9CA3AF"} />
       </TouchableOpacity>
-      <Text style={styles.note}>State-first directory entries are still being reconciled with the official NVS list; this picker does not mark the directory as complete.</Text>
+      <Text style={[styles.note, blue && styles.noteBlue]}>Directory coverage is still being reconciled; verify a missing school with NVS instead of choosing a different JNV.</Text>
 
       <Modal visible={picker !== null} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setPicker(null)}>
         <View style={styles.modal}>
@@ -100,7 +93,13 @@ export default function JnvDirectoryFields({
             data={filtered}
             keyExtractor={(item) => item}
             keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={<Text style={styles.noResults}>No matching entry in the current directory.</Text>}
+            ListEmptyComponent={(
+              <Text style={styles.noResults}>
+                {picker === "school" && !schools.length
+                  ? "No JNVs are listed for this state or union territory."
+                  : "No matching entry found. Try another search."}
+              </Text>
+            )}
             renderItem={({ item }) => {
               const selected = picker === "state" ? item === state : item === school;
               return (
@@ -120,10 +119,15 @@ export default function JnvDirectoryFields({
 const styles = StyleSheet.create({
   wrap: { gap: 9 },
   field: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 13, borderRadius: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
+  // Keep both JNV selectors visually consistent with the signup form's class/house pills.
+  fieldBlue: { height: 54, minHeight: 54, borderRadius: 28, paddingHorizontal: 18, backgroundColor: "rgba(255,255,255,0.18)", borderWidth: 0, borderColor: "transparent" },
   fieldText: { flex: 1, color: "#111827", fontSize: 14, fontFamily: "Inter_500Medium" },
+  fieldTextBlue: { color: "#fff", fontSize: 15, fontFamily: "Inter_400Regular" },
   placeholder: { color: "#9CA3AF" },
+  placeholderBlue: { color: "rgba(255,255,255,0.65)" },
   disabled: { opacity: 0.6 },
   note: { color: "#8490A0", fontSize: 10, lineHeight: 15, fontFamily: "Inter_400Regular", paddingHorizontal: 2 },
+  noteBlue: { color: "rgba(255,255,255,0.72)" },
   modal: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 18, borderBottomWidth: 1, borderBottomColor: "#EEF0F4" },
   modalTitle: { color: "#111827", fontSize: 17, fontFamily: "Inter_700Bold" },

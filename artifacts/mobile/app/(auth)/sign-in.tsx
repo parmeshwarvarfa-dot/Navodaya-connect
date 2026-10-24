@@ -24,7 +24,7 @@ export default function SignInScreen() {
   const [loading,  setLoading]  = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [socialToast, setSocialToast] = useState("");
-  const topPad    = Platform.OS === "web" ? 60 : insets.top;
+  const topPad    = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   useEffect(() => {

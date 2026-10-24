@@ -57,7 +57,7 @@ export default function JobsScreen() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 

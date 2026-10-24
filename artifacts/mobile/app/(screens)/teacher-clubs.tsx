@@ -7,12 +7,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
-import type { ClubWithMeta } from "@/lib/api";
+import type { ClubJoinRequest, ClubWithMeta } from "@/lib/api";
 
 export default function TeacherClubsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [clubs,      setClubs]      = useState<ClubWithMeta[]>([]);
+  const [joinRequests, setJoinRequests] = useState<ClubJoinRequest[]>([]);
+  const [reviewingRequest, setReviewingRequest] = useState<string | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [expanded,   setExpanded]   = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -29,11 +31,19 @@ export default function TeacherClubsScreen() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
   const fetchClubs = async () => {
-    try { setClubs(await api.clubs.list()); } catch {}
+    try {
+      const [clubRows, requests] = await Promise.all([api.clubs.list(), api.clubs.requests()]);
+      setClubs(clubRows);
+      setJoinRequests(requests);
+    } catch {}
     setLoading(false);
   };
 
-  useEffect(() => { fetchClubs(); }, []);
+  useEffect(() => {
+    void fetchClubs();
+    const timer = setInterval(() => void fetchClubs(), 8000);
+    return () => clearInterval(timer);
+  }, []);
 
   const createClub = async () => {
     if (!name.trim() || !desc.trim()) { setFormErr("Name and description required."); return; }
@@ -66,6 +76,20 @@ export default function TeacherClubsScreen() {
     } catch { showToast("Failed."); }
   };
 
+  const reviewJoinRequest = async (request: ClubJoinRequest, decision: "approved" | "denied") => {
+    setReviewingRequest(request.id);
+    try {
+      await api.clubs.reviewRequest(request.clubId, request.id, decision);
+      setJoinRequests((current) => current.filter((item) => item.id !== request.id));
+      if (decision === "approved") {
+        setClubs((current) => current.map((club) => club.id === request.clubId ? { ...club, members: club.members + 1 } : club));
+        showToast(`${request.student?.fullName || "Student"} added to the club.`);
+      } else showToast("Join request declined.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not review this request.");
+    } finally { setReviewingRequest(null); }
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
@@ -88,6 +112,7 @@ export default function TeacherClubsScreen() {
           <View style={styles.empty}><Text style={styles.emptyIcon}>🏫</Text><Text style={styles.emptyText}>No clubs yet.</Text></View>
         ) : clubs.map((club) => {
           const isEx = expanded === club.id;
+          const clubRequests = joinRequests.filter((request) => request.clubId === club.id);
           return (
             <View key={club.id} style={[styles.clubCard, club.managed && styles.clubCardManaged]}>
               <TouchableOpacity onPress={() => setExpanded(isEx ? null : club.id)} activeOpacity={0.85}>
@@ -115,6 +140,29 @@ export default function TeacherClubsScreen() {
 
               {isEx && (
                 <View style={styles.expandedBody}>
+                  {club.managed && (
+                    <View style={styles.requestsSection}>
+                      <View style={styles.requestsHeader}>
+                        <Text style={styles.annHeader}>Student join requests</Text>
+                        <View style={styles.requestCount}><Text style={styles.requestCountText}>{clubRequests.length}</Text></View>
+                      </View>
+                      {clubRequests.length === 0 ? <Text style={styles.noRequests}>No pending requests.</Text> : clubRequests.map((request) => (
+                        <View key={request.id} style={styles.requestRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.requestStudent}>{request.student?.fullName || "Student"}</Text>
+                            <Text style={styles.requestMeta}>{[request.student?.class, request.student?.jnvName].filter(Boolean).join(" · ") || "Student"}</Text>
+                          </View>
+                          <TouchableOpacity disabled={reviewingRequest === request.id} style={styles.denyRequestBtn} onPress={() => void reviewJoinRequest(request, "denied")}>
+                            <Ionicons name="close" size={16} color="#EF4444" />
+                          </TouchableOpacity>
+                          <TouchableOpacity disabled={reviewingRequest === request.id} style={styles.approveRequestBtn} onPress={() => void reviewJoinRequest(request, "approved")}>
+                            <Ionicons name={reviewingRequest === request.id ? "hourglass-outline" : "checkmark"} size={16} color="#fff" />
+                            <Text style={styles.approveRequestText}>Accept</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                   {club.announcements.length > 0 && (
                     <>
                       <Text style={styles.annHeader}>Recent Announcements</Text>
@@ -222,6 +270,17 @@ const styles = StyleSheet.create({
   divider: { color: "#D1D5DB" },
   nextEvent: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
   expandedBody: { marginTop: 14, borderTopWidth: 1, borderTopColor: "#F0F0F0", paddingTop: 14, gap: 10 },
+  requestsSection: { backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, gap: 9, marginBottom: 4 },
+  requestsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  requestCount: { minWidth: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2FF", paddingHorizontal: 6 },
+  requestCountText: { color: "#3D5AF1", fontSize: 11, fontFamily: "Inter_700Bold" },
+  noRequests: { color: "#9CA3AF", fontSize: 12, fontFamily: "Inter_400Regular" },
+  requestRow: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#fff", borderRadius: 10, padding: 9 },
+  requestStudent: { color: "#111827", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  requestMeta: { color: "#9CA3AF", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  denyRequestBtn: { width: 32, height: 32, borderRadius: 9, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
+  approveRequestBtn: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#10B981", borderRadius: 9, paddingHorizontal: 9, height: 32 },
+  approveRequestText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   annHeader: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#374151", marginBottom: 4 },
   annRow: { flexDirection: "row", gap: 8, backgroundColor: "#F9FAFB", borderRadius: 10, padding: 10 },
   annText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 18 },

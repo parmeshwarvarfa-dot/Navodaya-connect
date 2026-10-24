@@ -33,7 +33,7 @@ export default function EventsScreen() {
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const canCreate = profile?.role === "teacher" || profile?.role === "official";
 
   const fetchEvents = async () => {

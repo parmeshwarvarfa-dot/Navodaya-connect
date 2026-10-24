@@ -35,7 +35,7 @@ export default function MentorshipScreen() {
   const [selectedMentor, setSelectedMentor] = useState<AlumniUser | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 

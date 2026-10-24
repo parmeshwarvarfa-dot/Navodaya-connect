@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking,
   TextInput, RefreshControl, Platform, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
-import type { ManagedUser, VerificationRequest } from "@/lib/api";
+import type { AlumniBatchPreview, AlumniBatchProcessResult, CredentialReconcilePreview, ManagedUser, VerificationAssignment, VerificationAuditEvent, VerificationRequest } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
 
@@ -33,13 +33,23 @@ function roleFromTab(tab: string): string | null {
   return { Students: "student", Teachers: "teacher", Alumni: "alumni", Officials: "official" }[tab] ?? null;
 }
 
+function getEvidenceLinks(raw?: string | null): string[] {
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && /^https:\/\//i.test(value)) : [];
+  } catch { return []; }
+}
+
 export default function UserManagementScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const { profile } = useAuth();
 
   const [users, setUsers]                 = useState<ManagedUser[]>([]);
   const [requests, setRequests]           = useState<VerificationRequest[]>([]);
+  const [assignments, setAssignments]     = useState<VerificationAssignment[]>([]);
+  const [auditHistory, setAuditHistory]   = useState<VerificationAuditEvent[]>([]);
+  const [canDecide, setCanDecide]           = useState(false);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
   const [search, setSearch]               = useState("");
@@ -47,16 +57,34 @@ export default function UserManagementScreen() {
   const [statusTab, setStatusTab]         = useState("All");
   const [page, setPage]                   = useState(1);
   const [selected, setSelected]           = useState<ManagedUser | null>(null);
+  const [rejectTarget, setRejectTarget]   = useState<ManagedUser | null>(null);
+  const [reviewReason, setReviewReason]   = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast]                 = useState("");
+  const [graduationYear, setGraduationYear] = useState(String(new Date().getFullYear()));
+  const [batchPreview, setBatchPreview] = useState<AlumniBatchPreview | null>(null);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [batchConfirmed, setBatchConfirmed] = useState(false);
+  const [batchResult, setBatchResult] = useState<AlumniBatchProcessResult | null>(null);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [reconcilePreview, setReconcilePreview] = useState<CredentialReconcilePreview | null>(null);
+  const [selectedCredentialIds, setSelectedCredentialIds] = useState<string[]>([]);
+  const [reconcileConfirmed, setReconcileConfirmed] = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const fetchData = useCallback(async () => {
     try {
-      const [u, r] = await Promise.all([api.users.manage(), api.verification.requests()]);
+      const permissions = await api.verification.permissions();
+      const [u, r, a] = await Promise.all([
+        api.users.manage(),
+        api.verification.requests(),
+        permissions.canManageReviewers ? api.verification.assignments() : Promise.resolve([]),
+      ]);
       setUsers(u);
       setRequests(r);
+      setAssignments(a);
+      setCanDecide(permissions.canDecide);
     } catch { showToast("Failed to load users"); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
@@ -82,8 +110,8 @@ export default function UserManagementScreen() {
     if (!req) return showToast("No verification request found");
     setActionLoading(`approve-${userId}`);
     try {
-      await api.verification.review(req.id, "approved", "Approved by JNV Official");
-      showToast("User verified successfully");
+      await api.verification.review(req.id, canDecide ? "approved" : "recommend_approval", canDecide ? "Approved after school review" : "Recommended for approval after school review");
+      showToast(canDecide ? "Verification approved" : "Approval recommendation sent to the JNV official");
       fetchData();
     } catch (e: any) { showToast(e.message || "Failed to approve"); }
     setActionLoading(null);
@@ -92,11 +120,14 @@ export default function UserManagementScreen() {
   const handleReject = async (userId: string, notes?: string) => {
     const req = getRequestForUser(userId);
     if (!req) return showToast("No verification request found");
+    if (!notes?.trim() || notes.trim().length < 10) return showToast("Provide a review reason of at least 10 characters.");
     setActionLoading(`reject-${userId}`);
     try {
-      await api.verification.review(req.id, "rejected", notes || "Rejected by JNV Official");
-      showToast("User rejected");
+      await api.verification.review(req.id, canDecide ? "rejected" : "recommend_rejection", notes.trim());
+      showToast(canDecide ? "Verification rejected" : "Rejection recommendation sent to the JNV official");
       fetchData();
+      setRejectTarget(null);
+      setReviewReason("");
     } catch (e: any) { showToast(e.message || "Failed to reject"); }
     setActionLoading(null);
   };
@@ -113,12 +144,90 @@ export default function UserManagementScreen() {
     setActionLoading(null);
   };
 
+  const handleToggleReviewer = async (user: ManagedUser) => {
+    const assignment = assignments.find((item) => item.userId === user.id && item.assignmentRole === "admin" && item.active);
+    setActionLoading(`reviewer-${user.id}`);
+    try {
+      if (assignment) {
+        await api.verification.removeReviewer(assignment.id);
+        showToast("Reviewer permissions removed");
+      } else {
+        await api.verification.appointReviewer(user.id);
+        showToast("School verification reviewer appointed");
+      }
+      await fetchData();
+    } catch (e: any) { showToast(e.message || "Could not update reviewer assignment"); }
+    setActionLoading(null);
+  };
+
+  const prepareBatch = async () => {
+    if (!/^\d{4}$/.test(graduationYear)) return showToast("Enter a four-digit graduation year");
+    setBatchBusy(true);
+    try {
+      const preview = await api.verification.previewAlumniBatch(graduationYear);
+      setBatchPreview(preview);
+      setSelectedBatchIds([]);
+      setBatchConfirmed(false);
+      setBatchResult(null);
+    } catch (e: any) { showToast(e.message || "Could not prepare the graduating batch"); }
+    finally { setBatchBusy(false); }
+  };
+
+  const toggleBatchStudent = (userId: string) => {
+    setBatchConfirmed(false);
+    setSelectedBatchIds((current) => current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]);
+  };
+
+  const processBatch = async (retry = false) => {
+    if (!batchPreview || !selectedBatchIds.length || (!retry && !batchConfirmed)) return showToast("Select students and confirm their graduation eligibility first");
+    setBatchBusy(true);
+    try {
+      const result = await api.verification.processAlumniBatch(batchPreview.batchId, selectedBatchIds, batchPreview.confirmationText);
+      setBatchResult(result);
+      setBatchConfirmed(false);
+      showToast(`Batch update: ${result.summary.succeeded} transitioned, ${result.summary.skipped} skipped, ${result.summary.failed} failed`);
+      await fetchData();
+    } catch (e: any) { showToast(e.message || "Could not process the graduating batch"); }
+    finally { setBatchBusy(false); }
+  };
+
+  const prepareCredentialReconciliation = async () => {
+    setBatchBusy(true);
+    try {
+      const preview = await api.verification.credentialReconcilePreview();
+      setReconcilePreview(preview);
+      setSelectedCredentialIds([]);
+      setReconcileConfirmed(false);
+    } catch (e: any) { showToast(e.message || "Could not inspect older approved credentials"); }
+    finally { setBatchBusy(false); }
+  };
+
+  const reconcileCredentials = async () => {
+    if (!reconcileConfirmed || !selectedCredentialIds.length) return showToast("Select approved records and confirm reconciliation");
+    setBatchBusy(true);
+    try {
+      const result = await api.verification.reconcileCredentials(selectedCredentialIds);
+      showToast(`${result.issued} IDs issued from existing approvals; ${result.skipped} records need review`);
+      setReconcilePreview(null);
+      setSelectedCredentialIds([]);
+      setReconcileConfirmed(false);
+    } catch (e: any) { showToast(e.message || "Could not reconcile the selected credentials"); }
+    finally { setBatchBusy(false); }
+  };
+
   const counts: Record<string, number> = {};
   users.forEach((u) => { counts[u.verificationStatus ?? "pending"] = (counts[u.verificationStatus ?? "pending"] || 0) + 1; });
   const pendingCount = counts["pending"] || 0;
 
   const selectedRequest = selected ? getRequestForUser(selected.id) : null;
+  const selectedCanRecommend = !canDecide && !!selectedRequest && ["pending", "info_requested"].includes(selectedRequest.status);
+  const selectedCanFinalize = canDecide && selectedRequest?.status === "awaiting_official_decision";
   const roleCfg = selected ? (ROLE_COLORS[selected.role] || ROLE_COLORS.student) : ROLE_COLORS.student;
+
+  useEffect(() => {
+    if (!selectedRequest?.id) { setAuditHistory([]); return; }
+    api.verification.requestAudit(selectedRequest.id).then(setAuditHistory).catch(() => setAuditHistory([]));
+  }, [selectedRequest?.id]);
 
   return (
     <View style={s.container}>
@@ -187,6 +296,71 @@ export default function UserManagementScreen() {
         contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: insets.bottom + 24, gap: 8 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
+        {canDecide && (
+          <View style={s.transitionCard}>
+            <Text style={s.transitionTitle}>Student Batch & Alumni Transition</Text>
+            <Text style={s.transitionHelp}>Uses existing Class XII student accounts at {profile?.jnvName}. No new account is created. Students without a recorded graduation year require your individual review; records with a conflicting year are excluded.</Text>
+            <View style={s.yearRow}>
+              <TextInput style={s.yearInput} keyboardType="number-pad" maxLength={4} value={graduationYear} onChangeText={(value) => { setGraduationYear(value); setBatchPreview(null); setBatchResult(null); setSelectedBatchIds([]); setBatchConfirmed(false); }} placeholder="Graduation year" />
+              <TouchableOpacity style={s.smallPrimaryButton} onPress={prepareBatch} disabled={batchBusy}>
+                <Text style={s.smallPrimaryText}>{batchBusy ? "Loading…" : "Preview batch"}</Text>
+              </TouchableOpacity>
+            </View>
+            {batchPreview && (
+              <View style={s.transitionInner}>
+                <Text style={s.transitionSummary}>{batchPreview.totalClass12Accounts} Class XII accounts · {batchPreview.alreadyTransitioned} already Alumni · {batchPreview.reviewRequired} need review · {batchPreview.excluded} excluded</Text>
+                {batchPreview.students.map((student) => {
+                  const selectedStudent = selectedBatchIds.includes(student.id);
+                  return (
+                    <TouchableOpacity key={student.id} style={[s.batchStudent, !student.selectable && s.batchStudentExcluded]} disabled={!student.selectable || batchBusy} onPress={() => toggleBatchStudent(student.id)}>
+                      <Ionicons name={selectedStudent ? "checkbox" : student.selectable ? "square-outline" : "remove-circle-outline"} size={21} color={selectedStudent ? "#3D5AF1" : student.selectable ? "#9CA3AF" : "#D1D5DB"} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.batchStudentName}>{student.fullName}</Text>
+                        <Text style={s.batchStudentMeta}>{student.class} · {student.verificationStatus || "unverified"} · {student.reason}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {!!selectedBatchIds.length && (
+                  <TouchableOpacity style={s.confirmRow} onPress={() => setBatchConfirmed((value) => !value)}>
+                    <Ionicons name={batchConfirmed ? "checkbox" : "square-outline"} size={21} color={batchConfirmed ? "#3D5AF1" : "#9CA3AF"} />
+                    <Text style={s.confirmText}>I reviewed these students and confirm their graduation eligibility for {batchPreview.graduationYear}.</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={[s.primaryButton, (!batchConfirmed || !selectedBatchIds.length || batchBusy) && s.buttonDisabled]} onPress={() => processBatch()} disabled={!batchConfirmed || !selectedBatchIds.length || batchBusy}>
+                  <Text style={s.primaryButtonText}>{batchBusy ? "Processing…" : `Confirm & transition ${selectedBatchIds.length} students`}</Text>
+                </TouchableOpacity>
+                {batchResult && (
+                  <View style={s.resultBox}>
+                    <Text style={s.transitionSummary}>Result: {batchResult.summary.succeeded} successful · {batchResult.summary.alreadyTransitioned} already transitioned · {batchResult.summary.skipped} skipped · {batchResult.summary.failed} failed</Text>
+                    {batchResult.results.filter((item) => item.result === "failed" || item.result === "skipped").map((item) => <Text key={item.id} style={s.batchStudentMeta}>{item.reason}</Text>)}
+                    {batchResult.summary.failed > 0 && <TouchableOpacity style={s.retryButton} onPress={() => processBatch(true)} disabled={batchBusy}><Text style={s.retryText}>Retry failed batch records</Text></TouchableOpacity>}
+                  </View>
+                )}
+              </View>
+            )}
+            <View style={s.transitionDivider} />
+            <Text style={s.transitionTitleSmall}>Existing approved users without a Digital ID</Text>
+            <Text style={s.transitionHelp}>Reconciliation only issues IDs when the verified account has a matching official approval record and complete evidence. Other records remain unchanged for review.</Text>
+            <TouchableOpacity style={s.secondaryButton} onPress={prepareCredentialReconciliation} disabled={batchBusy}>
+              <Text style={s.secondaryButtonText}>{batchBusy ? "Checking…" : "Review approved records"}</Text>
+            </TouchableOpacity>
+            {reconcilePreview && (
+              <View style={s.transitionInner}>
+                <Text style={s.transitionSummary}>{reconcilePreview.candidates.length} approved records can be reconciled · {reconcilePreview.reviewRequired} require manual review</Text>
+                {reconcilePreview.candidates.map((candidate) => {
+                  const chosen = selectedCredentialIds.includes(candidate.id);
+                  return <TouchableOpacity key={candidate.id} style={s.batchStudent} onPress={() => { setReconcileConfirmed(false); setSelectedCredentialIds((current) => chosen ? current.filter((id) => id !== candidate.id) : [...current, candidate.id]); }}>
+                    <Ionicons name={chosen ? "checkbox" : "square-outline"} size={21} color={chosen ? "#3D5AF1" : "#9CA3AF"} />
+                    <Text style={s.batchStudentName}>{candidate.fullName} · {candidate.role}</Text>
+                  </TouchableOpacity>;
+                })}
+                {!!selectedCredentialIds.length && <TouchableOpacity style={s.confirmRow} onPress={() => setReconcileConfirmed((value) => !value)}><Ionicons name={reconcileConfirmed ? "checkbox" : "square-outline"} size={21} color={reconcileConfirmed ? "#3D5AF1" : "#9CA3AF"} /><Text style={s.confirmText}>Issue IDs using the existing approved verification decisions.</Text></TouchableOpacity>}
+                <TouchableOpacity style={[s.primaryButton, (!reconcileConfirmed || !selectedCredentialIds.length || batchBusy) && s.buttonDisabled]} onPress={reconcileCredentials} disabled={!reconcileConfirmed || !selectedCredentialIds.length || batchBusy}><Text style={s.primaryButtonText}>Reconcile {selectedCredentialIds.length} IDs</Text></TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
         {loading ? (
           <Text style={s.emptyText}>Loading users...</Text>
         ) : paginated.length === 0 ? (
@@ -196,6 +370,11 @@ export default function UserManagementScreen() {
             const rc = ROLE_COLORS[u.role] || ROLE_COLORS.student;
             const isPending = u.verificationStatus === "pending";
             const isSuspended = u.verificationStatus === "suspended";
+            const userRequest = getRequestForUser(u.id);
+            const canActOnRequest = !!userRequest && (canDecide
+              ? userRequest.status === "awaiting_official_decision"
+              : ["pending", "info_requested"].includes(userRequest.status));
+            const canApproveRequest = canActOnRequest;
             const appBusy = actionLoading?.endsWith(u.id);
             return (
               <TouchableOpacity key={u.id} style={[s.userCard, isPending && s.userCardHighlight]} onPress={() => setSelected(u)} activeOpacity={0.8}>
@@ -216,18 +395,18 @@ export default function UserManagementScreen() {
                     <Text style={s.joinDate}>{timeSince(u.createdAt)}</Text>
                   </View>
                 </View>
-                {isPending && (
+                {isPending && canActOnRequest && (
                   <View style={s.quickActions}>
-                    <TouchableOpacity
+                    {canApproveRequest && <TouchableOpacity
                       style={[s.qBtn, s.qBtnApprove]}
                       onPress={(e) => { e.stopPropagation?.(); handleApprove(u.id); }}
                       disabled={!!appBusy}
                     >
                       <Ionicons name="checkmark" size={14} color="#fff" />
-                    </TouchableOpacity>
+                    </TouchableOpacity>}
                     <TouchableOpacity
                       style={[s.qBtn, s.qBtnReject]}
-                      onPress={(e) => { e.stopPropagation?.(); handleReject(u.id); }}
+                      onPress={(e) => { e.stopPropagation?.(); setRejectTarget(u); setReviewReason(""); }}
                       disabled={!!appBusy}
                     >
                       <Ionicons name="close" size={14} color="#fff" />
@@ -295,8 +474,29 @@ export default function UserManagementScreen() {
                   </View>
                   <View style={s.detailRow}>
                     <Text style={s.detailLabel}>Status</Text>
-                    <VerifiedBadge status={selectedRequest.status === "approved" ? "verified" : selectedRequest.status} size="sm" />
+                    <Text style={s.detailValue}>{selectedRequest.status.replaceAll("_", " ")}</Text>
                   </View>
+                  {selectedRequest.adminRecommendation ? (
+                    <View style={s.detailRow}>
+                      <Text style={s.detailLabel}>School recommendation</Text>
+                      <Text style={s.detailValue}>{selectedRequest.adminRecommendation}</Text>
+                    </View>
+                  ) : null}
+                  {selectedRequest.evidenceSummary ? (
+                    <View style={s.reqNotes}><Text style={s.sectionTitle}>APPLICANT EVIDENCE SUMMARY</Text><Text style={s.reqNotesText}>{selectedRequest.evidenceSummary}</Text></View>
+                  ) : null}
+                  {getEvidenceLinks(selectedRequest.documentUrls).map((url, index) => (
+                    <TouchableOpacity key={`${index}-${url}`} style={s.evidenceLink} onPress={() => Linking.openURL(url).catch(() => showToast("Could not open evidence link"))}>
+                      <Ionicons name="document-text-outline" size={16} color="#3D5AF1" />
+                      <Text style={s.evidenceLinkText}>Open supporting document {index + 1}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {selectedRequest.adminNotes ? (
+                    <View style={s.reqNotes}><Text style={s.sectionTitle}>ADMIN REVIEW NOTES</Text><Text style={s.reqNotesText}>{selectedRequest.adminNotes}</Text></View>
+                  ) : null}
+                  {selectedRequest.officialNotes ? (
+                    <View style={s.reqNotes}><Text style={s.sectionTitle}>OFFICIAL DECISION NOTES</Text><Text style={s.reqNotesText}>{selectedRequest.officialNotes}</Text></View>
+                  ) : null}
                   <View style={s.detailRow}>
                     <Text style={s.detailLabel}>Submitted</Text>
                     <Text style={s.detailValue}>{new Date(selectedRequest.createdAt).toLocaleDateString("en-IN")}</Text>
@@ -309,28 +509,50 @@ export default function UserManagementScreen() {
                   ) : null}
                 </View>
               )}
+              {selectedRequest && auditHistory.length > 0 && (
+                <View style={s.reqCard}>
+                  <Text style={s.sectionTitle}>REVIEW HISTORY</Text>
+                  {auditHistory.map((event) => (
+                    <View key={event.id} style={s.auditRow}>
+                      <Text style={s.auditAction}>{event.action.replaceAll("_", " ")}</Text>
+                      <Text style={s.auditMeta}>{event.actorName || "System"} · {new Date(event.createdAt).toLocaleString("en-IN")}</Text>
+                      {event.reason ? <Text style={s.reqNotesText}>{event.reason}</Text> : null}
+                    </View>
+                  ))}
+                </View>
+              )}
 
               {/* Actions */}
               <View style={s.actionsCard}>
                 <Text style={s.sectionTitle}>ACTIONS</Text>
-                {(selected.verificationStatus === "pending" || selected.verificationStatus === "rejected") && (
+                {canDecide && selected.role !== "official" && selected.verificationStatus === "verified" && (
+                  <TouchableOpacity
+                    style={[s.actionBtn, { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" }]}
+                    onPress={() => handleToggleReviewer(selected)}
+                    disabled={!!actionLoading}
+                  >
+                    <Ionicons name={assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "person-remove-outline" : "person-add-outline"} size={20} color="#3D5AF1" />
+                    <Text style={[s.actionBtnText, { color: "#3D5AF1" }]}>{assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "Remove Verification Admin" : "Appoint Verification Admin"}</Text>
+                  </TouchableOpacity>
+                )}
+                {(selectedCanRecommend || selectedCanFinalize) && (
                   <TouchableOpacity
                     style={[s.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
                     onPress={() => handleApprove(selected.id)}
                     disabled={!!actionLoading}
                   >
                     <Ionicons name="checkmark-circle-outline" size={20} color="#10B981" />
-                    <Text style={[s.actionBtnText, { color: "#10B981" }]}>Approve & Verify</Text>
+                    <Text style={[s.actionBtnText, { color: "#10B981" }]}>{canDecide ? "Approve & Issue ID" : "Recommend Approval"}</Text>
                   </TouchableOpacity>
                 )}
-                {(selected.verificationStatus === "pending" || selected.verificationStatus === "verified") && (
+                {(selectedCanRecommend || selectedCanFinalize) && (
                   <TouchableOpacity
                     style={[s.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
-                    onPress={() => handleReject(selected.id)}
+                    onPress={() => { setRejectTarget(selected); setReviewReason(""); }}
                     disabled={!!actionLoading}
                   >
                     <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
-                    <Text style={[s.actionBtnText, { color: "#EF4444" }]}>Reject</Text>
+                    <Text style={[s.actionBtnText, { color: "#EF4444" }]}>{canDecide ? "Reject Request" : "Recommend Rejection"}</Text>
                   </TouchableOpacity>
                 )}
                 {selected.verificationStatus !== "pending" && selected.role !== "official" && (
@@ -349,6 +571,32 @@ export default function UserManagementScreen() {
             </ScrollView>
           </View>
         )}
+      </Modal>
+
+      <Modal visible={!!rejectTarget} animationType="fade" transparent onRequestClose={() => setRejectTarget(null)}>
+        <View style={s.reasonOverlay}>
+          <View style={s.reasonCard}>
+            <Text style={s.modalTitle}>{canDecide ? "Reject verification" : "Recommend rejection"}</Text>
+            <Text style={s.reasonHint}>Give the applicant a clear reason they can act on.</Text>
+            <TextInput
+              style={s.reasonInput}
+              value={reviewReason}
+              onChangeText={setReviewReason}
+              placeholder="Explain the review decision..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              maxLength={2000}
+            />
+            <View style={s.reasonActions}>
+              <TouchableOpacity style={s.reasonCancel} onPress={() => setRejectTarget(null)}><Text style={s.reasonCancelText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity
+                style={s.reasonSubmit}
+                disabled={!rejectTarget || !!actionLoading || reviewReason.trim().length < 10}
+                onPress={() => rejectTarget && handleReject(rejectTarget.id, reviewReason)}
+              ><Text style={s.reasonSubmitText}>Submit reason</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {toast ? (
@@ -401,9 +649,43 @@ const s = StyleSheet.create({
   qBtnReject: { backgroundColor: "#EF4444" },
   loadMoreBtn: { paddingVertical: 14, alignItems: "center", backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#F0F0F0" },
   loadMoreText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
+  transitionCard: { backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8, gap: 10, borderWidth: 1, borderColor: "#E5E7EB" },
+  transitionTitle: { color: "#111827", fontSize: 16, fontFamily: "Inter_700Bold" },
+  transitionTitleSmall: { color: "#111827", fontSize: 14, fontFamily: "Inter_700Bold" },
+  transitionHelp: { color: "#6B7280", fontSize: 12, lineHeight: 18 },
+  yearRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  yearInput: { flex: 1, minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 12, color: "#111827", fontFamily: "Inter_500Medium" },
+  smallPrimaryButton: { minHeight: 42, paddingHorizontal: 12, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1" },
+  smallPrimaryText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  transitionInner: { gap: 8, paddingTop: 4 },
+  transitionSummary: { color: "#374151", fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 17 },
+  batchStudent: { flexDirection: "row", alignItems: "center", gap: 9, padding: 10, borderRadius: 10, backgroundColor: "#F9FAFB" },
+  batchStudentExcluded: { opacity: 0.62 },
+  batchStudentName: { color: "#111827", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  batchStudentMeta: { color: "#6B7280", fontSize: 11, lineHeight: 16, marginTop: 2 },
+  confirmRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
+  confirmText: { flex: 1, color: "#374151", fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
+  primaryButton: { minHeight: 44, borderRadius: 12, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
+  primaryButtonText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  buttonDisabled: { opacity: 0.45 },
+  resultBox: { backgroundColor: "#F9FAFB", borderRadius: 10, padding: 10, gap: 4 },
+  retryButton: { paddingVertical: 8 },
+  retryText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  transitionDivider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 4 },
+  secondaryButton: { minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  secondaryButtonText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   modalWrap: { flex: 1, backgroundColor: "#F5F6FA" },
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
+  reasonOverlay: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "rgba(17,24,39,0.45)" },
+  reasonCard: { backgroundColor: "#fff", padding: 18, borderRadius: 18, gap: 10 },
+  reasonHint: { color: "#6B7280", fontSize: 13, lineHeight: 18 },
+  reasonInput: { minHeight: 100, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#F9FAFB", color: "#111827", textAlignVertical: "top", fontFamily: "Inter_400Regular" },
+  reasonActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 4 },
+  reasonCancel: { paddingHorizontal: 14, paddingVertical: 10 },
+  reasonCancelText: { color: "#6B7280", fontFamily: "Inter_600SemiBold" },
+  reasonSubmit: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: "#EF4444" },
+  reasonSubmitText: { color: "#fff", fontFamily: "Inter_600SemiBold" },
   profileCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#F0F0F0" },
   profileAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
   profileAvatarText: { fontSize: 28, fontFamily: "Inter_700Bold" },
@@ -417,6 +699,11 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#9CA3AF", letterSpacing: 0.8, marginBottom: 10 },
   reqNotes: { marginTop: 10 },
   reqNotesText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 19 },
+  evidenceLink: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9 },
+  evidenceLinkText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  auditRow: { paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 3 },
+  auditAction: { color: "#111827", fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" },
+  auditMeta: { color: "#9CA3AF", fontSize: 10, fontFamily: "Inter_400Regular" },
   actionsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#F0F0F0", gap: 10 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: 12, borderWidth: 1.5 },
   actionBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

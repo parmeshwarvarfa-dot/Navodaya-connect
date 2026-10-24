@@ -65,7 +65,7 @@ function statusFromFilter(filter: string): string | null {
 
 export default function ViewProblemsScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [problems, setProblems]         = useState<Problem[]>([]);
   const [loading, setLoading]           = useState(true);

@@ -1,0 +1,184 @@
+Networking has been disabled
+Starting project at C:\Users\FTT\Downloads\Navodaya-connect-GitHub\artifacts\mobile
+React Compiler enabled
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8083
+Logs for your project will appear below.
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| (node:18768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% ( 4/10)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| (node:12972) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:30680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:33160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:25556) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:7108) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:13560) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (21/40)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (144/366)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| (node:20684) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:28052) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:39476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (167/381)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (181/387)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (209/389)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (348/536)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.0% (495/754)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.0% (712/919)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 84.8% ( 965/1048)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90.5% (1174/1275)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 94.1% (1352/1394)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1529/1529)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 47441ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1529 modules)
+Web Bundled 47635ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web Bundled 47846ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web Bundled 48076ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web Bundled 48372ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 189ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 3468ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 155ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 724ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 429ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 104ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 101ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "@/components/avatar/avatarConfig" from "artifacts\mobile\app\(screens)\avatar-creator.tsx"
+[0m [90m  8 |[39m [36mimport[39m { api } [36mfrom[39m [32m"@/lib/api"[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m type { [33mAvatarConfig[39m } [36mfrom[39m [32m"@workspace/api-zod"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { [33mAVATAR_COLORS[39m[33m,[39m [33mAVATAR_PRESETS[39m[33m,[39m [33mAVATAR_PRESET_CATEGORIES[39m[33m,[39m [33mDEFAULT_AVATAR_CONFIG[39m } [36mfrom[39m [32m"@/components/avatar/avatarConfig"[39m[33m;[39m
+ [90m    |[39m                                                                                                 [31m[1m^[22m[39m
+ [90m 11 |[39m [36mimport[39m { [33mAvatarIllustration[39m } [36mfrom[39m [32m"@/components/avatar/AvatarIllustration"[39m[33m;[39m
+ [90m 12 |[39m
+ [90m 13 |[39m type [33mCategory[39m [33m=[39m [32m"Skin"[39m [33m|[39m [32m"Hair"[39m [33m|[39m [32m"Face"[39m [33m|[39m [32m"Outfit"[39m [33m|[39m [32m"Accessories"[39m[33m;[39m[0m
+
+Import stack:
+
+ artifacts\mobile\app\(screens)\avatar-creator.tsx
+ | import "@/components/avatar/avatarConfig"
+
+ artifacts\mobile\app (require.context)
+
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 300ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 135ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 501ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 138ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 263ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web Bundled 184ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 178ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 124ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 163ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 200ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 180ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 293ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 204ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 235ms node_modules\.pnpm\expo-router@6.0.24_d1972533afd2abc6b84c999ae7073c50\node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console

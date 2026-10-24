@@ -15,27 +15,19 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api, getToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import EventCard from "@/components/EventCard";
 
-// ─── API helpers (registrations not in lib/api yet, call directly) ────────────
 async function registerForEvent(
   eventId: string,
   data: Record<string, string>
 ): Promise<void> {
-  const token = await getToken();
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  const base = domain ? `https://${domain}/api` : "http://localhost:80/api";
-  const res = await fetch(`${base}/events/${eventId}/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Registration failed");
+  await api.events.register(eventId, data);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -394,7 +386,7 @@ export default function EventsScreen() {
   const [regEvent, setRegEvent] = useState<Event | null>(null);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [successEvent, setSuccessEvent] = useState<string | null>(null);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchEvents = async () => {
     try { setEvents(await api.events.list()); } catch {}
@@ -409,6 +401,26 @@ export default function EventsScreen() {
   }, []);
 
   const displayEvents = events.length > 0 ? events : FALLBACK_EVENTS;
+
+  const openOrganizerProfile = useCallback(async (organizerId?: string, organizerName?: string) => {
+    if (organizerId) {
+      router.push({ pathname: "/(screens)/user-profile" as any, params: { userId: organizerId } });
+      return true;
+    }
+    const name = organizerName?.replace(/\s*\([^)]*\)\s*$/, "").trim();
+    if (!name) return false;
+    try {
+      const matches = await api.users.search(name);
+      const exactMatches = matches.filter((user) => user.fullName.trim().toLocaleLowerCase() === name.toLocaleLowerCase());
+      if (exactMatches.length === 1) {
+        router.push({ pathname: "/(screens)/user-profile" as any, params: { userId: exactMatches[0].id } });
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
   const role = profile?.role || "student";
 
   const handleRegistrationSuccess = (eventId: string) => {
@@ -443,6 +455,7 @@ export default function EventsScreen() {
             registered={registered.has(event.id)}
             registrationSuccess={successEvent === event.id}
             onRegister={() => tryAccess("Events", () => setRegEvent(event))}
+            onOrganizerPress={openOrganizerProfile}
           />
         ))}
       </ScrollView>

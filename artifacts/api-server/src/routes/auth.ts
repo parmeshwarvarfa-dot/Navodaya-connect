@@ -2,11 +2,12 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
-import { db, usersTable, sessionsTable, verificationRequestsTable } from "@workspace/db";
+import { db, usersTable, sessionsTable } from "@workspace/db";
 import type { UserProfile } from "./types";
 import { makeJnvId } from "../lib/jnv-identity";
 
 const router = Router();
+const ACCOUNT_ROLES = new Set(["student", "alumni", "teacher", "official"]);
 
 type FirebaseProfileData = {
   fullName?: string;
@@ -58,6 +59,10 @@ function toProfile(user: typeof usersTable.$inferSelect): UserProfile {
     profileVisibility: (user.profileVisibility ?? "public") as UserProfile["profileVisibility"],
     house: user.house as UserProfile["house"],
     photoURL: user.photoURL ?? undefined,
+    avatarConfig: user.avatarConfig as UserProfile["avatarConfig"] ?? undefined,
+    avatarThumbnailURL: user.avatarThumbnailURL ?? undefined,
+    uploadedPhotoURL: user.uploadedPhotoURL ?? undefined,
+    profileImageType: (user.profileImageType as UserProfile["profileImageType"]) ?? undefined,
     class: user.class ?? undefined,
     enrollYear: user.enrollYear ?? undefined,
     passoutYear: user.passoutYear ?? undefined,
@@ -81,6 +86,7 @@ async function createSession(userId: string) {
 router.post("/auth/signup", async (req, res) => {
   try {
     const { email, password, fullName, role, jnvState, jnvName, house, ...rest } = req.body;
+    if (!ACCOUNT_ROLES.has(role)) return res.status(400).json({ error: "Invalid account role" });
     const needsHouse = role === "student" || role === "alumni";
     if (!email || !password || !fullName || !role || !jnvState || !jnvName || (needsHouse && !house)) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -90,8 +96,8 @@ router.post("/auth/signup", async (req, res) => {
       return res.status(409).json({ error: "Email already in use" });
     }
     const passwordHash = await bcrypt.hash(password, 12);
-    const isOfficial = role === "official";
-    const initialStatus = isOfficial ? "verified" : "pending";
+    // A self-selected role never grants verification or school administration rights.
+    const initialStatus = "unverified";
 
     const [user] = await db.insert(usersTable).values({
       email: email.toLowerCase(),
@@ -113,19 +119,6 @@ router.post("/auth/signup", async (req, res) => {
       subject: rest.subject,
       designation: rest.designation,
     }).returning();
-
-    if (!isOfficial) {
-      await db.insert(verificationRequestsTable).values({
-        userId: user.id,
-        userFullName: fullName,
-        userEmail: email.toLowerCase(),
-        role,
-        jnvName,
-        jnvState,
-        method: "official",
-        status: "pending",
-      });
-    }
 
     const token = await createSession(user.id);
     res.json({ token, profile: toProfile(user) });
@@ -150,6 +143,7 @@ router.post("/auth/firebase", async (req, res) => {
 
     if (!user) {
       const role = profileData.role;
+      if (!ACCOUNT_ROLES.has(role ?? "")) return res.status(422).json({ error: "Invalid account role" });
       if (!profileData.fullName || !role || !profileData.jnvState || !profileData.jnvName) {
         return res.status(422).json({
           code: "PROFILE_REQUIRED",
@@ -158,7 +152,6 @@ router.post("/auth/firebase", async (req, res) => {
         });
       }
 
-      const isOfficial = role === "official";
       [user] = await db.insert(usersTable).values({
         email,
         passwordHash: await bcrypt.hash(randomUUID(), 12),
@@ -173,22 +166,10 @@ router.post("/auth/firebase", async (req, res) => {
         profession: profileData.profession,
         designation: profileData.designation,
         subject: profileData.subject,
-        verificationStatus: isOfficial ? "verified" : "pending",
+        verificationStatus: "unverified",
         photoURL: identity.photoUrl,
       }).returning();
 
-      if (!isOfficial) {
-        await db.insert(verificationRequestsTable).values({
-          userId: user.id,
-          userFullName: user.fullName,
-          userEmail: user.email,
-          role,
-          jnvName: user.jnvName,
-          jnvState: user.jnvState,
-          method: "official",
-          status: "pending",
-        });
-      }
     }
 
     if (user && !user.jnvId) {

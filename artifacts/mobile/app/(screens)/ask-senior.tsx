@@ -20,7 +20,7 @@ function getInitials(name: string) {
 export default function AskSeniorScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [questions,        setQuestions]        = useState<QaQuestion[]>([]);
   const [loading,          setLoading]          = useState(true);

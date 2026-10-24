@@ -32,7 +32,7 @@ export default function AlumniScreen() {
   const [alumni, setAlumni] = useState<AlumniUser[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
     api.users.alumni().then(setAlumni).catch(() => {});

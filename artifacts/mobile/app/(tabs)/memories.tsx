@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -33,12 +33,24 @@ import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
 
 type ReportReason = "spam" | "harassment" | "inappropriate content";
+type PostFilter = "all" | "text" | "photo" | "video" | "poll" | "achievement" | "event";
+const POST_FILTERS: { value: PostFilter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "all", label: "All", icon: "apps-outline" },
+  { value: "text", label: "Posts", icon: "chatbubble-outline" },
+  { value: "photo", label: "Photos", icon: "image-outline" },
+  { value: "video", label: "Videos", icon: "videocam-outline" },
+  { value: "poll", label: "Polls", icon: "stats-chart-outline" },
+  { value: "achievement", label: "Achievements", icon: "trophy-outline" },
+  { value: "event", label: "Events", icon: "calendar-outline" },
+];
 
 export default function MemoriesScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [postFilter, setPostFilter] = useState<PostFilter>("all");
   const [composerVisible, setComposerVisible] = useState(false);
   const [editingPost, setEditingPost] = useState<SocialMemory | null>(null);
   const [commentsPost, setCommentsPost] = useState<SocialMemory | null>(null);
@@ -46,13 +58,24 @@ export default function MemoriesScreen() {
   const [deletePost, setDeletePost] = useState<SocialMemory | null>(null);
   const [reportPost, setReportPost] = useState<SocialMemory | null>(null);
   const [toast, setToast] = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
 
   const feed = useInfiniteQuery({
-    queryKey: ["/api/memories", search.trim()],
+    queryKey: ["/api/memories", debouncedSearch, postFilter],
     queryFn: ({ pageParam, signal }) => listMemories({
       limit: 20,
       ...(typeof pageParam === "string" ? { cursor: pageParam } : {}),
-      ...(search.trim() ? { search: search.trim() } : {}),
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      ...(postFilter !== "all" ? { type: postFilter } : {}),
     }, { signal }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.hasMore ? page.nextCursor : undefined,
@@ -68,11 +91,20 @@ export default function MemoriesScreen() {
   const reportMemory = useReportMemory();
 
   const showToast = (message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
-    setTimeout(() => setToast(""), 2600);
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
 
-  const refreshFeed = () => queryClient.invalidateQueries({ queryKey: ["/api/memories"] });
+  const refreshFeed = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["/api/memories"] }),
+      ...(profile?.uid ? [
+        queryClient.invalidateQueries({ queryKey: ["profile-posts-v2", profile.uid] }),
+        queryClient.invalidateQueries({ queryKey: ["profile-stats", profile.uid] }),
+      ] : []),
+    ]);
+  };
 
   const submitPost = async (data: CreateMemoryRequest) => {
     if (editingPost) {
@@ -87,6 +119,7 @@ export default function MemoriesScreen() {
   };
 
   const handleLike = async (memory: SocialMemory) => {
+    if (toggleLike.isPending) return;
     try {
       await toggleLike.mutateAsync({ id: memory.id });
       await refreshFeed();
@@ -96,6 +129,7 @@ export default function MemoriesScreen() {
   };
 
   const handleBookmark = async (memory: SocialMemory) => {
+    if (toggleBookmark.isPending) return;
     try {
       await toggleBookmark.mutateAsync({ id: memory.id });
       await refreshFeed();
@@ -106,6 +140,7 @@ export default function MemoriesScreen() {
   };
 
   const handleVote = async (memory: SocialMemory, optionIndex: number) => {
+    if (voteInPoll.isPending) return;
     try {
       await voteInPoll.mutateAsync({ id: memory.id, data: { optionIndex } });
       await refreshFeed();
@@ -186,6 +221,27 @@ export default function MemoriesScreen() {
             </TouchableOpacity>
           )}
         </View>
+        <FlatList
+          horizontal
+          data={POST_FILTERS}
+          keyExtractor={(item) => item.value}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+          renderItem={({ item }) => {
+            const selected = postFilter === item.value;
+            return (
+              <TouchableOpacity
+                style={[styles.filterChip, selected && styles.filterChipActive]}
+                onPress={() => setPostFilter(item.value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Ionicons name={item.icon} size={14} color={selected ? "#fff" : "#68758D"} />
+                <Text style={[styles.filterText, selected && styles.filterTextActive]}>{item.label}</Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
       </View>
 
       {feed.isLoading ? (
@@ -198,7 +254,7 @@ export default function MemoriesScreen() {
           <View style={styles.stateIcon}><Ionicons name="cloud-offline-outline" size={23} color="#68758D" /></View>
           <Text style={styles.stateTitle}>Memories could not load</Text>
           <Text style={styles.stateText}>Check your connection and try again.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => feed.refetch()}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => void feed.refetch()}>
             <Text style={styles.retryText}>Try again</Text>
           </TouchableOpacity>
         </View>
@@ -210,6 +266,7 @@ export default function MemoriesScreen() {
             <MemoryPostCard
               memory={item}
               currentUserId={profile?.uid}
+              actionPending={toggleLike.isPending || toggleBookmark.isPending || voteInPoll.isPending}
               onLike={handleLike}
               onBookmark={handleBookmark}
               onComments={setCommentsPost}
@@ -235,9 +292,9 @@ export default function MemoriesScreen() {
           ListEmptyComponent={(
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}><Ionicons name="images-outline" size={28} color="#355BE5" /></View>
-              <Text style={styles.emptyTitle}>{search.trim() ? "No matching posts" : "Start the conversation"}</Text>
-              <Text style={styles.emptyText}>{search.trim() ? "Try a different name, JNV, or keyword." : "Share the first memory or update with your JNV community."}</Text>
-              {!search.trim() && <TouchableOpacity style={styles.emptyButton} onPress={openComposer}><Text style={styles.emptyButtonText}>Create a post</Text></TouchableOpacity>}
+              <Text style={styles.emptyTitle}>{debouncedSearch || postFilter !== "all" ? "No matching posts" : "Start the conversation"}</Text>
+              <Text style={styles.emptyText}>{debouncedSearch || postFilter !== "all" ? "Try another search or choose a different filter." : "Share the first memory or update with your JNV community."}</Text>
+              {!debouncedSearch && postFilter === "all" && <TouchableOpacity style={styles.emptyButton} onPress={openComposer}><Text style={styles.emptyButtonText}>Create a post</Text></TouchableOpacity>}
             </View>
           )}
           ListFooterComponent={feed.isFetchingNextPage ? (
@@ -343,6 +400,11 @@ const styles = StyleSheet.create({
   createButton: { width: 38, height: 38, borderRadius: 20, backgroundColor: "#355BE5", alignItems: "center", justifyContent: "center" },
   searchBox: { height: 42, marginTop: 13, paddingHorizontal: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F4F6FA", borderWidth: 1, borderColor: "#EBEEF4" },
   searchInput: { flex: 1, minWidth: 0, color: "#27334B", fontSize: 12, fontFamily: "Inter_400Regular", paddingVertical: 0 },
+  filters: { gap: 8, paddingTop: 11, paddingBottom: 1 },
+  filterChip: { height: 32, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, borderRadius: 17, backgroundColor: "#F3F5F9", borderWidth: 1, borderColor: "#E9EDF4" },
+  filterChipActive: { backgroundColor: "#355BE5", borderColor: "#355BE5" },
+  filterText: { color: "#68758D", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  filterTextActive: { color: "#fff" },
   list: { paddingBottom: 135 },
   emptyList: { flexGrow: 1 },
   feedIntro: { flexDirection: "row", alignItems: "center", gap: 9, marginHorizontal: 14, marginTop: 13, padding: 12, borderRadius: 13, backgroundColor: "#EDF1FF" },

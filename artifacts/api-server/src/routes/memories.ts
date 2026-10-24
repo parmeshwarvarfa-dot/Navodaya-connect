@@ -130,7 +130,19 @@ router.get("/memories", requireAuth, async (req, res) => {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 20, 50));
     const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
     const postType = typeof req.query.type === "string" && POST_TYPES.has(req.query.type) ? req.query.type : "";
+    const authorId = typeof req.query.authorId === "string" && UUID_PATTERN.test(req.query.authorId)
+      ? req.query.authorId
+      : "";
     const filters: SQL[] = [];
+    if (typeof req.query.authorId === "string" && !authorId) {
+      return res.status(400).json({ error: "Invalid profile ID" });
+    }
+    if (authorId) {
+      if (await isBlockedBetween(user.id, authorId) || !await canViewProfile(user.id, authorId)) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      filters.push(eq(memoriesTable.authorId, authorId));
+    }
     if (search) {
       const pattern = `%${search.replace(/[%_]/g, "\\$&")}%`;
       filters.push(or(
@@ -242,8 +254,8 @@ router.post("/memories", requireAuth, async (req, res) => {
           typeof value === "string" && value.trim().length > 0,
         ).map((value: string) => value.trim().slice(0, 100)).slice(0, 4)
       : [];
-    if (!caption || caption.length > 4000) {
-      return res.status(400).json({ error: "Add a post description of up to 4,000 characters." });
+    if ((!caption && postType !== "photo" && postType !== "video") || caption.length > 4000) {
+      return res.status(400).json({ error: postType === "poll" ? "Add a question of up to 4,000 characters." : "Add post text of up to 4,000 characters." });
     }
     if ((postType === "photo" || postType === "video") && mediaUrls.length === 0) {
       return res.status(400).json({ error: "Upload media before sharing this post." });
@@ -285,8 +297,8 @@ router.patch("/memories/:id", requireAuth, async (req, res) => {
     if (memory.authorId !== user.id) return res.status(403).json({ error: "Only the author can edit this post." });
     const updates: Partial<typeof memoriesTable.$inferInsert> = { updatedAt: new Date() };
     if (req.body.caption !== undefined) {
-      if (typeof req.body.caption !== "string" || !req.body.caption.trim() || req.body.caption.length > 4000) {
-        return res.status(400).json({ error: "Post text must be between 1 and 4,000 characters." });
+      if (typeof req.body.caption !== "string" || (!req.body.caption.trim() && memory.postType !== "photo" && memory.postType !== "video") || req.body.caption.length > 4000) {
+        return res.status(400).json({ error: "Post text must be at most 4,000 characters and is required for text and poll posts." });
       }
       updates.caption = req.body.caption.trim();
     }

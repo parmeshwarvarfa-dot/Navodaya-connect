@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -103,12 +103,14 @@ function ChipRow({ label, options, value, onChange, labelMap }: {
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const { profile, refreshProfile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [fullName, setFullName] = useState(profile?.fullName || "");
   const [phone, setPhone] = useState((profile as any)?.phone || "");
   const [bio, setBio] = useState((profile as any)?.bio || "");
-  const [photoURL, setPhotoURL] = useState(profile?.photoURL || "");
+  const [photoURL, setPhotoURL] = useState(profile?.uploadedPhotoURL || (profile?.profileImageType === "avatar" ? "" : profile?.photoURL || ""));
+  const [avatarThumbnailURL, setAvatarThumbnailURL] = useState(profile?.avatarThumbnailURL || (profile?.profileImageType === "avatar" ? profile?.photoURL || "" : ""));
+  const [profileImageType, setProfileImageType] = useState<"photo" | "avatar" | "default">(profile?.profileImageType || (profile?.photoURL ? "photo" : "default"));
 
   const [jnvName, setJnvName] = useState(profile?.jnvName || "");
   const [jnvState, setJnvState] = useState(profile?.jnvState || "");
@@ -132,8 +134,16 @@ export default function EditProfileScreen() {
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
 
+  useEffect(() => {
+    const nextType = profile?.profileImageType || (profile?.photoURL ? "photo" : "default");
+    setProfileImageType(nextType);
+    setPhotoURL(profile?.uploadedPhotoURL || (nextType === "avatar" ? "" : profile?.photoURL || ""));
+    setAvatarThumbnailURL(profile?.avatarThumbnailURL || (nextType === "avatar" ? profile?.photoURL || "" : ""));
+  }, [profile?.photoURL, profile?.uploadedPhotoURL, profile?.avatarThumbnailURL, profile?.profileImageType]);
+
   const role = profile?.role || "student";
   const initials = getInitials(fullName || "N");
+  const displayImageURL = profileImageType === "avatar" ? (avatarThumbnailURL || profile?.avatarThumbnailURL || (profile?.profileImageType === "avatar" ? profile?.photoURL : "")) : profileImageType === "photo" ? photoURL : "";
 
   const pickFromGallery = async () => {
     setShowPhotoMenu(false);
@@ -151,6 +161,7 @@ export default function EditProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        setProfileImageType("photo");
       }
     } catch {}
     setPickingPhoto(false);
@@ -171,13 +182,14 @@ export default function EditProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        setProfileImageType("photo");
       }
     } catch {}
     setPickingPhoto(false);
   };
 
   const removePhoto = () => {
-    setPhotoURL("");
+    setProfileImageType("default");
     setShowPhotoMenu(false);
   };
 
@@ -192,8 +204,11 @@ export default function EditProfileScreen() {
         jnvName: jnvName.trim(),
         jnvState: jnvState.trim(),
         house,
+        uploadedPhotoURL: photoURL,
+        avatarThumbnailURL: avatarThumbnailURL || profile?.avatarThumbnailURL || "",
+        profileImageType,
+        photoURL: profileImageType === "photo" ? photoURL : profileImageType === "avatar" ? (avatarThumbnailURL || profile?.avatarThumbnailURL || profile?.photoURL || "") : "",
       };
-      if (photoURL) updates.photoURL = photoURL;
       if (role === "alumni") {
         updates.passoutYear = passoutYear.trim();
         updates.profession = profession.trim();
@@ -245,8 +260,8 @@ export default function EditProfileScreen() {
           {/* ── Avatar ── */}
           <View style={styles.avatarSection}>
             <TouchableOpacity onPress={() => setShowPhotoMenu(true)} activeOpacity={0.85} style={styles.avatarWrap}>
-              {photoURL ? (
-                <Image source={{ uri: photoURL }} style={styles.avatarImage} />
+              {displayImageURL ? (
+                <Image source={{ uri: displayImageURL }} style={styles.avatarImage} />
               ) : (
                 <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.avatarFallback}>
                   <Text style={styles.avatarInitials}>{initials}</Text>
@@ -260,7 +275,20 @@ export default function EditProfileScreen() {
               </View>
             </TouchableOpacity>
             <Text style={styles.avatarName}>{fullName || "Your Name"}</Text>
-            <Text style={styles.avatarHint}>Tap to manage photo</Text>
+            <Text style={styles.avatarHint}>Tap to manage your profile image</Text>
+            <TouchableOpacity style={styles.avatarCreatorButton} onPress={() => router.push("/(screens)/avatar-creator" as any)} activeOpacity={0.82}>
+              <Ionicons name="person-circle-outline" size={19} color="#3D5AF1" />
+              <Text style={styles.avatarCreatorText}>{profile?.avatarConfig ? "Edit Avatar" : "Create Avatar"}</Text>
+              <Ionicons name="chevron-forward" size={16} color="#71809A" />
+            </TouchableOpacity>
+            <View style={styles.imageChoiceRow}>
+              {(["photo", "avatar", "default"] as const).map((type) => {
+                const disabled = type === "avatar" ? !avatarThumbnailURL && !profile?.avatarThumbnailURL : false;
+                return <TouchableOpacity key={type} disabled={disabled} onPress={() => type === "photo" && !photoURL ? setShowPhotoMenu(true) : setProfileImageType(type)} style={[styles.imageChoice, profileImageType === type && styles.imageChoiceSelected, disabled && styles.imageChoiceDisabled]}>
+                  <Text style={[styles.imageChoiceText, profileImageType === type && styles.imageChoiceTextSelected]}>{type === "photo" ? "Photo" : type === "avatar" ? "2D Avatar" : "Default"}</Text>
+                </TouchableOpacity>;
+              })}
+            </View>
             <View style={styles.rolePill}>
               <Text style={styles.rolePillText}>{ROLE_LABEL[role]}</Text>
             </View>
@@ -372,9 +400,9 @@ export default function EditProfileScreen() {
             <View style={pms.sheetHandle} />
             <Text style={pms.sheetTitle}>Profile Photo</Text>
 
-            {photoURL ? (
+            {displayImageURL ? (
               <View style={pms.previewWrap}>
-                <Image source={{ uri: photoURL }} style={pms.preview} />
+                <Image source={{ uri: displayImageURL }} style={pms.preview} />
               </View>
             ) : (
               <View style={pms.previewWrap}>
@@ -410,11 +438,11 @@ export default function EditProfileScreen() {
               {photoURL ? (
                 <TouchableOpacity style={pms.optRow} onPress={removePhoto} activeOpacity={0.75}>
                   <View style={[pms.optIcon, { backgroundColor: "#FEF2F2" }]}>
-                    <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                    <Ionicons name="person-outline" size={22} color="#EF4444" />
                   </View>
                   <View style={pms.optText}>
-                    <Text style={[pms.optLabel, { color: "#EF4444" }]}>Remove Photo</Text>
-                    <Text style={pms.optDesc}>Revert to initials avatar</Text>
+                    <Text style={[pms.optLabel, { color: "#EF4444" }]}>Use Default Image</Text>
+                    <Text style={pms.optDesc}>Hide your photo or avatar without deleting either</Text>
                   </View>
                 </TouchableOpacity>
               ) : null}
@@ -490,6 +518,14 @@ const styles = StyleSheet.create({
   },
   avatarName: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
   avatarHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 12 },
+  avatarCreatorButton: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 13, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
+  avatarCreatorText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_700Bold" },
+  imageChoiceRow: { flexDirection: "row", gap: 7, paddingHorizontal: 10 },
+  imageChoice: { borderWidth: 1, borderColor: "#E1E5ED", backgroundColor: "#fff", borderRadius: 16, paddingHorizontal: 11, paddingVertical: 7 },
+  imageChoiceSelected: { borderColor: "#3D5AF1", backgroundColor: "#EEF2FF" },
+  imageChoiceDisabled: { opacity: 0.45 },
+  imageChoiceText: { fontSize: 11, color: "#69758B", fontFamily: "Inter_600SemiBold" },
+  imageChoiceTextSelected: { color: "#3D5AF1", fontFamily: "Inter_700Bold" },
   rolePill: { backgroundColor: "#EEF2FF", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
   rolePillText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   saveFullBtn: {

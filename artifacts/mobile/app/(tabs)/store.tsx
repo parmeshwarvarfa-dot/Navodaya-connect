@@ -57,7 +57,7 @@ export default function StoreTab() {
   const [showCart, setShowCart] = useState(false);
   const [showCheckoutDone, setShowCheckoutDone] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const featured = PRODUCTS.filter((p) => p.featured);
   const filtered = activeFilter === "All" ? PRODUCTS : PRODUCTS.filter((p) => {

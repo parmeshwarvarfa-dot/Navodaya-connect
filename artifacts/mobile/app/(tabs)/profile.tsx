@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -31,7 +32,8 @@ export default function ProfileScreen() {
   const { profile, signOut } = useAuth();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const [showBioDetails, setShowBioDetails] = useState(false);
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const handleSignOut = () => setShowSignOutModal(true);
 
@@ -74,19 +76,12 @@ export default function ProfileScreen() {
   ];
 
   const menuItems = [
-    { icon: "person-outline" as const, label: "Edit Profile", onPress: () => router.push("/(screens)/edit-profile" as any) },
-    { icon: "notifications-outline" as const, label: "Notifications", onPress: () => router.push("/(screens)/notifications" as any) },
     { icon: "mail-unread-outline" as const, label: "Social Inbox", onPress: () => router.push("/(screens)/social-inbox" as any) },
     { icon: "lock-closed-outline" as const, label: "Privacy & Requests", onPress: () => router.push("/(screens)/privacy-settings" as any) },
-    { icon: "chatbubbles-outline" as const, label: "Chat Groups", onPress: () => router.push("/(tabs)/chats" as any) },
     ...(profile.role !== "student"
       ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
       : []),
-    ...(profile.role !== "official"
-      ? [{ icon: "game-controller-outline" as const, label: "House Arena", onPress: () => router.push("/(tabs)/chats" as any) }]
-      : []),
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
-    { icon: "trophy-outline" as const, label: "Rankings", onPress: () => router.push("/(screens)/rankings" as any) },
     ...(profile.role === "alumni"
       ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-verify" as any) }]
       : []),
@@ -96,8 +91,14 @@ export default function ProfileScreen() {
     <View style={[styles.container]}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity onPress={() => router.push("/(screens)/edit-profile" as any)}>
-          <Ionicons name="create-outline" size={22} color="#3D5AF1" />
+        <TouchableOpacity
+          style={styles.headerEditButton}
+          onPress={() => router.push("/(screens)/edit-profile" as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile"
+        >
+          <Ionicons name="create-outline" size={17} color="#3D5AF1" />
+          <Text style={styles.headerEditText}>Edit</Text>
         </TouchableOpacity>
       </View>
 
@@ -131,7 +132,7 @@ export default function ProfileScreen() {
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>{roleLabel}</Text>
           </View>
-          {profile.verificationStatus !== "verified" && profile.role !== "official" ? (
+          {profile.verificationStatus !== "verified" ? (
             <TouchableOpacity
               style={styles.profileVerifyBadge}
               onPress={() => router.push("/(screens)/verification-center" as any)}
@@ -147,6 +148,17 @@ export default function ProfileScreen() {
             <View style={{ marginTop: 8 }}>
               <VerifiedBadge status={profile.verificationStatus} role={profile.role} size="md" />
             </View>
+          )}
+          {profile.verificationStatus === "verified" && (
+            <TouchableOpacity
+              style={styles.profileVerifyBadge}
+              onPress={() => router.push("/(screens)/digital-id" as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="card-outline" size={14} color="#3D5AF1" />
+              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Navodaya Digital ID</Text>
+              <Ionicons name="chevron-forward" size={12} color="#3D5AF1" />
+            </TouchableOpacity>
           )}
           {((profile as any).linkedinUrl || (profile as any).twitterUrl) && (
             <View style={styles.socialRow}>
@@ -166,8 +178,24 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        <ProfilePostsSection userId={profile.uid} isOwner />
+
         <View style={styles.infoCard}>
-          {infoItems.map((item, index) => (
+          <TouchableOpacity
+            style={styles.bioToggle}
+            onPress={() => setShowBioDetails((open) => !open)}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showBioDetails }}
+          >
+            <View style={styles.infoIconWrap}><Ionicons name="person-outline" size={18} color="#3D5AF1" /></View>
+            <View style={styles.infoText}>
+              <Text style={styles.bioTitle}>Bio</Text>
+              <Text style={styles.bioSummary} numberOfLines={1}>{(profile as any).bio || `${roleLabel} · ${profile.jnvName || "JNV"}`}</Text>
+            </View>
+            <Ionicons name={showBioDetails ? "chevron-up" : "chevron-down"} size={20} color="#69758B" />
+          </TouchableOpacity>
+          {showBioDetails && infoItems.map((item, index) => (
             <View
               key={item.label}
               style={[
@@ -186,7 +214,7 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {profile.skills && profile.skills.length > 0 && (
+        {showBioDetails && profile.skills && profile.skills.length > 0 && (
           <View style={styles.skillsCard}>
             <Text style={styles.cardTitle}>Skills</Text>
             <View style={styles.skillsWrap}>
@@ -199,7 +227,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <View style={styles.aboutCard}>
+        {showBioDetails && <View style={styles.aboutCard}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.aboutText}>
             {profile.role === "student"
@@ -210,7 +238,7 @@ export default function ProfileScreen() {
               ? `${profile.subject || "Teacher"} at ${profile.jnvName || "JNV"}`
               : `JNV Official at ${profile.jnvName || "JNV"}`}
           </Text>
-        </View>
+        </View>}
 
         {/* Character Badge Section — students only */}
         {profile.role === "student" && (
@@ -313,6 +341,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
+  headerEditButton: {
+    minHeight: 40,
+    paddingHorizontal: 13,
+    borderRadius: 20,
+    backgroundColor: "#EEF2FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  headerEditText: { color: "#3D5AF1", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
   profileCard: {
     backgroundColor: "#fff",
@@ -380,6 +419,9 @@ const styles = StyleSheet.create({
     borderColor: "#F0F0F0",
     overflow: "hidden",
   },
+  bioToggle: { minHeight: 72, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 12 },
+  bioTitle: { color: "#111827", fontSize: 15, fontFamily: "Inter_700Bold" },
+  bioSummary: { marginTop: 3, color: "#6B7280", fontSize: 12, fontFamily: "Inter_400Regular" },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",

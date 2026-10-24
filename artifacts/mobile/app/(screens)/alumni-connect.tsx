@@ -13,7 +13,7 @@ const YEARS       = ["All", "2024", "2023", "2022", "2021", "2020", "2018", "201
 export default function AlumniConnectScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [alumni,      setAlumni]      = useState<AlumniUser[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading,     setLoading]     = useState(true);

@@ -29,7 +29,7 @@ export default function AlumniVerifyScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(true);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
@@ -45,10 +45,14 @@ export default function AlumniVerifyScreen() {
 
   const handleSubmit = async () => {
     if (!passoutBatch) { showToast("Please select your passout batch year"); return; }
+    const filledUrls = docUrls.filter((url) => url.trim().length > 0);
+    if (!filledUrls.length) { showToast("Add at least one supporting document link"); return; }
     setSubmitting(true);
     try {
-      const filledUrls = docUrls.filter(u => u.trim().length > 0);
-      await api.verification.create("official", filledUrls.length ? filledUrls : undefined);
+      await api.verification.create({
+        evidenceSummary: `Alumni verification for passout batch ${passoutBatch}. Supporting school records are attached for reviewer confirmation.`,
+        documentUrls: filledUrls,
+      });
       await refreshProfile();
       setStatus("pending");
       showToast("Verification request submitted!");
@@ -145,8 +149,8 @@ export default function AlumniVerifyScreen() {
 
             {/* Document URLs */}
             <View style={s.card}>
-              <Text style={s.cardTitle}>Supporting Documents (optional)</Text>
-              <Text style={s.cardSub}>Add links to scanned documents hosted on Google Drive, Dropbox, or any cloud storage</Text>
+              <Text style={s.cardTitle}>Supporting Documents *</Text>
+              <Text style={s.cardSub}>Provide at least one school or alumni record link. Restrict the link to your assigned JNV review team before submitting; the app stores the link, not a document copy.</Text>
               {DOC_TYPES.map((doc, idx) => (
                 <View key={doc.id} style={s.docRow}>
                   <View style={s.docIcon}>

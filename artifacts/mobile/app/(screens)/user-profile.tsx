@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api, type PublicUserProfile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
 import {
   getGetSocialStatusQueryKey,
   getListDirectConversationsQueryKey,
@@ -57,7 +58,7 @@ export default function UserProfileScreen() {
   const [messageOpen, setMessageOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const isOwnProfile = !!user && (user.id === currentUser?.uid || user.id === (currentUser as any)?.id);
 
   const socialStatus = useGetSocialStatus(userId, {
@@ -69,7 +70,13 @@ export default function UserProfileScreen() {
   const conversations = useListDirectConversations({
     query: { queryKey: getListDirectConversationsQueryKey(), enabled: !!user && !isOwnProfile },
   });
-  const refreshStatus = () => queryClient.invalidateQueries({ queryKey: getGetSocialStatusQueryKey(userId) });
+  const refreshStatus = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getGetSocialStatusQueryKey(userId) }),
+      queryClient.invalidateQueries({ queryKey: ["profile-stats", userId] }),
+      ...(currentUser?.uid ? [queryClient.invalidateQueries({ queryKey: ["profile-stats", currentUser.uid] })] : []),
+    ]);
+  };
   const follow = useFollowUser({ mutation: { onSuccess: refreshStatus } });
   const unfollow = useUnfollowUser({ mutation: { onSuccess: refreshStatus } });
   const block = useBlockUser();
@@ -250,6 +257,7 @@ export default function UserProfileScreen() {
               )}
             </>
           ) : null}
+          <ProfilePostsSection userId={user.id} isOwner={isOwnProfile} restricted={!!user.isRestricted} />
         </ScrollView>
       )}
 

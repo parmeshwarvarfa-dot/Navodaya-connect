@@ -57,40 +57,51 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
   }, [visible, initial?.id]);
 
   const chooseMedia = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      onMessage("Allow photo library access to attach media.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      quality: 0.85,
-    });
-    if (!result.canceled) {
-      const chosen = result.assets ?? [];
-      const tooLarge = chosen.find((asset) => (asset.fileSize ?? 0) > 100 * 1024 * 1024);
-      if (tooLarge) {
-        onMessage("Each photo or video must be under 100 MB.");
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        onMessage("Allow photo library access to attach media.");
         return;
       }
-      const hasVideo = chosen.some((asset) => asset.type === "video");
-      const hasPhoto = chosen.some((asset) => asset.type === "image");
-      if (hasVideo && hasPhoto) {
-        onMessage("Choose photos or videos for a post, not both together.");
-        return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images", "videos"],
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+        quality: 0.85,
+      });
+      if (!result.canceled) {
+        const chosen = result.assets ?? [];
+        const tooLarge = chosen.find((asset) => (asset.fileSize ?? 0) > 100 * 1024 * 1024);
+        if (tooLarge) {
+          onMessage("Each photo or video must be under 100 MB.");
+          return;
+        }
+        const hasVideo = chosen.some((asset) => asset.type === "video");
+        const hasPhoto = chosen.some((asset) => asset.type === "image");
+        if (hasVideo && hasPhoto) {
+          onMessage("Choose photos or videos for a post, not both together.");
+          return;
+        }
+        setAssets(chosen);
+        if (hasVideo) setPostType("video");
+        else if (chosen.length) setPostType("photo");
       }
-      setAssets(chosen);
-      if (hasVideo) setPostType("video");
-      else if (chosen.length) setPostType("photo");
+    } catch {
+      onMessage("Could not open your photo library. Please try again.");
     }
+  };
+
+  const selectPostType = (type: PostType) => {
+    if (type !== postType && assets.length > 0) {
+      setAssets([]);
+    }
+    setPostType(type);
   };
 
   const uploadMedia = async () => {
     if (!assets.length) return [];
     if (!firebaseApp?.options.storageBucket) {
-      throw new Error("Firebase Storage is not configured for this app.");
+      throw new Error("Photo and video posts need Firebase Storage. Set EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET in .env and restart Expo.");
     }
     const storage = getStorage(firebaseApp);
     const uploaded: string[] = [];
@@ -109,8 +120,8 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
 
   const submit = async () => {
     const cleanCaption = caption.trim();
-    if (!cleanCaption) {
-      onMessage("Add a caption or question before sharing.");
+    if (!cleanCaption && postType !== "photo" && postType !== "video") {
+      onMessage(postType === "poll" ? "Add a question before sharing your poll." : "Add some text before sharing this post.");
       return;
     }
     if (!initial && (postType === "photo" || postType === "video") && assets.length === 0) {
@@ -153,7 +164,7 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
     <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}>
       <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.header}>
-          <TouchableOpacity accessibilityLabel="Close composer" onPress={onClose} style={styles.close}>
+          <TouchableOpacity accessibilityLabel="Close composer" onPress={onClose} disabled={busy} style={styles.close}>
             <Ionicons name="close" size={23} color="#192238" />
           </TouchableOpacity>
           <Text style={styles.title}>{initial ? "Edit post" : "Create a post"}</Text>
@@ -171,7 +182,7 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
                   <TouchableOpacity
                     key={type.value}
                     style={[styles.typeChoice, postType === type.value && styles.typeChoiceActive]}
-                    onPress={() => setPostType(type.value)}
+                    onPress={() => selectPostType(type.value)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: postType === type.value }}
                   >

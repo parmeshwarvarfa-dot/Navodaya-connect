@@ -186,7 +186,7 @@ function MathSprint({ onClose }: { onClose: () => void }) {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function GameArenaScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [scores] = useState<Record<string, number>>({});
 

@@ -22,7 +22,7 @@ const RATINGS  = [1, 2, 3, 4, 5];
 
 export default function StudyFeedbackScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
 
   const [activeType,  setActiveType]  = useState<string | null>(null);
   const [rating,      setRating]      = useState(0);

@@ -22,10 +22,11 @@ if (env.REPL_ID) env.EXPO_PUBLIC_REPL_ID ??= env.REPL_ID;
 
 const isReplit = Boolean(env.REPLIT_DEV_DOMAIN || env.REPLIT_INTERNAL_APP_DOMAIN);
 const port = env.EXPO_PORT ?? (isReplit ? env.PORT : undefined) ?? "8081";
+const hostMode = isReplit ? "--localhost" : "--lan";
 const expoCli = require.resolve("expo/bin/cli", { paths: [projectDir] });
 const child = spawn(
   process.execPath,
-  [expoCli, "start", "--localhost", "--port", port],
+  [expoCli, "start", hostMode, "--port", port],
   { cwd: projectDir, env, stdio: "inherit" },
 );
 

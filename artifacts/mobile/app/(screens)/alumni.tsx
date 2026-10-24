@@ -22,7 +22,7 @@ export default function AlumniScreen() {
   const insets = useSafeAreaInsets();
   const [alumni, setAlumni] = useState<AlumniUser[]>([]);
   const [search, setSearch] = useState("");
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
     api.users.alumni().then(setAlumni).catch(() => {});

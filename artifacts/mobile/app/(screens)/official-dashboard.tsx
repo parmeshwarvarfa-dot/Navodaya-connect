@@ -38,7 +38,7 @@ function timeSince(ts: string) {
 
 export default function OfficialDashboardScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const { profile } = useAuth();
 
   const [requests, setRequests]           = useState<VerificationRequest[]>([]);

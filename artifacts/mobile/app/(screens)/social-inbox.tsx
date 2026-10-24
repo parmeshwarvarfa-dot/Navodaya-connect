@@ -59,7 +59,7 @@ export default function SocialInboxScreen() {
   const [conversationId, setConversationId] = useState(conversationParam);
   const [draft, setDraft] = useState("");
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
     if (conversationParam) {

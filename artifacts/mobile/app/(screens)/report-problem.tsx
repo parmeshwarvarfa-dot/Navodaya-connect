@@ -54,7 +54,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function ReportProblemScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [tab, setTab] = useState<"new" | "my">("new");
   const [title, setTitle] = useState("");

@@ -33,7 +33,7 @@ function getInitials(name: string) {
 export default function SeniorConnectScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [activeTrack, setActiveTrack] = useState("All");
   const [searchQ, setSearchQ] = useState("");

@@ -159,10 +159,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       await syncFirebaseUser(credential.user);
     } catch (firebaseError: any) {
-      if (firebaseError?.code === "auth/user-not-found" || firebaseError?.code === "auth/invalid-credential") {
-        const { token, profile: p } = await api.auth.signin(email.trim(), password);
-        await setToken(token);
-        setProfile(p);
+      const canUseApiCredentials =
+        firebaseError?.code === "auth/user-not-found" ||
+        firebaseError?.code === "auth/invalid-credential";
+      const firebaseNetworkError = firebaseError?.code === "auth/network-request-failed";
+
+      if (canUseApiCredentials || firebaseNetworkError) {
+        try {
+          const { token, profile: p } = await api.auth.signin(email.trim(), password);
+          await setToken(token);
+          setProfile(p);
+        } catch (apiError: any) {
+          // Retain Firebase's useful network diagnosis if an API-backed password
+          // account was not found; don't turn a transient Firebase outage into
+          // a misleading invalid-password message for Firebase-only accounts.
+          if (firebaseNetworkError && apiError?.status === 401) throw firebaseError;
+          throw apiError;
+        }
       } else {
         throw firebaseError;
       }
@@ -262,7 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pendingProfile = pendingFirebaseUser
     ? { email: pendingFirebaseUser.email ?? "", fullName: pendingFirebaseUser.displayName ?? "" }
     : null;
-  const isVerified = profile?.role === "official" || profile?.verificationStatus === "verified";
+  const isVerified = profile?.verificationStatus === "verified";
 
   return (
     <AuthContext.Provider value={{ user, profile, pendingProfile, loading, isVerified, signUp, signIn, signInWithGoogle, signInWithFacebook, signInWithApple, completeProfile, forgotPassword, signOut, refreshProfile }}>

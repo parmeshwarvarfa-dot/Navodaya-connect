@@ -31,7 +31,7 @@ const STATUS_CFG: Record<string, { color: string; bg: string }> = {
 
 export default function AlumniSupportScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [showModal, setShowModal] = useState(false);
   const [selType,   setSelType]   = useState("");
   const [note,      setNote]      = useState("");

@@ -19,7 +19,7 @@ const PRIORITY_CFG: Record<string, { color: string; bg: string; label: string }>
 
 export default function TeacherAnnouncementsScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [items,     setItems]     = useState<Announcement[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [showModal, setShowModal] = useState(false);

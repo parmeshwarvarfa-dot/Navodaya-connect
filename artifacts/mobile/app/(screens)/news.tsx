@@ -55,7 +55,7 @@ export default function NewsScreen() {
   const [deleteConfirm, setDeleteConfirm] = useState<NewsItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [newsLinkError, setNewsLinkError] = useState("");
-  const topPad   = Platform.OS === "web" ? 67 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const canPost  = profile?.role === "teacher" || profile?.role === "official";
 
   const fetchNews = async () => {

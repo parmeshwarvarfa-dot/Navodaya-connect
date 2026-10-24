@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const clubsTable = pgTable("clubs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -31,5 +31,15 @@ export const clubMembersTable = pgTable("club_members", {
   role: text("role").notNull().default("member"),
   joinedAt: timestamp("joined_at").defaultNow(),
 });
+
+export const clubJoinRequestsTable = pgTable("club_join_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clubId: uuid("club_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedById: uuid("reviewed_by_id"),
+}, (table) => [uniqueIndex("club_join_requests_club_student_unique").on(table.clubId, table.studentId)]);
 
 export type Club = typeof clubsTable.$inferSelect;

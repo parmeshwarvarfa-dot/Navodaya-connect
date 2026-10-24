@@ -62,7 +62,7 @@ export default function StoreScreen() {
   const [toast, setToast] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 

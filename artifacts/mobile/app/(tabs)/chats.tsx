@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
+  Image,
   Text,
   StyleSheet,
   ScrollView,
@@ -8,240 +9,367 @@ import {
   Platform,
   TextInput,
   Modal,
-  Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
-import { useVerificationGate } from "@/components/VerificationGateModal";
+import { api } from "@/lib/api";
+import type { ChatContact, DirectConversation, DirectMessageRequest, Group } from "@/lib/api";
 
-const ALL_NAVODAYANS = { id: "all-navodayans", icon: "chatbubbles-outline" as const, name: "All Navodayans", lastMessage: "United by JNV spirit!", time: "12:51 PM", color: "#FFF7ED", iconColor: "#F59E0B" };
+type CommunityKind = "house" | "class" | "batch" | "school" | "all" | "interest";
+type GroupCard = { id: string; kind?: CommunityKind; interestId?: string; icon: any; name: string; lastMessage: string; time: string; color: string; iconColor: string; lastMessageAt?: string | null; lastMessageSenderId?: string | null; lastMessageSenderName?: string | null };
+type ChatFilter = "all" | "unread" | "favorites" | "archived";
+type ChatPreferences = { favorites: string[]; archived: string[]; muted: string[]; readAt: Record<string, string> };
+const DEFAULT_CHAT_PREFERENCES: ChatPreferences = { favorites: [], archived: [], muted: [], readAt: {} };
 
-const HOUSE_META: Record<string, { color: string; bg: string; emoji: string; grad: [string, string] }> = {
-  Aravali:  { color: "#1D6ADE", bg: "#EFF6FF", emoji: "💙", grad: ["#1D6ADE", "#3B82F6"] },
-  Nilgiri:  { color: "#16A34A", bg: "#F0FDF4", emoji: "💚", grad: ["#16A34A", "#22C55E"] },
-  Shivalik: { color: "#DC2626", bg: "#FEF2F2", emoji: "❤️", grad: ["#DC2626", "#EF4444"] },
-  Udaygiri: { color: "#D97706", bg: "#FFFBEB", emoji: "💛", grad: ["#D97706", "#F59E0B"] },
+const ALL_NAVODAYANS: GroupCard = { id: "all-navodayans", kind: "all", icon: "chatbubbles-outline", name: "All Navodayans", lastMessage: "Join the JNV community conversation", time: "", color: "#FFF7ED", iconColor: "#F59E0B" };
+const IMAGE_MARKER = "__NAVODAYA_IMAGE__:";
+const LOCATION_MARKER = "__NAVODAYA_LOCATION__:";
+
+function normalizeGroupName(value: string) {
+  return value.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, "").trim().toLowerCase();
+}
+
+function isGroupVisibleForProfile(group: Group, role?: string, profileClass?: string) {
+  if (normalizeGroupName(group.name) === "jnv alumni network" && role !== "alumni") return false;
+  if (group.subject === "Alumni batch" && role !== "alumni") return false;
+  const namedClass = group.name.match(/^class\s+([0-9]+[a-z]?)/i)?.[1];
+  const classScoped = group.subject === "Class community" || !!group.class || !!namedClass;
+  if (classScoped && group.subject !== "Alumni batch") {
+    const classLevel = (value?: string | null) => value?.match(/^(?:class\s*)?(\d+)/i)?.[1] ?? "";
+    return role === "student" && !!profileClass && !!classLevel(group.class ?? namedClass) && classLevel(group.class ?? namedClass) === classLevel(profileClass);
+  }
+  return true;
+}
+
+function previewLastMessage(value?: string | null) {
+  if (!value) return "Tap to start a conversation";
+  if (value.startsWith(LOCATION_MARKER)) return "Ã°Å¸â€œÂ Location";
+  if (value.startsWith(IMAGE_MARKER)) {
+    try {
+      const attachment = JSON.parse(value.slice(IMAGE_MARKER.length));
+      return attachment.caption || "Ã°Å¸â€œÂ· Photo";
+    } catch {
+      return "Ã°Å¸â€œÂ· Photo";
+    }
+  }
+  return value;
+}
+
+function previewDirectMessage(value?: string | null) {
+  if (!value) return "Start a conversation";
+  if (value.startsWith(LOCATION_MARKER)) return "Location";
+  if (value.startsWith(IMAGE_MARKER)) {
+    try {
+      const attachment = JSON.parse(value.slice(IMAGE_MARKER.length));
+      return attachment.caption || "Photo";
+    } catch { return "Photo"; }
+  }
+  return value;
+}
+
+function formatListTime(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  return date.toDateString() === now.toDateString()
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function chatOpenError(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message === "Not Found") {
+    return "Chat API is out of date. Restart the API server, then try again.";
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
+const HOUSE_META: Record<string, { color: string; bg: string; emoji: string }> = {
+  Aravali:  { color: "#1D6ADE", bg: "#EFF6FF", emoji: "\u{1F499}" },
+  Nilgiri:  { color: "#16A34A", bg: "#F0FDF4", emoji: "\u{1F49A}" },
+  Shivalik: { color: "#DC2626", bg: "#FEF2F2", emoji: "\u2764\uFE0F" },
+  Udaygiri: { color: "#D97706", bg: "#FFFBEB", emoji: "\u{1F49B}" },
 };
-
-const RANK_MEDALS = ["🥇", "🥈", "🥉", "4️⃣"];
-const RANK_LABELS = ["1st", "2nd", "3rd", "4th"];
-
-type HouseScore = { name: string; points: number; delta: number };
-
-const INITIAL_SCORES: HouseScore[] = [
-  { name: "Shivalik", points: 2840, delta: 0 },
-  { name: "Aravali",  points: 2710, delta: 0 },
-  { name: "Nilgiri",  points: 2590, delta: 0 },
-  { name: "Udaygiri", points: 2420, delta: 0 },
-];
 
 const EXPLORE_GROUPS = [
-  { id: "alumni-network", name: "JNV Alumni Network", members: "4.2K", icon: "people-outline" as const, color: "#3D5AF1" },
-  { id: "upsc-aspirants", name: "UPSC Aspirants", members: "1.8K", icon: "trophy-outline" as const, color: "#F59E0B" },
-  { id: "tech-careers", name: "Tech Careers", members: "2.1K", icon: "laptop-outline" as const, color: "#10B981" },
-  { id: "jee-neet", name: "JEE & NEET Prep", members: "3.4K", icon: "school-outline" as const, color: "#8B5CF6" },
-  { id: "arts-culture", name: "Arts & Culture", members: "980", icon: "color-palette-outline" as const, color: "#EF4444" },
-];
-
-type Challenge = {
-  id: string;
-  title: string;
-  desc: string;
-  icon: string;
-  color: string;
-  bg: string;
-  status: "live" | "upcoming" | "qualifying";
-  players: number;
-  points: number;
-};
-
-const CHALLENGES: Challenge[] = [
-  { id: "gk-blitz",     title: "GK Blitz Quiz",      desc: "2-min rapid-fire general knowledge",  icon: "🧠", color: "#3D5AF1", bg: "#EEF2FF", status: "live",       players: 63,  points: 50  },
-  { id: "chess-cup",    title: "House Chess Cup",     desc: "Round-robin chess tournament",        icon: "♟️", color: "#374151", bg: "#F3F4F6", status: "qualifying", players: 24,  points: 120 },
-  { id: "word-master",  title: "Word Master",         desc: "Speed spelling showdown",             icon: "🔤", color: "#8B5CF6", bg: "#F5F3FF", status: "upcoming",   players: 0,   points: 60  },
-  { id: "math-ninja",   title: "Number Ninja",        desc: "Mental maths speed round",            icon: "🔢", color: "#10B981", bg: "#ECFDF5", status: "live",       players: 41,  points: 70  },
-  { id: "art-battle",   title: "Art Battle",          desc: "Draw your JNV memory in 60 sec",      icon: "🎨", color: "#EF4444", bg: "#FEF2F2", status: "upcoming",   players: 0,   points: 80  },
-];
-
-type QuizQ = { q: string; opts: string[]; ans: number };
-const QUIZ_QUESTIONS: QuizQ[] = [
-  { q: "In which year were Jawahar Navodaya Vidyalayas established?", opts: ["1977", "1986", "1992", "2000"], ans: 1 },
-  { q: "Which is the largest JNV state by number of schools?", opts: ["UP", "Rajasthan", "MP", "Bihar"], ans: 0 },
-  { q: "What is the full form of JNV?", opts: ["Junior Navodaya Vidyalaya", "Jawahar Navodaya Vidyalaya", "Jan Navodaya Vidyalaya", "Jeevan Navodaya Vidyalaya"], ans: 1 },
-  { q: "Who is known as the father of the Navodaya concept?", opts: ["Dr. APJ Kalam", "Rajiv Gandhi", "Dr. Ambedkar", "Mahatma Gandhi"], ans: 1 },
-  { q: "JNV schools are residential from which class?", opts: ["Class 1", "Class 5", "Class 6", "Class 8"], ans: 2 },
+  { id: "alumni-network", name: "JNV Alumni Network", icon: "people-outline" as const, color: "#3D5AF1" },
+  { id: "upsc-aspirants", name: "UPSC Aspirants", icon: "trophy-outline" as const, color: "#F59E0B" },
+  { id: "tech-careers", name: "Tech Careers", icon: "laptop-outline" as const, color: "#10B981" },
+  { id: "jee-neet", name: "JEE & NEET Prep", icon: "school-outline" as const, color: "#8B5CF6" },
+  { id: "arts-culture", name: "Arts & Culture", icon: "color-palette-outline" as const, color: "#EF4444" },
 ];
 
 export default function ChatsScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, isVerified } = useAuth();
-  const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
+  const { profile } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [joinedExplore, setJoinedExplore] = useState<Set<string>>(new Set());
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
-  const [leaveConfirm, setLeaveConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [groupMemberSearch, setGroupMemberSearch] = useState("");
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState<ChatContact[]>([]);
   const [joinToast, setJoinToast] = useState("");
-  const [groupCreatedToast, setGroupCreatedToast] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
-
-  // House Arena state
-  const [scores, setScores] = useState<HouseScore[]>(INITIAL_SCORES);
-  const [livePlayers, setLivePlayers] = useState({ "gk-blitz": 63, "math-ninja": 41 });
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Active quiz modal
-  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
-  const [quizIdx, setQuizIdx] = useState(0);
-  const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizDone, setQuizDone] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Pulsing live dot
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.4, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,   duration: 700, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
+  const [schoolGroups, setSchoolGroups] = useState<Group[]>([]);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [openingGroup, setOpeningGroup] = useState(false);
+  const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
+  const [messageRequests, setMessageRequests] = useState<DirectMessageRequest[]>([]);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showRequests, setShowRequests] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
+  const [contacts, setContacts] = useState<ChatContact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ChatContact | null>(null);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<ChatFilter>("all");
+  const [chatPreferences, setChatPreferences] = useState<ChatPreferences>(DEFAULT_CHAT_PREFERENCES);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
+  const preferencesKey = profile?.uid ? `chat-preferences:${profile.uid}` : null;
+  const showToast = useCallback((msg: string) => {
+    setJoinToast(msg);
+    setTimeout(() => setJoinToast(""), 2500);
   }, []);
 
-  // Simulate live score updates every 4 seconds
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    const refreshInbox = () => {
+      api.groups.list().then((groups) => {
+        if (!active) return;
+        const visibleGroups = groups.filter((group) => isGroupVisibleForProfile(group, profile?.role, profile?.class));
+        setSchoolGroups(visibleGroups);
+        const names = new Set(visibleGroups.map((group) => normalizeGroupName(group.name)));
+        setJoinedExplore(new Set(EXPLORE_GROUPS.filter((group) => names.has(normalizeGroupName(group.name))).map((group) => group.id)));
+      }).catch(() => {});
+      api.directMessages.conversations().then((rows) => { if (active) setDirectConversations(rows); }).catch(() => {});
+      api.directMessages.requests().then((rows) => { if (active) setMessageRequests(rows); }).catch(() => {});
+    };
+    refreshInbox();
+    const refreshTimer = setInterval(refreshInbox, 5000);
+    if (preferencesKey) {
+      setPreferencesReady(false);
+      AsyncStorage.getItem(preferencesKey).then((stored) => {
+        if (!active) return;
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as Partial<ChatPreferences>;
+            setChatPreferences({
+              favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
+              archived: Array.isArray(parsed.archived) ? parsed.archived : [],
+              muted: Array.isArray(parsed.muted) ? parsed.muted : [],
+              readAt: parsed.readAt && typeof parsed.readAt === "object" ? parsed.readAt : {},
+            });
+          } catch { setChatPreferences(DEFAULT_CHAT_PREFERENCES); }
+        } else setChatPreferences(DEFAULT_CHAT_PREFERENCES);
+        setPreferencesReady(true);
+      }).catch(() => setPreferencesReady(true));
+    }
+    return () => { active = false; clearInterval(refreshTimer); };
+  }, [preferencesKey, profile?.class, profile?.role]));
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setScores((prev) => {
-        const updated = prev.map((h) => {
-          const delta = Math.random() < 0.6 ? Math.floor(Math.random() * 18) + 3 : 0;
-          return { ...h, points: h.points + delta, delta };
-        });
-        return [...updated].sort((a, b) => b.points - a.points);
-      });
-      setLivePlayers((p) => ({
-        "gk-blitz":  p["gk-blitz"]  + (Math.random() < 0.5 ? 1 : -1),
-        "math-ninja": p["math-ninja"] + (Math.random() < 0.5 ? 1 : -1),
-      }));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+    const creatingGroup = showNewGroup;
+    const query = (creatingGroup ? groupMemberSearch : contactSearch).trim();
+    if ((!showNewChat && !creatingGroup) || (!creatingGroup && selectedContact) || query.length < 2) { setContacts([]); return; }
+    const timer = setTimeout(() => {
+      setContactsLoading(true);
+      api.users.search(query).then(setContacts).catch((error) => {
+        showToast(error instanceof Error ? error.message : "Could not search people");
+      }).finally(() => setContactsLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [contactSearch, groupMemberSearch, selectedContact, showNewChat, showNewGroup, showToast]);
 
-  // Quiz timer
   useEffect(() => {
-    if (!activeChallenge || quizDone) return;
-    setTimeLeft(15);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current!);
-          handleNextQuestion(null);
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [quizIdx, activeChallenge]);
-
-  const handleNextQuestion = (picked: number | null) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const correct = QUIZ_QUESTIONS[quizIdx].ans;
-    if (picked !== null && picked === correct) setQuizScore((s) => s + 10);
-    setSelectedOpt(picked);
-    setTimeout(() => {
-      if (quizIdx + 1 >= QUIZ_QUESTIONS.length) {
-        setQuizDone(true);
-      } else {
-        setQuizIdx((i) => i + 1);
-        setSelectedOpt(null);
-      }
-    }, 900);
-  };
-
-  const openChallenge = (c: Challenge) => {
-    setActiveChallenge(c);
-    setQuizIdx(0);
-    setSelectedOpt(null);
-    setQuizScore(0);
-    setQuizDone(false);
-  };
-
-  const closeChallenge = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setActiveChallenge(null);
-  };
+    if (preferencesReady && preferencesKey) {
+      AsyncStorage.setItem(preferencesKey, JSON.stringify(chatPreferences)).catch(() => {});
+    }
+  }, [chatPreferences, preferencesKey, preferencesReady]);
 
   // Groups
   const house = profile?.house ?? "";
   const houseMeta = HOUSE_META[house];
+  const visibleExploreGroups = profile?.role === "alumni"
+    ? EXPLORE_GROUPS
+    : EXPLORE_GROUPS.filter((group) => group.id !== "alumni-network");
 
   const houseGroup = house && (profile?.role === "student" || profile?.role === "alumni")
-    ? { id: `${house.toLowerCase()}-myhouse`, icon: "home-outline" as const, name: `${house} House ${houseMeta?.emoji ?? "🏠"}`, lastMessage: `Welcome to ${house} House!`, time: "12:51 PM", color: houseMeta?.bg ?? "#EEF2FF", iconColor: houseMeta?.color ?? "#3D5AF1" }
+    ? { id: `${house.toLowerCase()}-myhouse`, kind: "house" as const, icon: "home-outline" as const, name: `${house} House ${houseMeta?.emoji ?? "\u{1F3E0}"}`, lastMessage: "Tap to start a conversation", time: "", color: houseMeta?.bg ?? "#EEF2FF", iconColor: houseMeta?.color ?? "#3D5AF1" }
     : null;
 
   const batchOrClassGroup = (() => {
     if (!profile) return null;
     if (profile.role === "alumni" && profile.passoutYear)
-      return { id: `batch-${profile.passoutYear}`, icon: "people-outline" as const, name: `Batch ${profile.passoutYear}`, lastMessage: `Connect with Batch ${profile.passoutYear} batchmates!`, time: "12:51 PM", color: "#EEF2FF", iconColor: "#3D5AF1" };
-    if (profile.role === "student" && profile.class)
-      return { id: `class-${profile.class}`, icon: "school-outline" as const, name: `Class ${profile.class}`, lastMessage: `Study and connect with Class ${profile.class} mates!`, time: "12:51 PM", color: "#EEF2FF", iconColor: "#3D5AF1" };
+      return { id: `batch-${profile.passoutYear}`, kind: "batch" as const, icon: "people-outline" as const, name: `Batch ${profile.passoutYear}`, lastMessage: "Tap to start a conversation", time: "", color: "#EEF2FF", iconColor: "#3D5AF1" };
+    if (profile.role === "student" && profile.class) {
+      const className = profile.class.replace(/^class\s+/i, "");
+      return { id: `class-${profile.class}`, kind: "class" as const, icon: "school-outline" as const, name: `Class ${className}`, lastMessage: "Tap to start a conversation", time: "", color: "#EEF2FF", iconColor: "#3D5AF1" };
+    }
     return null;
   })();
 
   const jnvGroup = profile?.jnvName
-    ? { id: `jnv-${profile.jnvName.toLowerCase().replace(/\s+/g, "-")}`, icon: "chatbubble-outline" as const, name: profile.jnvName, lastMessage: `Connect with your ${profile.jnvName} community!`, time: "12:51 PM", color: "#F0FDF4", iconColor: "#10B981" }
+    ? { id: `jnv-${profile.jnvName.toLowerCase().replace(/\s+/g, "-")}`, kind: "school" as const, icon: "chatbubble-outline" as const, name: profile.jnvName, lastMessage: "Tap to start a conversation", time: "", color: "#F0FDF4", iconColor: "#10B981" }
     : null;
 
-  const YOUR_GROUPS = [batchOrClassGroup, houseGroup, jnvGroup, ALL_NAVODAYANS].filter(Boolean) as typeof ALL_NAVODAYANS[];
+  const personalGroups = [batchOrClassGroup, houseGroup, jnvGroup, ALL_NAVODAYANS].filter(Boolean) as GroupCard[];
+  const persistedPersonalGroups = personalGroups.map((personal) => {
+    const saved = schoolGroups.find((group) => normalizeGroupName(group.name) === normalizeGroupName(personal.name));
+    return saved
+      ? { ...personal, id: saved.id, kind: undefined, lastMessage: previewLastMessage(saved.lastMessage), time: formatListTime(saved.lastMessageAt), lastMessageAt: saved.lastMessageAt, lastMessageSenderId: saved.lastMessageSenderId, lastMessageSenderName: saved.lastMessageSenderName }
+      : personal;
+  });
+  const YOUR_GROUPS: GroupCard[] = [
+    ...persistedPersonalGroups,
+    ...schoolGroups
+      .filter((group) => !persistedPersonalGroups.some((personal) => normalizeGroupName(personal.name) === normalizeGroupName(group.name)))
+      .map((group) => ({ id: group.id, icon: "people-outline", name: group.name, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: "#EEF2FF", iconColor: "#3D5AF1", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
+  ];
 
-  const filtered = searchQuery.trim()
-    ? YOUR_GROUPS.filter((g) => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : YOUR_GROUPS;
+  const unreadIds = useMemo(() => new Set(YOUR_GROUPS.filter((group) => {
+    const lastRead = chatPreferences.readAt[group.id];
+    return !!group.lastMessageAt
+      && group.lastMessageSenderId !== profile?.uid
+      && !chatPreferences.muted.includes(group.id)
+      && (!lastRead || new Date(group.lastMessageAt).getTime() > new Date(lastRead).getTime());
+  }).map((group) => group.id)), [YOUR_GROUPS, chatPreferences, profile?.uid]);
+  const unreadChatCount = unreadIds.size + directConversations.filter((chat) => chat.unreadCount > 0 && !chatPreferences.muted.includes(chat.id)).length;
 
-  const showToast = (msg: string) => {
-    setJoinToast(msg);
-    setTimeout(() => setJoinToast(""), 2500);
+  const filtered = useMemo(() => {
+    let groups = YOUR_GROUPS;
+    if (filter === "archived") groups = groups.filter((group) => chatPreferences.archived.includes(group.id));
+    else {
+      groups = groups.filter((group) => !chatPreferences.archived.includes(group.id));
+      if (filter === "unread") groups = groups.filter((group) => unreadIds.has(group.id));
+      if (filter === "favorites") groups = groups.filter((group) => chatPreferences.favorites.includes(group.id));
+    }
+    if (filter !== "archived") {
+      groups = [...groups].sort((a, b) => {
+        const favoriteOrder = Number(chatPreferences.favorites.includes(b.id)) - Number(chatPreferences.favorites.includes(a.id));
+        if (favoriteOrder) return favoriteOrder;
+        const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+        const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+        return bTime - aTime;
+      });
+    }
+    if (searchQuery.trim()) groups = groups.filter((group) => group.name.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+    return groups;
+  }, [YOUR_GROUPS, filter, chatPreferences, unreadIds, searchQuery]);
+
+  const visibleDirectConversations = useMemo(() => {
+    let conversations = directConversations;
+    if (filter === "archived") conversations = conversations.filter((chat) => chatPreferences.archived.includes(chat.id));
+    else {
+      conversations = conversations.filter((chat) => !chatPreferences.archived.includes(chat.id));
+      if (filter === "unread") conversations = conversations.filter((chat) => chat.unreadCount > 0 && !chatPreferences.muted.includes(chat.id));
+      if (filter === "favorites") conversations = conversations.filter((chat) => chatPreferences.favorites.includes(chat.id));
+    }
+    if (searchQuery.trim()) conversations = conversations.filter((chat) => chat.peerName.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+    return [...conversations].sort((a, b) => Number(chatPreferences.favorites.includes(b.id)) - Number(chatPreferences.favorites.includes(a.id)) || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }, [directConversations, filter, chatPreferences, searchQuery]);
+
+  const updateGroupPreference = (field: "favorites" | "archived" | "muted", groupId: string) => {
+    setChatPreferences((current) => {
+      const values = current[field];
+      return { ...current, [field]: values.includes(groupId) ? values.filter((id) => id !== groupId) : [...values, groupId] };
+    });
   };
 
-  const toggleExplore = (id: string, name: string) => {
-    if (!tryAccess("Group Chat")) return;
-    if (joinedExplore.has(id)) {
-      setLeaveConfirm({ id, name });
-    } else {
-      setJoinedExplore((prev) => { const n = new Set(prev); n.add(id); return n; });
-      showToast(`Joined "${name}"!`);
+  const openGroup = async (group: GroupCard) => {
+    if (openingGroup) return;
+    setOpeningGroup(true);
+    try {
+      const chat = group.kind
+        ? await api.groups.ensureCommunity({ kind: group.kind, interestId: group.interestId })
+        : { id: group.id };
+      setChatPreferences((current) => ({ ...current, readAt: { ...current.readAt, [chat.id]: new Date().toISOString() } }));
+      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: chat.id, name: group.name } });
+    } catch (error) {
+      showToast(chatOpenError(error, "Could not open this group"));
+    } finally {
+      setOpeningGroup(false);
     }
   };
 
-  const confirmLeave = () => {
-    if (!leaveConfirm) return;
-    setJoinedExplore((p) => { const n = new Set(p); n.delete(leaveConfirm.id); return n; });
-    setLeaveConfirm(null);
+  const openDirectChat = (chat: DirectConversation) => {
+    router.push({ pathname: "/(screens)/direct-chat" as any, params: { id: chat.id, name: chat.peerName, peerId: chat.peerId, photoURL: chat.peerPhotoUrl || "" } });
   };
 
-  const handleCreateGroup = () => {
-    if (!newGroupName.trim()) return;
+  const selectContact = (contact: ChatContact) => {
+    const conversation = directConversations.find((item) => item.peerId === contact.id);
+    if (conversation) {
+      setShowNewChat(false);
+      setSelectedContact(null);
+      openDirectChat(conversation);
+      return;
+    }
+    setSelectedContact(contact);
+    setRequestMessage("");
+  };
+
+  const sendFirstMessage = async () => {
+    if (!selectedContact || !requestMessage.trim() || sendingRequest) return;
+    setSendingRequest(true);
+    try {
+      await api.directMessages.sendRequest(selectedContact.id, requestMessage.trim());
+      showToast("Message request sent");
+      setSelectedContact(null); setRequestMessage(""); setContactSearch(""); setShowNewChat(false);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not send message request");
+    } finally { setSendingRequest(false); }
+  };
+
+  const respondToMessageRequest = async (requestId: string, decision: "accept" | "decline") => {
+    setRespondingRequestId(requestId);
+    try {
+      await api.directMessages.respondToRequest(requestId, decision);
+      setMessageRequests((current) => current.filter((request) => request.id !== requestId));
+      if (decision === "accept") {
+        const conversations = await api.directMessages.conversations();
+        setDirectConversations(conversations);
+        const accepted = conversations.find((conversation) => conversation.peerId === messageRequests.find((request) => request.id === requestId)?.senderId);
+        if (accepted) { setShowRequests(false); openDirectChat(accepted); }
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update message request");
+    } finally { setRespondingRequestId(null); }
+  };
+
+  const toggleExplore = async (id: string, name: string) => {
+    try {
+      const group = await api.groups.ensureCommunity({ kind: "interest", interestId: id });
+      if (!joinedExplore.has(id)) {
+        setSchoolGroups((current) => [group, ...current.filter((item) => item.id !== group.id)]);
+        setJoinedExplore((prev) => { const next = new Set(prev); next.add(id); return next; });
+      }
+      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name } });
+    } catch (error) {
+      showToast(chatOpenError(error, "Could not join this community"));
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !selectedGroupMembers.length) return;
     const name = newGroupName.trim();
-    setNewGroupName(""); setShowNewGroup(false);
-    setGroupCreatedToast(`"${name}" created! Invite members to join.`);
-    setTimeout(() => setGroupCreatedToast(""), 3000);
+    setCreatingGroup(true);
+    try {
+      const group = await api.groups.create({ name, memberIds: selectedGroupMembers.map((member) => member.id) });
+      setSchoolGroups((current) => [group, ...current.filter((item) => item.id !== group.id)]);
+      setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setContacts([]); setShowNewGroup(false);
+      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name: group.name } });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not create this group");
+    } finally {
+      setCreatingGroup(false);
+    }
   };
-
-  const maxPoints = scores[0]?.points ?? 1;
-
-  const statusColor = (s: Challenge["status"]) =>
-    s === "live" ? "#10B981" : s === "upcoming" ? "#F59E0B" : "#8B5CF6";
-  const statusLabel = (s: Challenge["status"], c: Challenge) =>
-    s === "live" ? `🔴 LIVE · ${s === "live" && c.id === "gk-blitz" ? livePlayers["gk-blitz"] : livePlayers["math-ninja"]} playing` :
-    s === "upcoming" ? "⏳ Upcoming" : "🏁 Qualifying";
 
   return (
     <View style={styles.container}>
@@ -250,7 +378,7 @@ export default function ChatsScreen() {
           <View style={styles.searchRow}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search groups..."
+              placeholder="Search chats..."
               placeholderTextColor="#9CA3AF"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -262,13 +390,16 @@ export default function ChatsScreen() {
           </View>
         ) : (
           <>
-            <Text style={styles.headerTitle}>Chat Groups</Text>
+            <Text style={styles.headerTitle}>Chats</Text>
             <View style={styles.headerRight}>
               <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(true)}>
                 <Ionicons name="search-outline" size={20} color="#3D5AF1" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => tryAccess("Group Chat", () => setShowNewGroup(true))}>
-                <Ionicons name="add" size={22} color="#3D5AF1" />
+              <TouchableOpacity style={styles.iconBtn} onPress={() => { setSelectedContact(null); setShowNewChat(true); }} accessibilityLabel="Start a direct chat">
+                <Ionicons name="person-add-outline" size={19} color="#3D5AF1" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => { setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setShowNewGroup(true); }} accessibilityLabel="Create a group">
+                <Ionicons name="people-outline" size={19} color="#3D5AF1" />
               </TouchableOpacity>
             </View>
           </>
@@ -280,144 +411,123 @@ export default function ChatsScreen() {
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Your Groups */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Groups</Text>
-          <View style={styles.groupList}>
-            {(searchQuery ? filtered : YOUR_GROUPS).map((group) => (
-              <TouchableOpacity
-                key={group.id}
-                style={styles.groupRow}
-                activeOpacity={0.7}
-                onPress={() => tryAccess("Group Chat", () => router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name: encodeURIComponent(group.name) } }))}
-              >
-                <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
-                  <Ionicons name={group.icon} size={22} color={group.iconColor} />
-                </View>
-                <View style={styles.groupInfo}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  <Text style={styles.groupMessage} numberOfLines={1}>{group.lastMessage}</Text>
-                </View>
-                <View style={styles.groupRight}>
-                  <Text style={styles.groupTime}>{group.time}</Text>
-                  <View style={styles.unreadDot} />
-                </View>
+        {messageRequests.length > 0 && (
+          <TouchableOpacity style={styles.requestsBanner} onPress={() => setShowRequests(true)} activeOpacity={0.85}>
+            <View style={styles.requestsIcon}><Ionicons name="mail-unread-outline" size={20} color="#3D5AF1" /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.requestsTitle}>Message requests</Text>
+              <Text style={styles.requestsSubtitle}>{messageRequests.length} {messageRequests.length === 1 ? "person wants" : "people want"} to chat</Text>
+            </View>
+            <View style={styles.requestsCount}><Text style={styles.requestsCountText}>{messageRequests.length}</Text></View>
+          </TouchableOpacity>
+        )}
+        {!showSearch && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+            {([
+              ["all", "All"], ["unread", `Unread${unreadChatCount ? ` (${unreadChatCount})` : ""}`], ["favorites", "Favorites"], ["archived", "Archived"],
+            ] as [ChatFilter, string][]).map(([key, label]) => (
+              <TouchableOpacity key={key} style={[styles.filterChip, filter === key && styles.filterChipActive]} onPress={() => setFilter(key)}>
+                <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>{label}</Text>
               </TouchableOpacity>
             ))}
+          </ScrollView>
+        )}
+
+        {/* Your Groups */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>{filter === "archived" ? "Archived chats" : filter === "favorites" ? "Favorite chats" : filter === "unread" ? "Unread chats" : "Recent chats"}</Text>
+            <Text style={styles.chatCount}>{filtered.length + visibleDirectConversations.length}</Text>
+          </View>
+          {visibleDirectConversations.map((chat) => {
+            const unread = chat.unreadCount > 0 && !chatPreferences.muted.includes(chat.id);
+            return (
+              <View key={`direct-${chat.id}`} style={styles.groupRow}>
+                <TouchableOpacity style={styles.groupRowMain} onPress={() => openDirectChat(chat)} activeOpacity={0.7}>
+                  <View style={[styles.groupIcon, styles.directAvatar]}>{chat.peerPhotoUrl ? <Image source={{ uri: chat.peerPhotoUrl }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{chat.peerName.charAt(0).toUpperCase()}</Text>}</View>
+                  <View style={styles.groupInfo}>
+                    <View style={styles.groupTitleLine}>
+                      <Text style={[styles.groupName, unread && styles.groupNameUnread]} numberOfLines={1}>{chat.peerName}</Text>
+                      <Text style={[styles.groupTime, unread && styles.unreadText]}>{formatListTime(chat.updatedAt)}</Text>
+                    </View>
+                    <View style={styles.groupPreviewLine}>
+                      <Text style={[styles.groupMessage, unread && styles.groupMessageUnread]} numberOfLines={1}>{previewDirectMessage(chat.lastMessage)}</Text>
+                      {unread ? <View style={styles.unreadBadge} /> : null}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+              </View>
+            );
+          })}
+          {visibleDirectConversations.length > 0 && filtered.length > 0 && <Text style={styles.groupDividerLabel}>GROUP CHATS</Text>}
+          <View style={styles.groupList}>
+            {filtered.map((group) => {
+              const unread = unreadIds.has(group.id);
+              const preview = group.lastMessageSenderId === profile?.uid ? `You: ${group.lastMessage}` : group.lastMessageSenderName ? `${group.lastMessageSenderName}: ${group.lastMessage}` : group.lastMessage;
+              return (
+                <View key={group.id} style={styles.groupRow}>
+                  <TouchableOpacity style={styles.groupRowMain} activeOpacity={0.7} onPress={() => openGroup(group)}>
+                    <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
+                      <Ionicons name={group.icon} size={22} color={group.iconColor} />
+                    </View>
+                    <View style={styles.groupInfo}>
+                      <View style={styles.groupTitleLine}>
+                        <Text style={[styles.groupName, unread && styles.groupNameUnread]} numberOfLines={1}>{group.name}</Text>
+                        {group.time ? <Text style={[styles.groupTime, unread && styles.unreadText]}>{group.time}</Text> : null}
+                      </View>
+                      <View style={styles.groupPreviewLine}>
+                        <Text style={[styles.groupMessage, unread && styles.groupMessageUnread]} numberOfLines={1}>{preview}</Text>
+                        {unread ? <View style={styles.unreadBadge} /> : null}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+
+                </View>
+              );
+            })}
+            {!filtered.length && !visibleDirectConversations.length && <View style={styles.emptyList}><Ionicons name={filter === "unread" ? "mail-open-outline" : "chatbubbles-outline"} size={28} color="#9CA3AF" /><Text style={styles.emptyListText}>{filter === "unread" ? "YouÃ¢â‚¬â„¢re all caught up" : filter === "archived" ? "No archived chats" : filter === "favorites" ? "Star chats to keep them here" : "No chats match your search"}</Text></View>}
           </View>
         </View>
 
-        {!searchQuery && (
+        {!searchQuery && filter === "all" && (
           <>
-            {/* ─── HOUSE ARENA ─── */}
-            <View style={[styles.section, { paddingHorizontal: 0 }]}>
-              <LinearGradient colors={["#1E1B4B", "#312E81"]} style={styles.arenaHeader}>
-                <View style={styles.arenaTopRow}>
-                  <View>
-                    <Text style={styles.arenaTitle}>🏆 House Arena</Text>
-                    <Text style={styles.arenaSub}>Compete. Earn points. Rule the board.</Text>
-                  </View>
-                  <View style={styles.liveChip}>
-                    <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
-                    <Text style={styles.liveText}>LIVE</Text>
-                  </View>
-                </View>
-
-                {/* Leaderboard */}
-                <View style={styles.leaderboard}>
-                  {scores.map((h, i) => {
-                    const meta = HOUSE_META[h.name];
-                    const barWidth = (h.points / maxPoints) * 100;
-                    const isUserHouse = h.name === house;
-                    return (
-                      <View key={h.name} style={[styles.lbRow, isUserHouse && styles.lbRowHighlight]}>
-                        <Text style={styles.lbMedal}>{RANK_MEDALS[i]}</Text>
-                        <View style={[styles.lbDot, { backgroundColor: meta.color }]} />
-                        <View style={styles.lbInfo}>
-                          <View style={styles.lbNameRow}>
-                            <Text style={styles.lbName}>{h.name} {meta.emoji}{isUserHouse ? " (You)" : ""}</Text>
-                            <View style={styles.lbRight}>
-                              {h.delta > 0 && (
-                                <Text style={styles.lbDelta}>+{h.delta}</Text>
-                              )}
-                              <Text style={styles.lbPoints}>{h.points.toLocaleString()} pts</Text>
-                            </View>
-                          </View>
-                          <View style={styles.barBg}>
-                            <View style={[styles.barFill, { width: `${barWidth}%` as any, backgroundColor: meta.color }]} />
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </LinearGradient>
-            </View>
-
-            {/* Active Challenges */}
-            <View style={[styles.section, { paddingTop: 16 }]}>
-              <View style={styles.challengeHeaderRow}>
-                <Text style={styles.sectionTitle}>Active Challenges</Text>
-                <View style={styles.liveChipSmall}>
-                  <Animated.View style={[styles.liveDotSmall, { transform: [{ scale: pulseAnim }] }]} />
-                  <Text style={styles.liveTextSmall}>LIVE</Text>
-                </View>
-              </View>
-              <Text style={styles.sectionSub}>Play to earn points for your house</Text>
-
-              {CHALLENGES.map((c) => (
-                <View key={c.id} style={[styles.challengeCard, { borderLeftColor: c.color }]}>
-                  <View style={[styles.challengeIconWrap, { backgroundColor: c.bg }]}>
-                    <Text style={styles.challengeEmoji}>{c.icon}</Text>
-                  </View>
-                  <View style={styles.challengeInfo}>
-                    <Text style={styles.challengeTitle}>{c.title}</Text>
-                    <Text style={styles.challengeDesc}>{c.desc}</Text>
-                    <View style={styles.challengeMeta}>
-                      <Text style={[styles.challengeStatus, { color: statusColor(c.status) }]}>
-                        {c.id === "gk-blitz" || c.id === "math-ninja" ? statusLabel(c.status, c) : c.status === "live" ? `🔴 LIVE · ${c.players} playing` : c.status === "upcoming" ? "⏳ Upcoming" : "🏁 Qualifying"}
-                      </Text>
-                      <Text style={styles.challengePts}>+{c.points} pts</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.playBtn, { backgroundColor: c.status === "upcoming" ? "#E5E7EB" : c.color }]}
-                    onPress={() => c.status !== "upcoming" && openChallenge(c)}
-                    disabled={c.status === "upcoming"}
-                  >
-                    <Text style={[styles.playBtnText, { color: c.status === "upcoming" ? "#9CA3AF" : "#fff" }]}>
-                      {c.status === "upcoming" ? "Soon" : "Play"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
             {/* Explore Groups */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Explore Groups</Text>
-              {EXPLORE_GROUPS.map((g) => {
+              {visibleExploreGroups.map((g) => {
                 const joined = joinedExplore.has(g.id);
+                const groupCard: GroupCard = {
+                  id: g.id,
+                  icon: g.icon,
+                  name: g.name,
+                  color: g.color,
+                  iconColor: g.color,
+                  kind: "interest",
+                  interestId: g.id,
+                  lastMessage: `Join ${g.name} and start a conversation`,
+                  time: "",
+                };
                 return (
                   <TouchableOpacity
                     key={g.id}
                     style={styles.exploreRow}
                     activeOpacity={0.7}
-                    onPress={() => joined ? router.push({ pathname: "/(screens)/group-chat" as any, params: { id: g.id, name: encodeURIComponent(g.name) } }) : undefined}
+                    onPress={() => { if (joined) void openGroup(groupCard); }}
                   >
                     <View style={[styles.exploreIcon, { backgroundColor: g.color + "18" }]}>
                       <Ionicons name={g.icon} size={20} color={g.color} />
                     </View>
                     <View style={styles.exploreInfo}>
                       <Text style={styles.exploreName}>{g.name}</Text>
-                      <Text style={styles.exploreMembers}>{g.members} members</Text>
+                  <Text style={styles.exploreMembers}>Community discussion group</Text>
                     </View>
                     <TouchableOpacity
                       style={[styles.joinSmBtn, { borderColor: joined ? "#E5E7EB" : g.color, backgroundColor: joined ? g.color : "transparent" }]}
                       onPress={() => toggleExplore(g.id, g.name)}
                     >
                       <Text style={[styles.joinSmText, { color: joined ? "#fff" : g.color }]}>
-                        {joined ? "Joined ✓" : "Join"}
+                        {joined ? "Joined Ã¢Å“â€œ" : "Join"}
                       </Text>
                     </TouchableOpacity>
                   </TouchableOpacity>
@@ -428,140 +538,94 @@ export default function ChatsScreen() {
         )}
       </ScrollView>
 
-      {gateModal}
-
-      {/* ─── QUIZ MODAL ─── */}
-      <Modal visible={!!activeChallenge} animationType="slide">
-        <LinearGradient colors={["#1E1B4B", "#312E81"]} style={{ flex: 1 }}>
-          <View style={[styles.quizHeader, { paddingTop: topPad + 8 }]}>
-            <TouchableOpacity onPress={closeChallenge}>
-              <Ionicons name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.quizHeaderTitle}>{activeChallenge?.title}</Text>
-            <View style={styles.quizScoreBadge}>
-              <Text style={styles.quizScoreText}>{quizScore} pts</Text>
-            </View>
+      {/* New Group Modal */}
+      <Modal visible={showNewChat} animationType="slide" presentationStyle="formSheet" onRequestClose={() => { setShowNewChat(false); setSelectedContact(null); }}>
+        <View style={styles.modalWrap}>
+          <View style={styles.modalHeader}>
+            {selectedContact ? <TouchableOpacity onPress={() => setSelectedContact(null)}><Ionicons name="arrow-back" size={22} color="#374151" /></TouchableOpacity> : null}
+            <Text style={styles.modalTitle}>{selectedContact ? "New message" : "Start a chat"}</Text>
+            <TouchableOpacity onPress={() => { setShowNewChat(false); setSelectedContact(null); }}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
           </View>
-
-          {!quizDone ? (
-            <ScrollView contentContainerStyle={styles.quizBody}>
-              <View style={styles.quizProgressRow}>
-                {QUIZ_QUESTIONS.map((_, i) => (
-                  <View key={i} style={[styles.quizProgressDot, { backgroundColor: i < quizIdx ? "#6EE7B7" : i === quizIdx ? "#fff" : "rgba(255,255,255,0.25)" }]} />
-                ))}
+          {selectedContact ? (
+            <View style={styles.modalBody}>
+              <View style={styles.selectedContact}>
+                <View style={[styles.groupIcon, styles.directAvatar]}>{selectedContact.photoURL ? <Image source={{ uri: selectedContact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{selectedContact.fullName.charAt(0).toUpperCase()}</Text>}</View>
+                <View><Text style={styles.groupName}>{selectedContact.fullName}</Text><Text style={styles.contactMeta}>{selectedContact.role} Ã‚Â· {selectedContact.jnvName || "Navodaya Connect"}</Text></View>
               </View>
-
-              <View style={styles.timerRow}>
-                <View style={[styles.timerCircle, { borderColor: timeLeft <= 5 ? "#EF4444" : "#6EE7B7" }]}>
-                  <Text style={[styles.timerText, { color: timeLeft <= 5 ? "#EF4444" : "#6EE7B7" }]}>{timeLeft}</Text>
-                </View>
-              </View>
-
-              <Text style={styles.quizQ}>{QUIZ_QUESTIONS[quizIdx].q}</Text>
-
-              <View style={styles.optList}>
-                {QUIZ_QUESTIONS[quizIdx].opts.map((opt, oi) => {
-                  const isCorrect = oi === QUIZ_QUESTIONS[quizIdx].ans;
-                  const isSelected = selectedOpt === oi;
-                  let bg = "rgba(255,255,255,0.1)";
-                  let border = "rgba(255,255,255,0.2)";
-                  if (selectedOpt !== null) {
-                    if (isCorrect) { bg = "rgba(110,231,183,0.25)"; border = "#6EE7B7"; }
-                    else if (isSelected) { bg = "rgba(239,68,68,0.25)"; border = "#EF4444"; }
-                  }
-                  return (
-                    <TouchableOpacity
-                      key={oi}
-                      style={[styles.optBtn, { backgroundColor: bg, borderColor: border }]}
-                      onPress={() => selectedOpt === null && handleNextQuestion(oi)}
-                      disabled={selectedOpt !== null}
-                    >
-                      <View style={styles.optLabel}>
-                        <Text style={styles.optLetter}>{["A","B","C","D"][oi]}</Text>
-                      </View>
-                      <Text style={styles.optText}>{opt}</Text>
-                      {selectedOpt !== null && isCorrect && <Ionicons name="checkmark-circle" size={18} color="#6EE7B7" />}
-                      {isSelected && !isCorrect && <Ionicons name="close-circle" size={18} color="#EF4444" />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.quizCounter}>Question {quizIdx + 1} of {QUIZ_QUESTIONS.length}</Text>
-            </ScrollView>
-          ) : (
-            <View style={styles.quizDoneWrap}>
-              <Text style={styles.quizDoneEmoji}>{quizScore >= 40 ? "🏆" : quizScore >= 20 ? "🎉" : "💪"}</Text>
-              <Text style={styles.quizDoneTitle}>
-                {quizScore >= 40 ? "Outstanding!" : quizScore >= 20 ? "Well done!" : "Keep practising!"}
-              </Text>
-              <Text style={styles.quizDoneSub}>You scored</Text>
-              <Text style={styles.quizDoneScore}>{quizScore} / 50 pts</Text>
-              {house ? (
-                <Text style={styles.quizDoneHouse}>
-                  +{quizScore} points added to {house} House {HOUSE_META[house]?.emoji}
-                </Text>
-              ) : null}
-              <TouchableOpacity style={styles.quizDoneBtn} onPress={closeChallenge}>
-                <Text style={styles.quizDoneBtnText}>Back to Arena</Text>
+              <Text style={styles.inputLabel}>Introduce yourself</Text>
+              <TextInput style={[styles.modalInput, styles.firstMessageInput]} placeholder="Write a short message request..." placeholderTextColor="#9CA3AF" value={requestMessage} onChangeText={setRequestMessage} multiline maxLength={2000} />
+              <Text style={styles.requestHint}>They can accept your request before the private chat starts.</Text>
+              <TouchableOpacity style={[styles.createBtn, (!requestMessage.trim() || sendingRequest) && { opacity: 0.5 }]} onPress={() => void sendFirstMessage()} disabled={!requestMessage.trim() || sendingRequest}>
+                <Text style={styles.createBtnText}>{sendingRequest ? "Sending..." : "Send message request"}</Text>
               </TouchableOpacity>
             </View>
+          ) : (
+            <View style={styles.modalBody}>
+              <TextInput style={styles.modalInput} placeholder="Search Navodayans by name" placeholderTextColor="#9CA3AF" value={contactSearch} onChangeText={setContactSearch} autoFocus />
+              <TouchableOpacity style={styles.requestLink} onPress={() => { setShowNewChat(false); setShowRequests(true); }}>
+                <Ionicons name="mail-unread-outline" size={18} color="#3D5AF1" />
+                <Text style={styles.requestLinkText}>Message requests{messageRequests.length ? ` (${messageRequests.length})` : ""}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+              {contactsLoading ? <ActivityIndicator style={{ marginTop: 22 }} color="#3D5AF1" /> : contacts.map((contact) => (
+                <TouchableOpacity key={contact.id} style={styles.contactRow} onPress={() => selectContact(contact)}>
+                  <View style={[styles.groupIcon, styles.directAvatar]}>{contact.photoURL ? <Image source={{ uri: contact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{contact.fullName.charAt(0).toUpperCase()}</Text>}</View>
+                  <View style={{ flex: 1 }}><Text style={styles.groupName}>{contact.fullName}</Text><Text style={styles.contactMeta}>{contact.role} Ã‚Â· {contact.jnvName}</Text></View>
+                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              ))}
+              {!contactsLoading && contactSearch.trim().length >= 2 && !contacts.length ? <Text style={styles.contactEmpty}>No people found for that name.</Text> : null}
+              {!contactSearch.trim() && <Text style={styles.contactEmpty}>Enter at least 2 letters to find a Navodayan.</Text>}
+            </View>
           )}
-        </LinearGradient>
+        </View>
+      </Modal>
+
+      <Modal visible={showRequests} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowRequests(false)}>
+        <View style={styles.modalWrap}>
+          <View style={styles.modalHeader}><Text style={styles.modalTitle}>Message requests</Text><TouchableOpacity onPress={() => setShowRequests(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity></View>
+          <ScrollView contentContainerStyle={styles.requestList}>
+            {!messageRequests.length ? <Text style={styles.contactEmpty}>You have no pending message requests.</Text> : messageRequests.map((request) => (
+              <View key={request.id} style={styles.requestCard}>
+                <Text style={styles.groupName}>{request.senderName}</Text>
+                <Text style={styles.requestMessage}>{request.content}</Text>
+                <Text style={styles.requestHint}>{new Date(request.createdAt).toLocaleDateString()}</Text>
+                <View style={styles.requestActions}>
+                  <TouchableOpacity style={styles.declineButton} disabled={respondingRequestId === request.id} onPress={() => void respondToMessageRequest(request.id, "decline")}><Text style={styles.declineText}>Decline</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.acceptButton} disabled={respondingRequestId === request.id} onPress={() => void respondToMessageRequest(request.id, "accept")}><Text style={styles.acceptText}>{respondingRequestId === request.id ? "Please wait..." : "Accept"}</Text></TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       </Modal>
 
       {/* New Group Modal */}
-      <Modal visible={showNewGroup} animationType="slide" presentationStyle="formSheet">
+      <Modal visible={showNewGroup} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowNewGroup(false)}>
         <View style={styles.modalWrap}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Group</Text>
-            <TouchableOpacity onPress={() => setShowNewGroup(false)}>
-              <Ionicons name="close" size={24} color="#111" />
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Create group</Text>
+            <TouchableOpacity onPress={() => setShowNewGroup(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
           </View>
-          <View style={styles.modalBody}>
-            <Text style={styles.inputLabel}>Group Name</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter group name..."
-              placeholderTextColor="#9CA3AF"
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-            />
-            <TouchableOpacity
-              style={[styles.createBtn, !newGroupName.trim() && { opacity: 0.5 }]}
-              onPress={handleCreateGroup}
-              disabled={!newGroupName.trim()}
-            >
-              <Text style={styles.createBtnText}>Create Group</Text>
+          <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+            <Text style={styles.inputLabel}>Group name</Text>
+            <TextInput style={styles.modalInput} placeholder="Enter group name" placeholderTextColor="#9CA3AF" value={newGroupName} onChangeText={setNewGroupName} maxLength={80} />
+            <Text style={styles.inputLabel}>Add participants</Text>
+            <TextInput style={styles.modalInput} placeholder="Search Navodayans by name" placeholderTextColor="#9CA3AF" value={groupMemberSearch} onChangeText={setGroupMemberSearch} />
+            {selectedGroupMembers.length > 0 && <View style={styles.selectedMembers}><Text style={styles.inputLabel}>{selectedGroupMembers.length} selected</Text><View style={styles.selectedMemberChips}>{selectedGroupMembers.map((member) => <TouchableOpacity key={member.id} style={styles.memberChip} onPress={() => setSelectedGroupMembers((current) => current.filter((item) => item.id !== member.id))}><Text style={styles.memberChipText}>{member.fullName} Ã—</Text></TouchableOpacity>)}</View></View>}
+            {contactsLoading ? <ActivityIndicator color="#3D5AF1" style={{ paddingVertical: 14 }} /> : contacts.filter((contact) => !selectedGroupMembers.some((selected) => selected.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={styles.contactRow} onPress={() => setSelectedGroupMembers((current) => [...current, contact])}><View style={[styles.groupIcon, styles.directAvatar]}>{contact.photoURL ? <Image source={{ uri: contact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{contact.fullName.charAt(0).toUpperCase()}</Text>}</View><View style={{ flex: 1 }}><Text style={styles.groupName}>{contact.fullName}</Text><Text style={styles.contactMeta}>{contact.role} Â· {contact.jnvName}</Text></View><Ionicons name="add-circle-outline" size={22} color="#3D5AF1" /></TouchableOpacity>)}
+            {groupMemberSearch.trim().length >= 2 && !contactsLoading && !contacts.length ? <Text style={styles.contactEmpty}>No people found for that name.</Text> : null}
+            <TouchableOpacity style={[styles.createBtn, (!newGroupName.trim() || !selectedGroupMembers.length || creatingGroup) && { opacity: 0.5 }]} onPress={() => void handleCreateGroup()} disabled={!newGroupName.trim() || !selectedGroupMembers.length || creatingGroup}>
+              <Text style={styles.createBtnText}>{creatingGroup ? "Creating groupâ€¦" : `Create group${selectedGroupMembers.length ? ` Â· ${selectedGroupMembers.length + 1} people` : ""}`}</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
-
-      {/* Leave confirmation modal */}
-      <Modal visible={!!leaveConfirm} transparent animationType="fade">
-        <View style={styles.leaveOverlay}>
-          <View style={styles.leaveCard}>
-            <Text style={styles.leaveTitle}>Leave Group</Text>
-            <Text style={styles.leaveSub}>{leaveConfirm ? `Leave "${leaveConfirm.name}"?` : ""}</Text>
-            <View style={styles.leaveRow}>
-              <TouchableOpacity style={styles.leaveCancelBtn} onPress={() => setLeaveConfirm(null)}>
-                <Text style={styles.leaveCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.leaveConfirmBtn} onPress={confirmLeave}>
-                <Text style={styles.leaveConfirmText}>Leave</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Toast */}
-      {(joinToast || groupCreatedToast) ? (
+      {joinToast ? (
         <View style={styles.toast} pointerEvents="none">
           <Ionicons name="checkmark-circle" size={16} color="#fff" />
-          <Text style={styles.toastText}>{joinToast || groupCreatedToast}</Text>
+          <Text style={styles.toastText}>{joinToast}</Text>
         </View>
       ) : null}
     </View>
@@ -579,55 +643,62 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   section: { paddingHorizontal: 20, paddingTop: 20 },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
+  sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5 },
+  chatCount: { minWidth: 24, textAlign: "center", color: "#6B7280", backgroundColor: "#F3F4F6", borderRadius: 12, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  filterRow: { paddingHorizontal: 20, paddingTop: 14, gap: 8 },
+  filterChip: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff" },
+  filterChipActive: { backgroundColor: "#EAF0FF", borderColor: "#C7D2FE" },
+  filterText: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_500Medium" },
+  filterTextActive: { color: "#3D5AF1", fontFamily: "Inter_700Bold" },
   sectionSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 14 },
   groupList: {},
-  groupRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#F5F5F5", gap: 14 },
+  groupRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F3F5", gap: 4 },
+  groupRowMain: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", paddingVertical: 4, gap: 12 },
   groupIcon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
-  groupInfo: { flex: 1 },
-  groupName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3 },
-  groupMessage: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  groupInfo: { flex: 1, minWidth: 0, gap: 3 },
+  groupTitleLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  groupPreviewLine: { flexDirection: "row", alignItems: "center", gap: 8 },
+  groupName: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
+  groupNameUnread: { fontFamily: "Inter_700Bold" },
+  groupMessage: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  groupMessageUnread: { color: "#374151", fontFamily: "Inter_600SemiBold" },
+  unreadText: { color: "#16A34A", fontFamily: "Inter_600SemiBold" },
+  unreadBadge: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#16A34A" },
+  directAvatar: { backgroundColor: "#EAF0FF" },
+  contactPhoto: { width: "100%", height: "100%", borderRadius: 28 },
+  directAvatarText: { color: "#3D5AF1", fontSize: 19, fontFamily: "Inter_700Bold" },
+  groupDividerLabel: { marginTop: 14, marginBottom: 2, color: "#9CA3AF", fontSize: 10, letterSpacing: 1, fontFamily: "Inter_700Bold" },
+  requestsBanner: { marginHorizontal: 20, marginTop: 14, padding: 12, borderRadius: 16, flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "#EEF2FF" },
+  requestsIcon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  requestsTitle: { color: "#111827", fontSize: 14, fontFamily: "Inter_700Bold" },
+  requestsSubtitle: { color: "#6B7280", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  requestsCount: { minWidth: 24, height: 24, borderRadius: 12, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1" },
+  requestsCountText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  selectedContact: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 22 },
+  selectedMembers: { marginBottom: 14 },
+  selectedMemberChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  memberChip: { borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7, backgroundColor: "#EEF2FF" },
+  memberChipText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  contactMeta: { color: "#6B7280", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 3, textTransform: "capitalize" },
+  firstMessageInput: { minHeight: 110, textAlignVertical: "top" },
+  requestHint: { color: "#6B7280", fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 14 },
+  requestLink: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#F1F3F5" },
+  requestLinkText: { flex: 1, color: "#374151", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  contactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F3F5" },
+  contactEmpty: { color: "#6B7280", fontSize: 13, textAlign: "center", paddingVertical: 28, fontFamily: "Inter_400Regular" },
+  requestList: { padding: 16, gap: 12 },
+  requestCard: { backgroundColor: "#fff", padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "#E5E7EB" },
+  requestMessage: { color: "#374151", fontSize: 14, lineHeight: 20, marginTop: 8, fontFamily: "Inter_400Regular" },
+  requestActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 8 },
+  declineButton: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18, backgroundColor: "#F3F4F6" },
+  declineText: { color: "#4B5563", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  acceptButton: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 18, backgroundColor: "#3D5AF1" },
+  acceptText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  emptyList: { alignItems: "center", paddingVertical: 34, gap: 10 },
+  emptyListText: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular" },
   groupRight: { alignItems: "flex-end", gap: 4 },
   groupTime: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#3D5AF1" },
-
-  // Arena
-  arenaHeader: { marginHorizontal: 20, borderRadius: 20, padding: 18, marginTop: 6 },
-  arenaTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  arenaTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#fff" },
-  arenaSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.65)", marginTop: 2 },
-  liveChip: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444" },
-  liveText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#fff", letterSpacing: 0.5 },
-  leaderboard: { gap: 12 },
-  lbRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 10 },
-  lbRowHighlight: { backgroundColor: "rgba(255,255,255,0.14)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
-  lbMedal: { fontSize: 20, width: 28, textAlign: "center" },
-  lbDot: { width: 10, height: 10, borderRadius: 5 },
-  lbInfo: { flex: 1 },
-  lbNameRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5 },
-  lbName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
-  lbRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  lbDelta: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6EE7B7", backgroundColor: "rgba(110,231,183,0.15)", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8 },
-  lbPoints: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff" },
-  barBg: { height: 5, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 3, overflow: "hidden" },
-  barFill: { height: 5, borderRadius: 3 },
-
-  // Challenges
-  challengeHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  liveChipSmall: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEF2F2", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  liveDotSmall: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#EF4444" },
-  liveTextSmall: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#EF4444", letterSpacing: 0.5 },
-  challengeCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, backgroundColor: "#F9FAFB", padding: 14, marginBottom: 10, borderLeftWidth: 4 },
-  challengeIconWrap: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  challengeEmoji: { fontSize: 22 },
-  challengeInfo: { flex: 1 },
-  challengeTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 2 },
-  challengeDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 4 },
-  challengeMeta: { flexDirection: "row", alignItems: "center", gap: 8 },
-  challengeStatus: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  challengePts: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1", backgroundColor: "#EEF2FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  playBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  playBtnText: { fontSize: 13, fontFamily: "Inter_700Bold" },
 
   // Explore
   exploreRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F5F5F5", gap: 14 },
@@ -638,33 +709,6 @@ const styles = StyleSheet.create({
   joinSmBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
   joinSmText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  // Quiz Modal
-  quizHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 },
-  quizHeaderTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff", flex: 1, textAlign: "center" },
-  quizScoreBadge: { backgroundColor: "rgba(110,231,183,0.2)", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 4 },
-  quizScoreText: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#6EE7B7" },
-  quizBody: { paddingHorizontal: 20, paddingBottom: 40 },
-  quizProgressRow: { flexDirection: "row", gap: 6, justifyContent: "center", marginBottom: 20 },
-  quizProgressDot: { width: 8, height: 8, borderRadius: 4 },
-  timerRow: { alignItems: "center", marginBottom: 20 },
-  timerCircle: { width: 56, height: 56, borderRadius: 28, borderWidth: 2.5, alignItems: "center", justifyContent: "center" },
-  timerText: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  quizQ: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff", textAlign: "center", lineHeight: 26, marginBottom: 24 },
-  optList: { gap: 12 },
-  optBtn: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 14 },
-  optLabel: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  optLetter: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff" },
-  optText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#fff" },
-  quizCounter: { textAlign: "center", marginTop: 24, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.5)" },
-  quizDoneWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  quizDoneEmoji: { fontSize: 72, marginBottom: 16 },
-  quizDoneTitle: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#fff", marginBottom: 8 },
-  quizDoneSub: { fontSize: 16, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.65)", marginBottom: 4 },
-  quizDoneScore: { fontSize: 48, fontFamily: "Inter_700Bold", color: "#6EE7B7", marginBottom: 8 },
-  quizDoneHouse: { fontSize: 14, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.7)", marginBottom: 32, textAlign: "center" },
-  quizDoneBtn: { backgroundColor: "#fff", borderRadius: 28, paddingHorizontal: 40, paddingVertical: 15 },
-  quizDoneBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#312E81" },
-
   // Modals
   modalWrap: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
@@ -674,15 +718,6 @@ const styles = StyleSheet.create({
   modalInput: { borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
   createBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15, alignItems: "center" },
   createBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
-  leaveOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
-  leaveCard: { backgroundColor: "#fff", borderRadius: 20, padding: 24, width: "100%" },
-  leaveTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111", marginBottom: 6 },
-  leaveSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 20 },
-  leaveRow: { flexDirection: "row", gap: 12 },
-  leaveCancelBtn: { flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12, paddingVertical: 13, alignItems: "center" },
-  leaveCancelText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#374151" },
-  leaveConfirmBtn: { flex: 1, backgroundColor: "#EF4444", borderRadius: 12, paddingVertical: 13, alignItems: "center" },
-  leaveConfirmText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#fff" },
   toast: { position: "absolute", bottom: 24, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 8 },
   toastText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },
 });

@@ -36,7 +36,7 @@ function StarRow({ avg, max = 5 }: { avg: number; max?: number }) {
 
 export default function TeacherFeedbackScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [activeClass, setActiveClass] = useState("Class 11 Sci A");
   const CLASSES = ["Class 11 Sci A", "Class 12 Sci B", "Class 10 A"];
 

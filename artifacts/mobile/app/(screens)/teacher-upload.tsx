@@ -26,7 +26,7 @@ const INITIAL_UPLOADS = [
 
 export default function TeacherUploadScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [uploads,    setUploads]    = useState(INITIAL_UPLOADS);
   const [showModal,  setShowModal]  = useState(false);
   const [search,     setSearch]     = useState("");

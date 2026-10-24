@@ -16,7 +16,7 @@ const CATEGORY_COLOR: Record<string, string> = {
 
 export default function TeacherQueriesScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [queries,    setQueries]    = useState<StudentQueryWithAnswers[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [activeTab,  setActiveTab]  = useState("All");

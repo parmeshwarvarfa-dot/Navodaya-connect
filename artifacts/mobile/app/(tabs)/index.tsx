@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
-  useWindowDimensions,
   FlatList,
   Linking,
 } from "react-native";
@@ -38,7 +37,7 @@ const TEACHER_ACTIONS = [
 const ALUMNI_ACTIONS = [
   { label: "Alumni Zone",     icon: "school-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-zone"       },
   { label: "Mentorship",      icon: "people-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-mentorship" },
-  { label: "Achievements",    icon: "trophy-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/alumni-achievements"},
+  { label: "Connect",         icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/alumni-connect"     },
   { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
@@ -84,7 +83,6 @@ const GRADIENT_SETS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { profile, isVerified } = useAuth();
   const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
@@ -92,17 +90,23 @@ export default function HomeScreen() {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
   const [newsLinkError, setNewsLinkError] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
-  const quoteAreaHeight = topPad + 8;
-  const quoteFontSize = Math.min(22, width * 0.046);
-  const quoteDecorationWidth = Math.min(112, Math.max(64, width * 0.25));
+  const [canReviewVerification, setCanReviewVerification] = useState(false);
+  const headerTopPad = Platform.OS === "web" ? 0 : insets.top + 8;
+
+  useEffect(() => {
+    api.verification.permissions().then((permissions) => setCanReviewVerification(permissions.canReview)).catch(() => {});
+  }, []);
 
   const role = profile?.role ?? "student";
   const isTeacher = role === "teacher";
   const isAlumni = role === "alumni";
   const isOfficial = role === "official";
 
-  const quickActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
+  const roleActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
+  const verifyAction = { label: "Verify Users", icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management" };
+  const quickActions = canReviewVerification && !isOfficial
+    ? [...roleActions, verifyAction]
+    : roleActions;
   const limitedActionLabels = role === "student" ? new Set(["Study Hub", "Report Problem"]) : new Set<string>();
 
   const openFeature = (route: string, featureName: string, limited = false) => {
@@ -164,22 +168,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <View pointerEvents="none" style={[styles.headerQuoteArea, { height: quoteAreaHeight }]}>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
-            style={[styles.headerQuote, { fontSize: quoteFontSize }]}
-          >
-            Once a Navodayan, Always a Navodayan
-          </Text>
-          <View style={[styles.headerQuoteOrnament, { width: quoteDecorationWidth }]}>
-            <View style={styles.headerQuoteLine} />
-            <Ionicons name="heart-outline" size={14} color="#F5A900" />
-            <View style={styles.headerQuoteLine} />
-          </View>
-        </View>
+      <View style={[styles.header, { paddingTop: headerTopPad }]}>
         <View>
           <Text style={styles.headerGreeting}>Good {getGreeting()},</Text>
           <Text style={styles.headerTitle}>{profile?.fullName?.split(" ")[0] || "Navodayan"} 👋</Text>
@@ -228,7 +217,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.studentBadgeRow}>
-              {profile?.class && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Class {profile.class}</Text></View>}
+              {profile?.class && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Class {profile.class.replace(/^class\s+/i, "")}</Text></View>}
               {profile?.passoutYear && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Batch {profile.passoutYear}</Text></View>}
               {profile?.jnvState && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>{profile.jnvState}</Text></View>}
             </View>
@@ -419,13 +408,13 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Explore More</Text>
           {[
             { label: "JNV Rankings", desc: "India-wide & state JNV rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
-            { label: "Events", desc: "Upcoming school, sports & cultural events", icon: "calendar-outline" as const, iconColor: "#8B5CF6", iconBg: "#F5F3FF", route: "/(screens)/events" },
-            ...(role !== "official" ? [{ label: "House Arena", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(tabs)/chats" }] : []),
+            { label: "JNV Store", desc: "Books, JNV merchandise & learning essentials", icon: "bag-handle-outline" as const, iconColor: "#3D5AF1", iconBg: "#EEF2FF", route: "/(screens)/store" },
+            ...(role !== "official" ? [{ label: "House Arena", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/house-arena" }] : []),
           ].map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.exploreRow}
-              onPress={() => openFeature(item.route, item.label, item.label === "JNV Rankings")}
+              onPress={() => openFeature(item.route, item.label, item.label === "JNV Rankings" || item.label === "JNV Store")}
               activeOpacity={0.75}
             >
               <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>
@@ -435,7 +424,7 @@ export default function HomeScreen() {
                 <Text style={styles.exploreLabel}>{item.label}</Text>
                 <Text style={styles.exploreDesc}>{item.desc}</Text>
               </View>
-              {item.label !== "JNV Rankings" && !isVerified && <Ionicons name="lock-closed" size={14} color="#9CA3AF" />}
+              {item.label !== "JNV Rankings" && item.label !== "JNV Store" && !isVerified && <Ionicons name="lock-closed" size={14} color="#9CA3AF" />}
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </TouchableOpacity>
           ))}
@@ -493,16 +482,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingBottom: 12,
     backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0",
   },
-  headerQuoteArea: {
-    position: "absolute", top: 0, left: 0, right: 0,
-    alignItems: "center", justifyContent: "center", paddingHorizontal: 14, gap: 1,
-  },
-  headerQuote: {
-    width: "100%", textAlign: "center", lineHeight: 29,
-    fontFamily: "Pacifico_400Regular", color: "#102A72",
-  },
-  headerQuoteOrnament: { flexDirection: "row", alignItems: "center", gap: 6, height: 14 },
-  headerQuoteLine: { flex: 1, height: 1, backgroundColor: "#F5A900" },
   headerGreeting: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   emptyNewsText: { color: "#9CA3AF", fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 10 },

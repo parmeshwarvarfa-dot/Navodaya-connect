@@ -18,7 +18,7 @@ export default function PrivacySettingsScreen() {
   const { profile } = useAuth();
   const [visibility, setVisibility] = useState<"public" | "private">(profile?.profileVisibility || "public");
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const blocked = useListBlockedUsers({
     query: { queryKey: getListBlockedUsersQueryKey() },
   });

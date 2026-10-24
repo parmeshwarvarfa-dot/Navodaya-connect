@@ -154,7 +154,7 @@ function QuizModal({ visible, onClose }: { visible: boolean; onClose: () => void
 export default function StudyScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [classFilter, setClassFilter] = useState("All");
   const [showQuiz, setShowQuiz] = useState(false);
 

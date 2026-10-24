@@ -1,0 +1,17 @@
+2026-10-24 13:13:46.283: [INFO] CurrentProfilePath: C:\Users\FTT\Downloads\Navodaya-connect-GitHub\.edge-avatar-creator\Default
+2026-10-24 13:13:46.283: [INFO] Profiles total count: 1
+2026-10-24 13:13:46.283: [INFO] Profile: name=Profile 1 path=C:\Users\FTT\Downloads\Navodaya-connect-GitHub\.edge-avatar-creator\Default lastActive=2026-10-24T13:13:46.263Z
+2026-10-24 13:13:46.283: [INFO] LastUsedProfileDir: C:\Users\FTT\Downloads\Navodaya-connect-GitHub\.edge-avatar-creator\Default
+2026-10-24 13:13:46.283: [INFO] MostRecentlyActiveProfile: name=Profile 1 path=C:\Users\FTT\Downloads\Navodaya-connect-GitHub\.edge-avatar-creator\Default lastActive=2026-10-24T13:13:46.263Z
+2026-10-24 13:13:46.283: [INFO] OnDoneLoading sync enabled: 0
+2026-10-24 13:13:46.283: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-10-24 13:13:46.283: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-10-24 13:13:46.283: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-10-24 13:13:46.431: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-10-24 13:13:46.705: [INFO] VisibilityChanged: 0
+2026-10-24 13:13:48.116: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-10-24 13:13:48.123: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-10-24 13:13:48.128: [INFO] Primary account changed.
+2026-10-24 13:13:48.128: [INFO] OnPrimaryAccountChanged PrimaryAccountChangeEvent::Type::kSet
+2026-10-24 13:13:48.155: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-10-24 13:13:48.191: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3

@@ -21,7 +21,7 @@ const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> =
 
 export default function TeacherAssignmentsScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [assignments, setAssignments] = useState<AssignmentWithSubs[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [expanded,    setExpanded]    = useState<string | null>(null);

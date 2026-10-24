@@ -7,6 +7,7 @@ export * from "./events";
 export * from "./eventRegistrations";
 export * from "./mentorRequests";
 export * from "./verificationRequests";
+export * from "./roleTransitions";
 export * from "./teacherFeedback";
 export * from "./jobs";
 export * from "./announcements";

@@ -29,7 +29,7 @@ const REQUESTS = [
 
 export default function AlumniMentorshipScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeTab,  setActiveTab]  = useState<"requests" | "mentors" | "my">("requests");
   const [catFilter,  setCatFilter]  = useState("All");
   const [requests,   setRequests]   = useState(REQUESTS);

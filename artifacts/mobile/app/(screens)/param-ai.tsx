@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { getToken } from "@/lib/api";
+import { getApiOrigin, getToken } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -32,11 +32,6 @@ const SUGGESTIONS = [
   { emoji: "🌍", text: "Scholarships for JNV students" },
 ];
 
-function getApiUrl() {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN?.replace(/^https?:\/\//, "");
-  return domain ? `https://${domain}/api/param-ai/chat` : "http://localhost:80/api/param-ai/chat";
-}
-
 function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -47,7 +42,7 @@ export default function ParamAIScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 16 : insets.bottom;
   const typingAnim = useRef(new Animated.Value(0)).current;
 
@@ -93,7 +88,7 @@ export default function ParamAIScreen() {
 
     try {
       const token = await getToken();
-      const response = await fetch(getApiUrl(), {
+      const response = await fetch(`${getApiOrigin()}/api/param-ai/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,8 +98,8 @@ export default function ParamAIScreen() {
       });
       const payload = await response.json().catch(() => ({}));
 
-      if (!response.ok || typeof payload.reply !== "string" || !payload.reply.trim()) {
-        throw new Error("Param AI did not return a reply");
+      if (typeof payload.reply !== "string" || !payload.reply.trim()) {
+        throw new Error(payload.error || `Param AI request failed (${response.status})`);
       }
 
       setMessages((prev) => [
@@ -116,13 +111,15 @@ export default function ParamAIScreen() {
           timestamp: new Date(),
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-error`,
           role: "assistant",
-          text: "I’m having trouble connecting right now. Please check your connection and try again in a moment.",
+          text: error instanceof Error
+            ? error.message
+            : "I’m having trouble connecting right now. Please check your connection and try again in a moment.",
           timestamp: new Date(),
         },
       ]);

@@ -16,7 +16,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
-import { JNV_DATA, STATES } from "@/data/jnvData";
+import JnvDirectoryFields from "@/components/JnvDirectoryFields";
+import { isValidJnvSelection } from "@/data/jnvData";
 
 const HOUSES   = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASSES  = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
@@ -143,7 +144,7 @@ export default function SignUpScreen() {
   const params = useLocalSearchParams<{ completeProfile?: string }>();
   const isCompletingProfile = params.completeProfile === "1";
   const { signUp, completeProfile, pendingProfile } = useAuth();
-  const topPad    = Platform.OS === "web" ? 60 : insets.top;
+  const topPad    = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   const [step, setStep] = useState<"role" | "form">("role");
@@ -182,12 +183,6 @@ export default function SignUpScreen() {
       : [studentClass, section].filter(Boolean).join(" ")
     : "";
 
-  const jnvOptions = jnvState
-    ? Array.from(new Map((JNV_DATA[jnvState] || []).map((name) => {
-      const normalized = name.trim().replace(/\s+/g, " ");
-      return [normalized.toLocaleLowerCase(), normalized] as const;
-    })).values())
-    : [];
   const needsHouse = role === "student" || role === "alumni";
 
   const selectRole = (r: UserRole) => { setRole(r); setStep("form"); };
@@ -197,6 +192,10 @@ export default function SignUpScreen() {
 
     if (!fullName.trim() || !email.trim() || (!isCompletingProfile && !password) || !jnvState || !jnvName) {
       setErrorMsg("Please fill in all required fields.");
+      return;
+    }
+    if (!isValidJnvSelection(jnvState, jnvName)) {
+      setErrorMsg("Choose a JNV listed for the selected state or union territory.");
       return;
     }
     if (!isCompletingProfile && password !== confirmPwd) {
@@ -367,25 +366,13 @@ export default function SignUpScreen() {
                 <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" labelMap={HOUSE_LABEL_MAP} />
               )}
 
-              <BluePicker
-                placeholder="Select JNV State"
-                value={jnvState}
-                options={STATES}
-                onSelect={(v) => { setJnvState(v); setJnvName(""); }}
-                icon="location-outline"
-                searchable
+              <JnvDirectoryFields
+                state={jnvState}
+                school={jnvName}
+                variant="blue"
+                onStateChange={setJnvState}
+                onSchoolChange={setJnvName}
               />
-              <BluePicker
-                placeholder="Select JNV Name"
-                value={jnvName}
-                options={jnvOptions}
-                onSelect={setJnvName}
-                icon="business-outline"
-                searchable
-              />
-              <Text style={{ color: "rgba(255,255,255,0.72)", fontSize: 10, lineHeight: 15, marginTop: -3 }}>
-                Directory entries are still being reconciled with the official NVS school list; this selector does not indicate full coverage.
-              </Text>
 
               {role === "alumni" && (
                 <>

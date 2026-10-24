@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
   RefreshControl, Platform, Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,10 +12,13 @@ import type { VerificationRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap; label: string; desc: string }> = {
+  unverified:   { color: "#6B7280", bg: "#F3F4F6", icon: "shield-outline", label: "Not Verified", desc: "Submit role-specific school evidence to request verification." },
   pending:      { color: "#F59E0B", bg: "#FFFBEB", icon: "time-outline",             label: "Pending Review",  desc: "Your request is in queue. A JNV Official will review it shortly." },
+  awaiting_official_decision: { color: "#3D5AF1", bg: "#EEF2FF", icon: "hourglass-outline", label: "Awaiting Official Decision", desc: "Your school reviewer submitted a recommendation. An authorized JNV official makes the final decision." },
+  info_requested:{ color: "#3D5AF1", bg: "#EEF2FF", icon: "information-circle-outline", label: "More Information Needed", desc: "Your school reviewer asked for additional information." },
   approved:     { color: "#10B981", bg: "#ECFDF5", icon: "checkmark-circle-outline", label: "Approved",        desc: "Congratulations! Your account has been verified." },
   rejected:     { color: "#EF4444", bg: "#FEF2F2", icon: "close-circle-outline",     label: "Rejected",        desc: "Your verification was rejected. See notes below." },
-  info_requested:{ color: "#3D5AF1", bg: "#EEF2FF", icon: "information-circle-outline",label: "Info Requested",desc: "The official needs more information from you." },
+  suspended:    { color: "#6B7280", bg: "#F3F4F6", icon: "ban-outline", label: "Suspended", desc: "Your credential is suspended. Contact your JNV official for review." },
 };
 
 const TIMELINE_STEPS = [
@@ -26,21 +29,26 @@ const TIMELINE_STEPS = [
 ];
 
 const ROLE_TIPS: Record<string, string[]> = {
-  student:  ["Your request is automatically sent to your JNV's official.", "Verification confirms your enrollment at the JNV.", "You'll get full access to the platform once verified."],
-  teacher:  ["Your request is sent to your JNV Official for review.", "Verification confirms your teaching role at the JNV.", "Once verified, you can create groups and post updates."],
-  alumni:   ["Your request is sent to your JNV Official for review.", "Alumni can also verify using Class 10 or Class 12 marksheets.", "Verified alumni appear in the directory and can mentor students."],
+  student:  ["Submit enrollment evidence connected to your selected JNV.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
+  teacher:  ["Submit evidence of your teaching role at the selected JNV.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
+  alumni:   ["Submit an alumni record, transfer certificate, or marksheet.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
+  official: ["Your request is reviewed by an assigned school reviewer.", "Final school authority must be independently confirmed.", "An authorized school official makes the final decision."],
 };
 
 export default function VerificationCenterScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const { profile, refreshProfile, signOut } = useAuth();
 
   const [request, setRequest]   = useState<VerificationRequest | null>(null);
-  const [status, setStatus]     = useState<string>(profile?.verificationStatus ?? "pending");
+  const [status, setStatus]     = useState<string>(profile?.verificationStatus ?? "unverified");
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast]       = useState("");
+  const [applicantResponse, setApplicantResponse] = useState("");
+  const [evidenceSummary, setEvidenceSummary] = useState("");
+  const [evidenceLinks, setEvidenceLinks] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   const pulse = new Animated.Value(1);
   useEffect(() => {
@@ -77,6 +85,49 @@ export default function VerificationCenterScreen() {
   if (status === "verified") {
     refreshProfile();
   }
+
+  const submitAdditionalInfo = async () => {
+    if (!request) return;
+    if (!applicantResponse.trim()) return showToast("Add the requested information before submitting.");
+    const documentUrls = evidenceLinks.split(/\s+/).map((url) => url.trim()).filter(Boolean);
+    if (!documentUrls.length) return showToast("Add at least one supporting evidence link.");
+    setActionLoading(true);
+    try {
+      await api.verification.resubmit(request.id, { applicantResponse: applicantResponse.trim(), documentUrls });
+      setApplicantResponse("");
+      setEvidenceLinks("");
+      showToast("Additional information sent to your JNV reviewer.");
+      await fetchStatus();
+    } catch (error: any) { showToast(error.message || "Could not submit the information."); }
+    finally { setActionLoading(false); }
+  };
+
+  const withdrawRequest = async () => {
+    if (!request) return;
+    setActionLoading(true);
+    try {
+      await api.verification.withdraw(request.id);
+      showToast("Verification request withdrawn.");
+      await fetchStatus();
+    } catch (error: any) { showToast(error.message || "Could not withdraw the request."); }
+    finally { setActionLoading(false); }
+  };
+
+  const submitVerificationRequest = async () => {
+    const documentUrls = evidenceLinks.split(/\s+/).map((url) => url.trim()).filter(Boolean);
+    if (evidenceSummary.trim().length < 20) return showToast("Describe your role and school evidence in at least 20 characters.");
+    if (!documentUrls.length) return showToast("Add at least one supporting evidence link.");
+    setActionLoading(true);
+    try {
+      await api.verification.create({ evidenceSummary: evidenceSummary.trim(), documentUrls });
+      setEvidenceSummary("");
+      setEvidenceLinks("");
+      await refreshProfile();
+      await fetchStatus();
+      showToast("Verification request submitted to your JNV.");
+    } catch (error: any) { showToast(error.message || "Could not submit verification request."); }
+    finally { setActionLoading(false); }
+  };
 
   return (
     <View style={s.container}>
@@ -153,6 +204,7 @@ export default function VerificationCenterScreen() {
               { icon: "person-outline" as const,       label: "Name",    value: request.userFullName },
               { icon: "mail-outline" as const,          label: "Email",   value: request.userEmail },
               { icon: "business-outline" as const,      label: "JNV",     value: `${request.jnvName}, ${request.jnvState}` },
+              ...(request.evidenceSummary ? [{ icon: "document-text-outline" as const, label: "Evidence", value: request.evidenceSummary }] : []),
               { icon: "shield-outline" as const,        label: "Method",  value: request.method === "official" ? "Official Review" : request.method },
               { icon: "calendar-outline" as const,      label: "Submitted", value: new Date(request.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
               ...(request.reviewedByName ? [{ icon: "checkmark-circle-outline" as const, label: "Reviewed By", value: request.reviewedByName }] : []),
@@ -164,6 +216,74 @@ export default function VerificationCenterScreen() {
               </View>
             ))}
           </View>
+        )}
+
+        {status !== "verified" && status !== "pending" && status !== "suspended" && request?.status !== "info_requested" && (
+          <View style={s.detailCard}>
+            <Text style={s.sectionTitle}>REQUEST VERIFICATION</Text>
+            <Text style={s.evidenceHelp}>{profile?.role === "student" ? "Describe your current enrollment and attach a school record or enrollment confirmation." : profile?.role === "alumni" ? "Describe your JNV attendance and attach an alumni record, transfer certificate, or marksheet." : profile?.role === "teacher" ? "Describe your teaching role and attach an appointment or school confirmation record." : "Describe your school authority claim and attach institutional confirmation."}</Text>
+            <TextInput
+              style={s.responseInput}
+              multiline
+              value={evidenceSummary}
+              onChangeText={setEvidenceSummary}
+              placeholder="Explain how the attached evidence verifies your role at this JNV..."
+              placeholderTextColor="#9CA3AF"
+              maxLength={2000}
+            />
+            <TextInput
+              style={s.responseInput}
+              multiline
+              value={evidenceLinks}
+              onChangeText={setEvidenceLinks}
+              placeholder="Paste one or more HTTPS document links"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="none"
+              keyboardType="url"
+              maxLength={10000}
+            />
+            <Text style={s.evidenceHelp}>Before submitting, restrict link access to your assigned JNV reviewers. The app stores links, not document copies.</Text>
+            <TouchableOpacity style={s.responseButton} onPress={submitVerificationRequest} disabled={actionLoading}>
+              <Text style={s.responseButtonText}>{actionLoading ? "Submitting..." : "Submit verification request"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {request?.status === "info_requested" && (
+          <View style={s.detailCard}>
+            <Text style={s.sectionTitle}>ADDITIONAL INFORMATION REQUESTED</Text>
+            <Text style={s.detailValue}>{request.infoRequest || "Your school reviewer needs more information to continue."}</Text>
+            <TextInput
+              style={s.responseInput}
+              multiline
+              value={applicantResponse}
+              onChangeText={setApplicantResponse}
+              placeholder="Enter your response..."
+              placeholderTextColor="#9CA3AF"
+              maxLength={2000}
+            />
+            <TextInput
+              style={s.responseInput}
+              multiline
+              value={evidenceLinks}
+              onChangeText={setEvidenceLinks}
+              placeholder="Paste updated HTTPS evidence links"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="none"
+              keyboardType="url"
+              maxLength={10000}
+            />
+            <Text style={s.evidenceHelp}>Restrict the links to your assigned JNV reviewers before submitting.</Text>
+            <TouchableOpacity style={s.responseButton} onPress={submitAdditionalInfo} disabled={actionLoading}>
+              <Text style={s.responseButtonText}>{actionLoading ? "Submitting..." : "Submit information"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {request && ["pending", "info_requested"].includes(request.status) && (
+          <TouchableOpacity style={s.withdrawButton} onPress={withdrawRequest} disabled={actionLoading}>
+            <Text style={s.withdrawText}>Withdraw verification request</Text>
+          </TouchableOpacity>
         )}
 
         {/* Tips */}
@@ -195,7 +315,7 @@ export default function VerificationCenterScreen() {
           ))}
         </View>
 
-        {status !== "verified" && profile?.role !== "official" && (
+        {status !== "verified" && (
           <View style={s.skipCard}>
             <View style={s.skipIconWrap}>
               <Ionicons name="arrow-forward-circle-outline" size={22} color="#3D5AF1" />
@@ -264,6 +384,12 @@ const s = StyleSheet.create({
   detailRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
   detailLabel: { width: 80, fontSize: 12, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
   detailValue: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#111827" },
+  evidenceHelp: { color: "#6B7280", fontSize: 12, lineHeight: 18, marginTop: 8 },
+  responseInput: { minHeight: 90, marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", color: "#111827", textAlignVertical: "top", fontFamily: "Inter_400Regular" },
+  responseButton: { marginTop: 10, minHeight: 44, borderRadius: 12, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  responseButtonText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  withdrawButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
+  withdrawText: { color: "#B91C1C", fontFamily: "Inter_500Medium", fontSize: 12 },
   tipsCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0", gap: 2 },
   tipRow: { flexDirection: "row", gap: 10, paddingVertical: 6, alignItems: "flex-start" },
   tipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#1A3C6E", marginTop: 6 },

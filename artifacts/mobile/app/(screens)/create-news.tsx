@@ -25,7 +25,7 @@ export default function CreateNewsScreen() {
   const [category, setCategory] = useState("General");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const handlePost = async () => {
     setError("");

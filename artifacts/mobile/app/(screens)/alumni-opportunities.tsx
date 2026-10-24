@@ -25,7 +25,7 @@ const INITIAL_OPPS = [
 
 export default function AlumniOpportunitiesScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const [opps,      setOpps]      = useState(INITIAL_OPPS);
   const [typeFilter, setTypeFilter] = useState("All");
   const [search,    setSearch]    = useState("");
@@ -76,20 +76,26 @@ export default function AlumniOpportunitiesScreen() {
         <Text style={styles.trustText}>Only verified alumni can post opportunities. All posts are moderated for student safety.</Text>
       </View>
 
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-        <TextInput style={styles.searchInput} placeholder="Search opportunities…" placeholderTextColor="#9CA3AF" value={search} onChangeText={setSearch} />
-      </View>
+      <ScrollView
+        style={styles.contentScroll}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.searchWrap}>
+          <Ionicons name="search-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
+          <TextInput style={styles.searchInput} placeholder="Search opportunities…" placeholderTextColor="#9CA3AF" value={search} onChangeText={setSearch} />
+        </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
-        {TYPES.map((t) => (
-          <TouchableOpacity key={t} style={[styles.chip, typeFilter === t && styles.chipActive, typeFilter === t && t !== "All" && { backgroundColor: TYPE_COLOR[t] + "E0", borderColor: TYPE_COLOR[t] }]} onPress={() => setTypeFilter(t)}>
-            <Text style={[styles.chipText, typeFilter === t && styles.chipTextActive]}>{t}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
+          {TYPES.map((t) => (
+            <TouchableOpacity key={t} style={[styles.chip, typeFilter === t && styles.chipActive, typeFilter === t && t !== "All" && { backgroundColor: TYPE_COLOR[t] + "E0", borderColor: TYPE_COLOR[t] }]} onPress={() => setTypeFilter(t)}>
+              <Text style={[styles.chipText, typeFilter === t && styles.chipTextActive]}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
+        <View style={styles.opportunityList}>
         <Text style={styles.resultCount}>{filtered.length} opportunities</Text>
 
         {filtered.map((o) => {
@@ -139,6 +145,7 @@ export default function AlumniOpportunitiesScreen() {
             </View>
           );
         })}
+        </View>
       </ScrollView>
 
       <Modal visible={showPost} animationType="slide" presentationStyle="formSheet">
@@ -202,9 +209,12 @@ const styles = StyleSheet.create({
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0891B2", alignItems: "center", justifyContent: "center" },
   trustBanner: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#E0F2FE", paddingHorizontal: 16, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: "#BAE6FD" },
   trustText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: "#0369A1" },
+  contentScroll: { flex: 1 },
   searchWrap: { flexDirection: "row", alignItems: "center", margin: 14, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
+  chipScroll: { flexGrow: 0 },
   chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 12 },
+  opportunityList: { paddingHorizontal: 16 },
   chip: { borderRadius: 20, paddingHorizontal: 13, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
   chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
   chipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#374151" },

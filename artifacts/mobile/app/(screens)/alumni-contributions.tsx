@@ -35,7 +35,7 @@ const nextMilestone = 600;
 
 export default function AlumniContributionsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeTab, setActiveTab] = useState<"mine" | "badges" | "top">("mine");
 
   return (

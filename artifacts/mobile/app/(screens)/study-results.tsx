@@ -44,7 +44,7 @@ function ScoreBar({ marks, total, color }: { marks: number; total: number; color
 
 export default function StudyResultsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeExam, setActiveExam] = useState("1");
 
   const exam = EXAMS.find((e) => e.id === activeExam)!;

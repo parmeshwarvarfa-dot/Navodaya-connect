@@ -38,7 +38,7 @@ const GRADE_COLOR: Record<string, string> = { "A+": "#10B981", "A": "#3D5AF1", "
 
 export default function TeacherResultsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [results,    setResults]    = useState(PUBLISHED_RESULTS);
   const [expanded,   setExpanded]   = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);

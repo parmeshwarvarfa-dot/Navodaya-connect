@@ -24,7 +24,7 @@ const FEATURED = [
 
 export default function AlumniAchievementsScreen() {
   const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 60 : insets.top;
+  const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");

@@ -38,7 +38,8 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
 
   if (!process.env.GEMINI_API_KEY) {
     logger.error("Param AI is unavailable because GEMINI_API_KEY is not configured");
-    return res.status(503).json({ reply: getFallbackReply() });
+    const reply = "Param AI is not configured yet. Add GEMINI_API_KEY to the API server's .env file and restart the API server.";
+    return res.status(503).json({ error: reply, reply });
   }
 
   try {

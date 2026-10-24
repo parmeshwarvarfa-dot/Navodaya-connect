@@ -41,7 +41,7 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   const handleDone = async () => {

@@ -2,18 +2,22 @@ import React from "react";
 import {
   Image,
   Linking,
+  Modal,
   Share,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import type { SocialMemory } from "@workspace/api-client-react";
 
 type Props = {
   memory: SocialMemory;
   currentUserId?: string;
+  actionPending?: boolean;
   onLike: (memory: SocialMemory) => void;
   onBookmark: (memory: SocialMemory) => void;
   onComments: (memory: SocialMemory) => void;
@@ -38,6 +42,7 @@ function formatDate(value: string) {
 export default function MemoryPostCard({
   memory,
   currentUserId,
+  actionPending = false,
   onLike,
   onBookmark,
   onComments,
@@ -46,6 +51,8 @@ export default function MemoryPostCard({
   onOpenProfile,
   onMessage,
 }: Props) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { width, height } = useWindowDimensions();
   const mediaUrls = memory.mediaUrls ?? [];
   const totalVotes = (memory.pollVotes ?? []).reduce((sum, value) => sum + value, 0);
   const isOwner = memory.authorId === currentUserId;
@@ -116,9 +123,9 @@ export default function MemoryPostCard({
                 key={`${memory.id}-${index}`}
                 style={[styles.pollOption, chosen && styles.pollOptionChosen]}
                 onPress={() => onVote(memory, index)}
-                disabled={memory.viewerVote !== undefined}
+                disabled={memory.viewerVote !== undefined || actionPending}
                 accessibilityRole="button"
-                accessibilityState={{ selected: chosen, disabled: memory.viewerVote !== undefined }}
+                accessibilityState={{ selected: chosen, disabled: memory.viewerVote !== undefined || actionPending }}
               >
                 <View style={[styles.pollFill, { width: `${percentage}%` }]} />
                 <Text style={styles.pollOptionText}>{option}</Text>
@@ -139,18 +146,24 @@ export default function MemoryPostCard({
                 <Text style={styles.videoText}>Tap to play video</Text>
               </TouchableOpacity>
             ) : (
-              <Image
+              <TouchableOpacity
                 key={`${memory.id}-${index}`}
-                source={{ uri: url }}
-                style={[styles.mediaImage, mediaUrls.length === 1 && styles.singleImage]}
-                resizeMode="cover"
-              />
+                style={[styles.mediaImageTouch, mediaUrls.length === 1 && styles.singleImageTouch]}
+                onPress={() => setLightboxIndex(index)}
+                accessibilityLabel={`Open photo ${index + 1}`}
+              >
+                <Image
+                  source={{ uri: url }}
+                  style={styles.mediaImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
             )
           ))}
           {mediaUrls.length > 4 && (
-            <View style={styles.moreMedia}>
+            <TouchableOpacity style={styles.moreMedia} onPress={() => setLightboxIndex(3)} accessibilityLabel={`View ${mediaUrls.length - 3} more photos`}>
               <Text style={styles.moreMediaText}>+{mediaUrls.length - 4}</Text>
-            </View>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -172,7 +185,7 @@ export default function MemoryPostCard({
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.action} onPress={() => onLike(memory)} accessibilityLabel={memory.liked ? "Unlike post" : "Like post"}>
+        <TouchableOpacity style={styles.action} onPress={() => onLike(memory)} disabled={actionPending} accessibilityLabel={memory.liked ? "Unlike post" : "Like post"}>
           <Ionicons name={memory.liked ? "heart" : "heart-outline"} size={19} color={memory.liked ? "#E55367" : "#65728A"} />
           <Text style={[styles.actionText, memory.liked && styles.actionActive]}>Like</Text>
         </TouchableOpacity>
@@ -180,7 +193,7 @@ export default function MemoryPostCard({
           <Ionicons name="chatbubble-outline" size={18} color="#65728A" />
           <Text style={styles.actionText}>Comment</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.action} onPress={() => onBookmark(memory)} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
+        <TouchableOpacity style={styles.action} onPress={() => onBookmark(memory)} disabled={actionPending} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
           <Ionicons name={memory.bookmarked ? "bookmark" : "bookmark-outline"} size={18} color={memory.bookmarked ? "#355BE5" : "#65728A"} />
           <Text style={[styles.actionText, memory.bookmarked && styles.bookmarkActive]}>Save</Text>
         </TouchableOpacity>
@@ -190,6 +203,38 @@ export default function MemoryPostCard({
         </TouchableOpacity>
         {isOwner && <Ionicons name="lock-closed-outline" size={13} color="#8A95A8" style={styles.ownerIcon} />}
       </View>
+
+      {memory.postType !== "video" && (
+        <Modal visible={lightboxIndex !== null} transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
+          <View style={styles.lightbox}>
+            <TouchableOpacity style={styles.lightboxClose} onPress={() => setLightboxIndex(null)} accessibilityLabel="Close photo viewer">
+              <Ionicons name="close" size={25} color="#fff" />
+            </TouchableOpacity>
+            {lightboxIndex !== null && mediaUrls[lightboxIndex] && (
+              <Image source={{ uri: mediaUrls[lightboxIndex] }} style={{ width: width - 24, height: height - 100 }} resizeMode="contain" />
+            )}
+            {mediaUrls.length > 1 && lightboxIndex !== null && (
+              <View style={styles.lightboxControls}>
+                <TouchableOpacity
+                  style={styles.lightboxArrow}
+                  onPress={() => setLightboxIndex((lightboxIndex + mediaUrls.length - 1) % mediaUrls.length)}
+                  accessibilityLabel="Previous photo"
+                >
+                  <Ionicons name="chevron-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.lightboxCount}>{lightboxIndex + 1} / {mediaUrls.length}</Text>
+                <TouchableOpacity
+                  style={styles.lightboxArrow}
+                  onPress={() => setLightboxIndex((lightboxIndex + 1) % mediaUrls.length)}
+                  accessibilityLabel="Next photo"
+                >
+                  <Ionicons name="chevron-forward" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -211,8 +256,9 @@ const styles = StyleSheet.create({
   typePillText: { color: "#46546D", fontSize: 10, fontFamily: "Inter_700Bold" },
   caption: { color: "#2D384E", fontSize: 14, lineHeight: 21, fontFamily: "Inter_400Regular", marginTop: 13, marginBottom: 12 },
   mediaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 4, overflow: "hidden", borderRadius: 12, marginTop: 3 },
-  mediaImage: { width: "49%", height: 158, borderRadius: 8, backgroundColor: "#E9EDF4" },
-  singleImage: { width: "100%", height: 250 },
+  mediaImageTouch: { width: "49%", height: 158 },
+  singleImageTouch: { width: "100%", height: 250 },
+  mediaImage: { width: "100%", height: "100%", borderRadius: 8, backgroundColor: "#E9EDF4" },
   videoCard: { width: "100%", height: 210, backgroundColor: "#243656", alignItems: "center", justifyContent: "center", gap: 6 },
   videoText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   moreMedia: { position: "absolute", right: 0, bottom: 0, width: "49%", height: 158, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(15,24,43,0.58)" },
@@ -235,4 +281,9 @@ const styles = StyleSheet.create({
   actionActive: { color: "#E55367" },
   bookmarkActive: { color: "#355BE5" },
   ownerIcon: { marginLeft: 1, marginTop: 8 },
+  lightbox: { flex: 1, backgroundColor: "rgba(8,12,22,0.97)", alignItems: "center", justifyContent: "center" },
+  lightboxClose: { position: "absolute", zIndex: 2, top: 42, right: 20, width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.14)", alignItems: "center", justifyContent: "center" },
+  lightboxControls: { position: "absolute", bottom: 30, left: 25, right: 25, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  lightboxArrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
+  lightboxCount: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });

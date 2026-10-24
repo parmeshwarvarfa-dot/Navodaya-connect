@@ -56,7 +56,7 @@ const RANK_NUM_COLOR = ["#F59E0B", "#94A3B8", "#CD7F32"];
 export default function RankingsScreen() {
   const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState<"overall" | "academics" | "sports">("overall");
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const data = activeFilter === "academics" ? ACADEMIC_RANKINGS : activeFilter === "sports" ? SPORTS_RANKINGS : ALL_RANKINGS;
 

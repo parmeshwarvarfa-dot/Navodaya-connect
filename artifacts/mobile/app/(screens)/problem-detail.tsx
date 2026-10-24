@@ -42,7 +42,7 @@ export default function ProblemDetailScreen() {
   const [problem, setProblem] = useState<ProblemWithComments | null>(null);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchData = async () => {
     if (!id) return;

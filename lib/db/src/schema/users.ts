@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -12,6 +12,10 @@ export const usersTable = pgTable("users", {
   profileVisibility: text("profile_visibility").notNull().default("public"),
   house: text("house").notNull(),
   photoURL: text("photo_url"),
+  uploadedPhotoURL: text("uploaded_photo_url"),
+  avatarConfig: jsonb("avatar_config").$type<Record<string, string | number>>(),
+  avatarThumbnailURL: text("avatar_thumbnail_url"),
+  profileImageType: text("profile_image_type"),
   class: text("class"),
   enrollYear: text("enroll_year"),
   passoutYear: text("passout_year"),

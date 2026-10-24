@@ -1,13 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+import type { MemoryFeedPage } from "@workspace/api-client-react";
 
 const TOKEN_KEY = "auth_token";
 
 function getBaseUrl(): string {
   const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (configuredApiUrl) return configuredApiUrl.replace(/\/+$/, "");
+  const expoHost = Constants.expoConfig?.hostUri?.split(":")[0];
+  if (configuredApiUrl) {
+    // In Expo Go, localhost points to the phone itself. Reuse the Metro LAN host
+    // when the local .env still has the usual localhost API URL.
+    if (
+      Platform.OS !== "web" &&
+      expoHost &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(configuredApiUrl)
+    ) {
+      return configuredApiUrl.replace(/^(https?:\/\/)(localhost|127\.0\.0\.1)/i, `$1${expoHost}`).replace(/\/+$/, "");
+    }
+    return configuredApiUrl.replace(/\/+$/, "");
+  }
 
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
   if (domain) return `https://${domain}/api`;
+  if (Platform.OS !== "web" && expoHost) return `http://${expoHost}:3001/api`;
   return "http://localhost:3001/api";
 }
 
@@ -88,9 +104,15 @@ export const api = {
   },
   groups: {
     list: () => request<Group[]>("/groups"),
-    create: (data: { name: string; subject: string; class?: string }) =>
+    ensureCommunity: (data: { kind: "house" | "class" | "batch" | "school" | "all" | "interest"; interestId?: string }) =>
+      request<Group>("/groups/ensure-community", { method: "POST", body: JSON.stringify(data) }),
+    create: (data: { name: string; memberIds?: string[]; subject?: string; class?: string }) =>
       request<Group>("/groups", { method: "POST", body: JSON.stringify(data) }),
-    getMessages: (groupId: string) => request<GroupMessage[]>(`/groups/${groupId}/messages`),
+    members: (groupId: string) => request<GroupMember[]>(`/groups/${encodeURIComponent(groupId)}/members`),
+    addMembers: (groupId: string, memberIds: string[]) => request<GroupMember[]>(`/groups/${encodeURIComponent(groupId)}/members`, { method: "POST", body: JSON.stringify({ memberIds }) }),
+    getMessages: (groupId: string, before?: { createdAt: string; id: string }) => request<GroupMessage[]>(
+      `/groups/${groupId}/messages${before ? `?before=${encodeURIComponent(before.createdAt)}&beforeId=${encodeURIComponent(before.id)}` : ""}`,
+    ),
     sendMessage: (groupId: string, text: string, reply?: { replyToId: string; replyToText: string; replyToSender: string }) =>
       request<GroupMessage>(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify({ text, ...reply }) }),
     editMessage: (groupId: string, msgId: string, text: string) =>
@@ -117,15 +139,31 @@ export const api = {
     list: () => request<Event[]>("/events"),
     create: (data: { title: string; description: string; date: string; location?: string }) =>
       request<Event>("/events", { method: "POST", body: JSON.stringify(data) }),
+    register: (id: string, data: Record<string, string>) =>
+      request<Record<string, unknown>>(`/events/${encodeURIComponent(id)}/register`, { method: "POST", body: JSON.stringify(data) }),
   },
   users: {
     alumni: () => request<AlumniUser[]>("/users/alumni"),
+    search: (query: string) => request<ChatContact[]>(`/users/search?q=${encodeURIComponent(query)}`),
     get: (id: string) => request<PublicUserProfile>(`/users/profile/${encodeURIComponent(id)}`),
+    profileStats: (id: string) => request<ProfileStats>(`/users/${encodeURIComponent(id)}/profile-stats`),
+    followers: (id: string) => request<ProfileConnection[]>(`/users/${encodeURIComponent(id)}/followers`),
+    following: (id: string) => request<ProfileConnection[]>(`/users/${encodeURIComponent(id)}/following`),
     updateMe: (data: Partial<UserProfile>) =>
       request<UserProfile>("/users/me", { method: "PATCH", body: JSON.stringify(data) }),
     manage: () => request<ManagedUser[]>("/users/manage"),
     suspend: (id: string, suspended: boolean) =>
       request<ManagedUser>(`/users/${id}/suspend`, { method: "PATCH", body: JSON.stringify({ suspended }) }),
+  },
+  directMessages: {
+    conversations: () => request<DirectConversation[]>("/direct-conversations"),
+    messages: (conversationId: string) => request<DirectMessage[]>(`/direct-conversations/${encodeURIComponent(conversationId)}/messages`),
+    send: (conversationId: string, content: string) => request<DirectMessage>(`/direct-conversations/${encodeURIComponent(conversationId)}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
+    typing: (conversationId: string) => request<{ typing: string[] }>(`/direct-conversations/${encodeURIComponent(conversationId)}/typing`),
+    setTyping: (conversationId: string, typing: boolean) => request<{ ok: boolean }>(`/direct-conversations/${encodeURIComponent(conversationId)}/typing`, { method: "POST", body: JSON.stringify({ typing }) }),
+    requests: () => request<DirectMessageRequest[]>("/direct-message-requests"),
+    sendRequest: (recipientId: string, content: string) => request<DirectMessageRequest>("/direct-message-requests", { method: "POST", body: JSON.stringify({ recipientId, content }) }),
+    respondToRequest: (requestId: string, decision: "accept" | "decline") => request<{ success: boolean; status: string }>(`/direct-message-requests/${encodeURIComponent(requestId)}`, { method: "PATCH", body: JSON.stringify({ decision }) }),
   },
   mentorRequests: {
     list: () => request<MentorRequest[]>("/mentor-requests"),
@@ -140,9 +178,24 @@ export const api = {
   },
   verification: {
     myStatus: () => request<{ verificationStatus: string; request: VerificationRequest | null }>("/verification/my-status"),
+    permissions: () => request<{ canReview: boolean; canDecide: boolean; canManageReviewers: boolean; jnvId: string }>("/verification/permissions"),
+    requestAudit: (id: string) => request<VerificationAuditEvent[]>(`/verification/requests/${encodeURIComponent(id)}/audit`),
+    assignments: () => request<VerificationAssignment[]>("/verification/assignments"),
+    appointReviewer: (userId: string) => request<VerificationAssignment>("/verification/assignments", { method: "POST", body: JSON.stringify({ userId }) }),
+    removeReviewer: (id: string) => request<{ success: boolean }>(`/verification/assignments/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    myCredential: () => request<DigitalCredential>("/verification/my-credential"),
+    previewAlumniBatch: (graduationYear: string) => request<AlumniBatchPreview>("/verification/alumni-batches/preview", { method: "POST", body: JSON.stringify({ graduationYear }) }),
+    processAlumniBatch: (batchId: string, selectedUserIds: string[], confirmation: string) => request<AlumniBatchProcessResult>(`/verification/alumni-batches/${encodeURIComponent(batchId)}/process`, { method: "POST", body: JSON.stringify({ selectedUserIds, confirmation }) }),
+    alumniBatch: (batchId: string) => request<{ batch: { id: string; status: string }; results: AlumniTransitionResult[] }>(`/verification/alumni-batches/${encodeURIComponent(batchId)}`),
+    credentialReconcilePreview: () => request<CredentialReconcilePreview>("/verification/credentials/reconcile-preview"),
+    reconcileCredentials: (userIds: string[]) => request<{ issued: number; skipped: number }>("/verification/credentials/reconcile", { method: "POST", body: JSON.stringify({ userIds, confirmed: true }) }),
+    checkCredential: (token: string) => request<PublicCredentialStatus>(`/verification/public/${encodeURIComponent(token)}`),
     requests: () => request<VerificationRequest[]>("/verification/requests"),
-    create: (method?: string, documentUrls?: string[]) =>
-      request<VerificationRequest>("/verification/requests", { method: "POST", body: JSON.stringify({ method: method ?? "official", documentUrls }) }),
+    resubmit: (id: string, data: { applicantResponse: string; documentUrls?: string[] }) =>
+      request<VerificationRequest>(`/verification/requests/${encodeURIComponent(id)}/resubmit`, { method: "POST", body: JSON.stringify(data) }),
+    withdraw: (id: string) => request<{ success: boolean; status: string }>(`/verification/requests/${encodeURIComponent(id)}/withdraw`, { method: "POST" }),
+    create: (data: { evidenceSummary: string; documentUrls: string[] }) =>
+      request<VerificationRequest>("/verification/requests", { method: "POST", body: JSON.stringify(data) }),
     review: (id: string, status: string, notes?: string, infoRequest?: string) =>
       request<VerificationRequest>(`/verification/requests/${id}`, {
         method: "PATCH",
@@ -194,6 +247,9 @@ export const api = {
   },
   memories: {
     list: () => request<Memory[]>("/memories"),
+    profileList: (authorId: string, limit = 12, cursor?: string) => request<MemoryFeedPage>(
+      `/memories?authorId=${encodeURIComponent(authorId)}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+    ),
     create: (data: { caption?: string; imageUrl?: string }) =>
       request<Memory>("/memories", { method: "POST", body: JSON.stringify(data) }),
     toggleLike: (id: string) =>
@@ -206,10 +262,17 @@ export const api = {
   },
   clubs: {
     list: () => request<ClubWithMeta[]>("/clubs"),
+    requests: () => request<ClubJoinRequest[]>("/clubs/requests"),
     create: (data: { name: string; description: string; icon?: string; color?: string; bg?: string }) =>
       request<ClubWithMeta>("/clubs", { method: "POST", body: JSON.stringify(data) }),
     toggleJoin: (id: string) =>
       request<{ joined: boolean }>(`/clubs/${id}/join`, { method: "POST" }),
+    chat: (id: string) =>
+      request<{ id: string; name: string }>(`/clubs/${id}/chat`, { method: "POST" }),
+    leave: (id: string) =>
+      request<{ joined: boolean; joinStatus?: string }>(`/clubs/${id}/leave`, { method: "POST" }),
+    reviewRequest: (clubId: string, requestId: string, decision: "approved" | "denied") =>
+      request<{ requestId: string; clubId: string; status: string; studentId: string }>(`/clubs/${clubId}/requests/${requestId}`, { method: "PATCH", body: JSON.stringify({ decision }) }),
     postAnnouncement: (id: string, text: string) =>
       request<ClubAnnouncement>(`/clubs/${id}/announcements`, { method: "POST", body: JSON.stringify({ text }) }),
     takeOver: (id: string) =>
@@ -238,6 +301,10 @@ export interface UserProfile {
   jnvName: string;
   house: "Aravali" | "Nilgiri" | "Shivalik" | "Udaygiri";
   photoURL?: string;
+  uploadedPhotoURL?: string;
+  avatarConfig?: import("@workspace/api-zod").AvatarConfig;
+  avatarThumbnailURL?: string;
+  profileImageType?: "photo" | "avatar" | "default";
   class?: string;
   enrollYear?: string;
   passoutYear?: string;
@@ -284,12 +351,62 @@ export interface Group {
   id: string;
   name: string;
   subject: string;
+  clubId?: string;
   class?: string;
   jnvName?: string;
   jnvState?: string;
   teacherName?: string;
   teacherId?: string;
   memberCount?: number;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  lastMessageSenderId?: string | null;
+  lastMessageSenderName?: string | null;
+  createdAt: string;
+}
+
+export interface GroupMember {
+  id: string;
+  fullName: string;
+  role: string;
+  photoURL?: string;
+  phone?: string;
+}
+
+export interface ChatContact {
+  id: string;
+  fullName: string;
+  role: string;
+  jnvName?: string;
+  photoURL?: string;
+}
+
+export interface DirectConversation {
+  id: string;
+  peerId: string;
+  peerName: string;
+  peerPhotoUrl?: string;
+  lastMessage: string;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface DirectMessageRequest {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  content: string;
+  status: string;
   createdAt: string;
 }
 
@@ -350,6 +467,7 @@ export interface Event {
   date: string;
   location?: string;
   organizer?: string;
+  organizerId?: string;
   jnvName?: string;
   createdAt: string;
 }
@@ -396,9 +514,56 @@ export interface ManagedUser {
   jnvState: string;
   verificationStatus?: string;
   class?: string;
+  passoutYear?: string;
   profession?: string;
   subject?: string;
   createdAt: string;
+}
+
+export interface AlumniBatchPreview {
+  batchId: string;
+  jnvName: string;
+  jnvState: string;
+  graduationYear: string;
+  totalClass12Accounts: number;
+  alreadyTransitioned: number;
+  reviewRequired: number;
+  excluded: number;
+  confirmationText: string;
+  students: Array<{
+    id: string;
+    fullName: string;
+    role: string;
+    class: string | null;
+    passoutYear: string | null;
+    verificationStatus: string | null;
+    graduationReview: "recorded" | "conflict" | "official_confirmation_required";
+    selectable: boolean;
+    reason: string;
+  }>;
+}
+
+export interface AlumniTransitionResult {
+  id: string;
+  userId: string;
+  previousRole: string | null;
+  newRole: string | null;
+  result: "succeeded" | "already_transitioned" | "skipped" | "failed" | string;
+  reason: string | null;
+  credentialId: string | null;
+}
+
+export interface AlumniBatchProcessResult {
+  batchId: string;
+  status: string;
+  summary: { selected: number; succeeded: number; alreadyTransitioned: number; skipped: number; failed: number };
+  results: AlumniTransitionResult[];
+}
+
+export interface CredentialReconcilePreview {
+  candidates: Array<{ id: string; fullName: string; role: string }>;
+  reviewRequired: number;
+  message: string;
 }
 
 export interface MentorRequest {
@@ -438,13 +603,64 @@ export interface VerificationRequest {
   jnvState: string;
   method: string;
   status: string;
+  evidenceSummary?: string | null;
   documentUrls?: string | null;
   notes?: string | null;
   infoRequest?: string | null;
+  applicantResponse?: string | null;
+  adminRecommendation?: string | null;
+  adminNotes?: string | null;
+  adminReviewedBy?: string | null;
+  adminReviewedAt?: string | null;
+  officialNotes?: string | null;
+  officialReviewedBy?: string | null;
+  officialReviewedAt?: string | null;
   reviewedBy?: string | null;
   reviewedByName?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
+}
+
+export interface VerificationAssignment {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  assignmentRole: "admin" | "official";
+  active: boolean;
+}
+
+export interface VerificationAuditEvent {
+  id: string;
+  action: string;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  reason?: string | null;
+  createdAt: string;
+  actorName?: string | null;
+}
+
+export interface DigitalCredential {
+  credentialId: string;
+  fullName: string;
+  publicVerificationUrl: string;
+  status: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  issuedAt: string;
+}
+
+export interface PublicCredentialStatus {
+  status: "valid" | "suspended" | "revoked" | "not_found" | string;
+  credentialId?: string;
+  role?: string;
+  jnvName?: string;
+  jnvState?: string;
+  issuedAt?: string;
 }
 
 export interface TeacherFeedbackItem {
@@ -559,6 +775,22 @@ export interface Memory {
   liked: boolean;
 }
 
+export interface ProfileStats {
+  posts: number | null;
+  followers: number | null;
+  following: number | null;
+  restricted: boolean;
+}
+
+export interface ProfileConnection {
+  id: string;
+  fullName: string;
+  role: string;
+  jnvName: string;
+  photoURL?: string;
+  isRestricted: boolean;
+}
+
 export interface Achievement {
   id: string;
   title: string;
@@ -595,7 +827,18 @@ export interface ClubWithMeta {
   createdAt: string;
   managed: boolean;
   joined: boolean;
+  joinStatus?: "none" | "pending" | "approved" | "denied";
   announcements: ClubAnnouncement[];
+}
+
+export interface ClubJoinRequest {
+  id: string;
+  clubId: string;
+  studentId: string;
+  status: "pending" | "approved" | "denied";
+  createdAt: string;
+  student?: { id: string; fullName: string; role: string; class?: string; jnvName?: string };
+  club?: { id: string; name: string };
 }
 
 export interface QueryAnswer {

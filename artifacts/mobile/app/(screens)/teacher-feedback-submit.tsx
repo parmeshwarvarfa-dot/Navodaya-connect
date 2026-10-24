@@ -12,7 +12,7 @@ import type { ManagedUser } from "@/lib/api";
 
 export default function TeacherFeedbackSubmitScreen() {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [teachers, setTeachers]     = useState<ManagedUser[]>([]);
   const [selected, setSelected]     = useState<ManagedUser | null>(null);

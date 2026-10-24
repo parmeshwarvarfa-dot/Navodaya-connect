@@ -1,58 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/lib/api";
-import type { Event } from "@/lib/api";
-import EventCard from "@/components/EventCard";
-import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const FEATURES = [
-  { label: "Connect",        icon: "people-outline"           as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-connect"       },
-  { label: "Mentorship",     icon: "school-outline"           as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-mentorship"     },
-  { label: "Memories",       icon: "images-outline"           as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-memories"       },
-  { label: "Achievements",   icon: "trophy-outline"           as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/alumni-achievements"   },
-  { label: "Opportunities",  icon: "briefcase-outline"        as const, color: "#0891B2", bg: "#E0F2FE", route: "/(screens)/alumni-opportunities"  },
   { label: "Communities",    icon: "globe-outline"            as const, color: "#EC4899", bg: "#FDF2F8", route: "/(screens)/alumni-communities"    },
   { label: "Contributions",  icon: "ribbon-outline"           as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/alumni-contributions"  },
   { label: "Support JNV",    icon: "heart-outline"            as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/alumni-support"        },
-  { label: "Directory",      icon: "person-circle-outline"   as const, color: "#6366F1", bg: "#EEF2FF", route: "/(tabs)/alumni"                   },
-  { label: "Events",         icon: "calendar-outline"         as const, color: "#16A34A", bg: "#F0FDF4", route: "/(tabs)/events"                  },
-];
-
-const MENTOR_REQUESTS = [
-  { student: "Ananya S.", class: "Class 12 Sci A", goal: "JEE Preparation",      time: "2h ago"  },
-  { student: "Dev P.",    class: "Class 11 Sci B", goal: "Career in CS/Tech",    time: "5h ago"  },
-  { student: "Priya M.",  class: "Class 12 Sci A", goal: "NEET Preparation",     time: "Yesterday"},
-];
-
-const UPCOMING_EVENTS = [
-  { title: "Annual Alumni Meet 2026",          date: "22 May",  attendees: 142, type: "Reunion"  },
-  { title: "Career Guidance Webinar – IT",     date: "15 May",  attendees: 67,  type: "Webinar"  },
-  { title: "JNV Scholarship Drive Workshop",   date: "18 May",  attendees: 89,  type: "Workshop" },
-];
-
-const OPPORTUNITIES = [
-  { title: "Google Summer Internship – CS",   type: "Internship",  target: "Class 12",      urgent: true  },
-  { title: "KVPY Scholarship 2026",           type: "Scholarship", target: "Class 11",      urgent: false },
-  { title: "NTSE Preparation Workshop",       type: "Workshop",    target: "Class 10",      urgent: false },
 ];
 
 export default function AlumniZoneScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
   const isVerified = profile?.verificationStatus === "verified";
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-
-  useEffect(() => {
-    api.events.list().then((data) => setUpcomingEvents(data.slice(0, 2))).catch(() => {});
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -77,15 +43,11 @@ export default function AlumniZoneScreen() {
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}>
-        <AchievementsHighlights />
-
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
             { label: "Connections",    value: "48",  icon: "people-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF" },
-            { label: "Mentees",        value: "6",   icon: "school-outline"   as const, color: "#10B981", bg: "#ECFDF5" },
             { label: "Contributions",  value: "12",  icon: "ribbon-outline"   as const, color: "#8B5CF6", bg: "#F5F3FF" },
-            { label: "Achievements",   value: "3",   icon: "trophy-outline"   as const, color: "#F59E0B", bg: "#FFFBEB" },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Ionicons name={s.icon} size={16} color={s.color} />
@@ -95,80 +57,6 @@ export default function AlumniZoneScreen() {
           ))}
         </View>
 
-        {/* Mentor Requests */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Mentorship Requests</Text>
-            <TouchableOpacity onPress={() => router.push("/(screens)/alumni-mentorship" as any)}>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {MENTOR_REQUESTS.map((r, i) => (
-            <TouchableOpacity key={i} style={styles.mentorRow} onPress={() => router.push("/(screens)/alumni-mentorship" as any)}>
-              <View style={styles.mentorAvatar}><Text style={styles.mentorAvatarText}>{r.student[0]}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.mentorStudent}>{r.student} <Text style={styles.mentorClass}>· {r.class}</Text></Text>
-                <Text style={styles.mentorGoal}>{r.goal}</Text>
-                <Text style={styles.mentorTime}>{r.time}</Text>
-              </View>
-              <View style={styles.acceptBtn}><Text style={styles.acceptBtnText}>Accept</Text></View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Upcoming Events */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Upcoming Events</Text>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/events" as any)}>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event, i) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                index={i}
-                showRegisterButton={false}
-              />
-            ))
-          ) : (
-            <TouchableOpacity
-              style={styles.eventEmptyCard}
-              onPress={() => router.push("/(tabs)/events" as any)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#9CA3AF" />
-              <Text style={styles.eventEmptyText}>Tap to browse upcoming events</Text>
-              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Opportunities */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Live Opportunities</Text>
-            <TouchableOpacity onPress={() => router.push("/(screens)/alumni-opportunities" as any)}>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {OPPORTUNITIES.map((o, i) => (
-            <View key={i} style={styles.oppRow}>
-              <View style={styles.oppIcon}><Ionicons name="briefcase-outline" size={18} color="#0891B2" /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.oppTitle}>{o.title}</Text>
-                <View style={{ flexDirection: "row", gap: 8, alignItems: "center", marginTop: 3 }}>
-                  <View style={styles.oppTypePill}><Text style={styles.oppTypeText}>{o.type}</Text></View>
-                  <Text style={styles.oppTarget}>{o.target}</Text>
-                  {o.urgent && <View style={styles.urgentPill}><Text style={styles.urgentText}>Urgent</Text></View>}
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-            </View>
-          ))}
-        </View>
 
         {/* Feature Grid */}
         <View style={styles.section}>

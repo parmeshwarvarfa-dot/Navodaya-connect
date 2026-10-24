@@ -1,12 +1,37 @@
 import { Router } from "express";
-import { eq, and, inArray, or } from "drizzle-orm";
+import { eq, and, inArray, or, ilike, ne } from "drizzle-orm";
 import { db, userBlocksTable, userFollowsTable, usersTable } from "@workspace/db";
+import { avatarConfigSchema } from "@workspace/api-zod";
 import { requireAuth, getUser } from "../lib/auth";
 import { isValidUserId } from "./user-validation";
 import { canViewProfile, isBlockedBetween } from "../lib/social-access";
 import { makeJnvId } from "../lib/jnv-identity";
 
 const router = Router();
+
+router.get("/users/search", requireAuth, async (req, res) => {
+  const viewer = getUser(req);
+  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (query.length < 2) return res.json([]);
+  try {
+    const matches = await db.select({
+      id: usersTable.id,
+      fullName: usersTable.fullName,
+      role: usersTable.role,
+      jnvName: usersTable.jnvName,
+      photoURL: usersTable.photoURL,
+    }).from(usersTable)
+      .where(and(ilike(usersTable.fullName, `%${query.replace(/[%_\\]/g, "\\$&")}%`), ne(usersTable.id, viewer.id)))
+      .limit(40);
+    const visible = await Promise.all(matches.map(async (match) =>
+      await canViewProfile(viewer.id, match.id) && !await isBlockedBetween(viewer.id, match.id) ? match : null,
+    ));
+    return res.json(visible.filter(Boolean).slice(0, 20));
+  } catch (error) {
+    req.log.error(error, "Failed to search chat contacts");
+    return res.status(500).json({ error: "Failed to search people" });
+  }
+});
 
 router.get("/users/alumni", requireAuth, async (req, res) => {
   try {
@@ -127,13 +152,53 @@ router.patch("/users/me", requireAuth, async (req, res) => {
     const user = getUser(req);
     const {
       fullName, profession, company, field, subject, designation,
-      skills, verificationStatus, photoURL, jnvName, jnvState, house,
+      skills, photoURL, jnvName, jnvState, house,
       passoutYear, enrollYear, class: cls, bio, phone, linkedinUrl, twitterUrl,
+      avatarConfig, avatarThumbnailURL, profileImageType, uploadedPhotoURL,
     } = req.body;
 
     const updates: Partial<typeof usersTable.$inferInsert> = {};
     if (fullName !== undefined) updates.fullName = fullName;
     if (photoURL !== undefined) updates.photoURL = photoURL;
+    if (uploadedPhotoURL !== undefined) {
+      if (typeof uploadedPhotoURL !== "string" || uploadedPhotoURL.length > 2_000_000) {
+        return res.status(400).json({ error: "Profile photo is too large or invalid" });
+      }
+      updates.uploadedPhotoURL = uploadedPhotoURL || null;
+    }
+    if (avatarConfig !== undefined) {
+      const parsed = avatarConfigSchema.safeParse(avatarConfig);
+      if (!parsed.success) return res.status(400).json({ error: "Invalid avatar configuration" });
+      updates.avatarConfig = parsed.data;
+    }
+    if (avatarThumbnailURL !== undefined) {
+      if (typeof avatarThumbnailURL !== "string" || avatarThumbnailURL.length > 500_000 ||
+          (avatarThumbnailURL && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(avatarThumbnailURL))) {
+        return res.status(400).json({ error: "Invalid avatar thumbnail" });
+      }
+      updates.avatarThumbnailURL = avatarThumbnailURL || null;
+    }
+    if (profileImageType !== undefined) {
+      if (!["photo", "avatar", "default"].includes(profileImageType)) {
+        return res.status(400).json({ error: "Invalid profile image selection" });
+      }
+      if (profileImageType === "avatar") {
+        const thumbnail = avatarThumbnailURL ?? user.avatarThumbnailURL;
+        const config = avatarConfig ?? user.avatarConfig;
+        if (!thumbnail || !config) return res.status(400).json({ error: "Save an avatar before selecting it" });
+        updates.uploadedPhotoURL = uploadedPhotoURL ?? user.uploadedPhotoURL ?? (user.profileImageType === "avatar" ? null : user.photoURL);
+        updates.photoURL = thumbnail;
+      } else if (profileImageType === "photo") {
+        const selectedPhoto = photoURL ?? user.uploadedPhotoURL ?? (user.profileImageType === "avatar" ? null : user.photoURL);
+        if (!selectedPhoto) return res.status(400).json({ error: "Choose a profile photo first" });
+        updates.photoURL = selectedPhoto;
+        updates.uploadedPhotoURL = selectedPhoto;
+      } else {
+        updates.uploadedPhotoURL = uploadedPhotoURL ?? user.uploadedPhotoURL ?? (user.profileImageType === "avatar" ? null : user.photoURL);
+        updates.photoURL = null;
+      }
+      updates.profileImageType = profileImageType;
+    }
     if (jnvName !== undefined) updates.jnvName = jnvName;
     if (jnvState !== undefined) updates.jnvState = jnvState;
     if (jnvName !== undefined || jnvState !== undefined || !user.jnvId) {
@@ -153,10 +218,6 @@ router.patch("/users/me", requireAuth, async (req, res) => {
     if (passoutYear !== undefined) updates.passoutYear = passoutYear;
     if (enrollYear !== undefined) updates.enrollYear = enrollYear;
     if (cls !== undefined) updates.class = cls;
-    if (verificationStatus !== undefined && user.role === "alumni") {
-      updates.verificationStatus = verificationStatus;
-    }
-
     const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id)).returning();
     const { passwordHash, ...safe } = updated;
     res.json({ ...safe, skills: safe.skills ? JSON.parse(safe.skills) : [] });

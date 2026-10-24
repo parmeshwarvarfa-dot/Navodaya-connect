@@ -23,7 +23,7 @@ const REASONS = [
 
 export default function ReportUserScreen() {
   const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 60 : insets.top;
+  const topPad  = Platform.OS === "web" ? 0 : insets.top;
   const params  = useLocalSearchParams<{ userId?: string }>();
   const targetId = typeof params.userId === "string" ? params.userId : "";
   const { profile } = useAuth();
