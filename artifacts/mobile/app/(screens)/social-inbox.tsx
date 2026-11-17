@@ -215,7 +215,7 @@ export default function SocialInboxScreen() {
             contentContainerStyle={styles.messageList}
             ref={(ref) => ref?.scrollToEnd({ animated: false })}
           >
-            {messages.isLoading ? <ActivityIndicator color="#3D5AF1" style={{ marginTop: 20 }} /> : null}
+            {messages.isLoading ? <ActivityIndicator color="#7C3AED" style={{ marginTop: 20 }} /> : null}
             {messages.isError ? <Text style={styles.empty}>Messages couldn’t be loaded. Pull refresh to try again.</Text> : null}
             {!messages.isLoading && !messages.isError && !messages.data?.length ? (
               <Text style={styles.empty}>No messages here yet. Say hello to continue the conversation.</Text>
@@ -251,7 +251,7 @@ export default function SocialInboxScreen() {
           <View style={styles.tabs}>
             {TABS.map((tab) => (
               <TouchableOpacity key={tab.id} style={styles.tab} onPress={() => setActiveTab(tab.id)}>
-                <Ionicons name={tab.icon} size={17} color={activeTab === tab.id ? "#3D5AF1" : "#8992A1"} />
+                <Ionicons name={tab.icon} size={17} color={activeTab === tab.id ? "#7C3AED" : "#8992A1"} />
                 <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
                 {tab.id === "message_requests" && (requests.data?.length ?? 0) > 0 ? (
                   <View style={styles.countBadge}><Text style={styles.countText}>{requests.data?.length}</Text></View>
@@ -262,7 +262,7 @@ export default function SocialInboxScreen() {
             ))}
           </View>
           <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: insets.bottom + 32 }}>
-            {isLoading ? <ActivityIndicator color="#3D5AF1" style={{ paddingVertical: 28 }} /> : null}
+            {isLoading ? <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 28 }} /> : null}
             {activeTab === "messages" && !conversations.isLoading && (
               conversations.isError ? <Text style={styles.empty}>Conversations couldn’t be loaded. Try refreshing.</Text>
                 : !conversations.data?.length ? <Text style={styles.empty}>No direct conversations yet. Visit a profile to send a message request.</Text>
@@ -339,7 +339,7 @@ export default function SocialInboxScreen() {
                 : !notifications.data?.length ? <Text style={styles.empty}>No social activity yet.</Text>
                   : notifications.data.map((item) => (
                     <TouchableOpacity key={item.id} style={[styles.activityRow, !item.readAt && styles.activityUnread]} activeOpacity={0.8} onPress={() => openActivity(item)} accessibilityRole="button" accessibilityLabel={`${item.actorName}. ${item.message}`}>
-                      <View style={styles.activityIcon}><Ionicons name="notifications-outline" size={17} color="#3D5AF1" /></View>
+                      <View style={styles.activityIcon}><Ionicons name="notifications-outline" size={17} color="#7C3AED" /></View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.rowTitle}>{item.actorName}</Text>
                         <Text style={styles.rowSubtitle}>{item.message}</Text>
@@ -360,8 +360,8 @@ export default function SocialInboxScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F5FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#3D5AF1", borderBottomWidth: 1, borderBottomColor: "#3151E8" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#3151E8" },
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   headerSubtitle: { color: "rgba(255,255,255,0.78)", fontSize: 11, marginTop: 2 },
@@ -369,14 +369,14 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: "row", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#EAECEF", paddingHorizontal: 5 },
   tab: { flex: 1, minHeight: 52, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabText: { fontSize: 10, color: "#8992A1", fontFamily: "Inter_500Medium" },
-  tabTextActive: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  tabTextActive: { color: "#7C3AED", fontFamily: "Inter_600SemiBold" },
   countBadge: { minWidth: 17, height: 17, paddingHorizontal: 4, borderRadius: 9, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
   countText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
   empty: { textAlign: "center", color: "#7B8492", fontSize: 13, lineHeight: 20, fontFamily: "Inter_400Regular", paddingVertical: 26, paddingHorizontal: 18, backgroundColor: "#fff", borderRadius: 13, marginTop: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "#fff", borderRadius: 13, borderWidth: 1, borderColor: "#F0F0F0", padding: 12, marginBottom: 9 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#EEF2FF" },
-  avatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  avatarInitial: { color: "#3D5AF1", fontSize: 17, fontFamily: "Inter_700Bold" },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#F5F3FF" },
+  avatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  avatarInitial: { color: "#7C3AED", fontSize: 17, fontFamily: "Inter_700Bold" },
   rowTitle: { color: "#111827", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   rowSubtitle: { color: "#737B89", fontSize: 11, marginTop: 4, fontFamily: "Inter_400Regular" },
   rowDate: { color: "#9CA3AF", fontSize: 10, fontFamily: "Inter_400Regular" },
@@ -384,24 +384,24 @@ const styles = StyleSheet.create({
   requestHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   requestMessage: { color: "#4B5563", fontSize: 13, lineHeight: 19, marginTop: 12, marginBottom: 13 },
   requestActions: { flexDirection: "row", gap: 9 },
-  acceptButton: { flex: 1, height: 38, borderRadius: 9, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  acceptButton: { flex: 1, height: 38, borderRadius: 9, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   acceptText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   declineButton: { flex: 1, height: 38, borderRadius: 9, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   declineText: { color: "#4B5563", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   followActions: { flexDirection: "row", gap: 6 },
-  smallAccept: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  smallAccept: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   smallDecline: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   activityRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: "#fff", marginBottom: 8 },
   activityUnread: { borderWidth: 1, borderColor: "#C7D2FE", backgroundColor: "#F8FAFF" },
-  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#3D5AF1" },
-  activityIcon: { width: 36, height: 36, borderRadius: 13, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  messageList: { flexGrow: 1, padding: 15, gap: 8, justifyContent: "flex-end", backgroundColor: "#F3F5FA" },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#7C3AED" },
+  activityIcon: { width: 36, height: 36, borderRadius: 13, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  messageList: { flexGrow: 1, padding: 15, gap: 8, justifyContent: "flex-end", backgroundColor: "#F8F7FF" },
   messageBubble: { alignSelf: "flex-start", maxWidth: "88%", backgroundColor: "#fff", borderWidth: 1, borderColor: "#E3E7EF", borderRadius: 20, borderBottomLeftRadius: 5, paddingHorizontal: 15, paddingVertical: 11 },
   messageBody: { color: "#1F2937", fontSize: 14, lineHeight: 20 },
   messageTime: { marginTop: 4, textAlign: "right", color: "#9CA3AF", fontSize: 9 },
   composerRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E3E7EF" },
   composerInput: { flex: 1, maxHeight: 100, minHeight: 48, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 26, backgroundColor: "#F0F2F6", fontSize: 15, color: "#111827" },
-  sendButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1" },
+  sendButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#7C3AED" },
   toast: { position: "absolute", left: 20, right: 20, padding: 12, borderRadius: 12, backgroundColor: "#1F2937" },
   toastText: { color: "#fff", fontSize: 13, textAlign: "center", fontFamily: "Inter_500Medium" },
 });

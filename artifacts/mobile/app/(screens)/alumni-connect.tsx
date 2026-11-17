@@ -104,7 +104,7 @@ export default function AlumniConnectScreen() {
                       <View key={a.id} style={styles.suggestCard}>
                         <TouchableOpacity style={styles.suggestIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
                           <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                          {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                          {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#7C3AED" /></View>}
                           <Text style={styles.suggestName} numberOfLines={1}>{a.fullName}</Text>
                           <Text style={styles.suggestRole} numberOfLines={1}>{a.profession || a.field || "Alumni"}</Text>
                         </TouchableOpacity>
@@ -127,7 +127,7 @@ export default function AlumniConnectScreen() {
                   <TouchableOpacity style={styles.alumniIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
                     <View style={styles.alumniAvatarWrap}>
                       <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                      {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                      {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#7C3AED" /></View>}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.alumniName}>{a.fullName}</Text>
@@ -139,7 +139,7 @@ export default function AlumniConnectScreen() {
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.cardConnectBtn, state && styles.cardConnectBtnDone]} onPress={() => !state && connect(a.id, a.fullName || "")}>
-                    <Ionicons name={state === "connected" ? "checkmark" : state === "pending" ? "time-outline" : "person-add-outline"} size={15} color={state ? "#10B981" : "#3D5AF1"} />
+                    <Ionicons name={state === "connected" ? "checkmark" : state === "pending" ? "time-outline" : "person-add-outline"} size={15} color={state ? "#10B981" : "#7C3AED"} />
                   </TouchableOpacity>
                 </View>
               );
@@ -154,7 +154,7 @@ export default function AlumniConnectScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -163,34 +163,34 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 10 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   chipTextActive: { color: "#fff" },
   suggestedSection: { marginBottom: 16 },
   sectionLabel: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 10 },
   suggestCard: { backgroundColor: "#fff", borderRadius: 16, padding: 14, width: 150, borderWidth: 1, borderColor: "#F0F0F0", alignItems: "center", gap: 4 },
   suggestIdentity: { alignItems: "center", width: "100%", gap: 4 },
-  suggestAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  suggestAvatarText: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  suggestAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  suggestAvatarText: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   verifiedDot: { position: "absolute", top: 10, right: 24 },
   suggestName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", textAlign: "center", width: "100%" },
   suggestRole: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", width: "100%" },
-  connectBtn: { backgroundColor: "#EEF2FF", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, marginTop: 4 },
+  connectBtn: { backgroundColor: "#F5F3FF", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, marginTop: 4 },
   connectBtnDone: { backgroundColor: "#ECFDF5" },
-  connectBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  connectBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   connectBtnTextDone: { color: "#10B981" },
   resultCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 10 },
   alumniCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   alumniIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   alumniAvatarWrap: { position: "relative" },
-  alumniAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  alumniAvatarText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  alumniAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  alumniAvatarText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   verifiedIconSmall: { position: "absolute", bottom: -2, right: -2, backgroundColor: "#fff", borderRadius: 8 },
   alumniName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 2 },
   alumniRole: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 4 },
   alumniMetaRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   alumniMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  cardConnectBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  cardConnectBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   cardConnectBtnDone: { backgroundColor: "#ECFDF5" },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },

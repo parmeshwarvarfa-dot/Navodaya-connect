@@ -220,9 +220,9 @@ export default function ProfileScreen() {
               onPress={() => router.push("/(screens)/digital-id" as any)}
               activeOpacity={0.8}
             >
-              <Ionicons name="card-outline" size={14} color="#3D5AF1" />
-              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Digital ID</Text>
-              <Ionicons name="chevron-forward" size={12} color="#3D5AF1" />
+              <Ionicons name="card-outline" size={14} color="#7C3AED" />
+              <Text style={[styles.profileVerifyText, { color: "#7C3AED" }]}>View Digital ID</Text>
+              <Ionicons name="chevron-forward" size={12} color="#7C3AED" />
             </TouchableOpacity>
           ) : (
             <View style={styles.digitalIdPending}>
@@ -248,13 +248,13 @@ export default function ProfileScreen() {
           )}
           {profile.role === "alumni" && profile.resumeUrl ? (
             <TouchableOpacity
-              style={[styles.profileVerifyBadge, { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" }]}
+              style={[styles.profileVerifyBadge, { backgroundColor: "#F5F3FF", borderColor: "#C7D2FE" }]}
               onPress={() => void Linking.openURL(profile.resumeUrl!).catch(() => Alert.alert("Unable to open link", "Check the resume link and try again."))}
               accessibilityRole="link"
             >
-              <Ionicons name="document-text-outline" size={14} color="#3D5AF1" />
-              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Resume / CV</Text>
-              <Ionicons name="open-outline" size={12} color="#3D5AF1" />
+              <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
+              <Text style={[styles.profileVerifyText, { color: "#7C3AED" }]}>View Resume / CV</Text>
+              <Ionicons name="open-outline" size={12} color="#7C3AED" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -269,7 +269,7 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityState={{ expanded: showBioDetails }}
           >
-            <View style={styles.infoIconWrap}><Ionicons name="person-outline" size={18} color="#3D5AF1" /></View>
+            <View style={styles.infoIconWrap}><Ionicons name="person-outline" size={18} color="#7C3AED" /></View>
             <View style={styles.infoText}>
               <Text style={styles.bioTitle}>Bio</Text>
               <Text style={styles.bioSummary} numberOfLines={1}>{(profile as any).bio || `${roleLabel} · ${profile.jnvName || "JNV"}`}</Text>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
               ]}
             >
               <View style={styles.infoIconWrap}>
-                <Ionicons name={item.icon} size={18} color="#3D5AF1" />
+                <Ionicons name={item.icon} size={18} color="#7C3AED" />
               </View>
               <View style={styles.infoText}>
                 <Text style={styles.infoLabel}>{item.label}</Text>
@@ -341,7 +341,7 @@ export default function ProfileScreen() {
               onPress={item.onPress}
             >
               <View style={styles.menuIconWrap}>
-                <Ionicons name={item.icon} size={18} color="#3D5AF1" />
+                <Ionicons name={item.icon} size={18} color="#7C3AED" />
               </View>
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
@@ -393,7 +393,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -408,13 +408,13 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 13,
     borderRadius: 20,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
-  headerEditText: { color: "#3D5AF1", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  headerEditText: { color: "#7C3AED", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
   profileCard: {
     backgroundColor: "#FFFFFF",
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   signOutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
   recognitionCard: { marginHorizontal: 16, marginTop: 14, padding: 14, backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, borderRadius: 15 }, recognitionLinks: { flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 8, marginTop: 9 },
-  recognitionHeader: { flexDirection: "row", alignItems: "center", gap: 7 }, recognitionPoints: { marginTop: 8, color: "#17243A", fontFamily: "Inter_700Bold", fontSize: 18 }, recognitionAward: { marginTop: 5, color: "#7C5A19", fontFamily: "Inter_500Medium", fontSize: 11 }, recognitionLink: { marginTop: 9, color: "#3D5AF1", fontFamily: "Inter_600SemiBold", fontSize: 11 },
+  recognitionHeader: { flexDirection: "row", alignItems: "center", gap: 7 }, recognitionPoints: { marginTop: 8, color: "#17243A", fontFamily: "Inter_700Bold", fontSize: 18 }, recognitionAward: { marginTop: 5, color: "#7C5A19", fontFamily: "Inter_500Medium", fontSize: 11 }, recognitionLink: { marginTop: 9, color: "#7C3AED", fontFamily: "Inter_600SemiBold", fontSize: 11 },
   badgeCard: {
     backgroundColor: "#fff", borderRadius: 16, marginTop: 14,
     padding: 16, borderWidth: 1, borderColor: "#F0F0F0",

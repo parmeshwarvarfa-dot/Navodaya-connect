@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderRadius: 28, height: 54,
     alignItems: "center", justifyContent: "center", marginTop: 4,
   },
-  loginBtnText: { color: "#3D5AF1", fontFamily: "Inter_700Bold", fontSize: 16 },
+  loginBtnText: { color: "#7C3AED", fontFamily: "Inter_700Bold", fontSize: 16 },
   forgotBtn: { alignItems: "center", paddingVertical: 2 },
   forgotText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 14 },
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 4 },

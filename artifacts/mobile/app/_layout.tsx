@@ -107,17 +107,17 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  webCanvas: { flex: 1, alignItems: "center", backgroundColor: "#E9EDF5" },
+  webCanvas: { flex: 1, alignItems: "center", backgroundColor: "#0D0720" },
   nativeCanvas: { backgroundColor: "#fff" },
   mobileFrame: {
     flex: 1,
     width: "100%",
     maxWidth: 430,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8F7FF",
     overflow: "hidden",
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#2E1A5E",
   },
   nativeFrame: { maxWidth: "100%", borderWidth: 0 },
 });

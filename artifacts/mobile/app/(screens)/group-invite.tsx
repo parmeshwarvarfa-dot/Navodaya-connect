@@ -31,7 +31,7 @@ export default function GroupInviteScreen() {
       <Text style={styles.icon}>👥</Text>
       <Text style={styles.title}>{!token ? "Invalid invite link" : profile ? (joining ? "Joining group…" : "Could not join group") : "Join a group"}</Text>
       <Text style={styles.message}>{error || (!token ? "This invite link is missing its code." : profile ? "Please try again later." : "Sign in or create an account to join this group." )}</Text>
-      {joining && <ActivityIndicator color="#3D5AF1" style={{ marginTop: 18 }} />}
+      {joining && <ActivityIndicator color="#7C3AED" style={{ marginTop: 18 }} />}
       {!profile && token && <>
         <TouchableOpacity style={styles.primary} onPress={() => router.push(`/(auth)/sign-in${authParams}` as any)}><Text style={styles.primaryText}>Sign in</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => router.push(`/(auth)/sign-up${authParams}` as any)}><Text style={styles.secondaryText}>Create account</Text></TouchableOpacity>
@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
   card: { width: "100%", maxWidth: 420, backgroundColor: "#fff", borderRadius: 24, padding: 28, alignItems: "center", shadowColor: "#172554", shadowOpacity: 0.08, shadowRadius: 20, elevation: 4 },
   icon: { fontSize: 44, marginBottom: 12 }, title: { fontSize: 22, fontWeight: "700", color: "#172033", textAlign: "center" },
   message: { fontSize: 15, lineHeight: 22, color: "#667085", textAlign: "center", marginTop: 10, marginBottom: 18 },
-  primary: { width: "100%", minHeight: 48, borderRadius: 14, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center", marginTop: 10 }, primaryText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  primary: { width: "100%", minHeight: 48, borderRadius: 14, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center", marginTop: 10 }, primaryText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   secondary: { width: "100%", minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: "#d9def0", alignItems: "center", justifyContent: "center", marginTop: 10 }, secondaryText: { color: "#344054", fontSize: 16, fontWeight: "600" },
 });

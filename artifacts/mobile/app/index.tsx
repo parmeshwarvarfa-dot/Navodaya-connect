@@ -24,7 +24,7 @@ export default function IndexScreen() {
   }, [user, loading]);
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1A3C6E" }}>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#7C3AED" }}>
       <ActivityIndicator color="#fff" size="large" />
     </View>
   );

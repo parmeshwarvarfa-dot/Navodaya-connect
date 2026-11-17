@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 const FEEDBACK_TYPES = [
-  { value: "teacher",  label: "Teacher Feedback",  icon: "person-outline"       as const, color: "#3D5AF1" },
+  { value: "teacher",  label: "Teacher Feedback",  icon: "person-outline"       as const, color: "#7C3AED" },
   { value: "school",   label: "School Feedback",   icon: "school-outline"       as const, color: "#10B981" },
   { value: "event",    label: "Event Feedback",    icon: "calendar-outline"     as const, color: "#F59E0B" },
   { value: "hostel",   label: "Hostel Feedback",   icon: "home-outline"         as const, color: "#8B5CF6" },
@@ -62,7 +62,7 @@ export default function StudyFeedbackScreen() {
             {anonymous ? "Your feedback has been sent anonymously to the coordinator. Thank you for helping improve JNV!" : "Your feedback has been submitted. Thank you!"}
           </Text>
           <View style={styles.anonNote}>
-            <Ionicons name="shield-checkmark" size={16} color="#3D5AF1" />
+            <Ionicons name="shield-checkmark" size={16} color="#7C3AED" />
             <Text style={styles.anonNoteText}>{anonymous ? "This feedback is completely anonymous to teachers." : "Your name is attached to this feedback."}</Text>
           </View>
           <TouchableOpacity style={styles.submitAnotherBtn} onPress={handleReset}>
@@ -90,7 +90,7 @@ export default function StudyFeedbackScreen() {
 
           {/* Info banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="shield-checkmark-outline" size={18} color="#3D5AF1" />
+            <Ionicons name="shield-checkmark-outline" size={18} color="#7C3AED" />
             <Text style={styles.infoBannerText}>Feedback is confidential. Only school coordinators can see it — never individual teachers.</Text>
           </View>
 
@@ -116,9 +116,9 @@ export default function StudyFeedbackScreen() {
               <View style={styles.optionList}>
                 {TEACHERS.map((t) => (
                   <TouchableOpacity key={t} style={[styles.optionRow, target === t && styles.optionRowActive]} onPress={() => setTarget(t)}>
-                    <Ionicons name="person-circle-outline" size={18} color={target === t ? "#3D5AF1" : "#9CA3AF"} />
-                    <Text style={[styles.optionText, target === t && { color: "#3D5AF1" }]}>{t}</Text>
-                    {target === t && <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" />}
+                    <Ionicons name="person-circle-outline" size={18} color={target === t ? "#7C3AED" : "#9CA3AF"} />
+                    <Text style={[styles.optionText, target === t && { color: "#7C3AED" }]}>{t}</Text>
+                    {target === t && <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -172,7 +172,7 @@ export default function StudyFeedbackScreen() {
 
           {/* Anonymous toggle */}
           <TouchableOpacity style={styles.anonToggle} onPress={() => setAnonymous(!anonymous)}>
-            <Ionicons name={anonymous ? "checkbox" : "square-outline"} size={22} color={anonymous ? "#3D5AF1" : "#9CA3AF"} />
+            <Ionicons name={anonymous ? "checkbox" : "square-outline"} size={22} color={anonymous ? "#7C3AED" : "#9CA3AF"} />
             <View style={{ flex: 1 }}>
               <Text style={styles.anonLabel}>Submit Anonymously</Text>
               <Text style={styles.anonSub}>{anonymous ? "Your name will NOT be visible to anyone" : "Your name will be attached to this feedback"}</Text>
@@ -199,11 +199,11 @@ export default function StudyFeedbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  infoBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#EEF2FF", borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#C7D2FE" },
+  infoBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#F5F3FF", borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#C7D2FE" },
   infoBannerText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#3730A3", lineHeight: 19 },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10, marginTop: 16 },
   typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   typeCardText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   optionList: { backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", marginBottom: 4 },
   optionRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
-  optionRowActive: { backgroundColor: "#EEF2FF" },
+  optionRowActive: { backgroundColor: "#F5F3FF" },
   optionText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#374151" },
   starsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
   starBtn: { padding: 4 },
@@ -223,15 +223,15 @@ const styles = StyleSheet.create({
   anonSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
   errorRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#FECACA" },
   errorText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#DC2626" },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 15 },
   submitBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   successScreen: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
   successIcon: { marginBottom: 20 },
   successTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 12, textAlign: "center" },
   successDesc: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22, marginBottom: 20 },
-  anonNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 12, padding: 12, marginBottom: 32 },
-  anonNoteText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
-  submitAnotherBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: "100%", alignItems: "center" },
+  anonNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F5F3FF", borderRadius: 12, padding: 12, marginBottom: 32 },
+  anonNoteText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#7C3AED" },
+  submitAnotherBtn: { backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: "100%", alignItems: "center" },
   submitAnotherText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 15 },
   goBackBtn: { borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, width: "100%", alignItems: "center" },
   goBackText: { color: "#374151", fontFamily: "Inter_600SemiBold", fontSize: 15 },

@@ -13,7 +13,7 @@ const { width } = Dimensions.get("window");
 
 const FEATURES = [
   { icon: "shield-checkmark-outline" as const,  color: "#10B981", bg: "#ECFDF5", text: "Green verified badge on your profile" },
-  { icon: "chatbubble-ellipses-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", text: "Send messages & join group chats" },
+  { icon: "chatbubble-ellipses-outline" as const, color: "#7C3AED", bg: "#F5F3FF", text: "Send messages & join group chats" },
   { icon: "people-outline" as const,            color: "#8B5CF6", bg: "#F5F3FF", text: "Network with alumni across India" },
   { icon: "calendar-outline" as const,          color: "#F59E0B", bg: "#FFFBEB", text: "RSVP to JNV events & meetups" },
   { icon: "school-outline" as const,            color: "#EF4444", bg: "#FEF2F2", text: "Access mentorship & community features" },
@@ -49,7 +49,7 @@ export default function VerificationWelcomeScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={["#1A3C6E", "#2D5A9E", "#1A3C6E"]} style={s.bg} />
+      <LinearGradient colors={["#7C3AED", "#2D5A9E", "#7C3AED"]} style={s.bg} />
 
       <Animated.View
         style={[

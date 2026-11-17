@@ -10,11 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 import { api, type SchoolSupportRequest } from "@/lib/api";
 
 const SUPPORT_TYPES = [
-  { label: "Sponsor an Event",      icon: "calendar-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF", desc: "Co-sponsor school events, sports days, science fairs"     },
+  { label: "Sponsor an Event",      icon: "calendar-outline"   as const, color: "#7C3AED", bg: "#F5F3FF", desc: "Co-sponsor school events, sports days, science fairs"     },
   { label: "Donate Books",          icon: "book-outline"       as const, color: "#10B981", bg: "#ECFDF5", desc: "Contribute books, study material, lab equipment"           },
   { label: "Scholarship Fund",      icon: "school-outline"     as const, color: "#8B5CF6", bg: "#F5F3FF", desc: "Support student scholarships and exam preparation funds"   },
   { label: "Mentorship Program",    icon: "people-outline"     as const, color: "#F59E0B", bg: "#FFFBEB", desc: "Fund mentorship sessions, webinars, career guidance events" },
-  { label: "Infrastructure",        icon: "construct-outline"  as const, color: "#0891B2", bg: "#E0F2FE", desc: "Support computer lab, library, or sports facility upgrade"  },
+  { label: "Infrastructure",        icon: "construct-outline"  as const, color: "#0891B2", bg: "#EDE9FE", desc: "Support computer lab, library, or sports facility upgrade"  },
   { label: "Other Contribution",    icon: "heart-outline"      as const, color: "#EC4899", bg: "#FDF2F8", desc: "Any other contribution for your JNV school"                },
 ];
 
@@ -68,9 +68,9 @@ export default function AlumniSupportScreen() {
 
         {/* Hero */}
         <View style={styles.heroCard}>
-          <Text style={styles.heroEmoji}>Yè´</Text>
+          <Text style={styles.heroEmoji}>ÔøΩYÔøΩÔøΩ</Text>
           <Text style={styles.heroTitle}>Give Back to Your School</Text>
-          <Text style={styles.heroText}>Your JNV gave you everything. Now it's your turn to give back ‚?" mentor a junior, sponsor an event, or donate resources. Every contribution matters.</Text>
+          <Text style={styles.heroText}>Your JNV gave you everything. Now it's your turn to give back ÔøΩ?" mentor a junior, sponsor an event, or donate resources. Every contribution matters.</Text>
         </View>
 
         {/* Support types */}
@@ -125,11 +125,11 @@ export default function AlumniSupportScreen() {
             </View>
             <View style={styles.modalBody}>
               <View style={styles.coordinatorNote}>
-                <Ionicons name="information-circle-outline" size={16} color="#3D5AF1" />
+                <Ionicons name="information-circle-outline" size={16} color="#7C3AED" />
                 <Text style={styles.coordinatorNoteText}>Your request will be reviewed by the school coordinator before proceeding. No payment is processed in the app.</Text>
               </View>
               <Text style={styles.fieldLabel}>Additional Note (optional)</Text>
-              <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Describe your contribution, availability, or any specific details‚?¶" placeholderTextColor="#9CA3AF" value={note} onChangeText={setNote} multiline textAlignVertical="top" />
+              <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Describe your contribution, availability, or any specific detailsÔøΩ?ÔøΩ" placeholderTextColor="#9CA3AF" value={note} onChangeText={setNote} multiline textAlignVertical="top" />
               <TouchableOpacity style={styles.confirmBtn} onPress={handleSubmit}>
                 <Ionicons name="heart-outline" size={18} color="#fff" />
                 <Text style={styles.confirmBtnText}>{saving ? "Sending..." : "Submit Contribution Request"}</Text>
@@ -145,7 +145,7 @@ export default function AlumniSupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -181,15 +181,15 @@ const styles = StyleSheet.create({
   contribDetailLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 2 },
   contribDetailVal: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
   reqUpdateRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 9 },
-  reqUpdateButton: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: "#EEF2FF" },
-  reqUpdateText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  reqUpdateButton: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: "#F5F3FF" },
+  reqUpdateText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   transparencyNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#ECFDF5", marginHorizontal: 16, marginBottom: 10, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#A7F3D0" },
   transparencyText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#065F46", lineHeight: 18 },
   modal: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   modalBody: { padding: 20 },
-  coordinatorNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 12, padding: 12, marginBottom: 20 },
+  coordinatorNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#F5F3FF", borderRadius: 12, padding: 12, marginBottom: 20 },
   coordinatorNoteText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#3730A3", lineHeight: 18 },
   fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10 },
   input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 20 },

@@ -24,7 +24,7 @@ import { PremiumInput } from "@/components/PremiumInput";
 
 const STATUS_CONFIG = {
   submitted: { label: "Submitted", color: "#64748B", bg: "#F1F5F9" },
-  seen: { label: "Seen", color: "#2563EB", bg: "#DBEAFE" },
+  seen: { label: "Seen", color: "#7C3AED", bg: "#DBEAFE" },
   in_progress: { label: "In Progress", color: "#D97706", bg: "#FEF3C7" },
   solved: { label: "Solved", color: "#059669", bg: "#D1FAE5" },
 };
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   toast: {
     position: "absolute", bottom: 100, left: 20, right: 20,
-    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+    backgroundColor: "#7C3AED", borderRadius: 10, padding: 14, alignItems: "center",
   },
   toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   commentItem: { borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 8 },

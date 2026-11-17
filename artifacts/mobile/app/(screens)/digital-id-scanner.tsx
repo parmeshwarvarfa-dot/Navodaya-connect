@@ -111,8 +111,8 @@ export default function DigitalIdScannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E6EAF1" },
+  page: { flex: 1, backgroundColor: "#F8F7FF" },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E9D5FF" },
   back: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#F2F4F8", alignItems: "center", justifyContent: "center" },
   title: { color: "#15264B", fontFamily: "Inter_700Bold", fontSize: 18 },
   content: { width: "100%", maxWidth: 620, alignSelf: "center", padding: 18, gap: 15 },

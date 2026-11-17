@@ -29,7 +29,7 @@ const TYPE_ICON: Record<string, React.ComponentProps<typeof Ionicons>["name"]> =
 
 const TYPE_COLOR: Record<string, string> = {
   PDF: "#EF4444",
-  Notes: "#3D5AF1",
+  Notes: "#7C3AED",
   PYQ: "#8B5CF6",
   Slides: "#F59E0B",
   Link: "#10B981",
@@ -131,7 +131,7 @@ export default function StudyNotesScreen() {
           }}
           accessibilityLabel="Refresh"
         >
-          <Ionicons name="refresh-outline" size={19} color="#3D5AF1" />
+          <Ionicons name="refresh-outline" size={19} color="#7C3AED" />
         </TouchableOpacity>
       </View>
 
@@ -188,7 +188,7 @@ export default function StudyNotesScreen() {
             key={t}
             style={[
               styles.chip,
-              activeType === t && { ...styles.chipActive, backgroundColor: TYPE_COLOR[t] || "#3D5AF1" },
+              activeType === t && { ...styles.chipActive, backgroundColor: TYPE_COLOR[t] || "#7C3AED" },
             ]}
             onPress={() => setActiveType(t)}
           >
@@ -239,13 +239,13 @@ export default function StudyNotesScreen() {
                   <View
                     style={[
                       styles.typeIconWrap,
-                      { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" },
+                      { backgroundColor: (TYPE_COLOR[note.type] || "#7C3AED") + "18" },
                     ]}
                   >
                     <Ionicons
                       name={TYPE_ICON[note.type] || "document-text-outline"}
                       size={20}
-                      color={TYPE_COLOR[note.type] || "#3D5AF1"}
+                      color={TYPE_COLOR[note.type] || "#7C3AED"}
                     />
                   </View>
                 </View>
@@ -263,13 +263,13 @@ export default function StudyNotesScreen() {
                     <View
                       style={[
                         styles.typePill,
-                        { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" },
+                        { backgroundColor: (TYPE_COLOR[note.type] || "#7C3AED") + "18" },
                       ]}
                     >
                       <Text
                         style={[
                           styles.typePillText,
-                          { color: TYPE_COLOR[note.type] || "#3D5AF1" },
+                          { color: TYPE_COLOR[note.type] || "#7C3AED" },
                         ]}
                       >
                         {note.type}
@@ -300,7 +300,7 @@ export default function StudyNotesScreen() {
                     <Ionicons
                       name={note.bookmarked ? "bookmark" : "bookmark-outline"}
                       size={18}
-                      color={note.bookmarked ? "#3D5AF1" : "#9CA3AF"}
+                      color={note.bookmarked ? "#7C3AED" : "#9CA3AF"}
                     />
                   </TouchableOpacity>
 
@@ -308,13 +308,13 @@ export default function StudyNotesScreen() {
                     <View
                       style={[
                         styles.downloadBtn,
-                        { backgroundColor: (TYPE_COLOR[note.type] || "#3D5AF1") + "18" },
+                        { backgroundColor: (TYPE_COLOR[note.type] || "#7C3AED") + "18" },
                       ]}
                     >
                       <Ionicons
                         name={isDirectFile ? "download-outline" : "open-outline"}
                         size={15}
-                        color={TYPE_COLOR[note.type] || "#3D5AF1"}
+                        color={TYPE_COLOR[note.type] || "#7C3AED"}
                       />
                     </View>
                   ) : null}
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -411,8 +411,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   chipActive: {
-    backgroundColor: "#3D5AF1",
-    borderColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   chipText: {
     fontSize: 12,

@@ -10,11 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 import { api, type TeacherClassAssignment } from "@/lib/api";
 
 const FEATURES = [
-  { label: "Study Notes",    icon: "document-text-outline"  as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-notes"       },
+  { label: "Study Notes",    icon: "document-text-outline"  as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/study-notes"       },
   { label: "Assignments",    icon: "checkbox-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/study-assignments"  },
   { label: "Announcements",  icon: "megaphone-outline"       as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/study-announcements" },
   { label: "Attendance",     icon: "calendar-clear-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/study-attendance"   },
-  { label: "Results",        icon: "stats-chart-outline"    as const, color: "#0891B2", bg: "#E0F2FE", route: "/(screens)/study-results"      },
+  { label: "Results",        icon: "stats-chart-outline"    as const, color: "#0891B2", bg: "#EDE9FE", route: "/(screens)/study-results"      },
   { label: "Teacher Feedback", icon: "star-outline"           as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/teacher-feedback-submit" },
   { label: "Clubs",          icon: "people-circle-outline"  as const, color: "#EC4899", bg: "#FDF2F8", route: "/(screens)/study-clubs"        },
 ];
@@ -96,7 +96,7 @@ export default function StudySectionScreen() {
           {[
             { label: "Attendance",   value: "—",  icon: "calendar-outline"  as const, color: "#10B981", bg: "#ECFDF5" },
             { label: "Pending",      value: "—", icon: "checkbox-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
-            { label: "Materials",    value: "—",   icon: "document-outline"  as const, color: "#3D5AF1", bg: "#EEF2FF" },
+            { label: "Materials",    value: "—",   icon: "document-outline"  as const, color: "#7C3AED", bg: "#F5F3FF" },
             { label: "Rank",         value: "—",   icon: "trophy-outline"    as const, color: "#D97706", bg: "#FEF3C7" },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
@@ -111,7 +111,7 @@ export default function StudySectionScreen() {
           <Text style={styles.sectionTitle}>My Classes and Subjects</Text>
           {myClasses.length ? [...new Map(myClasses.map((item) => [`${item.className}:${item.subject}`, item])).values()].map((item) => (
             <View key={item.id} style={styles.authorizedClassRow}>
-              <View style={styles.noteIcon}><Ionicons name="school-outline" size={18} color="#3D5AF1" /></View>
+              <View style={styles.noteIcon}><Ionicons name="school-outline" size={18} color="#7C3AED" /></View>
               <View style={{ flex: 1 }}><Text style={styles.classSubject}>{item.className} · {item.subject}</Text><Text style={styles.noteMeta}>{item.jnvName} · {item.teacherName}</Text></View>
             </View>
           )) : <Text style={styles.noteMeta}>{classesError || (profile?.class ? `No class subjects have been linked to Class ${profile.class.replace(/^class\s*/i, "") } yet.` : "Your class information is not set on your profile yet.")}</Text>}
@@ -194,7 +194,7 @@ export default function StudySectionScreen() {
           </View>
           {RECENT_NOTES.map((n, i) => (
             <TouchableOpacity key={i} style={styles.noteRow} activeOpacity={0.8} onPress={() => router.push("/(screens)/study-notes" as any)}>
-              <View style={styles.noteIcon}><Ionicons name="document-text-outline" size={18} color="#3D5AF1" /></View>
+              <View style={styles.noteIcon}><Ionicons name="document-text-outline" size={18} color="#7C3AED" /></View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.noteTitle}>{n.title}</Text>
                 <Text style={styles.noteMeta}>{n.subject} · {n.teacher} · {n.date}</Text>

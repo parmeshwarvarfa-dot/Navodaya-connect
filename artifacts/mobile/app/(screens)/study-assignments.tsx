@@ -14,7 +14,7 @@ const STATUS_TABS = ["All", "Pending", "Submitted", "Reviewed"];
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Pending",   icon: "time-outline"             },
-  submitted: { color: "#3D5AF1", bg: "#EEF2FF", label: "Submitted", icon: "cloud-upload-outline"     },
+  submitted: { color: "#7C3AED", bg: "#F5F3FF", label: "Submitted", icon: "cloud-upload-outline"     },
   late:      { color: "#EF4444", bg: "#FEF2F2", label: "Late",      icon: "alert-circle-outline"     },
   reviewed:  { color: "#10B981", bg: "#ECFDF5", label: "Reviewed",  icon: "checkmark-circle-outline" },
 };
@@ -94,7 +94,7 @@ export default function StudyAssignmentsScreen() {
       <View style={styles.statsRow}>
         {[
           { label: "Pending",   value: pending,             color: "#F59E0B", bg: "#FFFBEB" },
-          { label: "Submitted", value: submitted,           color: "#3D5AF1", bg: "#EEF2FF" },
+          { label: "Submitted", value: submitted,           color: "#7C3AED", bg: "#F5F3FF" },
           { label: "Reviewed",  value: reviewed,            color: "#10B981", bg: "#ECFDF5" },
           { label: "Total",     value: assignments.length,  color: "#6B7280", bg: "#F3F4F6" },
         ].map((s) => (
@@ -162,7 +162,7 @@ export default function StudyAssignmentsScreen() {
                   {mySub?.submittedAt && <Text style={styles.submittedAt}>Submitted: {new Date(mySub.submittedAt).toLocaleString()}</Text>}
                   {mySub?.remarks && (
                     <View style={styles.remarksBox}>
-                      <View style={styles.remarkHeader}><Ionicons name="chatbubble-outline" size={14} color="#3D5AF1" /><Text style={styles.remarkLabel}>Teacher Remarks</Text></View>
+                      <View style={styles.remarkHeader}><Ionicons name="chatbubble-outline" size={14} color="#7C3AED" /><Text style={styles.remarkLabel}>Teacher Remarks</Text></View>
                       <Text style={styles.remarkText}>{mySub.remarks}</Text>
                     </View>
                   )}
@@ -204,7 +204,7 @@ export default function StudyAssignmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   tabs: { paddingHorizontal: 16, gap: 8, paddingBottom: 14 },
   tab: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  tabActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  tabActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   tabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   tabTextActive: { color: "#fff" },
   empty: { alignItems: "center", paddingTop: 60 },
@@ -234,11 +234,11 @@ const styles = StyleSheet.create({
   statusPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   expandedBody: { marginTop: 14, borderTopWidth: 1, borderTopColor: "#F0F0F0", paddingTop: 14 },
   submittedAt: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 10 },
-  remarksBox: { backgroundColor: "#EEF2FF", borderRadius: 12, padding: 12, marginBottom: 14 },
+  remarksBox: { backgroundColor: "#F5F3FF", borderRadius: 12, padding: 12, marginBottom: 14 },
   remarkHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  remarkLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  remarkLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   remarkText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 19 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 12 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 12 },
   submitBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   modal: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   modalBody: { padding: 20 },
   modalLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10 },
   noteInput: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 100, marginBottom: 16 },
-  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
+  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 15 },
   confirmBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 8 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },

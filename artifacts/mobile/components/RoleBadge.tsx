@@ -12,7 +12,7 @@ type RoleConfig = {
 };
 
 const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
-  student: { label: "Student", bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", icon: "school-outline" },
+  student: { label: "Student", bg: "#EFF6FF", text: "#6D28D9", border: "#BFDBFE", icon: "school-outline" },
   alumni: { label: "Alumni", bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE", icon: "people-outline" },
   teacher: { label: "Teacher", bg: "#ECFDF5", text: "#047857", border: "#A7F3D0", icon: "book-outline" },
   official: { label: "JNV Official", bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA", icon: "business-outline" },

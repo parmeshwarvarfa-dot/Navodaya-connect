@@ -13,6 +13,6 @@ export default function AcademicAccessRedirect() {
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#F3F5FA" },
+  page: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#F8F7FF" },
   label: { color: "#667085", fontSize: 13, fontFamily: "Inter_500Medium" },
 });

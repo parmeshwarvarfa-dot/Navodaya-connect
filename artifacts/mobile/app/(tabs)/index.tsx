@@ -27,26 +27,26 @@ import FadeIn from "@/components/motion/FadeIn";
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/study-section"          },
   { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
-  { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/ask-senior"             },
+  { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#6366F1", bg: "#F5F3FF", route: "/(screens)/ask-senior"             },
   { label: "Report Problem",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"         },
 ];
 const TEACHER_ACTIONS = [
   { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/teacher-zone"     },
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
-  { label: "My Classes",      icon: "people-outline"          as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/teacher-classes"  },
+  { label: "My Classes",      icon: "people-outline"          as const, color: "#6366F1", bg: "#F5F3FF", route: "/(screens)/teacher-classes"  },
   { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
 ];
 const ALUMNI_ACTIONS = [
   { label: "Alumni Zone",     icon: "school-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-zone"       },
   { label: "Business Network", icon: "business-outline"       as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-business" },
-  { label: "Alumni Directory", icon: "people-outline"         as const, color: "#6366F1", bg: "#EEF2FF", route: "/(tabs)/alumni" },
+  { label: "Alumni Directory", icon: "people-outline"         as const, color: "#6366F1", bg: "#F5F3FF", route: "/(tabs)/alumni" },
   { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
   { label: "Dashboard",       icon: "grid-outline"             as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/official-dashboard" },
   { label: "Verify Users",    icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management"    },
   { label: "View Problems",   icon: "alert-circle-outline"    as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"      },
-  { label: "School Directory", icon: "people-outline"          as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/school-directory"  },
+  { label: "School Directory", icon: "people-outline"          as const, color: "#6366F1", bg: "#F5F3FF", route: "/(screens)/school-directory"  },
 ];
 
 const ANNOUNCEMENT_CATEGORIES = ["announcement", "notice", "official", "circular", "holiday", "exam", "other"];
@@ -335,7 +335,7 @@ export default function HomeScreen() {
 
         {newsLoading && (
           <View style={styles.syncRow}>
-            <ActivityIndicator size="small" color="#3D5AF1" />
+            <ActivityIndicator size="small" color="#7C3AED" />
             <Text style={styles.syncText}>Updating your community feed…</Text>
           </View>
         )}
@@ -521,7 +521,7 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
           {[
-            { label: "JNV Store", desc: "Books, JNV merchandise & learning essentials", icon: "bag-handle-outline" as const, iconColor: "#3D5AF1", iconBg: "#EEF2FF", route: "/(screens)/store" },
+            { label: "JNV Store", desc: "Books, JNV merchandise & learning essentials", icon: "bag-handle-outline" as const, iconColor: "#7C3AED", iconBg: "#F5F3FF", route: "/(screens)/store" },
             ...(role !== "official" ? [{ label: "Inter House Competition", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/house-arena" }] : []),
           ].map((item) => (
             <TouchableOpacity

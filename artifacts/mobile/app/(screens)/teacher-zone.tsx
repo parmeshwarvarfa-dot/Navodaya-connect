@@ -8,13 +8,13 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 
 const FEATURES = [
-  { label: "My Classes",       icon: "school-outline"         as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-classes"       },
-  { label: "Upload Notes",     icon: "cloud-upload-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-upload"        },
+  { label: "My Classes",       icon: "school-outline"         as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/teacher-classes"       },
+  { label: "Upload Notes",     icon: "cloud-upload-outline"   as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/teacher-upload"        },
   { label: "Assignments",      icon: "checkbox-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/teacher-assignments"    },
   { label: "Announcements",    icon: "megaphone-outline"       as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/teacher-announcements"  },
   { label: "Queries",          icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-queries"        },
   { label: "Attendance",       icon: "calendar-clear-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/teacher-attendance"     },
-  { label: "Results",          icon: "stats-chart-outline"    as const, color: "#0891B2", bg: "#E0F2FE", route: "/(screens)/teacher-results"        },
+  { label: "Results",          icon: "stats-chart-outline"    as const, color: "#0891B2", bg: "#EDE9FE", route: "/(screens)/teacher-results"        },
   { label: "Clubs",            icon: "people-circle-outline"  as const, color: "#EC4899", bg: "#FDF2F8", route: "/(screens)/teacher-clubs"          },
   { label: "Feedback",         icon: "star-half-outline"      as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/teacher-feedback"       },
 ];
@@ -76,7 +76,7 @@ export default function TeacherZoneScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: "Assigned Classes", value: realCounts.classes, icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-classes" },
+            { label: "Assigned Classes", value: realCounts.classes, icon: "school-outline" as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/teacher-classes" },
             { label: "To Review",        value: realCounts.reviews, icon: "checkbox-outline" as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/teacher-assignments" },
             { label: "Queries",          value: realCounts.queries, icon: "help-circle-outline" as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-queries" },
             { label: "Uploaded",         value: realCounts.materials, icon: "document-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/teacher-upload" },
@@ -108,7 +108,7 @@ export default function TeacherZoneScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.classesBannerIcon}>
-              <Ionicons name="school" size={22} color="#1A3C6E" />
+              <Ionicons name="school" size={22} color="#7C3AED" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.classesBannerTitle}>Classrooms & Student Rolls</Text>

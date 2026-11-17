@@ -40,7 +40,7 @@ const PRIORITIES = [
 
 const STATUS_COLORS: Record<string, string> = {
   submitted: "#64748B",
-  seen: "#2563EB",
+  seen: "#7C3AED",
   in_progress: "#D97706",
   solved: "#22C55E",
 };
@@ -132,7 +132,7 @@ export default function ReportProblemScreen() {
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.anonBanner}>
               <View style={styles.anonBannerIcon}>
-                <Ionicons name="shield-checkmark" size={20} color="#3D5AF1" />
+                <Ionicons name="shield-checkmark" size={20} color="#7C3AED" />
               </View>
               <Text style={styles.anonBannerText}>
                 You can report anonymously — your identity will be completely hidden from everyone.
@@ -192,7 +192,7 @@ export default function ReportProblemScreen() {
             <View style={styles.anonRow}>
               <View style={styles.anonLeft}>
                 <View style={styles.anonIconWrap}>
-                  <Ionicons name="eye-off-outline" size={22} color="#3D5AF1" />
+                  <Ionicons name="eye-off-outline" size={22} color="#7C3AED" />
                 </View>
                 <View style={styles.anonTextWrap}>
                   <Text style={styles.anonTitle}>Submit Anonymously</Text>
@@ -206,7 +206,7 @@ export default function ReportProblemScreen() {
               <Switch
                 value={anonymous}
                 onValueChange={setAnonymous}
-                trackColor={{ false: "#E5E7EB", true: "#3D5AF1" }}
+                trackColor={{ false: "#E5E7EB", true: "#7C3AED" }}
                 thumbColor="#fff"
               />
             </View>
@@ -248,7 +248,7 @@ export default function ReportProblemScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {loadingReports ? (
-            <ActivityIndicator color="#3D5AF1" style={{ marginTop: 40 }} />
+            <ActivityIndicator color="#7C3AED" style={{ marginTop: 40 }} />
           ) : myReports.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}>
@@ -341,7 +341,7 @@ export default function ReportProblemScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { paddingHorizontal: 20, paddingBottom: 0 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
@@ -351,11 +351,11 @@ const styles = StyleSheet.create({
   tab: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 10 },
   tabActive: { backgroundColor: "#fff" },
   tabText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.8)" },
-  tabTextActive: { color: "#3D5AF1" },
+  tabTextActive: { color: "#7C3AED" },
   content: { padding: 16, paddingBottom: 40 },
   anonBanner: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: "#EEF2FF", borderRadius: 14, padding: 14, marginBottom: 20,
+    backgroundColor: "#F5F3FF", borderRadius: 14, padding: 14, marginBottom: 20,
     borderWidth: 1, borderColor: "#C7D2FE",
   },
   anonBannerIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
     backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#E5E7EB",
   },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   chipTextActive: { color: "#fff" },
   priorityRow: { flexDirection: "row", gap: 8, marginBottom: 18 },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: "#E5E7EB", marginBottom: 12,
   },
   anonLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, marginRight: 12 },
-  anonIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  anonIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   anonTextWrap: { flex: 1 },
   anonTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3 },
   anonDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 17 },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   anonNoteText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#6D28D9", lineHeight: 18 },
   submitBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16, marginBottom: 16,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16, marginBottom: 16,
   },
   submitBtnDisabled: { backgroundColor: "#A5B4FC" },
   submitText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
@@ -454,6 +454,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: "#E5E7EB", alignItems: "center",
   },
   modalSecondaryText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151" },
-  modalPrimary: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: "#3D5AF1", alignItems: "center" },
+  modalPrimary: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: "#7C3AED", alignItems: "center" },
   modalPrimaryText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff" },
 });

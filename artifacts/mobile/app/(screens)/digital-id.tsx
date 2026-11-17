@@ -43,9 +43,9 @@ export default function DigitalIdScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Navodaya Digital ID</Text>
       </View>
-      {loading ? <ActivityIndicator style={styles.loading} size="large" color="#3D5AF1" /> : error || missingCredential || needsVerification ? (
+      {loading ? <ActivityIndicator style={styles.loading} size="large" color="#7C3AED" /> : error || missingCredential || needsVerification ? (
         <View style={styles.empty}>
-          <Ionicons name={missingCredential || needsVerification ? "shield-checkmark-outline" : "cloud-offline-outline"} size={42} color={missingCredential || needsVerification ? "#3D5AF1" : "#9CA3AF"} />
+          <Ionicons name={missingCredential || needsVerification ? "shield-checkmark-outline" : "cloud-offline-outline"} size={42} color={missingCredential || needsVerification ? "#7C3AED" : "#9CA3AF"} />
           <Text style={styles.emptyTitle}>{needsVerification ? "Verification required" : missingCredential ? "Your Digital ID is not available yet" : "Could not load your Digital ID"}</Text>
           <Text style={styles.emptyText}>
             {needsVerification
@@ -80,7 +80,7 @@ export default function DigitalIdScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F5F6FA" },
+  screen: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 58, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   back: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   title: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold" },
@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", gap: 12, padding: 32, marginTop: 70 },
   emptyTitle: { color: "#111827", textAlign: "center", fontSize: 17, fontFamily: "Inter_700Bold" },
   emptyText: { color: "#6B7280", textAlign: "center", fontSize: 14, lineHeight: 21 },
-  actionButton: { minHeight: 46, marginTop: 6, paddingHorizontal: 20, borderRadius: 14, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  actionButton: { minHeight: 46, marginTop: 6, paddingHorizontal: 20, borderRadius: 14, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   actionText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   body: { padding: 16, gap: 14, alignItems: "center" },
-  profileLink: { minHeight: 44, width: "100%", maxWidth: 560, borderRadius: 13, backgroundColor: "#EEF2FF", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  profileLink: { minHeight: 44, width: "100%", maxWidth: 560, borderRadius: 13, backgroundColor: "#F5F3FF", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   profileLinkText: { color: "#355BE5", fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  verifyLink: { textAlign: "center", color: "#3D5AF1", fontFamily: "Inter_600SemiBold", fontSize: 13, padding: 8 },
+  verifyLink: { textAlign: "center", color: "#7C3AED", fontFamily: "Inter_600SemiBold", fontSize: 13, padding: 8 },
   domainHint: { color: "#748198", textAlign: "center", fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16 },
 });

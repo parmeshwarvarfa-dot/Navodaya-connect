@@ -7,7 +7,7 @@ import AcademicFeatureUnavailable from "@/components/AcademicFeatureUnavailable"
 
 const MONTHS = ["January", "February", "March", "April", "May"];
 const SUBJECT_DATA = [
-  { subject: "Physics",   present: 28, total: 32, color: "#3D5AF1" },
+  { subject: "Physics",   present: 28, total: 32, color: "#7C3AED" },
   { subject: "Chemistry", present: 30, total: 32, color: "#10B981" },
   { subject: "Maths",     present: 26, total: 32, color: "#F59E0B" },
   { subject: "English",   present: 31, total: 32, color: "#8B5CF6" },
@@ -173,7 +173,7 @@ export default function StudyAttendanceScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   subjectPct: { fontSize: 16, fontFamily: "Inter_700Bold" },
   subjectDays: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   monthChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  monthChipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  monthChipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   monthChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   monthChipTextActive: { color: "#fff" },
   calCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0" },

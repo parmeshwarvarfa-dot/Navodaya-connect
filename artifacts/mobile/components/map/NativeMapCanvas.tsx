@@ -77,7 +77,7 @@ function NativeSchoolMarker({ school, selected, onSelect }: { school: JnvMapScho
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  marker: { width: 30, height: 30, borderRadius: 16, borderBottomLeftRadius: 5, transform: [{ rotate: "-45deg" }], backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "white", alignItems: "center", justifyContent: "center", elevation: 4 },
+  marker: { width: 30, height: 30, borderRadius: 16, borderBottomLeftRadius: 5, transform: [{ rotate: "-45deg" }], backgroundColor: "#7C3AED", borderWidth: 2, borderColor: "white", alignItems: "center", justifyContent: "center", elevation: 4 },
   selectedMarker: { width: 36, height: 36, backgroundColor: "#E34E55" },
   markerText: { color: "white", fontSize: 11, fontWeight: "800", transform: [{ rotate: "45deg" }] },
 });

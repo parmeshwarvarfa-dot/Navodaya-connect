@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const SUBJECTS = [
-  { name: "Mathematics", icon: "calculator-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", chapters: 15, class: "All" },
+  { name: "Mathematics", icon: "calculator-outline" as const, color: "#7C3AED", bg: "#F5F3FF", chapters: 15, class: "All" },
   { name: "Science", icon: "flask-outline" as const, color: "#10B981", bg: "#ECFDF5", chapters: 16, class: "6–10" },
   { name: "Physics", icon: "nuclear-outline" as const, color: "#8B5CF6", bg: "#F5F3FF", chapters: 14, class: "11–12" },
   { name: "Chemistry", icon: "beaker-outline" as const, color: "#F59E0B", bg: "#FFFBEB", chapters: 16, class: "11–12" },
@@ -28,7 +28,7 @@ const SUBJECTS = [
 ];
 
 const RESOURCES = [
-  { title: "NCERT Textbooks (Free PDF)", desc: "Official NCERT books for Class 6–12 in Hindi & English", icon: "document-text-outline" as const, color: "#3D5AF1", tag: "Official" },
+  { title: "NCERT Textbooks (Free PDF)", desc: "Official NCERT books for Class 6–12 in Hindi & English", icon: "document-text-outline" as const, color: "#7C3AED", tag: "Official" },
   { title: "Previous Year Question Papers", desc: "CBSE board papers from 2015–2024 with solutions", icon: "archive-outline" as const, color: "#8B5CF6", tag: "Board Prep" },
   { title: "CBSE Sample Papers 2024–25", desc: "Latest sample papers with marking scheme", icon: "copy-outline" as const, color: "#10B981", tag: "CBSE" },
   { title: "NCERT Exemplar Problems", desc: "Higher-order problems for Maths & Science", icon: "bulb-outline" as const, color: "#F59E0B", tag: "Advanced" },
@@ -45,7 +45,7 @@ const QUICK_QUIZ: { q: string; options: string[]; ans: number; subject: string }
 ];
 
 const STUDY_TIPS = [
-  { tip: "Study in 45-minute focused sessions with a 10-minute break (Pomodoro).", icon: "timer-outline" as const, color: "#3D5AF1" },
+  { tip: "Study in 45-minute focused sessions with a 10-minute break (Pomodoro).", icon: "timer-outline" as const, color: "#7C3AED" },
   { tip: "Write notes in your own words — it boosts retention by up to 70%.", icon: "create-outline" as const, color: "#10B981" },
   { tip: "Teach what you've learned to a friend to identify your weak spots.", icon: "people-outline" as const, color: "#8B5CF6" },
   { tip: "Solve at least 5 previous year questions per chapter before board exams.", icon: "checkmark-done-outline" as const, color: "#F59E0B" },
@@ -274,7 +274,7 @@ export default function StudyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upcoming Exams</Text>
           {[
-            { name: "CBSE Class 10 Board Exams", date: "Feb 2026", daysLeft: 273, color: "#3D5AF1" },
+            { name: "CBSE Class 10 Board Exams", date: "Feb 2026", daysLeft: 273, color: "#7C3AED" },
             { name: "CBSE Class 12 Board Exams", date: "Feb 2026", daysLeft: 270, color: "#8B5CF6" },
             { name: "JNV Selection Test (Class 6)", date: "Jan 2026", daysLeft: 243, color: "#10B981" },
             { name: "Mid-Term Examinations", date: "Aug 2025", daysLeft: 90, color: "#F59E0B" },
@@ -301,7 +301,7 @@ export default function StudyScreen() {
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 18 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#fff" },
@@ -382,11 +382,11 @@ const quiz = StyleSheet.create({
   body: { padding: 20, paddingBottom: 40 },
   progress: { flexDirection: "row", gap: 6, marginBottom: 20 },
   dot: { flex: 1, height: 5, borderRadius: 3, backgroundColor: "#E5E7EB" },
-  dotActive: { backgroundColor: "#3D5AF1" },
+  dotActive: { backgroundColor: "#7C3AED" },
   dotDone: { backgroundColor: "#10B981" },
   qNum: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#9CA3AF", marginBottom: 8 },
-  subjectTag: { alignSelf: "flex-start", backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 14 },
-  subjectTagText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  subjectTag: { alignSelf: "flex-start", backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 14 },
+  subjectTagText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   question: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", lineHeight: 27, marginBottom: 24 },
   option: {
     flexDirection: "row", alignItems: "center", gap: 12,
@@ -399,7 +399,7 @@ const quiz = StyleSheet.create({
   optionLetterText: { fontSize: 13, fontFamily: "Inter_700Bold" },
   optionText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
   nextBtn: {
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16,
     alignItems: "center", marginTop: 8,
   },
   nextBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
@@ -410,7 +410,7 @@ const quiz = StyleSheet.create({
   doneDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22, marginBottom: 28 },
   restartBtn: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: "100%", justifyContent: "center",
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: "100%", justifyContent: "center",
   },
   restartBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
   closeFullBtn: {

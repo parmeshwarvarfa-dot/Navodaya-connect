@@ -20,7 +20,7 @@ function displayClassName(value: string | null) {
 }
 
 const ROLE_META: Record<SchoolDirectoryEntry["role"], { label: string; color: string; bg: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
-  student: { label: "Student", color: "#3151E8", bg: "#EEF2FF", icon: "school-outline" },
+  student: { label: "Student", color: "#3151E8", bg: "#F5F3FF", icon: "school-outline" },
   teacher: { label: "Teacher", color: "#07875D", bg: "#EAFBF4", icon: "book-outline" },
   alumni: { label: "Alumni", color: "#7C3AED", bg: "#F4F0FF", icon: "ribbon-outline" },
   official: { label: "JNV Official", color: "#B45309", bg: "#FFF7E8", icon: "shield-checkmark-outline" },
@@ -184,7 +184,7 @@ export default function SchoolDirectoryScreen() {
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F3F5FA" },
+  page: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 70, flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 15, paddingBottom: 12, backgroundColor: "#3151E8" },
   back: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   refresh: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   school: { maxWidth: "58%", color: "#667085", fontSize: 11, fontFamily: "Inter_400Regular" },
   list: { paddingHorizontal: 14, paddingTop: 3, gap: 9 },
   personCard: { minHeight: 80, padding: 12, borderRadius: 15, backgroundColor: "#fff", borderWidth: 1, borderColor: "#EAECF0", flexDirection: "row", alignItems: "center", gap: 11 },
-  avatar: { width: 45, height: 45, borderRadius: 23, backgroundColor: "#EEF2FF" },
+  avatar: { width: 45, height: 45, borderRadius: 23, backgroundColor: "#F5F3FF" },
   avatarFallback: { alignItems: "center", justifyContent: "center" },
   initial: { color: "#3151E8", fontSize: 16, fontFamily: "Inter_700Bold" },
   personInfo: { flex: 1, gap: 3 },
@@ -229,7 +229,7 @@ const s = StyleSheet.create({
   classGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   classCard: { flexGrow: 1, flexBasis: "44%", minWidth: 145, minHeight: 118, padding: 13, borderRadius: 15, backgroundColor: "#fff", borderWidth: 1, borderColor: "#EAECF0", justifyContent: "space-between" },
   classCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  classIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  classIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   className: { color: "#172033", fontSize: 14, fontFamily: "Inter_700Bold", marginTop: 10 },
   classStudentCount: { color: "#667085", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   classBreadcrumb: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4, paddingBottom: 4 },

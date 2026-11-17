@@ -22,7 +22,7 @@ import {
 
 const GRADE_COLOR: Record<string, string> = {
   "A+": "#10B981",
-  A: "#3D5AF1",
+  A: "#7C3AED",
   "B+": "#8B5CF6",
   B: "#F59E0B",
   C: "#EF4444",
@@ -167,7 +167,7 @@ export default function TeacherResultsScreen() {
       >
         {/* Class Selection Tabs */}
         {loading ? (
-          <ActivityIndicator color="#1A3C6E" />
+          <ActivityIndicator color="#7C3AED" />
         ) : classes.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="school-outline" size={32} color="#94A3B8" />
@@ -205,7 +205,7 @@ export default function TeacherResultsScreen() {
 
             {/* Assessment Records */}
             {dataLoading ? (
-              <ActivityIndicator color="#1A3C6E" style={{ paddingVertical: 20 }} />
+              <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 20 }} />
             ) : assessments.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="stats-chart-outline" size={32} color="#94A3B8" />
@@ -244,7 +244,7 @@ export default function TeacherResultsScreen() {
                           Student Marks Roll ({ass.scores.length})
                         </Text>
                         {ass.scores.map((score, idx) => {
-                          const gradeColor = GRADE_COLOR[score.grade || "A"] || "#3D5AF1";
+                          const gradeColor = GRADE_COLOR[score.grade || "A"] || "#7C3AED";
                           return (
                             <View key={score.studentId} style={styles.scoreRow}>
                               <Text style={styles.scoreIndex}>#{idx + 1}</Text>
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 10,
@@ -424,8 +424,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   classTabActive: {
-    backgroundColor: "#1A3C6E",
-    borderColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   classTabText: {
     color: "#334155",
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   modalPrimaryBtn: {
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",

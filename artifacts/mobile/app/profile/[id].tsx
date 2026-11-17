@@ -17,4 +17,4 @@ export default function SharedProfileLink() {
   return <View style={styles.page}><ActivityIndicator color="#355BE5" /></View>;
 }
 
-const styles = StyleSheet.create({ page: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F6FA" } });
+const styles = StyleSheet.create({ page: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F7FF" } });

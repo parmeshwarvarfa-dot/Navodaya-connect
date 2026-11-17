@@ -31,7 +31,7 @@ const EXAMS = [
 ];
 
 const GRADE_COLOR: Record<string, string> = {
-  "A+": "#10B981", "A": "#3D5AF1", "B+": "#8B5CF6", "B": "#F59E0B", "C": "#EF4444",
+  "A+": "#10B981", "A": "#7C3AED", "B+": "#8B5CF6", "B": "#F59E0B", "C": "#EF4444",
 };
 
 function ScoreBar({ marks, total, color }: { marks: number; total: number; color: string }) {
@@ -84,17 +84,17 @@ export default function StudyResultsScreen() {
             <Text style={styles.examDate}>{exam.date}</Text>
           </View>
           <View style={styles.scoreRight}>
-            <View style={[styles.gradeCircle, { borderColor: GRADE_COLOR[grade] || "#3D5AF1" }]}>
-              <Text style={[styles.gradeText, { color: GRADE_COLOR[grade] || "#3D5AF1" }]}>{grade}</Text>
+            <View style={[styles.gradeCircle, { borderColor: GRADE_COLOR[grade] || "#7C3AED" }]}>
+              <Text style={[styles.gradeText, { color: GRADE_COLOR[grade] || "#7C3AED" }]}>{grade}</Text>
             </View>
-            <Text style={[styles.scorePct, { color: GRADE_COLOR[grade] || "#3D5AF1" }]}>{pct}%</Text>
+            <Text style={[styles.scorePct, { color: GRADE_COLOR[grade] || "#7C3AED" }]}>{pct}%</Text>
           </View>
         </View>
 
         {/* Stats row */}
         <View style={styles.statsRow}>
           {[
-            { label: "Total Marks",  value: `${total}/${maxTotal}`, color: "#3D5AF1" },
+            { label: "Total Marks",  value: `${total}/${maxTotal}`, color: "#7C3AED" },
             { label: "Percentage",   value: `${pct}%`,              color: pct >= 75 ? "#10B981" : "#F59E0B" },
             { label: "Class Rank",   value: `#${exam.rank}`,        color: "#8B5CF6" },
             { label: "Class Size",   value: `${exam.classSize}`,    color: "#6B7280" },
@@ -110,7 +110,7 @@ export default function StudyResultsScreen() {
         <Text style={styles.sectionTitle}>Subject-wise Performance</Text>
         {exam.subjects.map((sub) => {
           const subPct = Math.round((sub.marks / sub.total) * 100);
-          const col = GRADE_COLOR[sub.grade] || "#3D5AF1";
+          const col = GRADE_COLOR[sub.grade] || "#7C3AED";
           return (
             <View key={sub.name} style={styles.subjectCard}>
               <View style={styles.subjectTop}>
@@ -146,13 +146,13 @@ export default function StudyResultsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   examChips: { paddingHorizontal: 16, gap: 10, paddingVertical: 14 },
   examChip: { backgroundColor: "#fff", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "#E5E7EB", minWidth: 160 },
-  examChipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  examChipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   examChipText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 2 },
   examChipTextActive: { color: "#fff" },
   examChipDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
@@ -179,6 +179,6 @@ const styles = StyleSheet.create({
   subjectPct: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   progressNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#ECFDF5", borderRadius: 14, padding: 14, marginBottom: 14, marginTop: 4 },
   progressNoteText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#065F46", lineHeight: 19 },
-  downloadBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15, marginBottom: 8 },
+  downloadBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 15, marginBottom: 8 },
   downloadBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 15 },
 });

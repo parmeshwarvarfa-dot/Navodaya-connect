@@ -34,7 +34,7 @@ export default function StudyAnnouncementsScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>School Announcements</Text>
         <TouchableOpacity onPress={load} style={styles.refresh} accessibilityLabel="Refresh announcements">
-          <Ionicons name="refresh-outline" size={20} color="#3D5AF1" />
+          <Ionicons name="refresh-outline" size={20} color="#7C3AED" />
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 32 + insets.bottom }]}>
@@ -50,7 +50,7 @@ export default function StudyAnnouncementsScreen() {
             <View style={[styles.priorityDot, item.priority === "urgent" && styles.urgentDot]} />
             <View style={styles.body}>
               <View style={styles.metaRow}>
-                {item.pinned ? <Ionicons name="pin" size={13} color="#3D5AF1" /> : null}
+                {item.pinned ? <Ionicons name="pin" size={13} color="#7C3AED" /> : null}
                 <Text style={styles.audience}>{item.target}</Text>
                 <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
               </View>
@@ -66,16 +66,16 @@ export default function StudyAnnouncementsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F5F6FA" },
+  page: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   back: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   title: { flex: 1, fontSize: 18, fontWeight: "700", color: "#111827" },
-  refresh: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  refresh: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   content: { padding: 16, gap: 12 },
   notice: { textAlign: "center", padding: 24, color: "#6B7280", fontSize: 14 },
   noticeCard: { backgroundColor: "#fff", borderRadius: 14, padding: 18, alignItems: "center" },
   error: { color: "#B91C1C", textAlign: "center" },
-  retry: { marginTop: 6, color: "#3D5AF1", fontWeight: "600" },
+  retry: { marginTop: 6, color: "#7C3AED", fontWeight: "600" },
   card: { flexDirection: "row", gap: 12, backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E8EAF0" },
   priorityDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#F59E0B", marginTop: 5 },
   urgentDot: { backgroundColor: "#EF4444" },

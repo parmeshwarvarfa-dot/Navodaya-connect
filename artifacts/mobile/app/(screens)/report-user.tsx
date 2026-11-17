@@ -83,7 +83,7 @@ export default function ReportUserScreen() {
           <Text style={styles.successTitle}>Report Submitted</Text>
           <Text style={styles.successText}>Thank you for keeping JNV Connect safe. An authorized reviewer can now review this report.</Text>
           <View style={styles.successNote}>
-            <Ionicons name="shield-checkmark-outline" size={16} color="#3D5AF1" />
+            <Ionicons name="shield-checkmark-outline" size={16} color="#7C3AED" />
             <Text style={styles.successNoteText}>Your report is confidential. The reported user will not be notified.</Text>
           </View>
           <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
@@ -168,7 +168,7 @@ export default function ReportUserScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -180,13 +180,13 @@ const styles = StyleSheet.create({
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 14, lineHeight: 18 },
   reasonList: { gap: 8, marginBottom: 22 },
   reasonRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: "#F0F0F0" },
-  reasonRowSelected: { borderColor: "#3D5AF1", backgroundColor: "#EEF2FF" },
+  reasonRowSelected: { borderColor: "#7C3AED", backgroundColor: "#F5F3FF" },
   reasonIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   reasonLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#374151" },
-  reasonLabelSelected: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  reasonLabelSelected: { color: "#7C3AED", fontFamily: "Inter_600SemiBold" },
   radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
-  radioOuterSelected: { borderColor: "#3D5AF1" },
-  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#3D5AF1" },
+  radioOuterSelected: { borderColor: "#7C3AED" },
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#7C3AED" },
   detailsInput: { backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 100, marginBottom: 14 },
   privacyNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#F3F4F6", borderRadius: 10, padding: 12, marginBottom: 20 },
   privacyText: { flex: 1, fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 16 },
@@ -197,9 +197,9 @@ const styles = StyleSheet.create({
   successIcon: { marginBottom: 8 },
   successTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
   successText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22 },
-  successNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#C7D2FE" },
+  successNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#F5F3FF", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#C7D2FE" },
   successNoteText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: "#3730A3" },
-  doneBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 48 },
+  doneBtn: { backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 48 },
   doneBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },

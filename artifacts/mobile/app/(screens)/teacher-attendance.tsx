@@ -191,7 +191,7 @@ export default function TeacherAttendanceScreen() {
       >
         {/* Class Selector Tabs */}
         {loading ? (
-          <ActivityIndicator color="#1A3C6E" />
+          <ActivityIndicator color="#7C3AED" />
         ) : classes.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="school-outline" size={32} color="#94A3B8" />
@@ -265,7 +265,7 @@ export default function TeacherAttendanceScreen() {
 
             {/* Students List */}
             {studentsLoading ? (
-              <ActivityIndicator color="#1A3C6E" style={{ paddingVertical: 20 }} />
+              <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 20 }} />
             ) : students.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={28} color="#94A3B8" />
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   classTabActive: {
-    backgroundColor: "#1A3C6E",
-    borderColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   classTabText: {
     color: "#334155",
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     paddingVertical: 12,
     borderRadius: 12,
     marginTop: 4,

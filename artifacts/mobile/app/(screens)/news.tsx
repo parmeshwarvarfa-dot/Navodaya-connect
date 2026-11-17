@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
-  retryButton: { marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: "#3D5AF1" },
+  retryButton: { marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: "#7C3AED" },
   retryButtonText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   modalContainer: { flex: 1 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },

@@ -197,7 +197,7 @@ export default function ImageAdjustmentModal({
               <View pointerEvents="none" style={styles.gridHorizontalOne} />
               <View pointerEvents="none" style={styles.gridHorizontalTwo} />
             </View>
-          ) : <ActivityIndicator size="large" color="#3D5AF1" />}
+          ) : <ActivityIndicator size="large" color="#7C3AED" />}
           <Text style={styles.dragHint}>Drag the photo to adjust the crop</Text>
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   header: { minHeight: 62, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E7EAF2" },
   headerButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#F1F3F8", alignItems: "center", justifyContent: "center" },
   title: { flex: 1, textAlign: "center", color: "#172033", fontSize: 16, fontFamily: "Inter_700Bold" },
-  doneButton: { minWidth: 82, minHeight: 38, paddingHorizontal: 14, borderRadius: 20, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  doneButton: { minWidth: 82, minHeight: 38, paddingHorizontal: 14, borderRadius: 20, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   doneText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
   disabled: { opacity: 0.5 },
   previewArea: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 18 },

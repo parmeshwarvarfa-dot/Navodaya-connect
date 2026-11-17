@@ -377,7 +377,7 @@ export default function AssignTeachersScreen() {
                 onPress={() => setActiveTab(tab.id as MainTab)}
                 style={[s.mainTabItem, active && s.mainTabItemActive]}
               >
-                <Ionicons name={tab.icon as any} size={15} color={active ? "#3D5AF1" : "#64748B"} />
+                <Ionicons name={tab.icon as any} size={15} color={active ? "#7C3AED" : "#64748B"} />
                 <Text style={[s.mainTabItemText, active && s.mainTabItemTextActive]}>{tab.label}</Text>
                 {tab.id === "history" && visibleHistory.length > 0 ? (
                   <View style={s.tabBadge}>
@@ -420,7 +420,7 @@ export default function AssignTeachersScreen() {
 
           {loading && !overview ? (
             <View style={s.loadingState}>
-              <ActivityIndicator size="large" color="#3D5AF1" />
+              <ActivityIndicator size="large" color="#7C3AED" />
               <Text style={s.loadingText}>Synchronizing JNV Academic Data…</Text>
             </View>
           ) : null}
@@ -439,7 +439,7 @@ export default function AssignTeachersScreen() {
                       value={overview.summary.classTeacherAssignments}
                       subtext={`${overview.summary.classSections} sections covered`}
                       icon="school"
-                      color="#3D5AF1"
+                      color="#7C3AED"
                       tag={
                         overview.summary.classTeacherAssignments >= overview.summary.classSections
                           ? "100% Covered"
@@ -508,25 +508,25 @@ export default function AssignTeachersScreen() {
                         <Ionicons
                           name="person-outline"
                           size={14}
-                          color={teacherFilter ? "#3D5AF1" : "#64748B"}
+                          color={teacherFilter ? "#7C3AED" : "#64748B"}
                         />
                         <Text style={[s.filterButtonText, !!teacherFilter && s.filterButtonTextActive]}>
                           {teacherFilter
                             ? overview.teachers.find((t) => t.id === teacherFilter)?.fullName || "Teacher"
                             : "All Teachers"}
                         </Text>
-                        <Ionicons name="chevron-down" size={12} color={teacherFilter ? "#3D5AF1" : "#94A3B8"} />
+                        <Ionicons name="chevron-down" size={12} color={teacherFilter ? "#7C3AED" : "#94A3B8"} />
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         onPress={() => setFilterModal("class")}
                         style={[s.filterButton, !!classFilter && s.filterButtonActive]}
                       >
-                        <Ionicons name="grid-outline" size={14} color={classFilter ? "#3D5AF1" : "#64748B"} />
+                        <Ionicons name="grid-outline" size={14} color={classFilter ? "#7C3AED" : "#64748B"} />
                         <Text style={[s.filterButtonText, !!classFilter && s.filterButtonTextActive]}>
                           {classFilter ? classFilter.replace("\u0000", " · ") : "All Classes"}
                         </Text>
-                        <Ionicons name="chevron-down" size={12} color={classFilter ? "#3D5AF1" : "#94A3B8"} />
+                        <Ionicons name="chevron-down" size={12} color={classFilter ? "#7C3AED" : "#94A3B8"} />
                       </TouchableOpacity>
 
                       {teacherFilter || classFilter ? (
@@ -590,7 +590,7 @@ export default function AssignTeachersScreen() {
                               <View style={s.classCardHeader}>
                                 <View style={s.classCardTitleWrap}>
                                   <View style={s.classBadgeIcon}>
-                                    <Ionicons name="school" size={18} color="#3D5AF1" />
+                                    <Ionicons name="school" size={18} color="#7C3AED" />
                                   </View>
                                   <View>
                                     <Text style={s.classCardTitle}>
@@ -610,7 +610,7 @@ export default function AssignTeachersScreen() {
                                   }}
                                   style={s.cardActionPill}
                                 >
-                                  <Ionicons name="add" size={14} color="#3D5AF1" />
+                                  <Ionicons name="add" size={14} color="#7C3AED" />
                                   <Text style={s.cardActionPillText}>Assign Teacher</Text>
                                 </TouchableOpacity>
                               </View>
@@ -713,7 +713,7 @@ export default function AssignTeachersScreen() {
                                   }}
                                   style={s.cardActionPill}
                                 >
-                                  <Ionicons name="add" size={14} color="#3D5AF1" />
+                                  <Ionicons name="add" size={14} color="#7C3AED" />
                                   <Text style={s.cardActionPillText}>Allocate</Text>
                                 </TouchableOpacity>
                               </View>
@@ -811,7 +811,7 @@ export default function AssignTeachersScreen() {
                             <Ionicons
                               name="school"
                               size={20}
-                              color={formType === "class_teacher" ? "#3D5AF1" : "#64748B"}
+                              color={formType === "class_teacher" ? "#7C3AED" : "#64748B"}
                             />
                           </View>
                           <Text
@@ -840,7 +840,7 @@ export default function AssignTeachersScreen() {
                             <Ionicons
                               name="book"
                               size={20}
-                              color={formType === "subject_teacher" ? "#3D5AF1" : "#64748B"}
+                              color={formType === "subject_teacher" ? "#7C3AED" : "#64748B"}
                             />
                           </View>
                           <Text
@@ -948,7 +948,7 @@ export default function AssignTeachersScreen() {
                                 <Ionicons
                                   name={isSelected ? "checkbox" : "square-outline"}
                                   size={19}
-                                  color={isSelected ? "#3D5AF1" : "#94A3B8"}
+                                  color={isSelected ? "#7C3AED" : "#94A3B8"}
                                 />
                                 <View style={{ flex: 1 }}>
                                   <Text
@@ -971,7 +971,7 @@ export default function AssignTeachersScreen() {
                         </View>
                       ) : (
                         <View style={s.alertInfo}>
-                          <Ionicons name="school-outline" size={18} color="#3D5AF1" />
+                          <Ionicons name="school-outline" size={18} color="#7C3AED" />
                           <Text style={s.alertInfoText}>
                             Class sections are automatically inferred from enrolled student profiles in this JNV.
                           </Text>
@@ -1083,7 +1083,7 @@ export default function AssignTeachersScreen() {
               {activeTab === "workload" && (
                 <View style={s.tabContent}>
                   <View style={s.workloadOverviewBanner}>
-                    <Ionicons name="information-circle" size={20} color="#3D5AF1" />
+                    <Ionicons name="information-circle" size={20} color="#7C3AED" />
                     <View style={{ flex: 1 }}>
                       <Text style={s.workloadBannerTitle}>Faculty Workload & Allocation Balancing</Text>
                       <Text style={s.workloadBannerSub}>
@@ -1139,7 +1139,7 @@ export default function AssignTeachersScreen() {
                                     <Ionicons
                                       name={a.assignmentType === "class_teacher" ? "school" : "book"}
                                       size={11}
-                                      color="#3D5AF1"
+                                      color="#7C3AED"
                                     />
                                     <Text style={s.allocationPillText}>
                                       {a.className} · {a.section}
@@ -1197,7 +1197,7 @@ export default function AssignTeachersScreen() {
                                 item.action === "created"
                                   ? "#059669"
                                   : item.action === "updated"
-                                  ? "#3D5AF1"
+                                  ? "#7C3AED"
                                   : "#DC2626"
                               }
                             />
@@ -1272,12 +1272,12 @@ export default function AssignTeachersScreen() {
                       <Switch
                         value={overview.settings.allowMultipleSubjectTeachers}
                         onValueChange={(val) => void updateMultipleTeacherPolicy(val)}
-                        trackColor={{ true: "#3D5AF1", false: "#CBD5E1" }}
+                        trackColor={{ true: "#7C3AED", false: "#CBD5E1" }}
                       />
                     </View>
 
                     <View style={s.infoNoticeBox}>
-                      <Ionicons name="calendar-outline" size={20} color="#3D5AF1" />
+                      <Ionicons name="calendar-outline" size={20} color="#7C3AED" />
                       <View style={{ flex: 1 }}>
                         <Text style={s.infoNoticeTitle}>Timetable Integration Notice</Text>
                         <Text style={s.infoNoticeDesc}>
@@ -1332,7 +1332,7 @@ export default function AssignTeachersScreen() {
                       Academic Session {year}
                     </Text>
                     {year === academicYear ? (
-                      <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" />
+                      <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />
                     ) : null}
                   </TouchableOpacity>
                 ))}
@@ -1349,7 +1349,7 @@ export default function AssignTeachersScreen() {
                     <Text style={[s.modalOptionText, !teacherFilter && s.modalOptionTextActive]}>
                       All Faculty Members
                     </Text>
-                    {!teacherFilter ? <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" /> : null}
+                    {!teacherFilter ? <Ionicons name="checkmark-circle" size={18} color="#7C3AED" /> : null}
                   </TouchableOpacity>
                   {overview?.teachers.map((teacher) => (
                     <TouchableOpacity
@@ -1366,7 +1366,7 @@ export default function AssignTeachersScreen() {
                         {teacher.fullName} ({teacher.subject || "All Subjects"})
                       </Text>
                       {teacherFilter === teacher.id ? (
-                        <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" />
+                        <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />
                       ) : null}
                     </TouchableOpacity>
                   ))}
@@ -1385,7 +1385,7 @@ export default function AssignTeachersScreen() {
                     <Text style={[s.modalOptionText, !classFilter && s.modalOptionTextActive]}>
                       All Class Sections
                     </Text>
-                    {!classFilter ? <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" /> : null}
+                    {!classFilter ? <Ionicons name="checkmark-circle" size={18} color="#7C3AED" /> : null}
                   </TouchableOpacity>
                   {overview?.classSections.map((item) => {
                     const key = sectionKey(item.className, item.section);
@@ -1402,7 +1402,7 @@ export default function AssignTeachersScreen() {
                         <Text style={[s.modalOptionText, selected && s.modalOptionTextActive]}>
                           {item.className} · {sectionLabel(item.section)}
                         </Text>
-                        {selected ? <Ionicons name="checkmark-circle" size={18} color="#3D5AF1" /> : null}
+                        {selected ? <Ionicons name="checkmark-circle" size={18} color="#7C3AED" /> : null}
                       </TouchableOpacity>
                     );
                   })}
@@ -1487,7 +1487,7 @@ function AssignmentRowCard({
         <Ionicons
           name={isClassTeacher ? "school" : "book"}
           size={16}
-          color={isClassTeacher ? "#3D5AF1" : "#7C3AED"}
+          color={isClassTeacher ? "#7C3AED" : "#7C3AED"}
         />
       </View>
 
@@ -1514,7 +1514,7 @@ function AssignmentRowCard({
           style={s.actionIconButton}
           accessibilityLabel="Edit Assignment"
         >
-          <Ionicons name="pencil" size={15} color="#3D5AF1" />
+          <Ionicons name="pencil" size={15} color="#7C3AED" />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onDelete}
@@ -1560,7 +1560,7 @@ const s = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   header: {
-    backgroundColor: "#1A365D",
+    backgroundColor: "#7C3AED",
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#2D3748",
@@ -1658,7 +1658,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1698,7 +1698,7 @@ const s = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   mainTabItemActive: {
-    borderBottomColor: "#3D5AF1",
+    borderBottomColor: "#7C3AED",
   },
   mainTabItemText: {
     color: "#64748B",
@@ -1706,17 +1706,17 @@ const s = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
   mainTabItemTextActive: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontFamily: "Inter_700Bold",
   },
   tabBadge: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 10,
   },
   tabBadgeText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 10,
     fontFamily: "Inter_700Bold",
   },
@@ -1894,7 +1894,7 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   filterButtonActive: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderColor: "#C7D2FE",
   },
   filterButtonText: {
@@ -1903,7 +1903,7 @@ const s = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
   filterButtonTextActive: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontFamily: "Inter_600SemiBold",
   },
   clearFilterBtn: {
@@ -1950,8 +1950,8 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   subViewPillActive: {
-    backgroundColor: "#3D5AF1",
-    borderColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   subViewPillText: {
     color: "#64748B",
@@ -1992,7 +1992,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2011,13 +2011,13 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   cardActionPillText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
@@ -2085,12 +2085,12 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitial: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 14,
     fontFamily: "Inter_700Bold",
   },
@@ -2136,7 +2136,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   iconClassTeacher: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
   },
   iconSubjectTeacher: {
     backgroundColor: "#F3E8FF",
@@ -2157,7 +2157,7 @@ const s = StyleSheet.create({
   roleBadgeClass: { backgroundColor: "#DBEAFE" },
   roleBadgeSubject: { backgroundColor: "#EDE9FE" },
   roleBadgeText: { fontSize: 9, fontFamily: "Inter_700Bold" },
-  roleBadgeTextClass: { color: "#1E40AF" },
+  roleBadgeTextClass: { color: "#5B21B6" },
   roleBadgeTextSubject: { color: "#6B21A8" },
   assignmentDetails: {
     color: "#64748B",
@@ -2235,7 +2235,7 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2266,8 +2266,8 @@ const s = StyleSheet.create({
     gap: 6,
   },
   roleCardSelected: {
-    borderColor: "#3D5AF1",
-    backgroundColor: "#EEF2FF",
+    borderColor: "#7C3AED",
+    backgroundColor: "#F5F3FF",
   },
   roleIconWrap: {
     width: 36,
@@ -2286,7 +2286,7 @@ const s = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   roleCardTitleSelected: {
-    color: "#1E40AF",
+    color: "#5B21B6",
   },
   roleCardDesc: {
     color: "#64748B",
@@ -2313,8 +2313,8 @@ const s = StyleSheet.create({
     padding: 10,
   },
   teacherSelectCardActive: {
-    borderColor: "#3D5AF1",
-    backgroundColor: "#EEF2FF",
+    borderColor: "#7C3AED",
+    backgroundColor: "#F5F3FF",
   },
   teacherSelectAvatar: {
     width: 32,
@@ -2325,7 +2325,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   teacherSelectAvatarActive: {
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
   },
   teacherSelectInit: {
     color: "#475569",
@@ -2341,7 +2341,7 @@ const s = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   teacherSelectNameActive: {
-    color: "#1E40AF",
+    color: "#5B21B6",
   },
   teacherSelectSubject: {
     color: "#94A3B8",
@@ -2378,8 +2378,8 @@ const s = StyleSheet.create({
     padding: 10,
   },
   sectionSelectCardSelected: {
-    borderColor: "#3D5AF1",
-    backgroundColor: "#EEF2FF",
+    borderColor: "#7C3AED",
+    backgroundColor: "#F5F3FF",
   },
   disabledCard: {
     opacity: 0.45,
@@ -2390,7 +2390,7 @@ const s = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   sectionSelectTitleSelected: {
-    color: "#1E40AF",
+    color: "#5B21B6",
   },
   sectionSelectSub: {
     color: "#64748B",
@@ -2433,7 +2433,7 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   suggestionChipText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 10,
     fontFamily: "Inter_500Medium",
   },
@@ -2459,7 +2459,7 @@ const s = StyleSheet.create({
   },
   submitButton: {
     height: 44,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -2480,14 +2480,14 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderWidth: 1,
     borderColor: "#C7D2FE",
     padding: 14,
     borderRadius: 10,
   },
   workloadBannerTitle: {
-    color: "#1E40AF",
+    color: "#5B21B6",
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
@@ -2692,7 +2692,7 @@ const s = StyleSheet.create({
   infoNoticeBox: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderWidth: 1,
     borderColor: "#C7D2FE",
     padding: 14,
@@ -2700,7 +2700,7 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
   },
   infoNoticeTitle: {
-    color: "#1E40AF",
+    color: "#5B21B6",
     fontSize: 12,
     fontFamily: "Inter_700Bold",
   },
@@ -2822,7 +2822,7 @@ const s = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
   modalOptionTextActive: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontFamily: "Inter_700Bold",
   },
 });

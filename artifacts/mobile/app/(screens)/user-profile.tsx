@@ -202,7 +202,7 @@ export default function UserProfileScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.state}><ActivityIndicator color="#3D5AF1" /></View>
+        <View style={styles.state}><ActivityIndicator color="#7C3AED" /></View>
       ) : !user ? (
         <View style={styles.state}><Text style={styles.stateText}>{error || "User profile not found."}</Text></View>
       ) : (
@@ -255,9 +255,9 @@ export default function UserProfileScreen() {
                     onPress={() => void Linking.openURL(user.resumeUrl!).catch(() => Alert.alert("Unable to open link", "Check the resume link and try again."))}
                     accessibilityRole="link"
                   >
-                    <Ionicons name="document-text-outline" size={17} color="#3D5AF1" />
+                    <Ionicons name="document-text-outline" size={17} color="#7C3AED" />
                     <Text style={styles.resumeButtonText}>View Resume / CV</Text>
-                    <Ionicons name="open-outline" size={14} color="#3D5AF1" />
+                    <Ionicons name="open-outline" size={14} color="#7C3AED" />
                   </TouchableOpacity>
                 ) : null}
                 {status?.followsYou ? (
@@ -287,7 +287,7 @@ export default function UserProfileScreen() {
                   onPress={openMessage}
                   disabled={busy || status?.isBlocked || conversations.isLoading}
                 >
-                  <Ionicons name="chatbubble-ellipses-outline" size={17} color="#3D5AF1" />
+                  <Ionicons name="chatbubble-ellipses-outline" size={17} color="#7C3AED" />
                   <Text style={styles.secondaryActionText}>Message</Text>
                 </TouchableOpacity>
               </View>
@@ -401,18 +401,18 @@ export default function UserProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   state: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   stateText: { color: "#6B7280", fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center" },
   profileCard: { alignItems: "center", backgroundColor: "#fff", borderRadius: 14, padding: 22, borderWidth: 1, borderColor: "#F0F0F0" },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", marginBottom: 12 },
   avatarPressable: { width: 76, height: 76, marginBottom: 12, position: "relative" },
   avatarImage: { width: 76, height: 76, borderRadius: 38 },
-  avatarExpandBadge: { position: "absolute", right: -1, bottom: -1, width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "#fff" },
-  avatarText: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  avatarExpandBadge: { position: "absolute", right: -1, bottom: -1, width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#7C3AED", borderWidth: 2, borderColor: "#fff" },
+  avatarText: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" },
   name: { color: "#111827", fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center" },
   schoolRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14 },
@@ -421,18 +421,18 @@ const styles = StyleSheet.create({
   bio: { marginTop: 14, color: "#4B5563", fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 21, textAlign: "center" },
   recognitionCard: { alignSelf: "stretch", marginTop: 14, padding: 12, backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, borderRadius: 14 },
   recognitionHeader: { flexDirection: "row", alignItems: "center", gap: 6 }, recognitionTitle: { color: "#92400E", fontFamily: "Inter_700Bold", fontSize: 12 }, recognitionPoints: { marginTop: 5, color: "#17243A", fontFamily: "Inter_700Bold", fontSize: 15 }, recognitionAward: { marginTop: 4, color: "#7C5A19", fontFamily: "Inter_500Medium", fontSize: 11 },
-  resumeButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 14, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: "#EEF2FF" },
-  resumeButtonText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  resumeButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 14, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: "#F5F3FF" },
+  resumeButtonText: { color: "#7C3AED", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   privateNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, marginTop: 18, borderRadius: 11, backgroundColor: "#F5F3FF" },
   privateText: { flex: 1, color: "#55409A", fontSize: 12, lineHeight: 18, fontFamily: "Inter_500Medium" },
-  followsYou: { marginTop: 12, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15, backgroundColor: "#EEF2FF" },
-  followsYouText: { color: "#3D5AF1", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  followsYou: { marginTop: 12, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15, backgroundColor: "#F5F3FF" },
+  followsYouText: { color: "#7C3AED", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   actions: { flexDirection: "row", gap: 10, marginTop: 14 },
-  primaryAction: { flex: 1, minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 11, backgroundColor: "#3D5AF1" },
+  primaryAction: { flex: 1, minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 11, backgroundColor: "#7C3AED" },
   followingAction: { backgroundColor: "#6B7280" },
   primaryActionText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   secondaryAction: { flex: 1, minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 11, backgroundColor: "#fff", borderWidth: 1, borderColor: "#DCE2F0" },
-  secondaryActionText: { color: "#3D5AF1", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  secondaryActionText: { color: "#7C3AED", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   safetyActions: { flexDirection: "row", justifyContent: "center", gap: 12, marginTop: 12 },
   safetyButton: { flexDirection: "row", alignItems: "center", gap: 6, padding: 10 },
   safetyText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#6B7280" },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 9, marginTop: 14 },
   cancelButton: { minHeight: 42, justifyContent: "center", paddingHorizontal: 15, borderRadius: 10, backgroundColor: "#F3F4F6" },
   cancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#4B5563" },
-  sendButton: { minHeight: 42, justifyContent: "center", paddingHorizontal: 16, borderRadius: 10, backgroundColor: "#3D5AF1" },
+  sendButton: { minHeight: 42, justifyContent: "center", paddingHorizontal: 16, borderRadius: 10, backgroundColor: "#7C3AED" },
   blockConfirmButton: { minHeight: 42, justifyContent: "center", paddingHorizontal: 16, borderRadius: 10, backgroundColor: "#B42318" },
   sendText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });

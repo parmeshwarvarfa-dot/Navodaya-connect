@@ -77,7 +77,7 @@ export default function EventsScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#2D5A9E"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -97,13 +97,13 @@ export default function EventsScreen() {
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#3D5AF1" size="large" />
+          <ActivityIndicator color="#7C3AED" size="large" />
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
         >
           {events.length === 0 ? (
             <View style={styles.emptyState}>
@@ -178,7 +178,7 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { paddingHorizontal: 20, paddingBottom: 16 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   backBtn: {
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   formError: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 8 },
   submitBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16, marginTop: 8,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16, marginTop: 8,
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },

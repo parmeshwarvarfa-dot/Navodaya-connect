@@ -109,7 +109,7 @@ export default function AlumniCommunityScreen() {
     </View>
 
     <View style={styles.filters}>
-      <Ionicons name="location-outline" size={18} color="#3D5AF1" />
+      <Ionicons name="location-outline" size={18} color="#7C3AED" />
       <TextInput value={city} onChangeText={setCity} placeholder="Filter by city or district" placeholderTextColor="#8792A5" style={styles.input} returnKeyType="search" />
       {city ? <TouchableOpacity onPress={() => setCity("")} accessibilityLabel="Clear city filter"><Ionicons name="close-circle" size={18} color="#8792A5"/></TouchableOpacity> : null}
     </View>
@@ -122,7 +122,7 @@ export default function AlumniCommunityScreen() {
 
     <Text style={styles.safety}>Confirm availability and eligibility with a qualified healthcare professional or blood bank. A response is not a guarantee of donation.</Text>
 
-    {loading ? <ActivityIndicator style={{ marginTop: 42 }} color="#3D5AF1" /> : error ? <TouchableOpacity onPress={() => void load()} style={styles.empty}>
+    {loading ? <ActivityIndicator style={{ marginTop: 42 }} color="#7C3AED" /> : error ? <TouchableOpacity onPress={() => void load()} style={styles.empty}>
       <Ionicons name="cloud-offline-outline" size={36} color="#9AA5B5" />
       <Text style={styles.body}>{error}</Text>
       <Text style={styles.owner}>Tap to retry</Text>
@@ -172,18 +172,18 @@ function Field({ label, value, onChange, placeholder, multiline }: { label: stri
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F5F6FA" },
+  screen: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 16, paddingBottom: 13, backgroundColor: "#fff" },
   back: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F3F7", alignItems: "center", justifyContent: "center" },
   title: { color: "#17243A", fontSize: 18, fontFamily: "Inter_700Bold" },
   subtitle: { color: "#8792A5", fontSize: 11, marginTop: 2, fontFamily: "Inter_400Regular" },
-  add: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#3D5AF1", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
+  add: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#7C3AED", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
   addText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 12 },
   filters: { flexDirection: "row", alignItems: "center", gap: 9, margin: 12, paddingHorizontal: 13, minHeight: 46, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E8EF", borderRadius: 12 },
   input: { flex: 1, color: "#17243A", fontSize: 14, paddingVertical: 8 },
   groups: { paddingHorizontal: 12, paddingBottom: 10, gap: 6 },
   group: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E3E7EE" },
-  groupActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  groupActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   groupText: { color: "#526078", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   groupTextActive: { color: "#fff" },
   groupsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
@@ -191,18 +191,18 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#fff", borderRadius: 14, padding: 15, marginBottom: 11, borderWidth: 1, borderColor: "#E9ECF2", gap: 8 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   cardTitle: { flex: 1, fontSize: 16, color: "#17243A", fontFamily: "Inter_700Bold" },
-  badge: { backgroundColor: "#EEF2FF", borderRadius: 12, paddingHorizontal: 9, paddingVertical: 5 },
-  badgeText: { color: "#3D5AF1", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  badge: { backgroundColor: "#F5F3FF", borderRadius: 12, paddingHorizontal: 9, paddingVertical: 5 },
+  badgeText: { color: "#7C3AED", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   muted: { color: "#8290A4", fontSize: 12, fontFamily: "Inter_400Regular" },
   body: { color: "#45536A", fontSize: 13, lineHeight: 19, fontFamily: "Inter_400Regular" },
-  owner: { color: "#3D5AF1", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  owner: { color: "#7C3AED", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   empty: { alignItems: "center", justifyContent: "center", padding: 36, gap: 12 },
   emptyTitle: { color: "#17243A", fontSize: 16, fontFamily: "Inter_700Bold", textAlign: "center" },
   modal: { flex: 1, padding: 20, backgroundColor: "#fff" },
   modalTitle: { color: "#17243A", fontSize: 20, fontFamily: "Inter_700Bold", marginBottom: 8 },
   label: { color: "#344158", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   field: { marginTop: 6, borderWidth: 1, borderColor: "#E2E6ED", borderRadius: 10, padding: 11, color: "#17243A", minHeight: 42 },
-  submit: { marginTop: 20, minHeight: 46, borderRadius: 11, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  submit: { marginTop: 20, minHeight: 46, borderRadius: 11, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   submitText: { color: "#fff", fontFamily: "Inter_700Bold" },
   cancel: { marginTop: 10, minHeight: 44, alignItems: "center", justifyContent: "center" },
   cancelText: { color: "#66748A", fontFamily: "Inter_600SemiBold" },

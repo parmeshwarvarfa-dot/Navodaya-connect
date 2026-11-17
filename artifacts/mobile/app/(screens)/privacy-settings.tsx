@@ -84,14 +84,14 @@ export default function PrivacySettingsScreen() {
               <Text style={styles.choiceDetail}>{option.detail}</Text>
             </View>
             {updatePrivacy.isPending && visibility !== option.value
-              ? <ActivityIndicator size="small" color="#3D5AF1" />
-              : <Ionicons name={visibility === option.value ? "radio-button-on" : "radio-button-off"} size={20} color={visibility === option.value ? "#3D5AF1" : "#9CA3AF"} />
+              ? <ActivityIndicator size="small" color="#7C3AED" />
+              : <Ionicons name={visibility === option.value ? "radio-button-on" : "radio-button-off"} size={20} color={visibility === option.value ? "#7C3AED" : "#9CA3AF"} />
             }
           </TouchableOpacity>
         ))}
 
         <TouchableOpacity style={styles.inboxLink} onPress={() => router.push("/(screens)/social-inbox" as any)}>
-          <View style={styles.inboxIcon}><Ionicons name="mail-unread-outline" size={20} color="#3D5AF1" /></View>
+          <View style={styles.inboxIcon}><Ionicons name="mail-unread-outline" size={20} color="#7C3AED" /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.inboxTitle}>Social inbox</Text>
             <Text style={styles.inboxDetail}>Review follow and message requests, and manage direct conversations.</Text>
@@ -102,7 +102,7 @@ export default function PrivacySettingsScreen() {
         <View style={styles.blockedSection}>
           <Text style={styles.sectionHeading}>Blocked profiles</Text>
           {blocked.isLoading ? (
-            <ActivityIndicator color="#3D5AF1" style={{ paddingVertical: 18 }} />
+            <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 18 }} />
           ) : blocked.isError ? (
             <Text style={styles.empty}>Blocked profiles couldn’t be loaded. Try again later.</Text>
           ) : !blocked.data?.length ? (
@@ -133,7 +133,7 @@ export default function PrivacySettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -142,18 +142,18 @@ const styles = StyleSheet.create({
   choice: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "#fff", borderRadius: 13, borderWidth: 1, borderColor: "#E5E7EB", padding: 13, marginBottom: 9 },
   choiceSelected: { borderColor: "#9C8AFF", backgroundColor: "#FBFAFF" },
   choiceIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6" },
-  choiceIconSelected: { backgroundColor: "#3D5AF1" },
+  choiceIconSelected: { backgroundColor: "#7C3AED" },
   choiceTitle: { color: "#111827", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   choiceDetail: { color: "#6B7280", fontSize: 11, lineHeight: 16, fontFamily: "Inter_400Regular", marginTop: 3 },
   inboxLink: { flexDirection: "row", alignItems: "center", gap: 11, padding: 14, marginTop: 12, backgroundColor: "#fff", borderRadius: 13, borderWidth: 1, borderColor: "#F0F0F0" },
-  inboxIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  inboxIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   inboxTitle: { color: "#111827", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   inboxDetail: { color: "#6B7280", fontSize: 11, lineHeight: 16, fontFamily: "Inter_400Regular", marginTop: 3 },
   blockedSection: { marginTop: 24 },
   empty: { color: "#7B8492", backgroundColor: "#fff", borderRadius: 12, padding: 14, fontSize: 13, lineHeight: 19, fontFamily: "Inter_400Regular" },
   blockedRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, marginBottom: 8, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#F0F0F0" },
-  personAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  personInitial: { color: "#3D5AF1", fontSize: 16, fontFamily: "Inter_700Bold" },
+  personAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  personInitial: { color: "#7C3AED", fontSize: 16, fontFamily: "Inter_700Bold" },
   personName: { color: "#111827", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   personSchool: { color: "#7B8492", fontSize: 11, marginTop: 3 },
   unblockButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, borderWidth: 1, borderColor: "#D1D5DB" },

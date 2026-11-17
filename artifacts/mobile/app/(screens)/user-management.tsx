@@ -12,7 +12,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
-  student:  { color: "#3D5AF1", bg: "#EEF2FF" },
+  student:  { color: "#7C3AED", bg: "#F5F3FF" },
   teacher:  { color: "#10B981", bg: "#ECFDF5" },
   alumni:   { color: "#8B5CF6", bg: "#F5F3FF" },
   official: { color: "#D97706", bg: "#FFFBEB" },
@@ -245,14 +245,14 @@ export default function UserManagementScreen() {
           </View>
         )}
         <TouchableOpacity style={s.refreshBtn} onPress={() => { setRefreshing(true); fetchData(); }}>
-          <Ionicons name="refresh" size={18} color="#3D5AF1" />
+          <Ionicons name="refresh" size={18} color="#7C3AED" />
         </TouchableOpacity>
       </View>
 
       {/* Stat chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.statRow} contentContainerStyle={{ paddingHorizontal: 14, gap: 8, paddingVertical: 8, alignItems: "center" }}>
         {[
-          { label: "Total",     count: users.length,       color: "#3D5AF1", bg: "#EEF2FF" },
+          { label: "Total",     count: users.length,       color: "#7C3AED", bg: "#F5F3FF" },
           { label: "Verified",  count: counts.verified || 0, color: "#10B981", bg: "#ECFDF5" },
           { label: "Pending",   count: counts.pending || 0,  color: "#F59E0B", bg: "#FFFBEB" },
           { label: "Rejected",  count: counts.rejected || 0, color: "#EF4444", bg: "#FEF2F2" },
@@ -313,7 +313,7 @@ export default function UserManagementScreen() {
                   const selectedStudent = selectedBatchIds.includes(student.id);
                   return (
                     <TouchableOpacity key={student.id} style={[s.batchStudent, !student.selectable && s.batchStudentExcluded]} disabled={!student.selectable || batchBusy} onPress={() => toggleBatchStudent(student.id)}>
-                      <Ionicons name={selectedStudent ? "checkbox" : student.selectable ? "square-outline" : "remove-circle-outline"} size={21} color={selectedStudent ? "#3D5AF1" : student.selectable ? "#9CA3AF" : "#D1D5DB"} />
+                      <Ionicons name={selectedStudent ? "checkbox" : student.selectable ? "square-outline" : "remove-circle-outline"} size={21} color={selectedStudent ? "#7C3AED" : student.selectable ? "#9CA3AF" : "#D1D5DB"} />
                       <View style={{ flex: 1 }}>
                         <Text style={s.batchStudentName}>{student.fullName}</Text>
                         <Text style={s.batchStudentMeta}>{student.class} · {student.verificationStatus || "unverified"} · {student.reason}</Text>
@@ -323,7 +323,7 @@ export default function UserManagementScreen() {
                 })}
                 {!!selectedBatchIds.length && (
                   <TouchableOpacity style={s.confirmRow} onPress={() => setBatchConfirmed((value) => !value)}>
-                    <Ionicons name={batchConfirmed ? "checkbox" : "square-outline"} size={21} color={batchConfirmed ? "#3D5AF1" : "#9CA3AF"} />
+                    <Ionicons name={batchConfirmed ? "checkbox" : "square-outline"} size={21} color={batchConfirmed ? "#7C3AED" : "#9CA3AF"} />
                     <Text style={s.confirmText}>I reviewed these students and confirm their graduation eligibility for {batchPreview.graduationYear}.</Text>
                   </TouchableOpacity>
                 )}
@@ -351,11 +351,11 @@ export default function UserManagementScreen() {
                 {reconcilePreview.candidates.map((candidate) => {
                   const chosen = selectedCredentialIds.includes(candidate.id);
                   return <TouchableOpacity key={candidate.id} style={s.batchStudent} onPress={() => { setReconcileConfirmed(false); setSelectedCredentialIds((current) => chosen ? current.filter((id) => id !== candidate.id) : [...current, candidate.id]); }}>
-                    <Ionicons name={chosen ? "checkbox" : "square-outline"} size={21} color={chosen ? "#3D5AF1" : "#9CA3AF"} />
+                    <Ionicons name={chosen ? "checkbox" : "square-outline"} size={21} color={chosen ? "#7C3AED" : "#9CA3AF"} />
                     <Text style={s.batchStudentName}>{candidate.fullName} · {candidate.role}</Text>
                   </TouchableOpacity>;
                 })}
-                {!!selectedCredentialIds.length && <TouchableOpacity style={s.confirmRow} onPress={() => setReconcileConfirmed((value) => !value)}><Ionicons name={reconcileConfirmed ? "checkbox" : "square-outline"} size={21} color={reconcileConfirmed ? "#3D5AF1" : "#9CA3AF"} /><Text style={s.confirmText}>Issue IDs using the existing approved verification decisions.</Text></TouchableOpacity>}
+                {!!selectedCredentialIds.length && <TouchableOpacity style={s.confirmRow} onPress={() => setReconcileConfirmed((value) => !value)}><Ionicons name={reconcileConfirmed ? "checkbox" : "square-outline"} size={21} color={reconcileConfirmed ? "#7C3AED" : "#9CA3AF"} /><Text style={s.confirmText}>Issue IDs using the existing approved verification decisions.</Text></TouchableOpacity>}
                 <TouchableOpacity style={[s.primaryButton, (!reconcileConfirmed || !selectedCredentialIds.length || batchBusy) && s.buttonDisabled]} onPress={reconcileCredentials} disabled={!reconcileConfirmed || !selectedCredentialIds.length || batchBusy}><Text style={s.primaryButtonText}>Reconcile {selectedCredentialIds.length} IDs</Text></TouchableOpacity>
               </View>
             )}
@@ -487,7 +487,7 @@ export default function UserManagementScreen() {
                   ) : null}
                   {getEvidenceLinks(selectedRequest.documentUrls).map((url, index) => (
                     <TouchableOpacity key={`${index}-${url}`} style={s.evidenceLink} onPress={() => Linking.openURL(url).catch(() => showToast("Could not open evidence link"))}>
-                      <Ionicons name="document-text-outline" size={16} color="#3D5AF1" />
+                      <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
                       <Text style={s.evidenceLinkText}>Open supporting document {index + 1}</Text>
                     </TouchableOpacity>
                   ))}
@@ -527,12 +527,12 @@ export default function UserManagementScreen() {
                 <Text style={s.sectionTitle}>ACTIONS</Text>
                 {canDecide && selected.role !== "official" && selected.verificationStatus === "verified" && (
                   <TouchableOpacity
-                    style={[s.actionBtn, { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" }]}
+                    style={[s.actionBtn, { backgroundColor: "#F5F3FF", borderColor: "#C7D2FE" }]}
                     onPress={() => handleToggleReviewer(selected)}
                     disabled={!!actionLoading}
                   >
-                    <Ionicons name={assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "person-remove-outline" : "person-add-outline"} size={20} color="#3D5AF1" />
-                    <Text style={[s.actionBtnText, { color: "#3D5AF1" }]}>{assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "Remove Verification Admin" : "Appoint Verification Admin"}</Text>
+                    <Ionicons name={assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "person-remove-outline" : "person-add-outline"} size={20} color="#7C3AED" />
+                    <Text style={[s.actionBtnText, { color: "#7C3AED" }]}>{assignments.some((item) => item.userId === selected.id && item.assignmentRole === "admin" && item.active) ? "Remove Verification Admin" : "Appoint Verification Admin"}</Text>
                   </TouchableOpacity>
                 )}
                 {(selectedCanRecommend || selectedCanFinalize) && (
@@ -609,10 +609,10 @@ export default function UserManagementScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   headerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
   pendingBadge: { backgroundColor: "#FEF3C7", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
@@ -626,7 +626,7 @@ const s = StyleSheet.create({
   horizontalRail: { flexGrow: 0, flexShrink: 0 },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
   tabSm: { paddingHorizontal: 11, paddingVertical: 5 },
-  tabActive: { backgroundColor: "#1A3C6E" },
+  tabActive: { backgroundColor: "#7C3AED" },
   tabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   tabTextSm: { fontSize: 12 },
   tabTextActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },
@@ -649,14 +649,14 @@ const s = StyleSheet.create({
   qBtnApprove: { backgroundColor: "#10B981" },
   qBtnReject: { backgroundColor: "#EF4444" },
   loadMoreBtn: { paddingVertical: 14, alignItems: "center", backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#F0F0F0" },
-  loadMoreText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
+  loadMoreText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#7C3AED" },
   transitionCard: { backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8, gap: 10, borderWidth: 1, borderColor: "#E5E7EB" },
   transitionTitle: { color: "#111827", fontSize: 16, fontFamily: "Inter_700Bold" },
   transitionTitleSmall: { color: "#111827", fontSize: 14, fontFamily: "Inter_700Bold" },
   transitionHelp: { color: "#6B7280", fontSize: 12, lineHeight: 18 },
   yearRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   yearInput: { flex: 1, minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 12, color: "#111827", fontFamily: "Inter_500Medium" },
-  smallPrimaryButton: { minHeight: 42, paddingHorizontal: 12, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1" },
+  smallPrimaryButton: { minHeight: 42, paddingHorizontal: 12, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#7C3AED" },
   smallPrimaryText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   transitionInner: { gap: 8, paddingTop: 4 },
   transitionSummary: { color: "#374151", fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 17 },
@@ -666,16 +666,16 @@ const s = StyleSheet.create({
   batchStudentMeta: { color: "#6B7280", fontSize: 11, lineHeight: 16, marginTop: 2 },
   confirmRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
   confirmText: { flex: 1, color: "#374151", fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
-  primaryButton: { minHeight: 44, borderRadius: 12, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
+  primaryButton: { minHeight: 44, borderRadius: 12, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   primaryButtonText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   buttonDisabled: { opacity: 0.45 },
   resultBox: { backgroundColor: "#F9FAFB", borderRadius: 10, padding: 10, gap: 4 },
   retryButton: { paddingVertical: 8 },
-  retryText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  retryText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   transitionDivider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 4 },
-  secondaryButton: { minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  modalWrap: { flex: 1, backgroundColor: "#F5F6FA" },
+  secondaryButton: { minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
+  secondaryButtonText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  modalWrap: { flex: 1, backgroundColor: "#F8F7FF" },
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   reasonOverlay: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "rgba(17,24,39,0.45)" },
@@ -701,7 +701,7 @@ const s = StyleSheet.create({
   reqNotes: { marginTop: 10 },
   reqNotesText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 19 },
   evidenceLink: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9 },
-  evidenceLinkText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  evidenceLinkText: { color: "#7C3AED", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   auditRow: { paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 3 },
   auditAction: { color: "#111827", fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" },
   auditMeta: { color: "#9CA3AF", fontSize: 10, fontFamily: "Inter_400Regular" },

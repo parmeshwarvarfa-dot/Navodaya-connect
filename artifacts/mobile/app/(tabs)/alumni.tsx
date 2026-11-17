@@ -22,7 +22,7 @@ import type { Connection } from "@/lib/api";
 
 const FILTERS = ["All", "Verified", "Engineers", "Doctors", "IAS/IPS", "Defence"];
 
-const AVATAR_COLORS = ["#1A3C6E", "#FF7A00", "#16A34A", "#8B5CF6", "#EF4444", "#0891B2"];
+const AVATAR_COLORS = ["#7C3AED", "#FF7A00", "#16A34A", "#8B5CF6", "#EF4444", "#0891B2"];
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);

@@ -15,7 +15,7 @@ export default function AcademicFeatureUnavailable({ title, message }: { title: 
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.content}>
-        <View style={styles.icon}><Ionicons name="information-circle-outline" size={28} color="#3D5AF1" /></View>
+        <View style={styles.icon}><Ionicons name="information-circle-outline" size={28} color="#7C3AED" /></View>
         <Text style={styles.heading}>Academic records are not connected</Text>
         <Text style={styles.message}>{message}</Text>
       </View>
@@ -24,12 +24,12 @@ export default function AcademicFeatureUnavailable({ title, message }: { title: 
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F5F6FA" },
+  page: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 58, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   back: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6" },
   title: { fontSize: 18, fontWeight: "700", color: "#111827" },
   content: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28 },
-  icon: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2FF", marginBottom: 16 },
+  icon: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F3FF", marginBottom: 16 },
   heading: { textAlign: "center", fontSize: 18, fontWeight: "700", color: "#111827", marginBottom: 8 },
   message: { maxWidth: 360, textAlign: "center", color: "#6B7280", fontSize: 14, lineHeight: 21 },
 });

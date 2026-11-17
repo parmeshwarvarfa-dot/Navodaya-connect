@@ -40,7 +40,7 @@ export function VerificationGateModal({ visible, onClose, featureName }: Props) 
         <View style={s.sheet}>
           <View style={s.iconWrap}>
             <View style={s.iconCircle}>
-              <Ionicons name="shield-outline" size={36} color="#1A3C6E" />
+              <Ionicons name="shield-outline" size={36} color="#7C3AED" />
             </View>
             <View style={s.lockBadge}>
               <Ionicons name="lock-closed" size={12} color="#fff" />
@@ -59,7 +59,7 @@ export function VerificationGateModal({ visible, onClose, featureName }: Props) 
             {BENEFITS.map((b) => (
               <View key={b.text} style={s.benefitRow}>
                 <View style={s.benefitIcon}>
-                  <Ionicons name={b.icon} size={14} color="#1A3C6E" />
+                  <Ionicons name={b.icon} size={14} color="#7C3AED" />
                 </View>
                 <Text style={s.benefitText}>{b.text}</Text>
               </View>
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
   },
   verifyBtn: {
     width: "100%",
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     borderRadius: 14,
     paddingVertical: 15,
     flexDirection: "row",

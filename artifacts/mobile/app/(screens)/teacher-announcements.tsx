@@ -99,7 +99,7 @@ export default function TeacherAnnouncementsScreen() {
                 <View style={[styles.priorityDot, { backgroundColor: cfg.color }]} />
                 <View style={{ flex: 1 }}>
                   {item.pinned && (
-                    <View style={styles.pinnedRow}><Ionicons name="pin" size={10} color="#3D5AF1" /><Text style={styles.pinnedText}>Pinned</Text></View>
+                    <View style={styles.pinnedRow}><Ionicons name="pin" size={10} color="#7C3AED" /><Text style={styles.pinnedText}>Pinned</Text></View>
                   )}
                   <Text style={styles.cardTitle}>{item.title}</Text>
                   <Text style={styles.cardBody}>{item.body}</Text>
@@ -116,7 +116,7 @@ export default function TeacherAnnouncementsScreen() {
                 </View>
                 <View style={styles.cardActions}>
                   <TouchableOpacity onPress={() => togglePin(item)} style={styles.actionBtn}>
-                    <Ionicons name={item.pinned ? "pin" : "pin-outline"} size={16} color={item.pinned ? "#3D5AF1" : "#9CA3AF"} />
+                    <Ionicons name={item.pinned ? "pin" : "pin-outline"} size={16} color={item.pinned ? "#7C3AED" : "#9CA3AF"} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteItem(item.id)} style={styles.actionBtn}>
                     <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -164,7 +164,7 @@ export default function TeacherAnnouncementsScreen() {
               </View>
 
               <TouchableOpacity style={styles.pinToggle} onPress={() => setPinned(!pinned)}>
-                <Ionicons name={pinned ? "checkbox" : "square-outline"} size={22} color={pinned ? "#3D5AF1" : "#9CA3AF"} />
+                <Ionicons name={pinned ? "checkbox" : "square-outline"} size={22} color={pinned ? "#7C3AED" : "#9CA3AF"} />
                 <Text style={styles.pinToggleText}>Pin this announcement</Text>
               </TouchableOpacity>
 
@@ -184,7 +184,7 @@ export default function TeacherAnnouncementsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   priorityDot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 },
   pinnedRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
-  pinnedText: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  pinnedText: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 6 },
   cardBody: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 19, marginBottom: 10 },
   cardMeta: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10, marginTop: 6 },
   input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
   pill: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" },
-  pillActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  pillActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   pillText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   pillTextActive: { color: "#fff" },
   priorityRow: { flexDirection: "row", gap: 10, marginBottom: 16 },

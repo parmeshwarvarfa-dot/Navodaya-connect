@@ -238,7 +238,7 @@ export default function TeacherClassesScreen() {
   return (
     <View style={s.container}>
       {/* Header */}
-      <LinearGradient colors={["#1A3C6E", "#234B88"]} style={[s.header, { paddingTop: topPad + 10 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[s.header, { paddingTop: topPad + 10 }]}>
         <View style={s.headerRow}>
           <TouchableOpacity
             style={s.headerIconBtn}
@@ -285,8 +285,8 @@ export default function TeacherClassesScreen() {
         {/* 4 Dynamic Statistics Cards */}
         <View style={s.statsRow}>
           <View style={s.statCard}>
-            <View style={[s.statIconWrap, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="school-outline" size={16} color="#3D5AF1" />
+            <View style={[s.statIconWrap, { backgroundColor: "#F5F3FF" }]}>
+              <Ionicons name="school-outline" size={16} color="#7C3AED" />
             </View>
             <Text style={s.statValue}>{loading ? "—" : overview?.totalAssignedClasses ?? groupedClasses.length}</Text>
             <Text style={s.statLabel}>Assigned Classes</Text>
@@ -332,7 +332,7 @@ export default function TeacherClassesScreen() {
               setRefreshing(true);
               loadData();
             }}
-            tintColor="#1A3C6E"
+            tintColor="#7C3AED"
           />
         }
       >
@@ -430,13 +430,13 @@ export default function TeacherClassesScreen() {
 
           {loading ? (
             <View style={s.loadingContainer}>
-              <ActivityIndicator size="large" color="#1A3C6E" />
+              <ActivityIndicator size="large" color="#7C3AED" />
               <Text style={s.loadingText}>Loading assigned classes & rosters...</Text>
             </View>
           ) : filteredClasses.length === 0 ? (
             <View style={s.emptyCard}>
               <View style={s.emptyIconWrap}>
-                <Ionicons name="school-outline" size={32} color="#1A3C6E" />
+                <Ionicons name="school-outline" size={32} color="#7C3AED" />
               </View>
               <Text style={s.emptyTitle}>
                 {search || classFilter !== "all" || subjectFilter !== "all" || roleFilter !== "all"
@@ -470,7 +470,7 @@ export default function TeacherClassesScreen() {
                   <View style={s.cardTop}>
                     <View style={s.classIdentity}>
                       <View style={s.classAvatar}>
-                        <Ionicons name="school" size={20} color="#1A3C6E" />
+                        <Ionicons name="school" size={20} color="#7C3AED" />
                       </View>
                       <View>
                         <View style={s.classNameRow}>
@@ -495,7 +495,7 @@ export default function TeacherClassesScreen() {
                       <Ionicons
                         name={item.isClassTeacher ? "star" : "book"}
                         size={12}
-                        color={item.isClassTeacher ? "#B45309" : "#1D4ED8"}
+                        color={item.isClassTeacher ? "#B45309" : "#6D28D9"}
                       />
                       <Text
                         style={[
@@ -563,14 +563,14 @@ export default function TeacherClassesScreen() {
               onPress={() => router.push("/(screens)/teacher-assignments")}
               activeOpacity={0.8}
             >
-              <View style={[s.toolIconWrap, { backgroundColor: "#EEF2FF" }]}>
-                <Ionicons name="checkbox-outline" size={22} color="#3D5AF1" />
+              <View style={[s.toolIconWrap, { backgroundColor: "#F5F3FF" }]}>
+                <Ionicons name="checkbox-outline" size={22} color="#7C3AED" />
               </View>
               <Text style={s.toolCardTitle}>Assignments</Text>
               <Text style={s.toolCardDesc}>Create, evaluate and review student homework</Text>
               <View style={s.toolCardLink}>
-                <Text style={[s.toolCardLinkText, { color: "#3D5AF1" }]}>Open tool</Text>
-                <Ionicons name="chevron-forward" size={14} color="#3D5AF1" />
+                <Text style={[s.toolCardLinkText, { color: "#7C3AED" }]}>Open tool</Text>
+                <Ionicons name="chevron-forward" size={14} color="#7C3AED" />
               </View>
             </TouchableOpacity>
 
@@ -905,7 +905,7 @@ function ClassDetailsView({
   return (
     <View style={s.container}>
       {/* Header with Class Title & Navigation */}
-      <LinearGradient colors={["#1A3C6E", "#25529A"]} style={[s.classHeader, { paddingTop: topPad + 10 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[s.classHeader, { paddingTop: topPad + 10 }]}>
         <View style={s.headerRow}>
           <TouchableOpacity style={s.headerIconBtn} onPress={onBack} accessibilityRole="button">
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
@@ -973,7 +973,7 @@ function ClassDetailsView({
       >
         {loading ? (
           <View style={s.loadingContainer}>
-            <ActivityIndicator size="large" color="#1A3C6E" />
+            <ActivityIndicator size="large" color="#7C3AED" />
             <Text style={s.loadingText}>Loading class workspace...</Text>
           </View>
         ) : (
@@ -984,8 +984,8 @@ function ClassDetailsView({
                 {/* Metrics 4-tile grid */}
                 <View style={s.overviewGrid}>
                   <View style={s.overviewTile}>
-                    <View style={[s.statIconWrap, { backgroundColor: "#EEF2FF" }]}>
-                      <Ionicons name="people" size={16} color="#3D5AF1" />
+                    <View style={[s.statIconWrap, { backgroundColor: "#F5F3FF" }]}>
+                      <Ionicons name="people" size={16} color="#7C3AED" />
                     </View>
                     <Text style={s.overviewTileVal}>{students.length}</Text>
                     <Text style={s.overviewTileLabel}>Total Students</Text>
@@ -1037,7 +1037,7 @@ function ClassDetailsView({
                         setShowCreateAssignment(true);
                       }}
                     >
-                      <Ionicons name="add-circle" size={20} color="#3D5AF1" />
+                      <Ionicons name="add-circle" size={20} color="#7C3AED" />
                       <Text style={s.quickActionBtnText}>New Assignment</Text>
                     </TouchableOpacity>
 
@@ -1149,7 +1149,7 @@ function ClassDetailsView({
                 {/* Date Bar & Shortcuts */}
                 <View style={s.attendanceHeaderBar}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Ionicons name="calendar-outline" size={20} color="#1A3C6E" />
+                    <Ionicons name="calendar-outline" size={20} color="#7C3AED" />
                     <Text style={s.attendanceDateText}>Date: {attendanceDate}</Text>
                   </View>
 
@@ -1326,7 +1326,7 @@ function ClassDetailsView({
                               onPress={() => router.push("/(screens)/teacher-assignments")}
                             >
                               <Text style={s.reviewSubsText}>Evaluate</Text>
-                              <Ionicons name="arrow-forward" size={13} color="#3D5AF1" />
+                              <Ionicons name="arrow-forward" size={13} color="#7C3AED" />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -1349,7 +1349,7 @@ function ClassDetailsView({
                   {group.subjects.map((sub) => (
                     <View key={sub.id} style={s.subjectDetailedCard}>
                       <View style={s.subjectDetailedIconWrap}>
-                        <Ionicons name="book" size={20} color="#1A3C6E" />
+                        <Ionicons name="book" size={20} color="#7C3AED" />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={s.subjectDetailedTitle}>{sub.subject}</Text>
@@ -1405,7 +1405,7 @@ function ClassDetailsView({
                                 : "folder"
                             }
                             size={20}
-                            color="#3D5AF1"
+                            color="#7C3AED"
                           />
                         </View>
                         <View style={{ flex: 1 }}>
@@ -1418,7 +1418,7 @@ function ClassDetailsView({
                           style={s.downloadBtn}
                           onPress={() => router.push("/(screens)/study-notes")}
                         >
-                          <Ionicons name="open-outline" size={16} color="#3D5AF1" />
+                          <Ionicons name="open-outline" size={16} color="#7C3AED" />
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -1767,12 +1767,12 @@ function ClassDetailsView({
                       width: 72,
                       height: 72,
                       borderRadius: 36,
-                      backgroundColor: "#EEF2FF",
+                      backgroundColor: "#F5F3FF",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 26, fontFamily: "Inter_700Bold", color: "#1A3C6E" }}>
+                    <Text style={{ fontSize: 26, fontFamily: "Inter_700Bold", color: "#7C3AED" }}>
                       {selectedStudent.fullName[0]?.toUpperCase()}
                     </Text>
                   </View>
@@ -2025,8 +2025,8 @@ const s = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   filterPillActive: {
-    backgroundColor: "#1A3C6E",
-    borderColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   filterPillText: {
     fontSize: 11.5,
@@ -2104,7 +2104,7 @@ const s = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
@@ -2126,7 +2126,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 12,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
   },
   resetFilterBtnText: {
     color: "#FFFFFF",
@@ -2163,7 +2163,7 @@ const s = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2208,7 +2208,7 @@ const s = StyleSheet.create({
     borderColor: "#FDE68A",
   },
   roleBadgeSubjectTeacher: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderWidth: 1,
     borderColor: "#C7D2FE",
   },
@@ -2220,7 +2220,7 @@ const s = StyleSheet.create({
     color: "#B45309",
   },
   roleBadgeTextSubjectTeacher: {
-    color: "#1D4ED8",
+    color: "#6D28D9",
   },
   cardSubjectsWrap: {
     gap: 6,
@@ -2281,7 +2281,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
@@ -2449,7 +2449,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   seeAllText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
   },
@@ -2484,7 +2484,7 @@ const s = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     marginTop: 6,
   },
   announcementTitle: {
@@ -2532,7 +2532,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -2567,18 +2567,18 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
   },
   studentAvatarPlaceholder: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitial: {
-    color: "#1A3C6E",
+    color: "#7C3AED",
     fontSize: 14,
     fontFamily: "Inter_700Bold",
   },
@@ -2690,7 +2690,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     paddingVertical: 12,
     borderRadius: 12,
     marginTop: 4,
@@ -2758,13 +2758,13 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
   asgSubsChip: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
   },
   asgSubsText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 10.5,
     fontFamily: "Inter_600SemiBold",
   },
@@ -2794,7 +2794,7 @@ const s = StyleSheet.create({
     gap: 3,
   },
   reviewSubsText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 11.5,
     fontFamily: "Inter_600SemiBold",
   },
@@ -2816,7 +2816,7 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2859,7 +2859,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2944,13 +2944,13 @@ const s = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   gradePill: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 6,
   },
   gradePillText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 10,
     fontFamily: "Inter_700Bold",
   },
@@ -2983,8 +2983,8 @@ const s = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   dayPillActive: {
-    backgroundColor: "#1A3C6E",
-    borderColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   dayPillText: {
     color: "#475569",
@@ -3031,13 +3031,13 @@ const s = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   mySubjectTag: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 6,
   },
   mySubjectTagText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 9.5,
     fontFamily: "Inter_600SemiBold",
   },
@@ -3095,7 +3095,7 @@ const s = StyleSheet.create({
     color: "#0F172A",
   },
   modalPrimaryBtn: {
-    backgroundColor: "#1A3C6E",
+    backgroundColor: "#7C3AED",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",

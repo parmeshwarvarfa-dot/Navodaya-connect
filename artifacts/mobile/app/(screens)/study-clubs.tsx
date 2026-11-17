@@ -106,7 +106,7 @@ export default function StudyClubsScreen() {
         )}
 
         <Text style={styles.sectionTitle}>All Clubs</Text>
-        {loading ? <ActivityIndicator style={{ marginTop: 32 }} color="#3D5AF1" /> : null}
+        {loading ? <ActivityIndicator style={{ marginTop: 32 }} color="#7C3AED" /> : null}
         {!loading && filtered.length === 0 ? <Text style={styles.emptyText}>No clubs available in this category yet.</Text> : null}
         {filtered.map((club) => {
           const isJoined = club.joined;
@@ -139,7 +139,7 @@ export default function StudyClubsScreen() {
 
               {isJoined && (
                 <View style={styles.upcomingRow}>
-                  <Ionicons name="calendar-outline" size={13} color="#3D5AF1" />
+                  <Ionicons name="calendar-outline" size={13} color="#7C3AED" />
                   <Text style={styles.upcomingText}>{club.nextEvent}</Text>
                 </View>
               )}
@@ -171,15 +171,15 @@ export default function StudyClubsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  joinedBadge: { backgroundColor: "#EEF2FF", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  joinedBadgeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  joinedBadge: { backgroundColor: "#F5F3FF", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  joinedBadgeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   chips: { paddingHorizontal: 16, gap: 8, paddingBottom: 14, paddingTop: 12 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   chipTextActive: { color: "#fff" },
   sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 12 },
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   catPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   memberCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   clubDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 19, marginBottom: 10 },
-  upcomingRow: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#EEF2FF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
-  upcomingText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
+  upcomingRow: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F5F3FF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  upcomingText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#7C3AED" },
   clubActions: { flexDirection: "row", gap: 10 },
   joinBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderRadius: 10, paddingVertical: 9 },
   leaveBtn: { borderColor: "#EF4444" },

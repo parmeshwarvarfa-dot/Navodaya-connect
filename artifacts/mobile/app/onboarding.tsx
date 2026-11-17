@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   registerText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
   },

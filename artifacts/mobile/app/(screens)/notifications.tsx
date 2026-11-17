@@ -25,7 +25,7 @@ import { PremiumCard } from "@/components/PremiumCard";
 import { getNotificationRoute } from "@/lib/notification-navigation";
 
 const TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  direct_message: { icon: "chatbubble-outline", color: "#3D5AF1" },
+  direct_message: { icon: "chatbubble-outline", color: "#7C3AED" },
   direct_message_accepted: { icon: "checkmark-done-outline", color: "#10B981" },
   direct_message_request: { icon: "mail-outline", color: "#8B5CF6" },
   follow: { icon: "person-add-outline", color: "#3B82F6" },
@@ -35,11 +35,11 @@ const TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: 
   memory_comment: { icon: "chatbox-ellipses-outline", color: "#8B5CF6" },
   yearbook_review: { icon: "book-outline", color: "#10B981" },
   verification_approved: { icon: "shield-checkmark-outline", color: "#10B981" },
-  verification_reviewed: { icon: "shield-outline", color: "#3D5AF1" },
-  verification_decision: { icon: "shield-outline", color: "#3D5AF1" },
+  verification_reviewed: { icon: "shield-outline", color: "#7C3AED" },
+  verification_decision: { icon: "shield-outline", color: "#7C3AED" },
   verification_decision_needed: { icon: "time-outline", color: "#F59E0B" },
-  verification_resubmitted: { icon: "document-text-outline", color: "#3D5AF1" },
-  verification_admin_appointed: { icon: "person-add-outline", color: "#3D5AF1" },
+  verification_resubmitted: { icon: "document-text-outline", color: "#7C3AED" },
+  verification_admin_appointed: { icon: "person-add-outline", color: "#7C3AED" },
   verification_admin_removed: { icon: "person-remove-outline", color: "#6B7280" },
   credential_suspended: { icon: "card-outline", color: "#EF4444" },
   credential_reactivated: { icon: "card-outline", color: "#10B981" },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   state: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 10 },
   stateTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   stateText: { fontSize: 13, lineHeight: 19, fontFamily: "Inter_400Regular", textAlign: "center" },
-  retryButton: { marginTop: 8, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, backgroundColor: "#3D5AF1" },
+  retryButton: { marginTop: 8, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, backgroundColor: "#7C3AED" },
   retryText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   emptyState: { alignItems: "center", gap: 8 },
 });

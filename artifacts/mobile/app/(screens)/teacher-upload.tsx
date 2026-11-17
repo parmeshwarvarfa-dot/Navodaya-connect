@@ -36,7 +36,7 @@ const TYPES = ["PDF", "Notes", "PYQ", "Slides", "Link", "Assignment"];
 
 const TYPE_COLOR: Record<string, string> = {
   PDF: "#EF4444",
-  Notes: "#3D5AF1",
+  Notes: "#7C3AED",
   PYQ: "#8B5CF6",
   Slides: "#F59E0B",
   Link: "#10B981",
@@ -389,7 +389,7 @@ export default function TeacherUploadScreen() {
               <View
                 style={[
                   styles.typeIcon,
-                  { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" },
+                  { backgroundColor: (TYPE_COLOR[u.type] || "#7C3AED") + "18" },
                 ]}
               >
                 <Ionicons
@@ -403,7 +403,7 @@ export default function TeacherUploadScreen() {
                       : "book"
                   }
                   size={20}
-                  color={TYPE_COLOR[u.type] || "#3D5AF1"}
+                  color={TYPE_COLOR[u.type] || "#7C3AED"}
                 />
               </View>
 
@@ -429,13 +429,13 @@ export default function TeacherUploadScreen() {
                   <View
                     style={[
                       styles.typePill,
-                      { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" },
+                      { backgroundColor: (TYPE_COLOR[u.type] || "#7C3AED") + "18" },
                     ]}
                   >
                     <Text
                       style={[
                         styles.typePillText,
-                        { color: TYPE_COLOR[u.type] || "#3D5AF1" },
+                        { color: TYPE_COLOR[u.type] || "#7C3AED" },
                       ]}
                     >
                       {u.type}
@@ -455,7 +455,7 @@ export default function TeacherUploadScreen() {
 
               <View style={styles.openPill}>
                 <Text style={styles.openPillText}>Open</Text>
-                <Ionicons name="open-outline" size={14} color="#3D5AF1" />
+                <Ionicons name="open-outline" size={14} color="#7C3AED" />
               </View>
             </TouchableOpacity>
           );
@@ -493,7 +493,7 @@ export default function TeacherUploadScreen() {
                     <Ionicons
                       name="cloud-upload"
                       size={18}
-                      color={uploadMode === "file" ? "#3D5AF1" : "#64748B"}
+                      color={uploadMode === "file" ? "#7C3AED" : "#64748B"}
                     />
                     <View>
                       <Text
@@ -515,7 +515,7 @@ export default function TeacherUploadScreen() {
                     <Ionicons
                       name="link"
                       size={18}
-                      color={uploadMode === "link" ? "#3D5AF1" : "#64748B"}
+                      color={uploadMode === "link" ? "#7C3AED" : "#64748B"}
                     />
                     <View>
                       <Text
@@ -589,14 +589,14 @@ export default function TeacherUploadScreen() {
                           setSubject("");
                         }}
                       >
-                        <Ionicons name="add-circle-outline" size={15} color="#3D5AF1" />
+                        <Ionicons name="add-circle-outline" size={15} color="#7C3AED" />
                         <Text style={styles.pillCustomText}>+ Add New Subject</Text>
                       </TouchableOpacity>
                     </ScrollView>
                   </>
                 ) : (
                   <View style={styles.customSubjectBox}>
-                    <Ionicons name="create-outline" size={17} color="#3D5AF1" />
+                    <Ionicons name="create-outline" size={17} color="#7C3AED" />
                     <TextInput
                       style={styles.customSubjectInput}
                       placeholder="Type custom subject name (e.g. Sanskrit, Accountancy, Arts...)"
@@ -617,7 +617,7 @@ export default function TeacherUploadScreen() {
                   {selectedFile ? (
                     <View style={styles.selectedFileBox}>
                       <View style={styles.fileIconBadge}>
-                        <Ionicons name="document-text" size={24} color="#3D5AF1" />
+                        <Ionicons name="document-text" size={24} color="#7C3AED" />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.selectedFileName} numberOfLines={1}>
@@ -647,7 +647,7 @@ export default function TeacherUploadScreen() {
                       activeOpacity={0.8}
                     >
                       <View style={styles.dropZoneIcon}>
-                        <Ionicons name="cloud-upload" size={28} color="#3D5AF1" />
+                        <Ionicons name="cloud-upload" size={28} color="#7C3AED" />
                       </View>
                       <Text style={styles.dropZoneTitle}>Click to Choose Notes File</Text>
                       <Text style={styles.dropZoneSub}>
@@ -689,8 +689,8 @@ export default function TeacherUploadScreen() {
                         style={[
                           styles.typeCard,
                           active && {
-                            borderColor: TYPE_COLOR[t] || "#3D5AF1",
-                            backgroundColor: (TYPE_COLOR[t] || "#3D5AF1") + "14",
+                            borderColor: TYPE_COLOR[t] || "#7C3AED",
+                            backgroundColor: (TYPE_COLOR[t] || "#7C3AED") + "14",
                           },
                         ]}
                         onPress={() => setType(t)}
@@ -706,12 +706,12 @@ export default function TeacherUploadScreen() {
                               : "book"
                           }
                           size={15}
-                          color={active ? TYPE_COLOR[t] || "#3D5AF1" : "#64748B"}
+                          color={active ? TYPE_COLOR[t] || "#7C3AED" : "#64748B"}
                         />
                         <Text
                           style={[
                             styles.typeCardText,
-                            active && { color: TYPE_COLOR[t] || "#3D5AF1", fontWeight: "700" },
+                            active && { color: TYPE_COLOR[t] || "#7C3AED", fontWeight: "700" },
                           ]}
                         >
                           {t}
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     borderRadius: 8,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -851,8 +851,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   chipActive: {
-    backgroundColor: "#3D5AF1",
-    borderColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   chipText: {
     fontSize: 12,
@@ -907,13 +907,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subjectTag: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
   },
   subjectTagText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
@@ -975,13 +975,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     paddingHorizontal: 9,
     paddingVertical: 6,
     borderRadius: 6,
   },
   openPillText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
@@ -1076,8 +1076,8 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   modeTabActive: {
-    borderColor: "#3D5AF1",
-    backgroundColor: "#EEF2FF",
+    borderColor: "#7C3AED",
+    backgroundColor: "#F5F3FF",
   },
   modeTabTitle: {
     color: "#334155",
@@ -1085,7 +1085,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   modeTabTitleActive: {
-    color: "#1E40AF",
+    color: "#5B21B6",
   },
   modeTabSub: {
     color: "#64748B",
@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   switchSubjectText: {
-    color: "#3D5AF1",
+    color: "#7C3AED",
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
@@ -1137,8 +1137,8 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   pillActive: {
-    backgroundColor: "#3D5AF1",
-    borderColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   pillText: {
     fontSize: 12,
@@ -1153,20 +1153,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderColor: "#C7D2FE",
   },
   pillCustomText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: "#3D5AF1",
+    color: "#7C3AED",
   },
   customSubjectBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     borderWidth: 1.5,
-    borderColor: "#3D5AF1",
+    borderColor: "#7C3AED",
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 42,
@@ -1195,14 +1195,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
   dropZoneTitle: {
     fontSize: 13,
     fontFamily: "Inter_700Bold",
-    color: "#3D5AF1",
+    color: "#7C3AED",
   },
   dropZoneSub: {
     fontSize: 11,
@@ -1216,7 +1216,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     borderWidth: 1,
     borderColor: "#C7D2FE",
     borderRadius: 8,
@@ -1233,7 +1233,7 @@ const styles = StyleSheet.create({
   selectedFileName: {
     fontSize: 12,
     fontFamily: "Inter_700Bold",
-    color: "#1E40AF",
+    color: "#5B21B6",
   },
   selectedFileSize: {
     fontSize: 10,
@@ -1309,7 +1309,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 4,

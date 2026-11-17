@@ -43,7 +43,7 @@ function Section({ title, icon, children }: { title: string; icon: any; children
     <View style={sec.wrap}>
       <View style={sec.titleRow}>
         <View style={sec.iconBox}>
-          <Ionicons name={icon} size={16} color="#3D5AF1" />
+          <Ionicons name={icon} size={16} color="#7C3AED" />
         </View>
         <Text style={sec.title}>{title}</Text>
       </View>
@@ -290,7 +290,7 @@ export default function EditProfileScreen() {
             <Text style={styles.avatarName}>{fullName || "Your Name"}</Text>
             <Text style={styles.avatarHint}>Tap to manage your profile image</Text>
             <TouchableOpacity style={styles.avatarCreatorButton} onPress={() => router.push("/(screens)/avatar-creator" as any)} activeOpacity={0.82}>
-              <Ionicons name="person-circle-outline" size={19} color="#3D5AF1" />
+              <Ionicons name="person-circle-outline" size={19} color="#7C3AED" />
               <Text style={styles.avatarCreatorText}>{profile?.avatarConfig ? "Edit Avatar" : "Create Avatar"}</Text>
               <Ionicons name="chevron-forward" size={16} color="#71809A" />
             </TouchableOpacity>
@@ -433,8 +433,8 @@ export default function EditProfileScreen() {
 
             <View style={pms.optList}>
               <TouchableOpacity style={pms.optRow} onPress={pickFromCamera} activeOpacity={0.75}>
-                <View style={[pms.optIcon, { backgroundColor: "#EEF2FF" }]}>
-                  <Ionicons name="camera-outline" size={22} color="#3D5AF1" />
+                <View style={[pms.optIcon, { backgroundColor: "#F5F3FF" }]}>
+                  <Ionicons name="camera-outline" size={22} color="#7C3AED" />
                 </View>
                 <View style={pms.optText}>
                   <Text style={pms.optLabel}>Take a Photo</Text>
@@ -517,7 +517,7 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingBottom: 16,
@@ -539,30 +539,30 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "#F0F0F0", marginBottom: 14,
   },
   avatarWrap: { position: "relative", marginBottom: 12 },
-  avatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#3D5AF1" },
+  avatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#7C3AED" },
   avatarFallback: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },
   avatarInitials: { fontSize: 36, fontFamily: "Inter_700Bold", color: "#fff" },
   cameraBadge: {
     position: "absolute", bottom: 2, right: 2,
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: "#3D5AF1", borderWidth: 2.5, borderColor: "#fff",
+    backgroundColor: "#7C3AED", borderWidth: 2.5, borderColor: "#fff",
     alignItems: "center", justifyContent: "center",
   },
   avatarName: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
   avatarHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 12 },
-  avatarCreatorButton: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 13, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
-  avatarCreatorText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_700Bold" },
+  avatarCreatorButton: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F5F3FF", borderRadius: 13, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
+  avatarCreatorText: { color: "#7C3AED", fontSize: 13, fontFamily: "Inter_700Bold" },
   imageChoiceRow: { flexDirection: "row", gap: 7, paddingHorizontal: 10 },
   imageChoice: { borderWidth: 1, borderColor: "#E1E5ED", backgroundColor: "#fff", borderRadius: 16, paddingHorizontal: 11, paddingVertical: 7 },
-  imageChoiceSelected: { borderColor: "#3D5AF1", backgroundColor: "#EEF2FF" },
+  imageChoiceSelected: { borderColor: "#7C3AED", backgroundColor: "#F5F3FF" },
   imageChoiceDisabled: { opacity: 0.45 },
   imageChoiceText: { fontSize: 11, color: "#69758B", fontFamily: "Inter_600SemiBold" },
-  imageChoiceTextSelected: { color: "#3D5AF1", fontFamily: "Inter_700Bold" },
-  rolePill: { backgroundColor: "#EEF2FF", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
-  rolePillText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  imageChoiceTextSelected: { color: "#7C3AED", fontFamily: "Inter_700Bold" },
+  rolePill: { backgroundColor: "#F5F3FF", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
+  rolePillText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   saveFullBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16, marginTop: 8,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16, marginTop: 8,
   },
   saveFullBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   successOverlay: {
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     textAlign: "center", lineHeight: 21, marginBottom: 24,
   },
   successBtn: {
-    backgroundColor: "#3D5AF1", borderRadius: 12,
+    backgroundColor: "#7C3AED", borderRadius: 12,
     paddingVertical: 14, paddingHorizontal: 40,
   },
   successBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
@@ -599,7 +599,7 @@ const sec = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
   iconBox: {
     width: 32, height: 32, borderRadius: 10,
-    backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center",
   },
   title: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827" },
 });
@@ -627,7 +627,7 @@ const chip = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
     backgroundColor: "#F3F4F6", borderWidth: 1.5, borderColor: "#E5E7EB",
   },
-  active: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  active: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   text: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   textActive: { color: "#fff" },
 });
@@ -638,7 +638,7 @@ const pms = StyleSheet.create({
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 4 },
   sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center" },
   previewWrap: { alignItems: "center", paddingVertical: 8 },
-  preview: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#3D5AF1" },
+  preview: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#7C3AED" },
   previewFallback: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },
   previewInitials: { fontSize: 36, fontFamily: "Inter_700Bold", color: "#fff" },
   optList: { gap: 4 },

@@ -163,7 +163,7 @@ export default function ParamAIScreen() {
         {!hasMessages ? (
           <View style={styles.welcome}>
             <View style={styles.welcomeIconWrap}>
-              <Ionicons name="hardware-chip-outline" size={40} color="#6D5FFA" />
+              <Ionicons name="hardware-chip-outline" size={40} color="#7C3AED" />
             </View>
             <Text style={styles.welcomeTitle}>Your Personal AI Advisor</Text>
             <Text style={styles.welcomeSubtitle}>Powered by PA₹AM AI</Text>
@@ -194,7 +194,7 @@ export default function ParamAIScreen() {
               <View key={msg.id} style={msg.role === "user" ? styles.userRow : styles.aiRow}>
                 {msg.role === "assistant" && (
                   <View style={styles.aiAvatar}>
-                    <Ionicons name="hardware-chip" size={14} color="#6D5FFA" />
+                    <Ionicons name="hardware-chip" size={14} color="#7C3AED" />
                   </View>
                 )}
                 <View style={[styles.bubble, msg.role === "user" ? styles.bubbleUser : styles.bubbleAI]}>
@@ -213,7 +213,7 @@ export default function ParamAIScreen() {
             {loading && (
               <View style={styles.aiRow}>
                 <View style={styles.aiAvatar}>
-                  <Ionicons name="hardware-chip" size={14} color="#6D5FFA" />
+                  <Ionicons name="hardware-chip" size={14} color="#7C3AED" />
                 </View>
                 <View style={[styles.bubble, styles.bubbleAI, styles.typingBubble]}>
                   <View style={styles.typingWrap}>
@@ -268,7 +268,7 @@ export default function ParamAIScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 16, gap: 12, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   clearBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   welcome: { alignItems: "center", paddingHorizontal: 24, paddingTop: 28 },
   welcomeIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#EDE9FE", alignItems: "center", justifyContent: "center", marginBottom: 16 },
   welcomeTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#1E1B4B", textAlign: "center", marginBottom: 4 },
-  welcomeSubtitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#6D5FFA", marginBottom: 10 },
+  welcomeSubtitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED", marginBottom: 10 },
   welcomeDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#374151", textAlign: "center", lineHeight: 22, marginBottom: 28 },
   tryLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#9CA3AF", letterSpacing: 0.8, marginBottom: 14 },
   suggestions: { gap: 10, width: "100%" },
@@ -295,14 +295,14 @@ const styles = StyleSheet.create({
   bubbleUser: { backgroundColor: "#7C3AED", borderBottomRightRadius: 4 },
   bubbleAI: { backgroundColor: "#fff", borderBottomLeftRadius: 4, borderWidth: 1, borderColor: "#F0F0F0", flex: 1 },
   typingBubble: { paddingVertical: 14, paddingHorizontal: 18, maxWidth: 80 },
-  aiLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6D5FFA", marginBottom: 6 },
+  aiLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED", marginBottom: 6 },
   bubbleText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", lineHeight: 22 },
   bubbleTextUser: { color: "#fff" },
   timeText: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 6, alignSelf: "flex-end" },
   typingWrap: { flexDirection: "row", gap: 5, alignItems: "center", height: 16 },
-  typingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#6D5FFA" },
+  typingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#7C3AED" },
   inputRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 12, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#F0F0F0", gap: 10 },
-  inputBox: { flex: 1, backgroundColor: "#F5F6FA", borderRadius: 24, paddingHorizontal: 18, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", borderWidth: 1, borderColor: "#E5E7EB" },
+  inputBox: { flex: 1, backgroundColor: "#F8F7FF", borderRadius: 24, paddingHorizontal: 18, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", borderWidth: 1, borderColor: "#E5E7EB" },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   sendBtnDisabled: { backgroundColor: "#9CA3AF" },
   disclaimer: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", paddingBottom: 8, backgroundColor: "#fff", paddingHorizontal: 16 },

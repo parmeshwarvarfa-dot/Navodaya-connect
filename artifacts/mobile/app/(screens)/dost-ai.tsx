@@ -96,7 +96,7 @@ export default function DostAIScreen() {
         {!hasMessages ? (
           <View style={styles.welcome}>
             <View style={styles.welcomeIconWrap}>
-              <Ionicons name="hardware-chip-outline" size={40} color="#3D5AF1" />
+              <Ionicons name="hardware-chip-outline" size={40} color="#7C3AED" />
             </View>
             <Text style={styles.welcomeTitle}>Your Navodayan friend & guide</Text>
             <Text style={styles.welcomeDesc}>
@@ -127,7 +127,7 @@ export default function DostAIScreen() {
                 {msg.role === "assistant" && (
                   <View style={styles.aiBubbleHeader}>
                     <View style={styles.aiIcon}>
-                      <Ionicons name="hardware-chip" size={14} color="#3D5AF1" />
+                      <Ionicons name="hardware-chip" size={14} color="#7C3AED" />
                     </View>
                     <Text style={styles.aiLabel}>DOST AI</Text>
                   </View>
@@ -139,7 +139,7 @@ export default function DostAIScreen() {
             ))}
             {loading && (
               <View style={[styles.bubble, styles.bubbleAI]}>
-                <ActivityIndicator size="small" color="#3D5AF1" />
+                <ActivityIndicator size="small" color="#7C3AED" />
               </View>
             )}
           </View>
@@ -171,7 +171,7 @@ export default function DostAIScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -188,13 +188,13 @@ const styles = StyleSheet.create({
   welcome: { alignItems: "center", paddingHorizontal: 24, paddingTop: 28 },
   welcomeIconWrap: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F5F3FF",
     alignItems: "center", justifyContent: "center",
     marginBottom: 16,
   },
   welcomeTitle: {
     fontSize: 18, fontFamily: "Inter_700Bold",
-    color: "#3D5AF1", textAlign: "center", marginBottom: 10,
+    color: "#7C3AED", textAlign: "center", marginBottom: 10,
   },
   welcomeDesc: {
     fontSize: 14, fontFamily: "Inter_400Regular",
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bubbleUser: {
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     alignSelf: "flex-end",
     borderBottomRightRadius: 4,
   },
@@ -241,9 +241,9 @@ const styles = StyleSheet.create({
   aiBubbleHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   aiIcon: {
     width: 22, height: 22, borderRadius: 11,
-    backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center",
   },
-  aiLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  aiLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   bubbleText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", lineHeight: 22 },
   bubbleTextUser: { color: "#fff" },
   inputRow: {
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   inputBox: {
     flex: 1,
-    backgroundColor: "#F5F6FA",
+    backgroundColor: "#F8F7FF",
     borderRadius: 24,
     paddingHorizontal: 18,
     paddingVertical: 12,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: "#3D5AF1",
+    backgroundColor: "#7C3AED",
     alignItems: "center", justifyContent: "center",
   },
   sendBtnDisabled: { backgroundColor: "#9CA3AF" },

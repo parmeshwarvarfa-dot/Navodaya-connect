@@ -60,7 +60,7 @@ export default function MapCanvas({ schools, selectedId, request, onSelect, onMa
             transform: "rotate(-45deg)",
             border: "2px solid white",
             transition: "width 150ms ease, height 150ms ease, background-color 150ms ease, box-shadow 150ms ease",
-            background: selectedId === school.id ? "#E34E55" : "#3D5AF1",
+            background: selectedId === school.id ? "#E34E55" : "#7C3AED",
             boxShadow: "0 2px 9px #17203355",
             cursor: "pointer",
             display: "grid",

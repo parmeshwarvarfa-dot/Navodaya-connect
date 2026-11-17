@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = ["JEE/IIT", "NEET", "UPSC", "Coding/Tech", "Startup", "Defence", "Law", "Research", "General Career"];
 const CAT_COLOR: Record<string, string> = {
-  "JEE/IIT": "#3D5AF1", "NEET": "#10B981", "UPSC": "#8B5CF6", "Coding/Tech": "#0891B2",
+  "JEE/IIT": "#7C3AED", "NEET": "#10B981", "UPSC": "#8B5CF6", "Coding/Tech": "#0891B2",
   "Startup": "#F59E0B", "Defence": "#6366F1", "Law": "#EC4899", "Research": "#D97706", "General Career": "#6B7280",
 };
 
@@ -130,7 +130,7 @@ export default function AlumniMentorshipScreen() {
 
         {activeTab === "requests" && (
           <>
-            {loading && <Text style={styles.emptyText}>Loading mentorship requests…</Text>}
+            {loading && <Text style={styles.emptyText}>Loading mentorship requestsï¿½</Text>}
             {requests.map((r) => {
               const cfg = statusCfg[r.status] || statusCfg.pending;
               const catColor = CAT_COLOR[r.category || ""] || "#6B7280";
@@ -166,7 +166,7 @@ export default function AlumniMentorshipScreen() {
                     {profile?.role === "alumni" && r.mentorId === profile.uid && r.scheduledAt && <TouchableOpacity style={styles.completeButton} onPress={() => void completeSession(r)}><Text style={styles.completeButtonText}>Mark session complete</Text></TouchableOpacity>}
                   </View>}
                   {r.status === "completed" && r.studentId === profile?.uid && <View style={styles.sessionBox}>
-                    {r.feedbackRating ? <Text style={styles.sessionHint}>Your feedback: {r.feedbackRating}/5{r.feedback ? ` · ${r.feedback}` : ""}</Text> : <>
+                    {r.feedbackRating ? <Text style={styles.sessionHint}>Your feedback: {r.feedbackRating}/5{r.feedback ? ` ï¿½ ${r.feedback}` : ""}</Text> : <>
                       <Text style={styles.fieldLabel}>How was this session?</Text>
                       <View style={styles.reqActions}>{[1, 2, 3, 4, 5].map((rating) => <TouchableOpacity key={rating} style={[styles.ratingButton, (feedbackRatings[r.id] ?? 5) === rating && styles.ratingButtonSelected]} onPress={() => setFeedbackRatings((items) => ({ ...items, [r.id]: rating }))}><Text style={styles.ratingText}>{rating}</Text></TouchableOpacity>)}</View>
                       <TextInput style={styles.input} placeholder="Optional feedback for your mentor" value={feedbackDrafts[r.id] ?? ""} onChangeText={(value) => setFeedbackDrafts((items) => ({ ...items, [r.id]: value }))} />
@@ -190,7 +190,7 @@ export default function AlumniMentorshipScreen() {
               ))}
             </ScrollView>
 
-            {loading ? <View style={styles.emptyState}><Text style={styles.emptyText}>Loading verified alumni…</Text></View> : filteredMentors.length === 0 ? <View style={styles.emptyState}><Ionicons name="people-outline" size={42} color="#9BA6B8" /><Text style={styles.emptyTitle}>No verified alumni mentors listed</Text><Text style={styles.emptyText}>This school has no verified alumni profiles available for mentor discovery yet.</Text></View> : filteredMentors.map((m) => {
+            {loading ? <View style={styles.emptyState}><Text style={styles.emptyText}>Loading verified alumniï¿½</Text></View> : filteredMentors.length === 0 ? <View style={styles.emptyState}><Ionicons name="people-outline" size={42} color="#9BA6B8" /><Text style={styles.emptyTitle}>No verified alumni mentors listed</Text><Text style={styles.emptyText}>This school has no verified alumni profiles available for mentor discovery yet.</Text></View> : filteredMentors.map((m) => {
               return (
                 <View key={m.id} style={styles.mentorCard}>
                   <View style={styles.mentorTop}>
@@ -198,15 +198,15 @@ export default function AlumniMentorshipScreen() {
                     <View style={{ flex: 1 }}>
                       <View style={styles.mentorNameRow}>
                         <Text style={styles.mentorName}>{m.fullName}</Text>
-                        <Ionicons name="checkmark-circle" size={14} color="#3D5AF1" />
+                        <Ionicons name="checkmark-circle" size={14} color="#7C3AED" />
                       </View>
                       <Text style={styles.mentorRole}>{m.profession || "Verified alumni"}</Text>
                       <Text style={styles.mentorJnv}>{m.jnvName || profile?.jnvName}</Text>
                       {!!m.bio && <Text style={styles.mentorBio}>{m.bio}</Text>}
                       <Text style={styles.mentorCategories}>{m.categories.join(", ")}</Text>
                     </View>
-                    <View style={[styles.availBadge, { backgroundColor: "#EEF2FF" }]}>
-                      <Text style={[styles.availText, { color: "#3D5AF1" }]}>Verified</Text>
+                    <View style={[styles.availBadge, { backgroundColor: "#F5F3FF" }]}>
+                      <Text style={[styles.availText, { color: "#7C3AED" }]}>Verified</Text>
                     </View>
                   </View>
                   <View style={styles.mentorStats}>
@@ -270,7 +270,7 @@ export default function AlumniMentorshipScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -322,12 +322,12 @@ const styles = StyleSheet.create({
   mentorCategorySelected: { borderColor: "#10B981", backgroundColor: "#ECFDF5" },
   sessionBox: { marginTop: 12, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 12, gap: 8 },
   sessionHint: { fontSize: 12, color: "#667085", lineHeight: 18 },
-  sessionButton: { padding: 11, backgroundColor: "#EEF2FF", borderRadius: 10, alignItems: "center" },
-  sessionButtonText: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  sessionButton: { padding: 11, backgroundColor: "#F5F3FF", borderRadius: 10, alignItems: "center" },
+  sessionButtonText: { color: "#7C3AED", fontFamily: "Inter_600SemiBold" },
   completeButton: { padding: 10, marginTop: 8, backgroundColor: "#ECFDF5", borderRadius: 10, alignItems: "center" },
   completeButtonText: { color: "#059669", fontFamily: "Inter_600SemiBold" },
   ratingButton: { width: 38, height: 36, borderRadius: 10, borderWidth: 1, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
-  ratingButtonSelected: { borderColor: "#3D5AF1", backgroundColor: "#EEF2FF" },
+  ratingButtonSelected: { borderColor: "#7C3AED", backgroundColor: "#F5F3FF" },
   availBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, height: 26 },
   availDotSmall: { width: 6, height: 6, borderRadius: 3 },
   availText: { fontSize: 11, fontFamily: "Inter_500Medium" },

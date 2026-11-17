@@ -13,7 +13,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const TRACKS = ["All", "Engineering", "Medicine", "UPSC/IAS", "Commerce/CA", "Law", "Research", "Defence"];
 
-const AVATAR_COLORS = ["#3D5AF1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#0891B2"];
+const AVATAR_COLORS = ["#7C3AED", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#0891B2"];
 
 const MOCK_MENTORS = [
   { id: "m1", fullName: "Priya Sharma", profession: "Senior Software Engineer", company: "Google India", field: "Engineering", jnvName: "JNV Jaipur", verificationStatus: "verified", passoutYear: "2017", skills: ["Java", "ML", "Leadership"] },
@@ -105,7 +105,7 @@ export default function SeniorConnectScreen() {
         {sameJnv.length > 0 && (
           <View style={styles.sectionLabel}>
             <View style={styles.sameJnvBadge}>
-              <Ionicons name="home" size={13} color="#3D5AF1" />
+              <Ionicons name="home" size={13} color="#7C3AED" />
               <Text style={styles.sameJnvText}>From your JNV · {profile?.jnvName}</Text>
             </View>
           </View>
@@ -180,7 +180,7 @@ export default function SeniorConnectScreen() {
                         if (!isConnected) showToast(`Connected with ${mentor.fullName}!`);
                       }}
                     >
-                      <Ionicons name={isConnected ? "checkmark" : "person-add-outline"} size={15} color={isConnected ? "#10B981" : "#3D5AF1"} />
+                      <Ionicons name={isConnected ? "checkmark" : "person-add-outline"} size={15} color={isConnected ? "#10B981" : "#7C3AED"} />
                       <Text style={[styles.connectBtnText, isConnected && { color: "#10B981" }]}>{isConnected ? "Connected" : "Connect"}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -209,7 +209,7 @@ export default function SeniorConnectScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: {
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 16, paddingBottom: 12,
@@ -226,12 +226,12 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 14 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   chipTextActive: { color: "#fff" },
   sectionLabel: { paddingHorizontal: 16, paddingVertical: 8 },
-  sameJnvBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start" },
-  sameJnvText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  sameJnvBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start" },
+  sameJnvText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   sectionLabelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   empty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 32 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center" },
   mentorCard: { marginHorizontal: 14, marginBottom: 12, backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", flexDirection: "row" },
   mentorCardHighlight: { borderColor: "#C7D2FE" },
-  sameJnvStripe: { width: 4, backgroundColor: "#3D5AF1" },
+  sameJnvStripe: { width: 4, backgroundColor: "#7C3AED" },
   mentorCardInner: { flex: 1, padding: 16 },
   mentorTop: { flexDirection: "row", gap: 12, marginBottom: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
@@ -253,18 +253,18 @@ const styles = StyleSheet.create({
   metaChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F3F4F6", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   metaChipText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
   skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14 },
-  skillChip: { backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  skillText: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
+  skillChip: { backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  skillText: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#7C3AED" },
   actionRow: { flexDirection: "row", gap: 10 },
   connectBtn: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    borderWidth: 1.5, borderColor: "#3D5AF1", borderRadius: 10, paddingVertical: 9,
+    borderWidth: 1.5, borderColor: "#7C3AED", borderRadius: 10, paddingVertical: 9,
   },
   connectedBtn: { borderColor: "#10B981", backgroundColor: "#ECFDF5" },
-  connectBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  connectBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   messageBtn: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: "#3D5AF1", borderRadius: 10, paddingVertical: 9,
+    backgroundColor: "#7C3AED", borderRadius: 10, paddingVertical: 9,
   },
   messageBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
   toast: {

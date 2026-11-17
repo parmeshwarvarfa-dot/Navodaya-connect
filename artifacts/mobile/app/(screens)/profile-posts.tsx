@@ -38,9 +38,9 @@ export default function ProfilePostsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F5F6FA" },
+  screen: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#EAECF0" },
-  backButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2FF" },
+  backButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F3FF" },
   headerText: { flex: 1 },
   title: { color: "#111827", fontSize: 20, fontFamily: "Inter_700Bold" },
   subtitle: { marginTop: 2, color: "#69758B", fontSize: 12, fontFamily: "Inter_400Regular" },

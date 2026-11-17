@@ -10,7 +10,7 @@ import { api, type Opportunity, type OpportunityAnalytics, type OpportunityDetai
 import { useAuth } from "@/context/AuthContext";
 import JobsScreen from "@/app/(tabs)/jobs";
 
-const BLUE = "#3D5AF1";
+const BLUE = "#7C3AED";
 const PURPLE = "#6630B5";
 const TYPES = [
   ["academic_competition", "Academic competition"], ["coding_challenge", "Coding challenge"],

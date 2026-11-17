@@ -22,7 +22,7 @@ export default function GroupNameEmojiPicker({ onSelect }: { onSelect: (emoji: s
       >
         <Text style={styles.toggleEmoji}>😀</Text>
         <Text style={styles.toggleText}>{open ? "Hide emojis" : "Add emoji to name"}</Text>
-        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color="#3D5AF1" />
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color="#7C3AED" />
       </TouchableOpacity>
       {open && (
         <View style={styles.emojiGrid}>
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   container: { marginTop: -5, marginBottom: 12 },
   toggle: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 6, paddingVertical: 4 },
   toggleEmoji: { fontSize: 17 },
-  toggleText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  toggleText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   emojiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6, padding: 8, borderRadius: 12, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E5E7EB" },
   emojiButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 9, backgroundColor: "#FFFFFF" },
   emoji: { fontSize: 21 },

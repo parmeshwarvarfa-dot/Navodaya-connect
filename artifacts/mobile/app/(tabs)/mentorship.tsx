@@ -178,7 +178,7 @@ export default function MentorshipScreen() {
                   backgroundColor: item.status === "accepted" ? "#D1FAE5" : item.status === "completed" ? "#DBEAFE" : "#F1F5F9",
                 }]}>
                   <Text style={[styles.statusText, {
-                    color: item.status === "accepted" ? "#059669" : item.status === "completed" ? "#2563EB" : "#64748B",
+                    color: item.status === "accepted" ? "#059669" : item.status === "completed" ? "#7C3AED" : "#64748B",
                   }]}>
                     {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : "Pending"}
                   </Text>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   toast: {
     position: "absolute", bottom: 100, left: 20, right: 20,
-    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+    backgroundColor: "#7C3AED", borderRadius: 10, padding: 14, alignItems: "center",
   },
   toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   header: { paddingHorizontal: 20, paddingBottom: 0 },

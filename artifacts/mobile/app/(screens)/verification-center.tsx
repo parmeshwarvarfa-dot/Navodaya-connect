@@ -15,8 +15,8 @@ import AlumniPeerVerificationScreen from "./alumni-peer-verification";
 const STATUS_CFG: Record<string, { color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap; label: string; desc: string }> = {
   unverified:   { color: "#6B7280", bg: "#F3F4F6", icon: "shield-outline", label: "Not Verified", desc: "Submit role-specific school evidence to request verification." },
   pending:      { color: "#F59E0B", bg: "#FFFBEB", icon: "time-outline",             label: "Pending Review",  desc: "Your request is in queue. A JNV Official will review it shortly." },
-  awaiting_official_decision: { color: "#3D5AF1", bg: "#EEF2FF", icon: "hourglass-outline", label: "Awaiting Official Decision", desc: "Your school reviewer submitted a recommendation. An authorized JNV official makes the final decision." },
-  info_requested:{ color: "#3D5AF1", bg: "#EEF2FF", icon: "information-circle-outline", label: "More Information Needed", desc: "Your school reviewer asked for additional information." },
+  awaiting_official_decision: { color: "#7C3AED", bg: "#F5F3FF", icon: "hourglass-outline", label: "Awaiting Official Decision", desc: "Your school reviewer submitted a recommendation. An authorized JNV official makes the final decision." },
+  info_requested:{ color: "#7C3AED", bg: "#F5F3FF", icon: "information-circle-outline", label: "More Information Needed", desc: "Your school reviewer asked for additional information." },
   approved:     { color: "#10B981", bg: "#ECFDF5", icon: "checkmark-circle-outline", label: "Approved",        desc: "Congratulations! Your account has been verified." },
   rejected:     { color: "#EF4444", bg: "#FEF2F2", icon: "close-circle-outline",     label: "Rejected",        desc: "Your verification was rejected. See notes below." },
   suspended:    { color: "#6B7280", bg: "#F3F4F6", icon: "ban-outline", label: "Suspended", desc: "Your credential is suspended. Contact your JNV official for review." },
@@ -160,7 +160,7 @@ function SchoolVerificationCenter() {
           <Text style={s.statusDesc}>{cfg.desc}</Text>
           {request?.infoRequest && (
             <View style={s.infoRequestBanner}>
-              <Ionicons name="information-circle" size={16} color="#3D5AF1" />
+              <Ionicons name="information-circle" size={16} color="#7C3AED" />
               <Text style={s.infoRequestText}>{request.infoRequest}</Text>
             </View>
           )}
@@ -187,7 +187,7 @@ function SchoolVerificationCenter() {
                   {i < TIMELINE_STEPS.length - 1 && <View style={[s.timelineLine, done && s.timelineLineDone]} />}
                 </View>
                 <View style={s.timelineContent}>
-                  <Text style={[s.timelineLabel, !done && { color: "#9CA3AF" }, active && { color: "#1A3C6E" }]}>{step.label}</Text>
+                  <Text style={[s.timelineLabel, !done && { color: "#9CA3AF" }, active && { color: "#7C3AED" }]}>{step.label}</Text>
                   {active && <Text style={s.timelineActive}>In progress</Text>}
                   {done && i < currentStep && <Text style={s.timelineDoneText}>Completed</Text>}
                 </View>
@@ -298,7 +298,7 @@ function SchoolVerificationCenter() {
         {status !== "verified" && (
           <View style={s.skipCard}>
             <View style={s.skipIconWrap}>
-              <Ionicons name="arrow-forward-circle-outline" size={22} color="#3D5AF1" />
+              <Ionicons name="arrow-forward-circle-outline" size={22} color="#7C3AED" />
             </View>
             <Text style={s.skipTitle}>Want to explore Navodaya Connect?</Text>
             <Text style={s.skipText}>
@@ -358,7 +358,7 @@ const s = StyleSheet.create({
   timelineLineDone: { backgroundColor: "#10B981" },
   timelineContent: { flex: 1, paddingBottom: 20 },
   timelineLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  timelineActive: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#1A3C6E", marginTop: 2 },
+  timelineActive: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#7C3AED", marginTop: 2 },
   timelineDoneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#10B981", marginTop: 2 },
   detailCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0" },
   detailRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
@@ -366,22 +366,22 @@ const s = StyleSheet.create({
   detailValue: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#111827" },
   evidenceHelp: { color: "#6B7280", fontSize: 12, lineHeight: 18, marginTop: 8 },
   responseInput: { minHeight: 90, marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", color: "#111827", textAlignVertical: "top", fontFamily: "Inter_400Regular" },
-  responseButton: { marginTop: 10, minHeight: 44, borderRadius: 12, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  responseButton: { marginTop: 10, minHeight: 44, borderRadius: 12, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   responseButtonText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13 },
   withdrawButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
   withdrawText: { color: "#B91C1C", fontFamily: "Inter_500Medium", fontSize: 12 },
   tipsCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0", gap: 2 },
   tipRow: { flexDirection: "row", gap: 10, paddingVertical: 6, alignItems: "flex-start" },
-  tipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#1A3C6E", marginTop: 6 },
+  tipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#7C3AED", marginTop: 6 },
   tipText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 20 },
   allowedCard: { backgroundColor: "#ECFDF5", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#A7F3D0" },
   allowedRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
   allowedText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#065F46" },
-  skipCard: { backgroundColor: "#EEF2FF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#C7D2FE" },
+  skipCard: { backgroundColor: "#F5F3FF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#C7D2FE" },
   skipIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", marginBottom: 10 },
   skipTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1E3A8A", marginBottom: 5 },
   skipText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#4B5CC4", lineHeight: 19, marginBottom: 14 },
-  skipBtn: { backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  skipBtn: { backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   skipBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
   signOutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },

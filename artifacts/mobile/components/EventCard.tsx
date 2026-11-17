@@ -113,7 +113,7 @@ export default function EventCard({
         </View>
         {isOnline && (
           <View style={styles.onlinePill}>
-            <Ionicons name="videocam-outline" size={11} color="#3D5AF1" />
+            <Ionicons name="videocam-outline" size={11} color="#7C3AED" />
             <Text style={styles.onlinePillText}>Online</Text>
           </View>
         )}
@@ -136,8 +136,8 @@ export default function EventCard({
 
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
-            <View style={[styles.metaIcon, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="time-outline" size={14} color="#3D5AF1" />
+            <View style={[styles.metaIcon, { backgroundColor: "#F5F3FF" }]}>
+              <Ionicons name="time-outline" size={14} color="#7C3AED" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.metaLabel}>Date &amp; Time</Text>
@@ -175,15 +175,15 @@ export default function EventCard({
         </View>
 
         <MotionPressable style={styles.detailsLink} onPress={() => setDetailsOpen(true)}>
-          <Ionicons name="information-circle-outline" size={17} color="#3D5AF1" />
+          <Ionicons name="information-circle-outline" size={17} color="#7C3AED" />
           <Text style={styles.detailsLinkText}>Event details</Text>
-          <Ionicons name="chevron-forward" size={15} color="#3D5AF1" />
+          <Ionicons name="chevron-forward" size={15} color="#7C3AED" />
         </MotionPressable>
 
         {(onEdit || onDelete) && (
           <View style={styles.ownerActions}>
             {onEdit && <TouchableOpacity style={styles.editEventButton} onPress={onEdit} accessibilityRole="button" accessibilityLabel={`Edit ${event.title}`}>
-              <Ionicons name="create-outline" size={16} color="#3D5AF1" />
+              <Ionicons name="create-outline" size={16} color="#7C3AED" />
               <Text style={styles.editEventText}>Edit event</Text>
             </TouchableOpacity>}
             {onDelete && <TouchableOpacity style={styles.deleteEventButton} onPress={onDelete} accessibilityRole="button" accessibilityLabel={`Delete ${event.title}`}>
@@ -233,7 +233,7 @@ export default function EventCard({
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailsBody}>
               <View style={styles.eventTypeRow}>
                 <View style={[styles.eventTypePill, isOnline && styles.onlineTypePill]}>
-                  <Ionicons name={isOnline ? "videocam-outline" : "people-outline"} size={14} color={isOnline ? "#3D5AF1" : "#059669"} />
+                  <Ionicons name={isOnline ? "videocam-outline" : "people-outline"} size={14} color={isOnline ? "#7C3AED" : "#059669"} />
                   <Text style={[styles.eventTypeText, isOnline && styles.onlineTypeText]}>{isOnline ? "Online event" : "In-person event"}</Text>
                 </View>
                 <View style={styles.eventTypePill}>
@@ -247,7 +247,7 @@ export default function EventCard({
               </View>
               <View style={styles.detailsSection}>
                 <Text style={styles.detailsSectionTitle}>Date and location</Text>
-                <DetailRow icon="calendar-outline" color="#3D5AF1" label="Date & time" value={formatDateTime(event.date)} />
+                <DetailRow icon="calendar-outline" color="#7C3AED" label="Date & time" value={formatDateTime(event.date)} />
                 <DetailRow icon="location-outline" color="#EF4444" label="Venue" value={event.location || "Venue not specified"} />
                 <DetailRow icon="school-outline" color="#10B981" label="Hosted by" value={event.jnvName || "JNV community"} />
               </View>
@@ -260,8 +260,8 @@ export default function EventCard({
                     onPress={() => void handleOrganizerPress()}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.detailIcon, { backgroundColor: "#EEF2FF" }]}>
-                      <Ionicons name="person-outline" size={17} color="#3D5AF1" />
+                    <View style={[styles.detailIcon, { backgroundColor: "#F5F3FF" }]}>
+                      <Ionicons name="person-outline" size={17} color="#7C3AED" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.detailsLabel}>Organized by</Text>
@@ -269,7 +269,7 @@ export default function EventCard({
                     </View>
                     {onOrganizerPress ? (
                       <View style={styles.messageOrganizerPill}>
-                        <Ionicons name="chatbubble-ellipses-outline" size={13} color="#3D5AF1" />
+                        <Ionicons name="chatbubble-ellipses-outline" size={13} color="#7C3AED" />
                         <Text style={styles.messageOrganizerText}>View profile</Text>
                       </View>
                     ) : null}
@@ -282,7 +282,7 @@ export default function EventCard({
               {(onEdit || onDelete) && (
                 <View style={[styles.ownerActions, styles.detailsOwnerActions]}>
                   {onEdit && <TouchableOpacity style={styles.editEventButton} onPress={() => { setDetailsOpen(false); onEdit(); }} accessibilityRole="button" accessibilityLabel={`Edit ${event.title}`}>
-                    <Ionicons name="create-outline" size={16} color="#3D5AF1" />
+                    <Ionicons name="create-outline" size={16} color="#7C3AED" />
                     <Text style={styles.editEventText}>Edit event</Text>
                   </TouchableOpacity>}
                   {onDelete && <TouchableOpacity style={styles.deleteEventButton} onPress={() => { setDetailsOpen(false); onDelete(); }} accessibilityRole="button" accessibilityLabel={`Delete ${event.title}`}>
@@ -312,7 +312,7 @@ export default function EventCard({
       <Modal visible={!!organizerMessage} transparent animationType="fade" onRequestClose={() => setOrganizerMessage("")}>
         <Pressable style={styles.noticeBackdrop} onPress={() => setOrganizerMessage("")}>
           <Pressable style={styles.noticeCard} onPress={(pressEvent) => pressEvent.stopPropagation()}>
-            <View style={styles.noticeIcon}><Ionicons name="person-outline" size={22} color="#3D5AF1" /></View>
+            <View style={styles.noticeIcon}><Ionicons name="person-outline" size={22} color="#7C3AED" /></View>
             <Text style={styles.noticeTitle}>Organizer profile unavailable</Text>
             <Text style={styles.noticeText}>{organizerMessage}</Text>
             <TouchableOpacity style={styles.noticeButton} onPress={() => setOrganizerMessage("")}>

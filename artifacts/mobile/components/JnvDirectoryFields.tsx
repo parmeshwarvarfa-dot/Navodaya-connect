@@ -105,7 +105,7 @@ export default function JnvDirectoryFields({
               return (
                 <TouchableOpacity style={styles.option} onPress={() => choose(item)}>
                   <Text style={[styles.optionText, selected && styles.optionSelected]}>{item}</Text>
-                  {selected ? <Ionicons name="checkmark-circle" size={19} color="#3D5AF1" /> : null}
+                  {selected ? <Ionicons name="checkmark-circle" size={19} color="#7C3AED" /> : null}
                 </TouchableOpacity>
               );
             }}
@@ -137,6 +137,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, height: "100%", color: "#111827", fontSize: 14 },
   option: { minHeight: 49, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB" },
   optionText: { color: "#374151", fontSize: 14 },
-  optionSelected: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  optionSelected: { color: "#7C3AED", fontFamily: "Inter_600SemiBold" },
   noResults: { padding: 22, textAlign: "center", color: "#7B8492", fontSize: 13 },
 });

@@ -29,7 +29,7 @@ const HOUSE_META: Record<string, { color: string; emoji: string }> = {
 };
 const MEDALS = ["🥇", "🥈", "🥉", "4️⃣"];
 const CHALLENGES: Challenge[] = [
-  { id: "gk-blitz", title: "GK Blitz Quiz", desc: "2-min rapid-fire general knowledge", icon: "🧠", color: "#3D5AF1", bg: "#EEF2FF", status: "live", points: 50, gameId: "gk-blitz" },
+  { id: "gk-blitz", title: "GK Blitz Quiz", desc: "2-min rapid-fire general knowledge", icon: "🧠", color: "#7C3AED", bg: "#F5F3FF", status: "live", points: 50, gameId: "gk-blitz" },
   { id: "chess-cup", title: "House Chess Cup", desc: "Local two-player play · tournament not scheduled", icon: "♟️", color: "#374151", bg: "#F3F4F6", status: "qualifying", points: 120, pointsNote: "tournament only", gameId: "chess-cup" },
   { id: "word-master", title: "Word Master", desc: "Speed spelling showdown", icon: "🔤", color: "#8B5CF6", bg: "#F5F3FF", status: "live", points: 60, gameId: "word-master" },
   { id: "math-ninja", title: "Number Ninja", desc: "Mental maths speed round", icon: "🔢", color: "#10B981", bg: "#ECFDF5", status: "live", points: 70, gameId: "math-ninja" },
@@ -145,7 +145,7 @@ export default function HouseArenaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   pageHeader: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#ECEEF3" },
   backButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: "#F2F4F8" },
   pageTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#18243B" },
@@ -175,8 +175,8 @@ const styles = StyleSheet.create({
   challengeHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 5, marginBottom: 14, lineHeight: 17 },
-  practiceChip: { backgroundColor: "#EEF2FF", borderRadius: 18, paddingHorizontal: 9, paddingVertical: 4 },
-  practiceChipText: { fontSize: 9, fontFamily: "Inter_700Bold", color: "#3D5AF1", letterSpacing: 0.4 },
+  practiceChip: { backgroundColor: "#F5F3FF", borderRadius: 18, paddingHorizontal: 9, paddingVertical: 4 },
+  practiceChipText: { fontSize: 9, fontFamily: "Inter_700Bold", color: "#7C3AED", letterSpacing: 0.4 },
   challengeCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, backgroundColor: "#fff", padding: 14, marginBottom: 10, borderLeftWidth: 4 },
   challengeIconWrap: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   challengeEmoji: { fontSize: 22 },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   challengeDesc: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 4 },
   challengeMeta: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
   challengeStatus: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
-  challengePts: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3D5AF1", backgroundColor: "#EEF2FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: "hidden" },
+  challengePts: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#7C3AED", backgroundColor: "#F5F3FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: "hidden" },
   playBtn: { minWidth: 76, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 22, alignItems: "center" },
   playBtnText: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff" },
   modalRoot: { flex: 1, backgroundColor: "#fff" },

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 const METRICS = [
-  { label: "Teaching Clarity",       avg: 4.5, count: 28, icon: "school-outline"         as const, color: "#3D5AF1" },
+  { label: "Teaching Clarity",       avg: 4.5, count: 28, icon: "school-outline"         as const, color: "#7C3AED" },
   { label: "Student Interaction",    avg: 4.2, count: 28, icon: "people-outline"          as const, color: "#10B981" },
   { label: "Content Coverage",       avg: 4.7, count: 28, icon: "book-outline"            as const, color: "#8B5CF6" },
   { label: "Classroom Behaviour",    avg: 4.6, count: 28, icon: "star-outline"            as const, color: "#F59E0B" },
@@ -54,7 +54,7 @@ export default function TeacherFeedbackScreen() {
 
       {/* Privacy notice */}
       <View style={styles.privacyBanner}>
-        <Ionicons name="shield-checkmark-outline" size={16} color="#3D5AF1" />
+        <Ionicons name="shield-checkmark-outline" size={16} color="#7C3AED" />
         <Text style={styles.privacyText}>All feedback is anonymous. Student identities are never revealed to teachers.</Text>
       </View>
 
@@ -143,15 +143,15 @@ export default function TeacherFeedbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  privacyBanner: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#EEF2FF", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#C7D2FE" },
+  privacyBanner: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#F5F3FF", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#C7D2FE" },
   privacyText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: "#3730A3" },
   classTabs: { paddingHorizontal: 16, gap: 8, paddingVertical: 12 },
   classTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  classTabActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  classTabActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   classTabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   classTabTextActive: { color: "#fff" },
   overallCard: { backgroundColor: "#fff", borderRadius: 18, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: "#F0F0F0", flexDirection: "row", gap: 16 },

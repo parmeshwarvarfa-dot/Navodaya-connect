@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 const statusColors: Record<string, string> = {
   submitted: "#64748B",
-  seen: "#2563EB",
+  seen: "#7C3AED",
   in_progress: "#D97706",
   solved: "#059669",
 };

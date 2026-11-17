@@ -13,9 +13,9 @@ import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award", "Career", "Other"];
 const CAT_COLOR: Record<string, string> = {
-  "Placement": "#10B981", "College Admission": "#3D5AF1", "UPSC/Gov": "#8B5CF6",
+  "Placement": "#10B981", "College Admission": "#7C3AED", "UPSC/Gov": "#8B5CF6",
   "Startup": "#F59E0B", "Research": "#0891B2", "Sports": "#EC4899", "Award": "#D97706",
-  "Career": "#3D5AF1", "Other": "#6B7280",
+  "Career": "#7C3AED", "Other": "#6B7280",
 };
 
 const FEATURED = [
@@ -299,7 +299,7 @@ export default function AlumniAchievementsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   catText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   achTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 6 },
   achDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 19, marginBottom: 12 },
-  achievementImage: { width: "100%", height: 230, borderRadius: 12, backgroundColor: "#F5F6FA", marginBottom: 12 },
+  achievementImage: { width: "100%", height: 230, borderRadius: 12, backgroundColor: "#F8F7FF", marginBottom: 12 },
   achFooter: { flexDirection: "row", alignItems: "center", gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F0F0F0" },
   likeBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
   likeCount: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   modalBody: { padding: 20, paddingBottom: 40 },
   categoryOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  photoPreview: { borderRadius: 12, overflow: "hidden", backgroundColor: "#F5F6FA", marginBottom: 12 },
+  photoPreview: { borderRadius: 12, overflow: "hidden", backgroundColor: "#F8F7FF", marginBottom: 12 },
   previewImage: { width: "100%", height: 200 },
   currentPhotoLabel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: "rgba(17,24,39,0.6)" },
   currentPhotoText: { color: "#fff", fontSize: 11, fontFamily: "Inter_500Medium", textAlign: "center" },

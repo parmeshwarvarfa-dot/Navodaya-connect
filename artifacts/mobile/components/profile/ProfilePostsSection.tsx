@@ -160,7 +160,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
               accessibilityLabel={`View all ${stats.data?.posts ?? ""} posts`}
             >
               <Text style={styles.viewAllText}>View all{typeof stats.data?.posts === "number" ? ` · ${stats.data.posts}` : ""}</Text>
-              <Ionicons name="chevron-forward" size={15} color="#3D5AF1" />
+              <Ionicons name="chevron-forward" size={15} color="#7C3AED" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -168,7 +168,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
       {restricted ? (
         <View style={styles.empty}><Ionicons name="lock-closed-outline" size={24} color="#69758B"/><Text style={styles.emptyTitle}>Posts are private</Text><Text style={styles.emptyText}>Follow this profile to request access.</Text></View>
       ) : posts.isLoading ? (
-        <View style={styles.state}><ActivityIndicator color="#3D5AF1"/><Text style={styles.stateText}>Loading posts…</Text></View>
+        <View style={styles.state}><ActivityIndicator color="#7C3AED"/><Text style={styles.stateText}>Loading posts…</Text></View>
       ) : posts.isError ? (
         <View style={styles.empty}><Text style={styles.emptyText}>Posts could not load.</Text><TouchableOpacity onPress={() => void posts.refetch()}><Text style={styles.retry}>Try again</Text></TouchableOpacity></View>
       ) : memories.length === 0 ? (
@@ -183,7 +183,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
               <TouchableOpacity key={post.id} style={[styles.tile, { width: size, height: size }]} onPress={() => setSelectedPost(post)} activeOpacity={0.8} accessibilityLabel={`Open post: ${post.caption || post.postType}`}>
                 {preview && post.postType !== "video" ? <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} resizeMode="cover"/> : (
                   <View style={[styles.textTile, post.postType === "video" && styles.videoTile]}>
-                    <Ionicons name={post.postType === "video" ? "play-circle" : post.postType === "poll" ? "stats-chart-outline" : "chatbubble-ellipses-outline"} size={26} color={post.postType === "video" ? "#fff" : "#3D5AF1"}/>
+                    <Ionicons name={post.postType === "video" ? "play-circle" : post.postType === "poll" ? "stats-chart-outline" : "chatbubble-ellipses-outline"} size={26} color={post.postType === "video" ? "#fff" : "#7C3AED"}/>
                     {post.caption ? <Text numberOfLines={4} style={[styles.tileCaption, post.postType === "video" && { color: "#fff" }]}>{post.caption}</Text> : null}
                   </View>
                 )}
@@ -210,7 +210,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
         <View style={styles.menuBackdrop}><View style={styles.menuCard}>
           <Text style={styles.menuTitle}>Post options</Text>
           {postMenu?.authorId === userId && isOwner ? <>
-            <TouchableOpacity style={styles.menuOption} onPress={() => { setEditingPost(postMenu); setPostMenu(null); }}><Ionicons name="create-outline" size={19} color="#3D5AF1"/><Text style={styles.menuOptionText}>Edit post</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.menuOption} onPress={() => { setEditingPost(postMenu); setPostMenu(null); }}><Ionicons name="create-outline" size={19} color="#7C3AED"/><Text style={styles.menuOptionText}>Edit post</Text></TouchableOpacity>
             <TouchableOpacity style={styles.menuOption} onPress={confirmDelete}><Ionicons name="trash-outline" size={19} color="#B42318"/><Text style={[styles.menuOptionText, { color: "#B42318" }]}>Delete post</Text></TouchableOpacity>
           </> : <TouchableOpacity style={styles.menuOption} onPress={() => void reportPost()}><Ionicons name="flag-outline" size={19} color="#B42318"/><Text style={[styles.menuOptionText, { color: "#B42318" }]}>Report post</Text></TouchableOpacity>}
           <TouchableOpacity style={styles.menuCancel} onPress={() => setPostMenu(null)}><Text style={styles.menuCancelText}>Cancel</Text></TouchableOpacity>
@@ -221,7 +221,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
       <Modal visible={!!relationList} animationType="slide" onRequestClose={() => setRelationList(null)}>
         <View style={styles.relationScreen}>
           <View style={[styles.detailHeader, { paddingTop: insets.top }]}><TouchableOpacity onPress={() => setRelationList(null)} style={styles.closeButton}><Ionicons name="arrow-back" size={22} color="#111827"/></TouchableOpacity><Text style={styles.detailTitle}>{relationList === "followers" ? "Followers" : "Following"}</Text><View style={{ width: 40 }}/></View>
-          {relations.isLoading ? <View style={styles.state}><ActivityIndicator color="#3D5AF1"/></View> : relations.isError ? <View style={styles.state}><Text style={styles.stateText}>Could not load people.</Text><TouchableOpacity onPress={() => void relations.refetch()}><Text style={styles.retry}>Try again</Text></TouchableOpacity></View> : (
+          {relations.isLoading ? <View style={styles.state}><ActivityIndicator color="#7C3AED"/></View> : relations.isError ? <View style={styles.state}><Text style={styles.stateText}>Could not load people.</Text><TouchableOpacity onPress={() => void relations.refetch()}><Text style={styles.retry}>Try again</Text></TouchableOpacity></View> : (
             <ScrollView contentContainerStyle={styles.peopleList}>
               {(relations.data ?? []).length === 0 ? <Text style={styles.emptyText}>No {relationList} yet.</Text> : relations.data?.map((person: ProfileConnection) => (
                 <TouchableOpacity key={person.id} style={styles.personRow} onPress={() => { setRelationList(null); router.push({ pathname: "/(screens)/user-profile", params: { userId: person.id } } as any); }}>
@@ -249,12 +249,12 @@ const styles = StyleSheet.create({
   statsRetry: { alignItems: "center", marginTop: -14, marginBottom: 10 },
   titleRow: { minHeight: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   title: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold" },
-  viewAllButton: { minHeight: 32, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 10, borderRadius: 16, backgroundColor: "#EEF2FF" },
-  viewAllText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  viewAllButton: { minHeight: 32, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 10, borderRadius: 16, backgroundColor: "#F5F3FF" },
+  viewAllText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   previewGrid: { flexWrap: "nowrap", gap: 8, minHeight: 112, overflow: "hidden" },
   tile: { backgroundColor: "#E8EBF2", overflow: "hidden", position: "relative" },
-  textTile: { flex: 1, alignItems: "center", justifyContent: "center", padding: 9, backgroundColor: "#EEF2FF" },
+  textTile: { flex: 1, alignItems: "center", justifyContent: "center", padding: 9, backgroundColor: "#F5F3FF" },
   videoTile: { backgroundColor: "#27324B" },
   tileCaption: { marginTop: 7, textAlign: "center", color: "#27324B", fontSize: 11, lineHeight: 15, fontFamily: "Inter_500Medium" },
   tileIndicator: { position: "absolute", right: 7, top: 7, width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(17,24,39,0.55)" },
@@ -263,9 +263,9 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 5, color: "#69758B", textAlign: "center", fontSize: 13, lineHeight: 19, fontFamily: "Inter_400Regular" },
   state: { minHeight: 94, alignItems: "center", justifyContent: "center", gap: 8 },
   stateText: { color: "#69758B", fontSize: 13, fontFamily: "Inter_400Regular" },
-  retry: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold", padding: 8 },
+  retry: { color: "#7C3AED", fontSize: 13, fontFamily: "Inter_600SemiBold", padding: 8 },
   loadMore: { alignItems: "center", paddingVertical: 10 },
-  detailScreen: { flex: 1, backgroundColor: "#F5F6FA" },
+  detailScreen: { flex: 1, backgroundColor: "#F8F7FF" },
   relationScreen: { flex: 1, backgroundColor: "#fff" },
   detailHeader: { minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#EAECF0" },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
@@ -274,8 +274,8 @@ const styles = StyleSheet.create({
   peopleList: { paddingHorizontal: 16, paddingVertical: 8 },
   personRow: { minHeight: 68, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: "#F0F1F4" },
   personAvatar: { width: 44, height: 44, borderRadius: 22 },
-  personAvatarFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  personInitial: { color: "#3D5AF1", fontSize: 17, fontFamily: "Inter_700Bold" },
+  personAvatarFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  personInitial: { color: "#7C3AED", fontSize: 17, fontFamily: "Inter_700Bold" },
   personName: { color: "#111827", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   personMeta: { marginTop: 3, color: "#69758B", fontSize: 12, fontFamily: "Inter_400Regular", textTransform: "capitalize" },
   toast: { position: "absolute", bottom: 18, left: 20, right: 20, padding: 12, borderRadius: 12, backgroundColor: "#1F2937" },

@@ -72,10 +72,10 @@ function BluePicker({
                 style={modalStyles.option}
                 onPress={() => { onSelect(item); setOpen(false); }}
               >
-                <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[modalStyles.optionText, item === value && { color: "#7C3AED", fontFamily: "Inter_600SemiBold" }]}>
                   {labelMap?.[item] ?? item}
                 </Text>
-                {item === value && <Ionicons name="checkmark" size={18} color="#3D5AF1" />}
+                {item === value && <Ionicons name="checkmark" size={18} color="#7C3AED" />}
               </TouchableOpacity>
             )}
           />
@@ -283,7 +283,7 @@ export default function SignUpScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.roleIconWrap}>
-                  <Ionicons name={r.icon} size={26} color="#3D5AF1" />
+                  <Ionicons name={r.icon} size={26} color="#7C3AED" />
                 </View>
                 <Text style={styles.roleCardText}>{r.label}</Text>
                 <Ionicons name="chevron-forward" size={18} color="#9CA3AF" style={{ marginLeft: "auto" }} />
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderRadius: 14,
     paddingVertical: 18, paddingHorizontal: 20, gap: 16,
   },
-  roleIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  roleIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   roleCardText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#111827" },
   formTitle: { fontFamily: "Pacifico_400Regular", fontSize: 26, color: "#fff", marginBottom: 6 },
   formSub: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 28 },
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderRadius: 28, height: 54,
     alignItems: "center", justifyContent: "center", marginTop: 6,
   },
-  createBtnText: { color: "#3D5AF1", fontFamily: "Inter_700Bold", fontSize: 16 },
+  createBtnText: { color: "#7C3AED", fontFamily: "Inter_700Bold", fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 15 },
   footerLink: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },

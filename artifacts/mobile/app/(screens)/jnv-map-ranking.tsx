@@ -10,7 +10,7 @@ const OPTIONS = [
     description: "Explore Jawahar Navodaya Vidyalayas across locations.",
     icon: "map-outline" as const,
     color: "#3151E8",
-    background: "#EEF2FF",
+    background: "#F5F3FF",
     route: "/(screens)/map-prototype",
   },
   {
@@ -62,7 +62,7 @@ export default function JnvMapRankingScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F5F6FA" },
+  page: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 60, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#ECEEF2" },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, color: "#111827", fontSize: 19, fontFamily: "Inter_700Bold" },

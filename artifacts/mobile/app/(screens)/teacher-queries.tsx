@@ -11,7 +11,7 @@ import type { StudentQueryWithAnswers } from "@/lib/api";
 
 const CATEGORIES = ["All", "Academics", "Exams", "Career", "School Help"];
 const CATEGORY_COLOR: Record<string, string> = {
-  "Academics": "#3D5AF1", "Exams": "#EF4444", "Career": "#10B981", "School Help": "#8B5CF6",
+  "Academics": "#7C3AED", "Exams": "#EF4444", "Career": "#10B981", "School Help": "#8B5CF6",
 };
 
 export default function TeacherQueriesScreen() {
@@ -153,7 +153,7 @@ export default function TeacherQueriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -167,14 +167,14 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   tabs: { paddingHorizontal: 16, gap: 8, paddingBottom: 14 },
   tab: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  tabActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  tabActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   tabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   tabTextActive: { color: "#fff" },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   cardSolved: { borderColor: "#D1FAE5" },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 10 },
-  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  avatarText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
   studentName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827" },
   solvedBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   answerText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 19 },
   replySection: { gap: 10 },
   replyInput: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 90 },
-  replyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 12 },
+  replyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 12 },
   replyBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },

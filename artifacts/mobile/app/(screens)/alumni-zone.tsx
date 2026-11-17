@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 
 const FEATURES = [
-  { label: "Mentorship", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-mentorship" },
+  { label: "Mentorship", icon: "people-outline" as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-mentorship" },
   { label: "Blood Donation Help", icon: "water-outline" as const, color: "#DC2626", bg: "#FEF2F2", route: "/(screens)/alumni-community" },
   { label: "Contributions",  icon: "ribbon-outline"           as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/alumni-contributions"  },
   { label: "Support JNV",    icon: "heart-outline"            as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/alumni-support"        },
@@ -69,7 +69,7 @@ export default function AlumniZoneScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: "Connections", value: statsLoading ? "—" : connectionsCount ?? "—", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF" },
+            { label: "Connections", value: statsLoading ? "—" : connectionsCount ?? "—", icon: "people-outline" as const, color: "#7C3AED", bg: "#F5F3FF" },
             { label: "Contributions", value: statsLoading ? "—" : contributionCount ?? "—", icon: "ribbon-outline" as const, color: "#8B5CF6", bg: "#F5F3FF" },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>

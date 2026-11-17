@@ -13,18 +13,18 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
 
 const ROLE_COLORS: Record<string, string> = {
-  student: "#3D5AF1", teacher: "#10B981", alumni: "#8B5CF6", official: "#D97706",
+  student: "#7C3AED", teacher: "#10B981", alumni: "#8B5CF6", official: "#D97706",
 };
 
 const STATUS_COLORS: Record<string, { color: string; bg: string; label: string }> = {
   pending:        { color: "#F59E0B", bg: "#FFFBEB", label: "Pending" },
   approved:       { color: "#10B981", bg: "#ECFDF5", label: "Approved" },
   rejected:       { color: "#EF4444", bg: "#FEF2F2", label: "Rejected" },
-  info_requested: { color: "#3D5AF1", bg: "#EEF2FF", label: "Info Needed" },
+  info_requested: { color: "#7C3AED", bg: "#F5F3FF", label: "Info Needed" },
 };
 
 const QUICK_ACTIONS = [
-  { label: "Academic Management", icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/assign-teachers" },
+  { label: "Academic Management", icon: "school-outline" as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/assign-teachers" },
   { label: "Post Update",   icon: "megaphone-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/create-news"     },
   { label: "Opportunities", icon: "briefcase-outline"        as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-opportunities" },
   { label: "School Support", icon: "heart-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/alumni-support" },
@@ -376,12 +376,12 @@ export default function OfficialDashboardScreen() {
 
                 {infoReq.trim() ? (
                   <TouchableOpacity
-                    style={[s.reviewBtn, { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" }]}
+                    style={[s.reviewBtn, { backgroundColor: "#F5F3FF", borderColor: "#C7D2FE" }]}
                     onPress={() => handleReview("info_requested")}
                     disabled={!!actionLoading}
                   >
-                    <Ionicons name="information-circle-outline" size={22} color="#3D5AF1" />
-                    <Text style={[s.reviewBtnText, { color: "#3D5AF1" }]}>
+                    <Ionicons name="information-circle-outline" size={22} color="#7C3AED" />
+                    <Text style={[s.reviewBtnText, { color: "#7C3AED" }]}>
                       {actionLoading === "info_requested" ? "Sending..." : "Request More Info"}
                     </Text>
                   </TouchableOpacity>
@@ -463,12 +463,12 @@ const s = StyleSheet.create({
   tabs: { flexGrow: 0, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E8EBF2" },
   tabsContent: { flexDirection: "row", gap: 3, paddingHorizontal: 6 },
   tab: { flexShrink: 0, paddingHorizontal: 14, paddingVertical: 13, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
-  tabActive: { borderBottomColor: "#1A3C6E" },
+  tabActive: { borderBottomColor: "#7C3AED" },
   tabText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
-  tabTextActive: { color: "#1A3C6E", fontFamily: "Inter_700Bold" },
-  statusFilters: { paddingHorizontal: 14, paddingVertical: 10, gap: 8, backgroundColor: "#F5F6FA" },
+  tabTextActive: { color: "#7C3AED", fontFamily: "Inter_700Bold" },
+  statusFilters: { paddingHorizontal: 14, paddingVertical: 10, gap: 8, backgroundColor: "#F8F7FF" },
   statusFilter: { minHeight: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  statusFilterActive: { backgroundColor: "#1A3C6E", borderColor: "#1A3C6E" },
+  statusFilterActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   statusFilterText: { color: "#4B5563", fontSize: 12, fontFamily: "Inter_500Medium" },
   statusFilterTextActive: { color: "#fff", fontFamily: "Inter_700Bold" },
   evidenceCard: { borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", padding: 14, gap: 8 },
@@ -502,7 +502,7 @@ const s = StyleSheet.create({
   fbFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   fbStudent: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
   fbTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#D1D5DB" },
-  reviewModal: { flex: 1, backgroundColor: "#F5F6FA" },
+  reviewModal: { flex: 1, backgroundColor: "#F8F7FF" },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtnSm: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   reviewTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },

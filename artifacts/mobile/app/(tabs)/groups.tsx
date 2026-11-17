@@ -105,8 +105,8 @@ export default function GroupsScreen() {
           >
             <PremiumCard style={styles.groupCard}>
               <View style={styles.groupRow}>
-                <View style={[styles.groupIconBg, { backgroundColor: "#EEF2FF" }]}>
-                  <Ionicons name="people" size={22} color="#3D5AF1" />
+                <View style={[styles.groupIconBg, { backgroundColor: "#F5F3FF" }]}>
+                  <Ionicons name="people" size={22} color="#7C3AED" />
                 </View>
                 <View style={styles.groupInfo}>
                   <Text style={[styles.groupName, { color: "#111827" }]}>{item.name}</Text>
@@ -125,7 +125,7 @@ export default function GroupsScreen() {
       />
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <View style={[styles.modalContainer, { backgroundColor: "#F3F5FA" }]}>
+        <View style={[styles.modalContainer, { backgroundColor: "#F8F7FF" }]}>
           <View style={[styles.modalHeader, { borderBottomColor: "#E3E7EF", backgroundColor: "#FFFFFF" }]}>
             <Text style={[styles.modalTitle, { color: "#111827" }]}>Create Group</Text>
             <TouchableOpacity onPress={() => setShowCreate(false)}>
@@ -147,7 +147,7 @@ export default function GroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F5FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },

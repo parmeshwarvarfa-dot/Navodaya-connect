@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   catPickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
   toast: {
     position: "absolute", bottom: 100, left: 20, right: 20,
-    backgroundColor: "#1A3C6E", borderRadius: 10, padding: 14, alignItems: "center",
+    backgroundColor: "#7C3AED", borderRadius: 10, padding: 14, alignItems: "center",
   },
   toastText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
 });

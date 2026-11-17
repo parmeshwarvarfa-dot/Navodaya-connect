@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center" },
   postBtn: {
-    backgroundColor: "#3D5AF1", borderRadius: 20,
+    backgroundColor: "#7C3AED", borderRadius: 20,
     paddingHorizontal: 18, paddingVertical: 8,
   },
   postBtnDisabled: { backgroundColor: "#93C5FD" },
@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
   },
   authorAvatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center",
   },
-  authorInitial: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  authorInitial: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   authorName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
   authorRole: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 1 },
   titleInput: {
@@ -192,9 +192,9 @@ const styles = StyleSheet.create({
     borderRadius: 20, backgroundColor: "#F3F4F6",
     borderWidth: 1.5, borderColor: "transparent",
   },
-  categoryChipActive: { backgroundColor: "#EEF2FF", borderColor: "#3D5AF1" },
+  categoryChipActive: { backgroundColor: "#F5F3FF", borderColor: "#7C3AED" },
   categoryText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
-  categoryTextActive: { color: "#3D5AF1" },
+  categoryTextActive: { color: "#7C3AED" },
   attachRow: { flexDirection: "row", paddingHorizontal: 20, gap: 24 },
   attachBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 },
   attachText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#374151" },

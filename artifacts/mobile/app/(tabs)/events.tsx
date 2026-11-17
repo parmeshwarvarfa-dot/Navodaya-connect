@@ -209,7 +209,7 @@ function RegistrationModal({ event, role, profile, visible, onClose, onSuccess }
           <ScrollView contentContainerStyle={regStyles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {/* Event summary */}
             <View style={regStyles.eventSummary}>
-              <Ionicons name="calendar" size={16} color="#3D5AF1" />
+              <Ionicons name="calendar" size={16} color="#7C3AED" />
               <Text style={regStyles.eventSummaryText}>{formatDateTime(event.date)}</Text>
             </View>
             {event.location && (
@@ -259,7 +259,7 @@ function RegistrationModal({ event, role, profile, visible, onClose, onSuccess }
                 <Text style={regStyles.fieldLabel}>Will you attend in person?</Text>
                 <Text style={regStyles.attendSub}>{attending ? "Yes, physically present" : "No, attending online / cannot attend"}</Text>
               </View>
-              <Switch value={attending} onValueChange={setAttending} trackColor={{ false: "#E5E7EB", true: "#3D5AF1" }} thumbColor="#fff" />
+              <Switch value={attending} onValueChange={setAttending} trackColor={{ false: "#E5E7EB", true: "#7C3AED" }} thumbColor="#fff" />
             </View>
 
             <Field
@@ -437,7 +437,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
                 <Text style={cStyles.fieldLabel}>{f.label}{f.required && <Text style={{ color: "#EF4444" }}> *</Text>}</Text>
                 <View style={cStyles.fieldRow}>
                   <View style={cStyles.fieldIcon}>
-                    <Ionicons name={f.icon as any} size={18} color="#3D5AF1" />
+                    <Ionicons name={f.icon as any} size={18} color="#7C3AED" />
                   </View>
                   <TextInput
                     style={cStyles.fieldInput} value={f.value} onChangeText={f.onChange}
@@ -451,7 +451,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
               <Text style={cStyles.fieldLabel}>Description <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View style={[cStyles.fieldRow, { alignItems: "flex-start" }]}>
                 <View style={[cStyles.fieldIcon, { marginTop: 2 }]}>
-                  <Ionicons name="document-text-outline" size={18} color="#3D5AF1" />
+                  <Ionicons name="document-text-outline" size={18} color="#7C3AED" />
                 </View>
                 <TextInput
                   style={[cStyles.fieldInput, { minHeight: 100, textAlignVertical: "top" }]}
@@ -486,7 +486,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
                 </View>
               ) : null}
               {!eventMedia && <TouchableOpacity style={cStyles.mediaPicker} onPress={chooseEventMedia} activeOpacity={0.8}>
-                <View style={cStyles.mediaPickerIcon}><Ionicons name="images-outline" size={21} color="#3D5AF1" /></View>
+                <View style={cStyles.mediaPickerIcon}><Ionicons name="images-outline" size={21} color="#7C3AED" /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={cStyles.mediaPickerTitle}>{eventToEdit?.mediaUrl ? "Replace current media" : "Add a photo or video"}</Text>
                   <Text style={cStyles.mediaPickerSub}>{eventToEdit?.mediaUrl ? "Leave this blank to keep the current media" : "Give attendees a preview of the event"}</Text>
@@ -498,7 +498,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
             {createError ? <Text style={cStyles.createError}>{createError}</Text> : null}
 
             <View style={cStyles.tipBox}>
-              <Ionicons name="information-circle-outline" size={16} color="#3D5AF1" />
+              <Ionicons name="information-circle-outline" size={16} color="#7C3AED" />
               <Text style={cStyles.tipText}>Tip: Include specific timings, dress code, what to bring, and any eligibility criteria so attendees come prepared.</Text>
             </View>
 
@@ -623,7 +623,7 @@ export default function EventsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
         {loadError ? <TouchableOpacity onPress={fetchEvents} style={{ padding: 18, backgroundColor: "#FFF4E5", borderRadius: 12, marginBottom: 14 }}><Text style={{ color: "#8A4B08", fontFamily: "Inter_600SemiBold" }}>Could not load events. Tap to retry.</Text></TouchableOpacity> : null}
         {!loadError && displayEvents.length === 0 ? <View style={{ alignItems: "center", paddingVertical: 48 }}><Ionicons name="calendar-outline" size={42} color="#9CA3AF" /><Text style={{ color: "#6B7280", marginTop: 12, fontFamily: "Inter_600SemiBold" }}>No events yet</Text></View> : null}
@@ -762,7 +762,7 @@ const regStyles = StyleSheet.create({
     borderWidth: 1.5, borderColor: "#E5E7EB",
   },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: "#F3F4F6", borderWidth: 1.5, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   chipTextActive: { color: "#fff" },
   attendRow: {
@@ -773,7 +773,7 @@ const regStyles = StyleSheet.create({
   attendSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
   submitBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16, marginTop: 8,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16, marginTop: 8,
   },
   submitBtnDisabled: { backgroundColor: "#A5B4FC" },
   submitText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
@@ -806,9 +806,9 @@ const cStyles = StyleSheet.create({
   body: { padding: 20, paddingBottom: 40 },
   orgBanner: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#EEF2FF", borderRadius: 14, padding: 14, marginBottom: 20,
+    backgroundColor: "#F5F3FF", borderRadius: 14, padding: 14, marginBottom: 20,
   },
-  orgAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  orgAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   orgAvatarText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
   orgName: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827" },
   orgRole: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
@@ -817,7 +817,7 @@ const cStyles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 6 },
   optionalLabel: { color: "#9CA3AF", fontFamily: "Inter_400Regular" },
   mediaPicker: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderStyle: "dashed", borderColor: "#C7D2FE", backgroundColor: "#F8FAFF", borderRadius: 14, padding: 14 },
-  mediaPickerIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  mediaPickerIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   mediaPickerTitle: { color: "#1F2937", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   mediaPickerSub: { color: "#6B7280", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 3 },
   mediaPreview: { height: 180, borderRadius: 14, overflow: "hidden", backgroundColor: "#111827" },
@@ -831,13 +831,13 @@ const cStyles = StyleSheet.create({
   fieldInput: { flex: 1, paddingVertical: 12, paddingRight: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   tipBox: {
     flexDirection: "row", alignItems: "flex-start", gap: 8,
-    backgroundColor: "#EEF2FF", borderRadius: 12, padding: 14, marginBottom: 20,
+    backgroundColor: "#F5F3FF", borderRadius: 12, padding: 14, marginBottom: 20,
     borderWidth: 1, borderColor: "#C7D2FE",
   },
   tipText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#3730A3", lineHeight: 18 },
   submitBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 16,
+    backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 16,
   },
   submitBtnDisabled: { backgroundColor: "#A5B4FC" },
   submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
@@ -849,6 +849,6 @@ const cStyles = StyleSheet.create({
   successIcon: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center", marginBottom: 16 },
   successTitle: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 8 },
   successDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 21, marginBottom: 24 },
-  successBtn: { backgroundColor: "#3D5AF1", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32 },
+  successBtn: { backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32 },
   successBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
 });

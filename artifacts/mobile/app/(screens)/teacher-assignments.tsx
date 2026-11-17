@@ -11,7 +11,7 @@ import type { AssignmentWithSubs, TeacherClassAssignment } from "@/lib/api";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Pending"   },
-  submitted: { color: "#3D5AF1", bg: "#EEF2FF", label: "Submitted" },
+  submitted: { color: "#7C3AED", bg: "#F5F3FF", label: "Submitted" },
   reviewed:  { color: "#10B981", bg: "#ECFDF5", label: "Reviewed"  },
   late:      { color: "#EF4444", bg: "#FEF2F2", label: "Late"      },
 };
@@ -116,7 +116,7 @@ export default function TeacherAssignmentsScreen() {
                 <View style={styles.cardStats}>
                   {[
                     { label: "Total",     value: a.submissions.length, color: "#6B7280" },
-                    { label: "Submitted", value: submitted,            color: "#3D5AF1" },
+                    { label: "Submitted", value: submitted,            color: "#7C3AED" },
                     { label: "Reviewed",  value: reviewed,             color: "#10B981" },
                     { label: "Pending",   value: a.submissions.length - submitted, color: "#F59E0B" },
                   ].map((s) => (
@@ -230,11 +230,11 @@ export default function TeacherAssignmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
   empty: { alignItems: "center", paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
@@ -252,15 +252,15 @@ const styles = StyleSheet.create({
   submissionHeader: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#374151", marginBottom: 10 },
   noSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", paddingVertical: 10 },
   subRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
-  subAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  subAvatarText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  subAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  subAvatarText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   subName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827" },
   subTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   subRemarks: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#10B981", marginTop: 2 },
   statusPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   statusPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  reviewBtn: { backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  reviewBtnText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  reviewBtn: { backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  reviewBtnText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   modal: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
@@ -268,11 +268,11 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10, marginTop: 4 },
   input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
   pill: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" },
-  pillActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  pillActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   pillText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   pillTextActive: { color: "#fff" },
   errText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 12 },
-  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
+  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 15 },
   confirmBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },

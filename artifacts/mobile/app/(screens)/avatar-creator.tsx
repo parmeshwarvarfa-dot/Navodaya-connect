@@ -57,7 +57,7 @@ export default function AvatarCreatorScreen() {
         <Text style={styles.subtitle}>Select one of the illustrated portraits</Text>
       </View>
       <TouchableOpacity onPress={() => { setSelectedId(AVATAR_PRESETS[0].id); setSaveError(""); }} style={styles.resetButton} accessibilityRole="button" accessibilityLabel="Reset selection">
-        <Ionicons name="refresh-outline" size={17} color="#3D5AF1" />
+        <Ionicons name="refresh-outline" size={17} color="#7C3AED" />
         <Text style={styles.resetText}>Reset</Text>
       </TouchableOpacity>
     </View>
@@ -87,7 +87,7 @@ export default function AvatarCreatorScreen() {
             <Image source={{ uri: item.imageUri }} style={styles.presetImage} resizeMode="contain" accessibilityLabel={item.name} />
             <View style={styles.presetLabelRow}>
               <Text style={[styles.presetName, selected && styles.presetNameSelected]}>{item.name}</Text>
-              {selected && <Ionicons name="checkmark-circle" size={16} color="#3D5AF1" />}
+              {selected && <Ionicons name="checkmark-circle" size={16} color="#7C3AED" />}
             </View>
           </TouchableOpacity>;
         })}
@@ -114,14 +114,14 @@ export default function AvatarCreatorScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F5F6FA" },
+  screen: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { minHeight: 70, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E7E9EF" },
   backButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#F1F3F8", alignItems: "center", justifyContent: "center" },
   headerCopy: { flex: 1, minWidth: 0, marginLeft: 9 },
   title: { fontSize: 17, fontWeight: "800", color: "#182033" },
   subtitle: { marginTop: 2, color: "#748097", fontSize: 10 },
   resetButton: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 7, paddingVertical: 8 },
-  resetText: { color: "#3D5AF1", fontWeight: "700", fontSize: 11 },
+  resetText: { color: "#7C3AED", fontWeight: "700", fontSize: 11 },
   content: { paddingTop: 14, gap: 14, alignSelf: "center", width: "100%", maxWidth: 900 },
   previewCard: { width: "100%", backgroundColor: "#fff", borderRadius: 22, borderWidth: 1, borderColor: "#E8EAF1", padding: 12, alignItems: "center" },
   previewImage: { width: "100%", height: 300, borderRadius: 17, backgroundColor: "#EAE7FF" },
@@ -132,14 +132,14 @@ const styles = StyleSheet.create({
   count: { color: "#758097", fontSize: 12, fontWeight: "700" },
   grid: { width: "100%", flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "flex-start" },
   presetCard: { borderRadius: 15, padding: 5, backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#ECEEF3", alignItems: "center", overflow: "hidden" },
-  presetSelected: { borderColor: "#3D5AF1", backgroundColor: "#F3F5FF" },
+  presetSelected: { borderColor: "#7C3AED", backgroundColor: "#F3F5FF" },
   presetImage: { width: "100%", aspectRatio: 0.72, backgroundColor: "#EAE7FF", borderRadius: 10 },
   presetLabelRow: { minHeight: 28, width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3 },
   presetName: { color: "#58647B", fontSize: 10, fontWeight: "700" },
-  presetNameSelected: { color: "#3D5AF1" },
+  presetNameSelected: { color: "#7C3AED" },
   useAvatarRow: { flexDirection: "row", gap: 11, alignItems: "center", backgroundColor: "#fff", borderRadius: 15, padding: 13, borderWidth: 1, borderColor: "#E9EBF1" },
   checkbox: { width: 23, height: 23, borderWidth: 1.5, borderColor: "#A8B0C0", borderRadius: 7, alignItems: "center", justifyContent: "center" },
-  checkboxChecked: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  checkboxChecked: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   useAvatarTitle: { fontSize: 13, color: "#202A3D", fontWeight: "700" },
   useAvatarDesc: { fontSize: 11, color: "#818BA0", marginTop: 3 },
   errorBox: { flexDirection: "row", gap: 8, alignItems: "center", padding: 12, backgroundColor: "#FFF1F0", borderRadius: 12 },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 10 },
   cancelButton: { flex: 1, minHeight: 50, borderRadius: 15, backgroundColor: "#fff", borderColor: "#DDE1EA", borderWidth: 1, alignItems: "center", justifyContent: "center" },
   cancelText: { fontWeight: "700", color: "#576278" },
-  saveButton: { flex: 1.3, minHeight: 50, borderRadius: 15, backgroundColor: "#3D5AF1", flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center" },
+  saveButton: { flex: 1.3, minHeight: 50, borderRadius: 15, backgroundColor: "#7C3AED", flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center" },
   disabledButton: { opacity: 0.55 },
   saveText: { color: "#fff", fontWeight: "800", fontSize: 14 },
 });

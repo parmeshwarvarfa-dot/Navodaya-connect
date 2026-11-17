@@ -195,14 +195,14 @@ export default function GroupChatScreen() {
   const chatKey = `group-chat-prefs:${profile?.uid ?? "guest"}:${id ?? "unknown"}`;
   const inboxKey = profile?.uid ? `chat-preferences:${profile.uid}` : null;
   const chatPalette = {
-    background: "#F3F5FA",
+    background: "#F8F7FF",
     surface: "#FFFFFF",
     incoming: "#FFFFFF",
-    outgoing: "#3D5AF1",
+    outgoing: "#7C3AED",
     foreground: "#111827",
     muted: "#7B879B",
     border: "#E3E7EF",
-    accent: "#3D5AF1",
+    accent: "#7C3AED",
   };
 
   useEffect(() => {
@@ -740,7 +740,7 @@ export default function GroupChatScreen() {
         <View style={[s.msgRow, mine ? s.msgRowMe : s.msgRowThem]}>
           {!mine && (
             <View style={[s.avatar, { backgroundColor: "#EAF0FF" }]}>
-              <Text style={[s.avatarText, { color: "#3D5AF1" }]}>
+              <Text style={[s.avatarText, { color: "#7C3AED" }]}>
                 {item.senderName?.charAt(0).toUpperCase() ?? "?"}
               </Text>
             </View>
@@ -828,7 +828,7 @@ export default function GroupChatScreen() {
                       onPress={() => handleReact(item.id, r.emoji)}
                     >
                       <Text style={{ fontSize: 12 }}>{r.emoji}</Text>
-                      <Text style={[s.reactionCount, byMe && { color: "#3D5AF1" }]}>{r.count}</Text>
+                      <Text style={[s.reactionCount, byMe && { color: "#7C3AED" }]}>{r.count}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -851,7 +851,7 @@ export default function GroupChatScreen() {
   return (
     <View style={[s.container, { backgroundColor: chatBackground }]}>
       <VerificationGateModal visible={!isVerified} onClose={() => router.back()} featureName="Group chats" />
-      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: "#3D5AF1", borderBottomWidth: 1, borderBottomColor: "#3151E8" }]}>
+      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#3151E8" }]}>
         <View style={s.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={s.iconBtn}>
             <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
@@ -958,7 +958,7 @@ export default function GroupChatScreen() {
         />
         {newMessagesCount > 0 && (
           <TouchableOpacity
-            style={[s.newMessagesButton, { backgroundColor: "#3D5AF1" }]}
+            style={[s.newMessagesButton, { backgroundColor: "#7C3AED" }]}
             onPress={() => {
               flatListRef.current?.scrollToEnd({ animated: true });
               nearBottom.current = true;
@@ -1005,7 +1005,7 @@ export default function GroupChatScreen() {
 
         {editingMsg && (
           <View style={s.editBanner}>
-            <Ionicons name="create-outline" size={16} color="#3D5AF1" />
+            <Ionicons name="create-outline" size={16} color="#7C3AED" />
             <TextInput
               style={s.editInput}
               value={editText}
@@ -1063,7 +1063,7 @@ export default function GroupChatScreen() {
             </TouchableOpacity>}
           </View>
           <TouchableOpacity
-            style={[s.sendBtn, { backgroundColor: "#3D5AF1" }]}
+            style={[s.sendBtn, { backgroundColor: "#7C3AED" }]}
             onPress={text.trim() ? handleSend : () => showToast("Voice messages are not available yet")}
             disabled={sending}
             accessibilityLabel={text.trim() ? "Send message" : "Voice messages unavailable"}
@@ -1283,7 +1283,7 @@ export default function GroupChatScreen() {
           <View style={s.attachmentMenu}>
             <Text style={s.attachmentTitle}>Attach</Text>
             <TouchableOpacity style={s.attachmentOption} onPress={() => void chooseImage(false)}>
-              <Ionicons name="images-outline" size={22} color="#3D5AF1" />
+              <Ionicons name="images-outline" size={22} color="#7C3AED" />
               <Text style={s.attachmentOptionText}>Choose from photos</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.attachmentOption} onPress={() => void chooseImage(true)}>
@@ -1310,7 +1310,7 @@ export default function GroupChatScreen() {
       <Modal visible={showContactPicker} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowContactPicker(false)}>
         <View style={s.pickerModal}>
           <View style={s.infoHeader}><Text style={s.infoTitle}>Share a contact</Text><TouchableOpacity style={s.iconBtn2} onPress={() => setShowContactPicker(false)}><Ionicons name="close" size={22} color="#111827" /></TouchableOpacity></View>
-          {members.map((member) => <TouchableOpacity key={member.id} style={s.infoMemberRow} onPress={() => void shareContact(member)}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{member.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{member.fullName}</Text><Ionicons name="send-outline" size={18} color="#3D5AF1" /></TouchableOpacity>)}
+          {members.map((member) => <TouchableOpacity key={member.id} style={s.infoMemberRow} onPress={() => void shareContact(member)}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{member.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{member.fullName}</Text><Ionicons name="send-outline" size={18} color="#7C3AED" /></TouchableOpacity>)}
           {!members.length && <Text style={s.infoEmpty}>No group contacts are available yet.</Text>}
         </View>
       </Modal>
@@ -1321,7 +1321,7 @@ export default function GroupChatScreen() {
           <TextInput style={[s.memberSearch, { backgroundColor: "#fff" }]} value={addMemberSearch} onChangeText={setAddMemberSearch} placeholder="Search Navodayans by name" />
           {selectedAddMembers.length > 0 && <View style={s.selectedMemberChips}>{selectedAddMembers.map((member) => <TouchableOpacity key={member.id} style={s.memberChip} onPress={() => setSelectedAddMembers((current) => current.filter((item) => item.id !== member.id))}><Text style={s.memberChipText}>{member.fullName} ×</Text></TouchableOpacity>)}</View>}
           <ScrollView keyboardShouldPersistTaps="handled">
-            {addMemberContacts.filter((contact) => !members.some((member) => member.id === contact.id) && !selectedAddMembers.some((member) => member.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={s.infoMemberRow} onPress={() => setSelectedAddMembers((current) => [...current, contact])}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{contact.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{contact.fullName}</Text><Ionicons name="add-circle-outline" size={20} color="#3D5AF1" /></TouchableOpacity>)}
+            {addMemberContacts.filter((contact) => !members.some((member) => member.id === contact.id) && !selectedAddMembers.some((member) => member.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={s.infoMemberRow} onPress={() => setSelectedAddMembers((current) => [...current, contact])}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{contact.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{contact.fullName}</Text><Ionicons name="add-circle-outline" size={20} color="#7C3AED" /></TouchableOpacity>)}
           </ScrollView>
           <TouchableOpacity style={[s.createPollButton, (!selectedAddMembers.length || addingMembers) && { opacity: 0.5 }]} disabled={!selectedAddMembers.length || addingMembers} onPress={() => void addSelectedMembers()}><Text style={s.createPollText}>{addingMembers ? "Adding…" : `Add ${selectedAddMembers.length} member${selectedAddMembers.length === 1 ? "" : "s"}`}</Text></TouchableOpacity>
         </View>
@@ -1333,7 +1333,7 @@ export default function GroupChatScreen() {
           <View style={{ padding: 18 }}>
             <TextInput style={s.pollInput} value={pollQuestion} onChangeText={setPollQuestion} placeholder="Ask a question" maxLength={300} />
             {pollOptions.map((option, index) => <TextInput key={index} style={s.pollInput} value={option} onChangeText={(value) => setPollOptions((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} placeholder={`Option ${index + 1}`} maxLength={80} />)}
-            {pollOptions.length < 8 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => [...current, ""])}><Ionicons name="add-circle-outline" size={18} color="#3D5AF1" /><Text style={{ color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }}>Add option</Text></TouchableOpacity>}
+            {pollOptions.length < 8 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => [...current, ""])}><Ionicons name="add-circle-outline" size={18} color="#7C3AED" /><Text style={{ color: "#7C3AED", fontFamily: "Inter_600SemiBold" }}>Add option</Text></TouchableOpacity>}
             {pollOptions.length > 2 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => current.slice(0, -1))}><Ionicons name="remove-circle-outline" size={18} color="#6B7280" /><Text style={{ color: "#6B7280", fontFamily: "Inter_600SemiBold" }}>Remove last option</Text></TouchableOpacity>}
             <TouchableOpacity style={[s.createPollButton, (!pollQuestion.trim() || pollOptions.filter((option) => option.trim()).length < 2 || sending) && { opacity: 0.5 }]} onPress={() => void sendPoll()} disabled={!pollQuestion.trim() || pollOptions.filter((option) => option.trim()).length < 2 || sending}><Text style={s.createPollText}>{sending ? "Sending…" : "Send poll"}</Text></TouchableOpacity>
           </View>
@@ -1391,7 +1391,7 @@ const s = StyleSheet.create({
   chatContent: { paddingHorizontal: 14, paddingVertical: 18, gap: 7 },
   loadOlderBtn: { alignItems: "center", paddingVertical: 8 },
   loadOlderText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  newMessagesButton: { position: "absolute", right: 14, bottom: 78, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#3D5AF1", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, elevation: 4, shadowColor: "#111827", shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
+  newMessagesButton: { position: "absolute", right: 14, bottom: 78, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#7C3AED", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, elevation: 4, shadowColor: "#111827", shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
   newMessagesText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginBottom: 4 },
   msgRowMe: { justifyContent: "flex-end" },
@@ -1399,9 +1399,9 @@ const s = StyleSheet.create({
   avatar: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#EAF0FF" },
   avatarText: { fontSize: 13, fontFamily: "Inter_700Bold" },
   bubble: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 7, borderRadius: 20, gap: 3, minWidth: 80 },
-  senderName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  replyBanner: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 },
-  replyBannerSender: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  senderName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
+  replyBanner: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 },
+  replyBannerSender: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   replyBannerText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
   // Leave the typeface to the platform so emoji use the native color emoji font.
   bubbleText: { fontSize: 15, lineHeight: 21 },
@@ -1414,7 +1414,7 @@ const s = StyleSheet.create({
   locationCoords: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   reactionRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
   reactionPill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: "#E5E7EB" },
-  reactionPillMine: { backgroundColor: "#EEF2FF", borderColor: "#3D5AF1" },
+  reactionPillMine: { backgroundColor: "#F5F3FF", borderColor: "#7C3AED" },
   reactionCount: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
   addReactionBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E5E7EB" },
   emojiPicker: { flexDirection: "row", gap: 6, backgroundColor: "#fff", borderRadius: 24, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: "#F0F0F0", elevation: 4 },
@@ -1423,12 +1423,12 @@ const s = StyleSheet.create({
   typingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#9CA3AF" },
   typingText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", fontStyle: "italic" },
   replyingTo: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.06)" },
-  replyingToBar: { width: 3, height: 36, borderRadius: 2, backgroundColor: "#3D5AF1" },
+  replyingToBar: { width: 3, height: 36, borderRadius: 2, backgroundColor: "#7C3AED" },
   replyingToName: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   replyingToText: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  editBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#EEF2FF", borderTopWidth: 1, borderTopColor: "#C7D2FE" },
+  editBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#F5F3FF", borderTopWidth: 1, borderTopColor: "#C7D2FE" },
   editInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", maxHeight: 80 },
-  editSave: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  editSave: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   emptyState: { alignItems: "center", paddingTop: 80, gap: 10 },
   retryMessages: { alignItems: "center", gap: 10, paddingHorizontal: 20 },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 24 },
@@ -1461,7 +1461,7 @@ const s = StyleSheet.create({
   emojiCell: { width: "12.5%", minWidth: 0, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 8 },
   emojiCellText: { fontSize: 28 },
   emojiEmptyText: { color: "#8696a0", fontSize: 13, paddingHorizontal: 4, paddingVertical: 8 },
-  allEmojiButton: { height: 34, minWidth: 44, borderRadius: 17, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  allEmojiButton: { height: 34, minWidth: 44, borderRadius: 17, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   allEmojiText: { color: "#FFFFFF", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   confirmOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", paddingHorizontal: 28 },
   groupConfirmOverlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", paddingHorizontal: 28, zIndex: 10, elevation: 10 },
@@ -1483,16 +1483,16 @@ const s = StyleSheet.create({
   infoTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   iconBtn2: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   infoGroupCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#F0F0F0" },
-  infoGroupAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1", overflow: "hidden" },
+  infoGroupAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: "#7C3AED", overflow: "hidden" },
   infoGroupAvatarImage: { width: "100%", height: "100%" },
-  groupAvatarCamera: { position: "absolute", right: 0, bottom: 0, width: 25, height: 25, borderRadius: 13, backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
+  groupAvatarCamera: { position: "absolute", right: 0, bottom: 0, width: 25, height: 25, borderRadius: 13, backgroundColor: "#7C3AED", borderWidth: 2, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
   groupPhotoHint: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 7 },
   infoGroupName: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   infoGroupMeta: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
   infoHero: { alignItems: "center", paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16 },
   groupDescription: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginTop: 14 },
   infoQuickActions: { flexDirection: "row", gap: 26, marginTop: 18 },
-  infoQuickAction: { width: 92, height: 76, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", gap: 4 },
+  infoQuickAction: { width: 92, height: 76, borderRadius: 20, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", gap: 4 },
   infoQuickText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   infoTabs: { flexDirection: "row", borderBottomWidth: 1, marginTop: 1 },
   infoTab: { flex: 1, alignItems: "center", paddingVertical: 14, borderBottomWidth: 3, borderBottomColor: "transparent" },
@@ -1517,9 +1517,9 @@ const s = StyleSheet.create({
   pickerModal: { flex: 1, backgroundColor: "#f5f6f8", paddingTop: 10 },
   selectedMemberChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingVertical: 6 },
   memberChip: { borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7, backgroundColor: "#e1f5ef" },
-  memberChipText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  memberChipText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   sharedContactCard: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 220, padding: 10, borderRadius: 10 },
-  sharedContactAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  sharedContactAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   pollCard: { minWidth: 235, maxWidth: 290, padding: 11, borderRadius: 10, gap: 8 },
   pollQuestion: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 2 },
   pollOption: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10 },
@@ -1528,13 +1528,13 @@ const s = StyleSheet.create({
   pollHint: { fontSize: 11 },
   pollInput: { minHeight: 46, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#fff", marginBottom: 10, borderWidth: 1, borderColor: "#d9dfe2", color: "#111827" },
   addPollOption: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
-  createPollButton: { marginTop: 12, borderRadius: 10, alignItems: "center", paddingVertical: 13, backgroundColor: "#3D5AF1" },
+  createPollButton: { marginTop: 12, borderRadius: 10, alignItems: "center", paddingVertical: 13, backgroundColor: "#7C3AED" },
   createPollText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },
   imagePreviewBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.96)", justifyContent: "center", alignItems: "center" },
   imagePreview: { width: "100%", height: "82%" },
   imagePreviewClose: { position: "absolute", top: 48, right: 20, width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  youTag: { backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  youTagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  youTag: { backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  youTagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   adminSection: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E3E7EF" },
   adminRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderRadius: 10, paddingHorizontal: 4, marginBottom: 4 },
   adminLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#111827" },

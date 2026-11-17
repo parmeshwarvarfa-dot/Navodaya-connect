@@ -102,7 +102,7 @@ const HOUSE_META: Record<string, { color: string; bg: string; emoji: string }> =
 };
 
 const EXPLORE_GROUPS = [
-  { id: "alumni-network", name: "JNV Alumni Network", icon: "people-outline" as const, color: "#3D5AF1" },
+  { id: "alumni-network", name: "JNV Alumni Network", icon: "people-outline" as const, color: "#7C3AED" },
   { id: "upsc-aspirants", name: "UPSC Aspirants", icon: "trophy-outline" as const, color: "#F59E0B" },
   { id: "tech-careers", name: "Tech Careers", icon: "laptop-outline" as const, color: "#10B981" },
   { id: "jee-neet", name: "JEE & NEET Prep", icon: "school-outline" as const, color: "#8B5CF6" },
@@ -234,16 +234,16 @@ export default function ChatsScreen() {
     : EXPLORE_GROUPS.filter((group) => group.id !== "alumni-network");
 
   const houseGroup = house && (profile?.role === "student" || profile?.role === "alumni")
-    ? { id: `${house.toLowerCase()}-myhouse`, kind: "house" as const, icon: "home-outline" as const, name: `${house} House ${houseMeta?.emoji ?? "\u{1F3E0}"}`, lastMessage: "Tap to start a conversation", time: "", color: houseMeta?.bg ?? "#EEF2FF", iconColor: houseMeta?.color ?? "#3D5AF1" }
+    ? { id: `${house.toLowerCase()}-myhouse`, kind: "house" as const, icon: "home-outline" as const, name: `${house} House ${houseMeta?.emoji ?? "\u{1F3E0}"}`, lastMessage: "Tap to start a conversation", time: "", color: houseMeta?.bg ?? "#F5F3FF", iconColor: houseMeta?.color ?? "#7C3AED" }
     : null;
 
   const batchOrClassGroup = (() => {
     if (!profile) return null;
     if (profile.role === "alumni" && profile.passoutYear)
-      return { id: `batch-${profile.passoutYear}`, kind: "batch" as const, icon: "people-outline" as const, name: `Batch ${profile.passoutYear}`, lastMessage: "Tap to start a conversation", time: "", color: "#EEF2FF", iconColor: "#3D5AF1" };
+      return { id: `batch-${profile.passoutYear}`, kind: "batch" as const, icon: "people-outline" as const, name: `Batch ${profile.passoutYear}`, lastMessage: "Tap to start a conversation", time: "", color: "#F5F3FF", iconColor: "#7C3AED" };
     if (profile.role === "student" && profile.class) {
       const className = profile.class.replace(/^class\s+/i, "");
-      return { id: `class-${profile.class}`, kind: "class" as const, icon: "school-outline" as const, name: `Class ${className}`, lastMessage: "Tap to start a conversation", time: "", color: "#EEF2FF", iconColor: "#3D5AF1" };
+      return { id: `class-${profile.class}`, kind: "class" as const, icon: "school-outline" as const, name: `Class ${className}`, lastMessage: "Tap to start a conversation", time: "", color: "#F5F3FF", iconColor: "#7C3AED" };
     }
     return null;
   })();
@@ -263,7 +263,7 @@ export default function ChatsScreen() {
     ...persistedPersonalGroups,
     ...schoolGroups
       .filter((group) => !persistedPersonalGroups.some((personal) => normalizeGroupName(personal.name) === normalizeGroupName(group.name)))
-      .map((group) => ({ id: group.id, icon: group.subject === "Staff Group" ? "people-circle-outline" : "people-outline", name: group.name, avatarUrl: group.avatarUrl, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: group.subject === "Staff Group" ? "#EAF0FF" : "#EEF2FF", iconColor: "#3D5AF1", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
+      .map((group) => ({ id: group.id, icon: group.subject === "Staff Group" ? "people-circle-outline" : "people-outline", name: group.name, avatarUrl: group.avatarUrl, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: group.subject === "Staff Group" ? "#EAF0FF" : "#F5F3FF", iconColor: "#7C3AED", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
   ];
 
   const unreadIds = useMemo(() => new Set(YOUR_GROUPS.filter((group) => {
@@ -548,7 +548,7 @@ export default function ChatsScreen() {
       >
         {messageRequests.length > 0 && (
           <TouchableOpacity style={styles.requestsBanner} onPress={() => setShowRequests(true)} activeOpacity={0.85}>
-            <View style={styles.requestsIcon}><Ionicons name="mail-unread-outline" size={20} color="#3D5AF1" /></View>
+            <View style={styles.requestsIcon}><Ionicons name="mail-unread-outline" size={20} color="#7C3AED" /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.requestsTitle}>Message requests</Text>
               <Text style={styles.requestsSubtitle}>{messageRequests.length} {messageRequests.length === 1 ? "person wants" : "people want"} to chat</Text>
@@ -694,7 +694,7 @@ export default function ChatsScreen() {
             <Text style={styles.actionTitle} numberOfLines={1}>{chatActionTarget?.name}</Text>
             {chatActionRows.map((row) => (
               <TouchableOpacity key={row.key} style={styles.actionRow} onPress={() => void applyChatAction(row.key)} disabled={chatActionBusy} accessibilityRole="button">
-                {chatActionBusy && row.key === "markRead" ? <ActivityIndicator size="small" color="#3D5AF1" /> : <Ionicons name={row.icon as any} size={20} color="#5268F5" />}
+                {chatActionBusy && row.key === "markRead" ? <ActivityIndicator size="small" color="#7C3AED" /> : <Ionicons name={row.icon as any} size={20} color="#5268F5" />}
                 <Text style={styles.actionRowText}>{row.title}</Text>
                 <Ionicons name="chevron-forward" size={16} color="#A0A8B6" />
               </TouchableOpacity>
@@ -729,11 +729,11 @@ export default function ChatsScreen() {
             <View style={styles.modalBody}>
               <TextInput style={styles.modalInput} placeholder="Search Navodayans by name" placeholderTextColor="#9CA3AF" value={contactSearch} onChangeText={setContactSearch} autoFocus />
               <TouchableOpacity style={styles.requestLink} onPress={() => { setShowNewChat(false); setShowRequests(true); }}>
-                <Ionicons name="mail-unread-outline" size={18} color="#3D5AF1" />
+                <Ionicons name="mail-unread-outline" size={18} color="#7C3AED" />
                 <Text style={styles.requestLinkText}>Message requests{messageRequests.length ? ` (${messageRequests.length})` : ""}</Text>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
-              {contactsLoading ? <ActivityIndicator style={{ marginTop: 22 }} color="#3D5AF1" /> : contacts.map((contact) => (
+              {contactsLoading ? <ActivityIndicator style={{ marginTop: 22 }} color="#7C3AED" /> : contacts.map((contact) => (
                 <TouchableOpacity key={contact.id} style={styles.contactRow} onPress={() => selectContact(contact)}>
                   <View style={[styles.groupIcon, styles.directAvatar]}>{contact.photoURL ? <Image source={{ uri: contact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{contact.fullName.charAt(0).toUpperCase()}</Text>}</View>
                   <View style={{ flex: 1 }}><Text style={styles.groupName}>{contact.fullName}</Text><Text style={styles.contactMeta}>{contact.role} Ã‚Â· {contact.jnvName}</Text></View>
@@ -780,14 +780,14 @@ export default function ChatsScreen() {
             <Text style={[styles.inputLabel, { marginTop: 20 }]}>Group photo</Text>
             <View style={styles.groupPhotoRow}>
               <View style={styles.groupPhotoPreview}>
-                {newGroupAvatar ? <Image source={{ uri: newGroupAvatar.uri }} style={styles.groupPhotoImage} /> : <Ionicons name="people-outline" size={26} color="#3D5AF1" />}
+                {newGroupAvatar ? <Image source={{ uri: newGroupAvatar.uri }} style={styles.groupPhotoImage} /> : <Ionicons name="people-outline" size={26} color="#7C3AED" />}
               </View>
               <View style={styles.groupPhotoActions}>
                 <TouchableOpacity style={styles.groupPhotoAction} onPress={() => void chooseGroupAvatar(false)}>
-                  <Ionicons name="images-outline" size={17} color="#3D5AF1" /><Text style={styles.groupPhotoActionText}>{newGroupAvatar ? "Change photo" : "Choose photo"}</Text>
+                  <Ionicons name="images-outline" size={17} color="#7C3AED" /><Text style={styles.groupPhotoActionText}>{newGroupAvatar ? "Change photo" : "Choose photo"}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.groupPhotoAction} onPress={() => void chooseGroupAvatar(true)}>
-                  <Ionicons name="camera-outline" size={17} color="#3D5AF1" /><Text style={styles.groupPhotoActionText}>Take photo</Text>
+                  <Ionicons name="camera-outline" size={17} color="#7C3AED" /><Text style={styles.groupPhotoActionText}>Take photo</Text>
                 </TouchableOpacity>
                 {newGroupAvatar ? <TouchableOpacity onPress={() => setNewGroupAvatar(null)}><Text style={styles.removeGroupPhoto}>Remove photo</Text></TouchableOpacity> : null}
               </View>
@@ -796,7 +796,7 @@ export default function ChatsScreen() {
             <Text style={styles.inputLabel}>Add participants</Text>
             <TextInput style={styles.modalInput} placeholder="Search Navodayans by name" placeholderTextColor="#9CA3AF" value={groupMemberSearch} onChangeText={setGroupMemberSearch} />
             {selectedGroupMembers.length > 0 && <View style={styles.selectedMembers}><Text style={styles.inputLabel}>{selectedGroupMembers.length} selected</Text><View style={styles.selectedMemberChips}>{selectedGroupMembers.map((member) => <TouchableOpacity key={member.id} style={styles.memberChip} onPress={() => setSelectedGroupMembers((current) => current.filter((item) => item.id !== member.id))}><Text style={styles.memberChipText}>{member.fullName} Ã—</Text></TouchableOpacity>)}</View></View>}
-            {contactsLoading ? <ActivityIndicator color="#3D5AF1" style={{ paddingVertical: 14 }} /> : contacts.filter((contact) => !selectedGroupMembers.some((selected) => selected.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={styles.contactRow} onPress={() => setSelectedGroupMembers((current) => [...current, contact])}><View style={[styles.groupIcon, styles.directAvatar]}>{contact.photoURL ? <Image source={{ uri: contact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{contact.fullName.charAt(0).toUpperCase()}</Text>}</View><View style={{ flex: 1 }}><Text style={styles.groupName}>{contact.fullName}</Text><Text style={styles.contactMeta}>{contact.role} Â· {contact.jnvName}</Text></View><Ionicons name="add-circle-outline" size={22} color="#3D5AF1" /></TouchableOpacity>)}
+            {contactsLoading ? <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 14 }} /> : contacts.filter((contact) => !selectedGroupMembers.some((selected) => selected.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={styles.contactRow} onPress={() => setSelectedGroupMembers((current) => [...current, contact])}><View style={[styles.groupIcon, styles.directAvatar]}>{contact.photoURL ? <Image source={{ uri: contact.photoURL }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{contact.fullName.charAt(0).toUpperCase()}</Text>}</View><View style={{ flex: 1 }}><Text style={styles.groupName}>{contact.fullName}</Text><Text style={styles.contactMeta}>{contact.role} Â· {contact.jnvName}</Text></View><Ionicons name="add-circle-outline" size={22} color="#7C3AED" /></TouchableOpacity>)}
             {groupMemberSearch.trim().length >= 2 && !contactsLoading && !contacts.length ? <Text style={styles.contactEmpty}>No people found for that name.</Text> : null}
             <TouchableOpacity style={[styles.createBtn, (!newGroupName.trim() || !selectedGroupMembers.length || creatingGroup) && { opacity: 0.5 }]} onPress={() => void handleCreateGroup()} disabled={!newGroupName.trim() || !selectedGroupMembers.length || creatingGroup}>
               <Text style={styles.createBtnText}>{creatingGroup ? "Creating groupâ€¦" : `Create group${selectedGroupMembers.length ? ` Â· ${selectedGroupMembers.length + 1} people` : ""}`}</Text>

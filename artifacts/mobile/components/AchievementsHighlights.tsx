@@ -7,7 +7,7 @@ import { api, type Achievement } from "@/lib/api";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Placement: "#10B981",
-  "College Admission": "#3D5AF1",
+  "College Admission": "#7C3AED",
   "UPSC/Gov": "#8B5CF6",
   Startup: "#F59E0B",
   Research: "#0891B2",
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   link: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#6D4AFF" },
   item: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 9, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
   marker: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  thumbnail: { width: 42, height: 42, borderRadius: 10, backgroundColor: "#F5F6FA" },
+  thumbnail: { width: 42, height: 42, borderRadius: 10, backgroundColor: "#F8F7FF" },
   achievementTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827" },
   meta: { marginTop: 3, fontSize: 11, fontFamily: "Inter_400Regular", color: "#8B93A1" },
   empty: { paddingVertical: 10, color: "#737B89", fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular" },

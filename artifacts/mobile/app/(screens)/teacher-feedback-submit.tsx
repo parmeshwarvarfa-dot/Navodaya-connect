@@ -70,7 +70,7 @@ export default function TeacherFeedbackSubmitScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[s.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#2D5A9E"]} style={[s.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -87,7 +87,7 @@ export default function TeacherFeedbackSubmitScreen() {
       >
         {/* Privacy notice */}
         <View style={s.privacyBanner}>
-          <Ionicons name="shield-checkmark" size={18} color="#3D5AF1" />
+          <Ionicons name="shield-checkmark" size={18} color="#7C3AED" />
           <Text style={s.privacyText}>
             Feedback is <Text style={{ fontFamily: "Inter_700Bold" }}>confidential</Text> — teachers cannot see it. Only JNV Officials can view submitted feedback.
           </Text>
@@ -180,7 +180,7 @@ export default function TeacherFeedbackSubmitScreen() {
           <Switch
             value={anonymous}
             onValueChange={setAnonymous}
-            trackColor={{ false: "#E5E7EB", true: "#1A3C6E" }}
+            trackColor={{ false: "#E5E7EB", true: "#7C3AED" }}
             thumbColor="#fff"
           />
         </View>
@@ -191,7 +191,7 @@ export default function TeacherFeedbackSubmitScreen() {
           onPress={handleSubmit}
           disabled={submitting || !selected || rating === 0 || comment.trim().length < 10}
         >
-          <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={s.submitBtnGrad}>
+          <LinearGradient colors={["#7C3AED", "#2D5A9E"]} style={s.submitBtnGrad}>
             <Ionicons name={submitting ? "hourglass-outline" : "send-outline"} size={20} color="#fff" />
             <Text style={s.submitBtnText}>{submitting ? "Submitting..." : "Submit Feedback"}</Text>
           </LinearGradient>
@@ -208,12 +208,12 @@ export default function TeacherFeedbackSubmitScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingBottom: 16 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
   headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_400Regular" },
-  privacyBanner: { flexDirection: "row", gap: 10, backgroundColor: "#EEF2FF", borderRadius: 12, padding: 12, alignItems: "flex-start", borderWidth: 1, borderColor: "#C7D2FE" },
+  privacyBanner: { flexDirection: "row", gap: 10, backgroundColor: "#F5F3FF", borderRadius: 12, padding: 12, alignItems: "flex-start", borderWidth: 1, borderColor: "#C7D2FE" },
   privacyText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#3730A3", lineHeight: 18 },
   section: { backgroundColor: "#fff", borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: "#F0F0F0" },
   sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#9CA3AF", letterSpacing: 0.8 },
@@ -245,7 +245,7 @@ const s = StyleSheet.create({
   successIcon: { width: 100, height: 100, borderRadius: 50, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" },
   successTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center" },
   successDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22 },
-  doneBtn: { backgroundColor: "#1A3C6E", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
+  doneBtn: { backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
   doneBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, alignItems: "center" },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },

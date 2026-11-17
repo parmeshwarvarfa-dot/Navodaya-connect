@@ -124,7 +124,7 @@ export default function AskSeniorScreen() {
               <Text style={styles.questionText}>{item.question}</Text>
               <Text style={styles.askedBy}>{item.askedByName || "Student"}{item.askedByClass ? ` · ${item.askedByClass}` : ""}</Text>
               <View style={styles.answerCountRow}>
-                <Ionicons name="chatbubble-outline" size={14} color="#3D5AF1" />
+                <Ionicons name="chatbubble-outline" size={14} color="#7C3AED" />
                 <Text style={styles.answerCount}>{item.answers.length} {item.answers.length === 1 ? "Answer" : "Answers"}</Text>
                 <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={14} color="#9CA3AF" style={{ marginLeft: "auto" }} />
               </View>
@@ -134,8 +134,8 @@ export default function AskSeniorScreen() {
                   {item.answers.map((ans) => (
                     <View key={ans.id} style={styles.answerCard}>
                       <View style={styles.answerHeader}>
-                        <View style={[styles.answerAvatar, { backgroundColor: ans.answeredByRole === "teacher" ? "#ECFDF5" : "#EEF2FF" }]}>
-                          <Text style={[styles.answerInitial, { color: ans.answeredByRole === "teacher" ? "#10B981" : "#3D5AF1" }]}>
+                        <View style={[styles.answerAvatar, { backgroundColor: ans.answeredByRole === "teacher" ? "#ECFDF5" : "#F5F3FF" }]}>
+                          <Text style={[styles.answerInitial, { color: ans.answeredByRole === "teacher" ? "#10B981" : "#7C3AED" }]}>
                             {getInitials(ans.answeredByName || "A")}
                           </Text>
                         </View>
@@ -212,18 +212,18 @@ export default function AskSeniorScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  askBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#3D5AF1", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
+  askBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#7C3AED", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
   askBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   loadingText: { textAlign: "center", color: "#9CA3AF", marginTop: 40 },
   searchWrap: { flexDirection: "row", alignItems: "center", margin: 14, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 14 },
   chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
+  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   chipTextActive: { color: "#fff" },
   empty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 32 },
@@ -232,13 +232,13 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center" },
   qaCard: { backgroundColor: "#fff", marginHorizontal: 14, marginBottom: 12, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0" },
   qaTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  catPill: { backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  catPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  catPill: { backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  catPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   askedAt: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   questionText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827", lineHeight: 22, marginBottom: 6 },
   askedBy: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 12 },
   answerCountRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  answerCount: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#3D5AF1" },
+  answerCount: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#7C3AED" },
   answersWrap: { marginTop: 14, borderTopWidth: 1, borderTopColor: "#F0F0F0", paddingTop: 14, gap: 12 },
   answerCard: { backgroundColor: "#F9FAFB", borderRadius: 12, padding: 12 },
   answerHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 8 },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   answerText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 21 },
   replyBox: { gap: 8 },
   replyInput: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 80 },
-  replyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#3D5AF1", borderRadius: 10, paddingVertical: 10 },
+  replyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#7C3AED", borderRadius: 10, paddingVertical: 10 },
   replyBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   modalContainer: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   modalLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10 },
   questionInput: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 15, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 120, marginBottom: 12 },
   modalHint: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 24, lineHeight: 19 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 15 },
   submitBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },

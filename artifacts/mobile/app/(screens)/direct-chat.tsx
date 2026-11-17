@@ -214,7 +214,7 @@ export default function DirectChatScreen() {
     : messages;
 
   return (
-    <View style={[styles.container, { backgroundColor: "#F3F5FA" }]}>
+    <View style={[styles.container, { backgroundColor: "#F8F7FF" }]}>
       <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconButton} accessibilityLabel="Back">
@@ -265,9 +265,9 @@ export default function DirectChatScreen() {
                     </View>
                   ) : location ? (
                     <TouchableOpacity style={styles.locationMessage} onPress={() => void Linking.openURL(`https://maps.google.com/?q=${location.latitude},${location.longitude}`).catch(() => setError("Could not open map"))}>
-                      <Ionicons name="location" size={20} color={mine ? "#fff" : "#3D5AF1"} />
+                      <Ionicons name="location" size={20} color={mine ? "#fff" : "#7C3AED"} />
                       <Text style={[styles.messageText, mine && styles.mineText]}>Shared location</Text>
-                      <Ionicons name="open-outline" size={15} color={mine ? "#fff" : "#3D5AF1"} />
+                      <Ionicons name="open-outline" size={15} color={mine ? "#fff" : "#7C3AED"} />
                     </TouchableOpacity>
                   ) : <Text style={[styles.messageText, mine && styles.mineText]}>{item.content}</Text>}
                   <View style={styles.messageMeta}>
@@ -279,7 +279,7 @@ export default function DirectChatScreen() {
             );
           }}
           ListEmptyComponent={loading
-            ? <ActivityIndicator style={{ marginTop: 36 }} color="#3D5AF1" />
+            ? <ActivityIndicator style={{ marginTop: 36 }} color="#7C3AED" />
             : <View style={styles.empty}><Ionicons name="chatbubble-ellipses-outline" size={34} color="#9CA3AF" /><Text style={styles.emptyText}>{error || (query ? "No matching messages" : "Say hello to start the conversation")}</Text></View>}
         />
         {newMessagesCount > 0 && (
@@ -295,7 +295,7 @@ export default function DirectChatScreen() {
         {showEmojis && <View style={styles.emojiBar}>{CHAT_EMOJIS.map((emoji) => <TouchableOpacity key={emoji} onPress={() => setText((current) => current + emoji)}><Text style={styles.emoji}>{emoji}</Text></TouchableOpacity>)}</View>}
         {!!error && !loading && messages.length > 0 && <Text style={styles.error}>{error}</Text>}
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-          <TouchableOpacity onPress={() => setShowAttachments(true)} disabled={sending} accessibilityLabel="Add attachment"><Ionicons name="add-circle-outline" size={25} color="#3D5AF1" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowAttachments(true)} disabled={sending} accessibilityLabel="Add attachment"><Ionicons name="add-circle-outline" size={25} color="#7C3AED" /></TouchableOpacity>
           <TouchableOpacity onPress={() => setShowEmojis((open) => !open)} accessibilityLabel="Open emojis"><Ionicons name="happy-outline" size={21} color="#6B7280" /></TouchableOpacity>
           <TextInput
             value={text}
@@ -316,7 +316,7 @@ export default function DirectChatScreen() {
         <Pressable style={styles.modalBackdrop} onPress={() => setShowAttachments(false)}>
           <View style={styles.attachmentSheet}>
             <Text style={styles.attachmentTitle}>Share with {chatName}</Text>
-            <TouchableOpacity style={styles.attachmentOption} onPress={() => void sendPhoto(false)}><Ionicons name="images-outline" size={22} color="#3D5AF1" /><Text style={styles.attachmentText}>Choose a photo</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.attachmentOption} onPress={() => void sendPhoto(false)}><Ionicons name="images-outline" size={22} color="#7C3AED" /><Text style={styles.attachmentText}>Choose a photo</Text></TouchableOpacity>
             <TouchableOpacity style={styles.attachmentOption} onPress={() => void sendPhoto(true)}><Ionicons name="camera-outline" size={22} color="#10B981" /><Text style={styles.attachmentText}>Take a photo</Text></TouchableOpacity>
             <TouchableOpacity style={styles.attachmentOption} onPress={() => void sendLocation()}><Ionicons name="location-outline" size={22} color="#EF4444" /><Text style={styles.attachmentText}>Share current location</Text></TouchableOpacity>
           </View>
@@ -340,7 +340,7 @@ export default function DirectChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F5FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   flex: { flex: 1 },
   header: { paddingHorizontal: 12, paddingBottom: 12 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   mineRow: { justifyContent: "flex-end" },
   theirRow: { justifyContent: "flex-start" },
   bubble: { maxWidth: "88%", borderRadius: 22, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
-  mineBubble: { backgroundColor: "#3D5AF1", borderBottomRightRadius: 6 },
+  mineBubble: { backgroundColor: "#7C3AED", borderBottomRightRadius: 6 },
   theirBubble: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E3E7EF", borderBottomLeftRadius: 6 },
   messageText: { color: "#111827", fontSize: 16, lineHeight: 22, fontFamily: "Inter_400Regular" },
   mineText: { color: "#fff" },
@@ -368,14 +368,14 @@ const styles = StyleSheet.create({
   mineTime: { color: "rgba(255,255,255,0.7)" },
   empty: { alignItems: "center", gap: 10, paddingVertical: 32 },
   emptyText: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
-  newMessagesButton: { position: "absolute", right: 14, bottom: 68, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#3D5AF1", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, elevation: 4 },
+  newMessagesButton: { position: "absolute", right: 14, bottom: 68, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#7C3AED", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, elevation: 4 },
   newMessagesText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   error: { color: "#DC2626", textAlign: "center", paddingHorizontal: 10, paddingVertical: 5, fontSize: 12 },
   emojiBar: { flexDirection: "row", justifyContent: "space-around", paddingVertical: 8, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#F3F4F6" },
   emoji: { fontSize: 22 },
   composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E2E6EF" },
   input: { flex: 1, maxHeight: 110, minHeight: 48, borderRadius: 28, backgroundColor: "#F0F2F6", paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: "#111827", fontFamily: "Inter_400Regular" },
-  sendButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  sendButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   disabledSend: { backgroundColor: "#9CA3AF" },
   modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.35)" },
   attachmentSheet: { backgroundColor: "#fff", borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 22, paddingBottom: 34 },

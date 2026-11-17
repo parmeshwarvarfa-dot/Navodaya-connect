@@ -11,12 +11,12 @@ import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
 
 const GAMES = [
-  { id: "tictactoe", title: "Tic Tac Toe",     emoji: "⭕", desc: "Classic 3×3 strategy game", color: "#3D5AF1", bg: "#EEF2FF",  players: "2 Players", category: "Strategy"  },
+  { id: "tictactoe", title: "Tic Tac Toe",     emoji: "⭕", desc: "Classic 3×3 strategy game", color: "#7C3AED", bg: "#F5F3FF",  players: "2 Players", category: "Strategy"  },
   { id: "quiz",      title: "JNV Quiz",          emoji: "🧠", desc: "Test your GK & academic knowledge", color: "#10B981", bg: "#ECFDF5", players: "Solo",     category: "Knowledge" },
   { id: "wordguess", title: "Word Guess",        emoji: "📝", desc: "Guess the hidden word (Wordle-style)", color: "#8B5CF6", bg: "#F5F3FF", players: "Solo",     category: "Word"      },
   { id: "memory",    title: "Memory Match",      emoji: "🃏", desc: "Find matching pairs before time runs out", color: "#F59E0B", bg: "#FFFBEB", players: "Solo",  category: "Memory"    },
   { id: "math",      title: "Math Sprint",       emoji: "🔢", desc: "Solve math problems as fast as you can", color: "#EF4444", bg: "#FEF2F2", players: "Solo",   category: "Math"      },
-  { id: "riddle",    title: "JNV Riddles",       emoji: "🤔", desc: "Tricky riddles from Navodayan life", color: "#0891B2", bg: "#E0F2FE",  players: "Solo",     category: "Fun"       },
+  { id: "riddle",    title: "JNV Riddles",       emoji: "🤔", desc: "Tricky riddles from Navodayan life", color: "#0891B2", bg: "#EDE9FE",  players: "Solo",     category: "Fun"       },
 ];
 
 // ── Tic Tac Toe ────────────────────────────────────────────────────────────────
@@ -51,8 +51,8 @@ function TicTacToe({ onClose }: { onClose: () => void }) {
       </View>
       <View style={game.tttGrid}>
         {board.map((cell, i) => (
-          <TouchableOpacity key={i} style={[game.tttCell, cell && { backgroundColor: cell==="X" ? "#EEF2FF" : "#ECFDF5" }]} onPress={() => handlePress(i)}>
-            <Text style={[game.tttCellText, { color: cell==="X" ? "#3D5AF1" : "#10B981" }]}>{cell === "X" ? "✕" : cell === "O" ? "◯" : ""}</Text>
+          <TouchableOpacity key={i} style={[game.tttCell, cell && { backgroundColor: cell==="X" ? "#F5F3FF" : "#ECFDF5" }]} onPress={() => handlePress(i)}>
+            <Text style={[game.tttCellText, { color: cell==="X" ? "#7C3AED" : "#10B981" }]}>{cell === "X" ? "✕" : cell === "O" ? "◯" : ""}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -202,7 +202,7 @@ export default function GameArenaScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#3D5AF1", "#6D28D9"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#6D28D9"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -271,7 +271,7 @@ export default function GameArenaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 18 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
@@ -303,16 +303,16 @@ const game = StyleSheet.create({
   scoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: 20 },
   scoreBox: { alignItems: "center", gap: 4 },
   scoreLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
-  scoreVal: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
+  scoreVal: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#7C3AED" },
   status: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center" },
   tttGrid: { flexDirection: "row", flexWrap: "wrap", width: 270, gap: 6, marginBottom: 24 },
   tttCell: { width: 83, height: 83, backgroundColor: "#F3F4F6", borderRadius: 14, alignItems: "center", justifyContent: "center" },
   tttCellText: { fontSize: 36, fontFamily: "Inter_700Bold" },
-  resetBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 13, paddingHorizontal: 40 },
+  resetBtn: { backgroundColor: "#7C3AED", borderRadius: 14, paddingVertical: 13, paddingHorizontal: 40 },
   resetBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },
   quizTop: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 10 },
   quizProgress: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#9CA3AF" },
-  quizScore: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  quizScore: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   quizQ: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827", textAlign: "center", marginBottom: 20, lineHeight: 26 },
   quizOpts: { width: "100%", gap: 10 },
   quizOpt: { backgroundColor: "#F3F4F6", borderRadius: 12, padding: 14 },

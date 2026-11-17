@@ -12,5 +12,5 @@ export default function ProfileTypoRedirect() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F6FA" },
+  page: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F7FF" },
 });

@@ -13,7 +13,7 @@ const BASE_CONFIG: Omit<AvatarConfig, "presetId"> = {
   facialHair: "none",
   mouthStyle: "smile",
   outfit: "hoodie",
-  outfitColor: "#3D5AF1",
+  outfitColor: "#7C3AED",
   accessory: "none",
   accessoryColor: "#1F2937",
 };

@@ -11,7 +11,7 @@ import type { Problem, ProblemWithComments, ProblemComment } from "@/lib/api";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap }> = {
   submitted:   { label: "Pending",      color: "#F59E0B", bg: "#FFFBEB", icon: "time-outline" },
-  seen:        { label: "Under Review", color: "#3D5AF1", bg: "#EEF2FF", icon: "eye-outline" },
+  seen:        { label: "Under Review", color: "#7C3AED", bg: "#F5F3FF", icon: "eye-outline" },
   in_progress: { label: "In Progress",  color: "#8B5CF6", bg: "#F5F3FF", icon: "sync-outline" },
   solved:      { label: "Resolved",     color: "#10B981", bg: "#ECFDF5", icon: "checkmark-circle-outline" },
   rejected:    { label: "Rejected",     color: "#EF4444", bg: "#FEF2F2", icon: "close-circle-outline" },
@@ -154,7 +154,7 @@ export default function ViewProblemsScreen() {
           <Text style={styles.headerSub}>{problems.length} total · {counts["submitted"] || 0} pending action</Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={() => { setRefreshing(true); fetchProblems(); }}>
-          <Ionicons name="refresh" size={20} color="#3D5AF1" />
+          <Ionicons name="refresh" size={20} color="#7C3AED" />
         </TouchableOpacity>
       </View>
 
@@ -335,8 +335,8 @@ export default function ViewProblemsScreen() {
                   ) : (
                     (selected.comments || []).map((c: ProblemComment) => (
                       <View key={c.id} style={styles.commentRow}>
-                        <View style={[styles.commentAvatar, c.role === "official" && { backgroundColor: "#EEF2FF" }]}>
-                          <Text style={[styles.commentAvatarText, c.role === "official" && { color: "#3D5AF1" }]}>
+                        <View style={[styles.commentAvatar, c.role === "official" && { backgroundColor: "#F5F3FF" }]}>
+                          <Text style={[styles.commentAvatarText, c.role === "official" && { color: "#7C3AED" }]}>
                             {c.authorName?.[0] || "?"}
                           </Text>
                         </View>
@@ -405,10 +405,10 @@ export default function ViewProblemsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   headerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
   statsRow: { flexGrow: 0, flexShrink: 0, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
   horizontalRail: { flexGrow: 0, flexShrink: 0 },
   filterTab: { flexShrink: 0, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
-  filterTabActive: { backgroundColor: "#1A3C6E" },
+  filterTabActive: { backgroundColor: "#7C3AED" },
   filterTabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   filterTabTextActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },
   emptyWrap: { alignItems: "center", paddingTop: 60, gap: 10 },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   priorityChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   categoryChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F9FAFB", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   categoryChipText: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#6B7280" },
-  modalWrap: { flex: 1, backgroundColor: "#F5F6FA" },
+  modalWrap: { flex: 1, backgroundColor: "#F8F7FF" },
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   statusActionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
@@ -467,13 +467,13 @@ const styles = StyleSheet.create({
   commentAvatarText: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#10B981" },
   commentNameRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 },
   commentName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  officialBadge: { backgroundColor: "#EEF2FF", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  officialBadgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  officialBadge: { backgroundColor: "#F5F3FF", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  officialBadgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   commentText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 19 },
   commentTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
   addCommentRow: { flexDirection: "row", gap: 10, alignItems: "flex-end", paddingTop: 4 },
   commentInput: { flex: 1, borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", minHeight: 60 },
-  commentSendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#1A3C6E", alignItems: "center", justifyContent: "center" },
+  commentSendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
   menuCard: { backgroundColor: "#fff", borderRadius: 20, padding: 20, width: "100%", gap: 6 },
   menuTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 8 },

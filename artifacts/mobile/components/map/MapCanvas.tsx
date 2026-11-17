@@ -46,7 +46,7 @@ export default function MapCanvas(props: Props) {
   return <View style={[styles.container, school && styles.selectedContainer]}>
     <View style={styles.card}>
       <View style={styles.headingRow}>
-        <View style={styles.icon}><Ionicons name="map-outline" size={20} color="#3D5AF1" /></View>
+        <View style={styles.icon}><Ionicons name="map-outline" size={20} color="#7C3AED" /></View>
         <View style={styles.headingText}>
           <Text style={styles.title} numberOfLines={2}>{school?.name ?? "Explore JNV locations"}</Text>
           {school && <Text style={styles.location} numberOfLines={1}>{school.district}, {school.state}</Text>}
@@ -66,12 +66,12 @@ const styles = StyleSheet.create({
   selectedContainer: { paddingBottom: 110 },
   card: { width: "100%", maxWidth: 360, padding: 13, borderRadius: 16, backgroundColor: "white", borderWidth: 1, borderColor: "#DFE5F0", gap: 12 },
   headingRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  icon: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  icon: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   headingText: { flex: 1, minWidth: 0 },
   title: { color: "#172033", fontSize: 14, lineHeight: 19, fontFamily: "Inter_600SemiBold" },
   location: { color: "#667085", fontSize: 11, lineHeight: 16, marginTop: 2 },
   body: { color: "#667085", fontSize: 12, lineHeight: 18 },
-  mapsButton: { minHeight: 36, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#3D5AF1" },
+  mapsButton: { minHeight: 36, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#7C3AED" },
   mapsButtonText: { flexShrink: 1, fontSize: 11, lineHeight: 16, color: "white", fontFamily: "Inter_600SemiBold" },
   pressed: { opacity: 0.82 },
 });
