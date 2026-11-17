@@ -124,34 +124,34 @@ export default function DigitalIdCard({ credential, compact = false }: { credent
 
 function Action({ icon, label, onPress, disabled = false }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; onPress: () => void; disabled?: boolean }) {
   return <TouchableOpacity style={[styles.action, disabled && styles.disabled]} onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={label}>
-    <Ionicons name={icon} size={17} color="#355BE5" />
+    <Ionicons name={icon} size={17} color="#7C3AED" />
     <Text style={styles.actionText}>{label}</Text>
   </TouchableOpacity>;
 }
 
 const styles = StyleSheet.create({
-  card: { width: "100%", maxWidth: 560, alignSelf: "center", borderRadius: 20, backgroundColor: "#fff", padding: 18, gap: 16, borderWidth: 1, borderColor: "#E5EAF4", shadowColor: "#15264B", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 2 },
+  card: { width: "100%", maxWidth: 560, alignSelf: "center", borderRadius: 24, backgroundColor: "#fff", padding: 18, gap: 16, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 4 },
   cardCompact: { marginTop: 14, padding: 14, gap: 12 },
   identity: { flexDirection: "row", alignItems: "center", gap: 10 },
-  photo: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#EEF2FF" },
-  photoFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  photo: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F5F3FF", borderWidth: 2, borderColor: "#DDD6FE" },
+  photoFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#DDD6FE" },
   identityText: { flex: 1, minWidth: 0 },
-  name: { color: "#15264B", fontFamily: "Inter_700Bold", fontSize: 15 },
-  role: { color: "#64748B", fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
-  main: { minHeight: 136, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, borderRadius: 15, backgroundColor: "#F4F7FC" },
+  name: { color: "#1E1B4B", fontFamily: "Inter_700Bold", fontSize: 15 },
+  role: { color: "#64748B", fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 2 },
+  main: { minHeight: 136, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, borderRadius: 18, backgroundColor: "#FAF5FF", borderWidth: 1, borderColor: "#EDE9FE" },
   idColumn: { flex: 1, minWidth: 0, gap: 5 },
-  eyebrow: { color: "#70809A", fontFamily: "Inter_600SemiBold", fontSize: 9, letterSpacing: 0.8 },
-  id: { color: "#243F8A", fontFamily: "Inter_700Bold", fontSize: 18, letterSpacing: 0.3 },
-  school: { color: "#34445F", fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 5 },
-  state: { color: "#748198", fontFamily: "Inter_400Regular", fontSize: 11 },
-  qrWrap: { width: 148, height: 148, flexShrink: 0, backgroundColor: "#fff", padding: 8, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  note: { color: "#748198", fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16 },
-  moreButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#F4F7FC", alignItems: "center", justifyContent: "center" },
-  menuBackdrop: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: "rgba(15, 23, 42, 0.42)" },
-  menu: { width: "100%", maxWidth: 380, borderRadius: 20, padding: 18, gap: 10, backgroundColor: "#fff" },
-  menuTitle: { color: "#15264B", fontFamily: "Inter_700Bold", fontSize: 17, marginBottom: 3 },
-  action: { minHeight: 46, width: "100%", borderRadius: 12, backgroundColor: "#EEF2FF", paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 10 },
-  actionText: { flex: 1, color: "#355BE5", fontFamily: "Inter_600SemiBold", fontSize: 13, textAlign: "left" },
+  eyebrow: { color: "#7C3AED", fontFamily: "Inter_600SemiBold", fontSize: 9.5, letterSpacing: 0.8 },
+  id: { color: "#5B21B6", fontFamily: "Inter_700Bold", fontSize: 18, letterSpacing: 0.3 },
+  school: { color: "#1E1B4B", fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 5 },
+  state: { color: "#64748B", fontFamily: "Inter_400Regular", fontSize: 11 },
+  qrWrap: { width: 148, height: 148, flexShrink: 0, backgroundColor: "#fff", padding: 8, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#EDE9FE" },
+  note: { color: "#64748B", fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16 },
+  moreButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  menuBackdrop: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: "rgba(30, 27, 75, 0.45)" },
+  menu: { width: "100%", maxWidth: 380, borderRadius: 24, padding: 18, gap: 10, backgroundColor: "#fff" },
+  menuTitle: { color: "#1E1B4B", fontFamily: "Inter_700Bold", fontSize: 17, marginBottom: 3 },
+  action: { minHeight: 46, width: "100%", borderRadius: 14, backgroundColor: "#F5F3FF", paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 10 },
+  actionText: { flex: 1, color: "#6D28D9", fontFamily: "Inter_600SemiBold", fontSize: 13, textAlign: "left" },
   cancelAction: { minHeight: 40, alignItems: "center", justifyContent: "center" },
   cancelText: { color: "#64748B", fontFamily: "Inter_600SemiBold", fontSize: 13 },
   disabled: { opacity: 0.55 },

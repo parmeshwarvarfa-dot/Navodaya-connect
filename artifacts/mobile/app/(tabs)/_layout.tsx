@@ -1,13 +1,13 @@
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo } from "react";
+import React from "react";
 import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
 import { useReducedMotion } from "@/components/motion/MotionProvider";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
 const TAB_ITEMS: {
   name: string;
@@ -15,37 +15,30 @@ const TAB_ITEMS: {
   icon: IoniconsName;
   activeIcon: IoniconsName;
 }[] = [
-  { name: "index",    title: "Home",        icon: "home-outline",        activeIcon: "home"        },
-  { name: "memories", title: "Memories",    icon: "heart-outline",        activeIcon: "heart"       },
-  { name: "chats",    title: "Chats",       icon: "chatbubble-outline",   activeIcon: "chatbubble"  },
-  { name: "events",   title: "Events",      icon: "calendar-outline",     activeIcon: "calendar"    },
-  { name: "profile",  title: "Profile",     icon: "person-outline",       activeIcon: "person"      },
+  { name: "index",    title: "Home",     icon: "home-outline",       activeIcon: "home" },
+  { name: "memories", title: "Memories", icon: "heart-outline",      activeIcon: "heart" },
+  { name: "chats",    title: "Chats",    icon: "chatbubble-outline", activeIcon: "chatbubble" },
+  { name: "events",   title: "Events",   icon: "calendar-outline",   activeIcon: "calendar" },
+  { name: "profile",  title: "Profile",  icon: "person-outline",     activeIcon: "person" },
 ];
 
 const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
 
-const HOUSE_COLOR: Record<string, string> = {
-  Aravali:  "#1D6ADE",
-  Nilgiri:  "#16A34A",
-  Shivalik: "#DC2626",
-  Udaygiri: "#D97706",
-};
-
-const DEFAULT_COLOR = "#3D5AF1";
-
 function DostAiFab() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = Platform.OS === "web" ? 60 : 80 + insets.bottom;
-  const bottom = tabBarHeight + 12;
+  const isWeb = Platform.OS === "web";
+  const bottom = (isWeb ? 86 : 94 + insets.bottom);
 
   return (
     <TouchableOpacity
       style={[styles.fab, { bottom }]}
       onPress={() => router.push("/(screens)/param-ai" as any)}
       activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel="Ask Param AI"
     >
       <LinearGradient
-        colors={["#6D5FFA", "#4B6EF5"]}
+        colors={["#8B5CF6", "#6D28D9"]}
         style={styles.fabGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -64,58 +57,101 @@ function DostAiFab() {
   );
 }
 
-export default function TabLayout() {
-  const isWeb = Platform.OS === "web";
+function FloatingTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomInset = isWeb ? 0 : insets.bottom;
-  const tabBarHeight = (isWeb ? 60 : 80) + bottomInset;
-  const paddingBottom = isWeb ? 8 : Math.max(12, bottomInset);
-  const { profile } = useAuth();
-  const reducedMotion = useReducedMotion();
-
-  const activeColor = useMemo(
-    () => HOUSE_COLOR[profile?.house ?? ""] ?? DEFAULT_COLOR,
-    [profile?.house]
-  );
+  const isWeb = Platform.OS === "web";
+  const bottomPad = isWeb ? 12 : Math.max(12, insets.bottom);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View pointerEvents="box-none" style={[styles.tabBarWrapper, { bottom: bottomPad }]}>
+      <View style={styles.floatingBar}>
+        {TAB_ITEMS.map((item) => {
+          const routeIndex = state.routes.findIndex((r: { name: string }) => r.name === item.name);
+          if (routeIndex === -1) return null;
+          const route = state.routes[routeIndex];
+          const isFocused = state.index === routeIndex;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({
+              type: "tabLongPress",
+              target: route.key,
+            });
+          };
+
+          if (isFocused) {
+            return (
+              <TouchableOpacity
+                key={item.name}
+                accessibilityRole="button"
+                accessibilityState={{ selected: true }}
+                accessibilityLabel={item.title}
+                onPress={onPress}
+                onLongPress={onLongPress}
+                style={styles.tabItemActiveWrap}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={["#8B5CF6", "#6D28D9"]}
+                  style={styles.activeCircle}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name={item.activeIcon} size={22} color="#FFFFFF" />
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          }
+
+          return (
+            <TouchableOpacity
+              key={item.name}
+              accessibilityRole="button"
+              accessibilityState={{ selected: false }}
+              accessibilityLabel={item.title}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tabItem}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={item.icon} size={20} color="#64748B" />
+              <Text style={styles.tabLabelInactive}>{item.title}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export default function TabLayout() {
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#F8F7FF" }}>
       <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           animation: reducedMotion === false ? "fade" : "none",
-          tabBarActiveTintColor: activeColor,
-          tabBarInactiveTintColor: "#9CA3AF",
           headerShown: false,
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopWidth: 1,
-            borderTopColor: "#F0F0F0",
-            elevation: 8,
-            height: tabBarHeight,
-            paddingBottom,
-            paddingTop: isWeb ? 6 : 8,
-          },
-          tabBarLabelStyle: {
-            fontSize: 10,
-            lineHeight: 12,
-            fontFamily: "Inter_500Medium",
-            includeFontPadding: false,
-          },
-          tabBarBackground: () => (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#fff" }]} />
-          ),
         }}
       >
         {TAB_ITEMS.map((tab) => (
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
-            options={{
-              title: tab.title,
-              tabBarIcon: ({ color, focused }) => (
-                <Ionicons name={focused ? tab.activeIcon : tab.icon} size={22} color={color} />
-              ),
-            }}
+            options={{ title: tab.title }}
           />
         ))}
         {HIDDEN.map((name) => (
@@ -129,6 +165,60 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabBarWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 900,
+  },
+  floatingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 36,
+    width: "92%",
+    maxWidth: 520,
+    height: 64,
+    paddingHorizontal: 8,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 16,
+    borderWidth: 1,
+    borderColor: "rgba(233, 213, 255, 0.7)",
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+  },
+  tabItemActiveWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  tabLabelInactive: {
+    fontSize: 10,
+    fontFamily: "Inter_500Medium",
+    color: "#64748B",
+    marginTop: 3,
+  },
   fab: {
     position: "absolute",
     right: 18,
@@ -136,24 +226,24 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   fabGradient: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#4B6EF5",
+    shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.4,
     shadowRadius: 14,
     elevation: 12,
   },
   fabRing: {
     position: "absolute",
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     borderWidth: 2,
-    borderColor: "rgba(107, 95, 250, 0.3)",
+    borderColor: "rgba(139, 92, 246, 0.3)",
     top: -6,
     left: -6,
   },
@@ -162,14 +252,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   fabLabel: {
-    marginTop: 5,
+    marginTop: 4,
     backgroundColor: "#1E1B4B",
     borderRadius: 8,
     paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingVertical: 2.5,
   },
   fabLabelText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 9,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.5,

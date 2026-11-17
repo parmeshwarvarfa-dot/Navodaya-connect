@@ -131,7 +131,7 @@ function SchoolVerificationCenter() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[s.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[s.header, { paddingTop: topPad + 8 }]}>
         <View style={s.headerRow}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.9)" />
@@ -332,28 +332,28 @@ function SchoolVerificationCenter() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { paddingHorizontal: 16, paddingBottom: 16 },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
+  header: { paddingHorizontal: 16, paddingBottom: 18, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   headerRow: { flexDirection: "row", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
-  headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center", marginRight: 4 },
-  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  statusCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", gap: 10, borderWidth: 1.5 },
+  headerSub: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center", marginRight: 6 },
+  refreshBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  statusCard: { backgroundColor: "#fff", borderRadius: 20, padding: 20, alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
   statusIconWrap: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
   statusLabel: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  statusDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 20 },
-  infoRequestBanner: { flexDirection: "row", gap: 8, backgroundColor: "#EEF2FF", borderRadius: 10, padding: 12, alignItems: "flex-start", width: "100%" },
-  infoRequestText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#3D5AF1", lineHeight: 18 },
-  notesBanner: { flexDirection: "row", gap: 8, backgroundColor: "#F9FAFB", borderRadius: 10, padding: 10, alignItems: "flex-start", width: "100%", borderWidth: 1, borderColor: "#F0F0F0" },
-  notesText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  timelineCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0F0F0", gap: 0 },
-  sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#9CA3AF", letterSpacing: 0.8, marginBottom: 14 },
+  statusDesc: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#64748B", textAlign: "center", lineHeight: 20 },
+  infoRequestBanner: { flexDirection: "row", gap: 8, backgroundColor: "#F5F3FF", borderRadius: 12, padding: 12, alignItems: "flex-start", width: "100%", borderWidth: 1, borderColor: "#DDD6FE" },
+  infoRequestText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#7C3AED", lineHeight: 18 },
+  notesBanner: { flexDirection: "row", gap: 8, backgroundColor: "#FAF5FF", borderRadius: 12, padding: 10, alignItems: "flex-start", width: "100%", borderWidth: 1, borderColor: "#EDE9FE" },
+  notesText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B" },
+  timelineCard: { backgroundColor: "#fff", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#E9D5FF", gap: 0, shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED", letterSpacing: 0.8, marginBottom: 14 },
   timelineRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   timelineLeft: { alignItems: "center", width: 24 },
   timelineDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E5E7EB" },
   timelineDotDone: { backgroundColor: "#10B981", borderColor: "#10B981" },
-  timelineDotActive: { backgroundColor: "#1A3C6E", borderColor: "#1A3C6E" },
+  timelineDotActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   timelineLine: { width: 2, height: 32, backgroundColor: "#E5E7EB", marginVertical: 4 },
   timelineLineDone: { backgroundColor: "#10B981" },
   timelineContent: { flex: 1, paddingBottom: 20 },

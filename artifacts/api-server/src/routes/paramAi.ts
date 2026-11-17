@@ -21,25 +21,39 @@ function getFallbackReply() {
 
 function resolveGeminiApiKey(): string | undefined {
   if (process.env.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY;
+    return process.env.GEMINI_API_KEY.replace(/^["']|["']$/g, "").trim();
   }
 
   // Attempt to reload workspace root .env in case it was updated at runtime
   const candidatePaths = [
     path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "../../.env"),
     path.resolve(process.cwd(), "../.env"),
+    path.resolve(process.cwd(), "../../.env"),
+    path.resolve(__dirname, "../../../../.env"),
   ];
 
   for (const envPath of candidatePaths) {
-    if (existsSync(envPath) && typeof process.loadEnvFile === "function") {
+    if (existsSync(envPath)) {
+      if (typeof process.loadEnvFile === "function") {
+        try {
+          process.loadEnvFile(envPath);
+          if (process.env.GEMINI_API_KEY) {
+            return process.env.GEMINI_API_KEY.replace(/^["']|["']$/g, "").trim();
+          }
+        } catch {
+          // ignore
+        }
+      }
       try {
-        process.loadEnvFile(envPath);
-        if (process.env.GEMINI_API_KEY) {
-          return process.env.GEMINI_API_KEY;
+        const { readFileSync } = require("node:fs");
+        const raw = readFileSync(envPath, "utf8");
+        const match = raw.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)/);
+        if (match && match[1]) {
+          process.env.GEMINI_API_KEY = match[1].trim();
+          return match[1].trim();
         }
       } catch {
-        // ignore errors reading env file
+        // ignore
       }
     }
   }

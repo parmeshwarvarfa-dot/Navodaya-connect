@@ -136,7 +136,7 @@ export default function ParamAIScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <LinearGradient colors={["#6D5FFA", "#4B6EF5"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -269,7 +269,7 @@ export default function ParamAIScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, gap: 12 },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 16, gap: 12, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   clearBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   aiRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
   aiAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#EDE9FE", alignItems: "center", justifyContent: "center", marginBottom: 4 },
   bubble: { maxWidth: "80%", borderRadius: 18, padding: 14 },
-  bubbleUser: { backgroundColor: "#6D5FFA", borderBottomRightRadius: 4 },
+  bubbleUser: { backgroundColor: "#7C3AED", borderBottomRightRadius: 4 },
   bubbleAI: { backgroundColor: "#fff", borderBottomLeftRadius: 4, borderWidth: 1, borderColor: "#F0F0F0", flex: 1 },
   typingBubble: { paddingVertical: 14, paddingHorizontal: 18, maxWidth: 80 },
   aiLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6D5FFA", marginBottom: 6 },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   typingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#6D5FFA" },
   inputRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 12, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#F0F0F0", gap: 10 },
   inputBox: { flex: 1, backgroundColor: "#F5F6FA", borderRadius: 24, paddingHorizontal: 18, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", borderWidth: 1, borderColor: "#E5E7EB" },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6D5FFA", alignItems: "center", justifyContent: "center" },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
   sendBtnDisabled: { backgroundColor: "#9CA3AF" },
   disclaimer: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", paddingBottom: 8, backgroundColor: "#fff", paddingHorizontal: 16 },
 });

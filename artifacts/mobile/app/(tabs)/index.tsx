@@ -25,38 +25,38 @@ import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
 
 const STUDENT_ACTIONS = [
-  { label: "Study Hub",        icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"          },
+  { label: "Study Hub",        icon: "book-outline"            as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/study-section"          },
   { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
-  { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"             },
+  { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/ask-senior"             },
   { label: "Report Problem",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"         },
 ];
 const TEACHER_ACTIONS = [
-  { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-zone"     },
+  { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/teacher-zone"     },
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
-  { label: "My Classes",      icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-classes"  },
+  { label: "My Classes",      icon: "people-outline"          as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/teacher-classes"  },
   { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
 ];
 const ALUMNI_ACTIONS = [
   { label: "Alumni Zone",     icon: "school-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-zone"       },
-  { label: "Business Network", icon: "business-outline"       as const, color: "#5B21B6", bg: "#F2EBFB", route: "/(screens)/alumni-business" },
-  { label: "Alumni Directory", icon: "people-outline"         as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/alumni" },
+  { label: "Business Network", icon: "business-outline"       as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-business" },
+  { label: "Alumni Directory", icon: "people-outline"         as const, color: "#6366F1", bg: "#EEF2FF", route: "/(tabs)/alumni" },
   { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
-  { label: "Dashboard",       icon: "grid-outline"             as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
+  { label: "Dashboard",       icon: "grid-outline"             as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/official-dashboard" },
   { label: "Verify Users",    icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management"    },
   { label: "View Problems",   icon: "alert-circle-outline"    as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"      },
-  { label: "School Directory", icon: "people-outline"          as const, color: "#3151E8", bg: "#EEF2FF", route: "/(screens)/school-directory"  },
+  { label: "School Directory", icon: "people-outline"          as const, color: "#6366F1", bg: "#EEF2FF", route: "/(screens)/school-directory"  },
 ];
 
 const ANNOUNCEMENT_CATEGORIES = ["announcement", "notice", "official", "circular", "holiday", "exam", "other"];
 const NEWS_CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
-  Academic: { bg: "#EEF2FF", color: "#3D5AF1" },
+  Academic: { bg: "#F5F3FF", color: "#7C3AED" },
   Exam: { bg: "#FEF3C7", color: "#D97706" },
   Sports: { bg: "#ECFDF5", color: "#10B981" },
-  Event: { bg: "#F5F3FF", color: "#8B5CF6" },
+  Event: { bg: "#EDE9FE", color: "#6D28D9" },
   Announcement: { bg: "#FEF2F2", color: "#EF4444" },
-  Default: { bg: "#F3F4F6", color: "#6B7280" },
+  Default: { bg: "#F1F5F9", color: "#64748B" },
 };
 
 function getCategoryStyle(cat: string) {
@@ -76,11 +76,11 @@ function formatDate(dateStr: string) {
 }
 
 const GRADIENT_SETS = [
-  ["#3D5AF1", "#2563EB"] as const,
+  ["#7C3AED", "#6366F1"] as const,
+  ["#8B5CF6", "#6D28D9"] as const,
   ["#10B981", "#059669"] as const,
-  ["#8B5CF6", "#7C3AED"] as const,
   ["#F59E0B", "#D97706"] as const,
-  ["#EF4444", "#DC2626"] as const,
+  ["#EC4899", "#BE185D"] as const,
 ];
 
 export default function HomeScreen() {
@@ -216,67 +216,102 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: headerTopPad }]}>
-        <View>
-          <Text style={styles.headerGreeting}>Good {getGreeting()},</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerBrand}>NAVODAYA CONNECT</Text>
           <Text style={styles.headerTitle}>{profile?.fullName?.split(" ")[0] || "Navodayan"} 👋</Text>
         </View>
-        <TouchableOpacity
-          style={styles.bellBtn}
-          onPress={() => router.push("/(screens)/notifications" as any)}
-        >
-          <Ionicons name="notifications-outline" size={22} color="#3D5AF1" />
-          <View style={styles.bellDot} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => router.push("/(screens)/notifications" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons name="notifications-outline" size={20} color="#7C3AED" />
+            <View style={styles.bellDot} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
+        contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
-        {/* Welcome + Stats Card */}
-        <FadeIn><LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.welcomeCard}>
-          <View style={styles.welcomeRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.welcomeJnv}>{profile?.jnvName || "School not set"}</Text>
-              <Text style={styles.welcomeRole}>{getRoleLabel(role)}</Text>
-            </View>
-            {(role === "student" || role === "alumni") && profile?.house && (
-              <View style={styles.houseTag}>
-                <Text style={styles.houseTagText}>{profile.house}</Text>
+        {/* Welcome Hero Banner */}
+        <FadeIn>
+          <LinearGradient
+            colors={["#7C3AED", "#6366F1"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.welcomeCard}
+          >
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroBadge}>
+                <Ionicons name="school" size={12} color="#FFFFFF" />
+                <Text style={styles.heroBadgeText}>{profile?.jnvName || "JNV Community"}</Text>
               </View>
-            )}
-          </View>
-          {isOfficial ? (
-            <>
-              <View style={styles.teacherStats}>
-                {[
-                  { label: "Classes", value: String(officialMetrics?.classes ?? "—"), icon: "school-outline" as const },
-                  { label: "Students", value: String(officialMetrics?.students ?? "—"), icon: "people-outline" as const },
-                  { label: "Events", value: String(officialMetrics?.events ?? "—"), icon: "calendar-outline" as const },
-                  { label: "Open Issues", value: String(officialMetrics?.issues ?? "—"), icon: "alert-circle-outline" as const },
-                ].map((stat) => (
-                  <View key={stat.label} style={styles.statBox}>
-                    <Ionicons name={stat.icon} size={14} color="rgba(255,255,255,0.75)" />
-                    <Text style={styles.statVal}>{stat.value}</Text>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
-                  </View>
-                ))}
-              </View>
-              {(officialMetricsLoading || officialMetricsError) && (
-                <Text style={styles.metricsHint}>
-                  {officialMetricsError ? "Live school metrics unavailable. Pull to refresh." : "Loading live school metrics…"}
-                </Text>
+              {(role === "student" || role === "alumni") && (
+                <TouchableOpacity
+                  style={styles.heroIdBtn}
+                  onPress={() => router.push("/(screens)/digital-id" as any)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="id-card-outline" size={13} color="#FFFFFF" />
+                  <Text style={styles.heroIdBtnText}>Digital ID</Text>
+                </TouchableOpacity>
               )}
-            </>
-          ) : role === "student" || role === "alumni" ? (
-            <View style={styles.studentBadgeRow}>
-              {profile?.class && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Class {profile.class.replace(/^class\s+/i, "")}</Text></View>}
-              {profile?.passoutYear && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Batch {profile.passoutYear}</Text></View>}
-              {profile?.jnvState && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>{profile.jnvState}</Text></View>}
             </View>
-          ) : null}
-        </LinearGradient></FadeIn>
+
+            <Text style={styles.heroGreeting}>Good {getGreeting()}</Text>
+            <Text style={styles.heroSubTitle}>Welcome to your alumni & campus hub</Text>
+
+            <View style={styles.welcomeRow}>
+              <View style={styles.roleTag}>
+                <Text style={styles.roleTagText}>{getRoleLabel(role)}</Text>
+              </View>
+              {(role === "student" || role === "alumni") && profile?.house && (
+                <View style={styles.houseTag}>
+                  <Text style={styles.houseTagText}>{profile.house}</Text>
+                </View>
+              )}
+              {profile?.class && (
+                <View style={styles.houseTag}>
+                  <Text style={styles.houseTagText}>Class {profile.class.replace(/^class\s+/i, "")}</Text>
+                </View>
+              )}
+              {profile?.passoutYear && (
+                <View style={styles.houseTag}>
+                  <Text style={styles.houseTagText}>Batch {profile.passoutYear}</Text>
+                </View>
+              )}
+            </View>
+
+            {isOfficial && (
+              <>
+                <View style={styles.teacherStats}>
+                  {[
+                    { label: "Classes", value: String(officialMetrics?.classes ?? "—"), icon: "school-outline" as const },
+                    { label: "Students", value: String(officialMetrics?.students ?? "—"), icon: "people-outline" as const },
+                    { label: "Events", value: String(officialMetrics?.events ?? "—"), icon: "calendar-outline" as const },
+                    { label: "Open Issues", value: String(officialMetrics?.issues ?? "—"), icon: "alert-circle-outline" as const },
+                  ].map((stat) => (
+                    <View key={stat.label} style={styles.statBox}>
+                      <Ionicons name={stat.icon} size={14} color="rgba(255,255,255,0.75)" />
+                      <Text style={styles.statVal}>{stat.value}</Text>
+                      <Text style={styles.statLabel}>{stat.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {(officialMetricsLoading || officialMetricsError) && (
+                  <Text style={styles.metricsHint}>
+                    {officialMetricsError ? "Live school metrics unavailable. Pull to refresh." : "Loading live school metrics…"}
+                  </Text>
+                )}
+              </>
+            )}
+          </LinearGradient>
+        </FadeIn>
 
         <AchievementsHighlights />
 
@@ -561,30 +596,42 @@ function getRoleLabel(role: string) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
   header: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 20, paddingBottom: 12,
-    backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0",
+    paddingHorizontal: 20, paddingBottom: 14,
+    backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "rgba(233, 213, 255, 0.5)",
   },
-  headerGreeting: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  emptyNewsText: { color: "#9CA3AF", fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 10 },
-  bellBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  bellDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
-  welcomeCard: { marginHorizontal: 16, marginTop: 16, borderRadius: 18, padding: 18 },
-  mapRankingCard: { marginHorizontal: 16, marginTop: 14, borderRadius: 17, overflow: "hidden", minHeight: 92, elevation: 3, shadowColor: "#172554", shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
-  mapRankingGradient: { minHeight: 92, paddingHorizontal: 17, paddingVertical: 15, flexDirection: "row", alignItems: "center", gap: 12 },
+  headerLeft: { gap: 2 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerBrand: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#7C3AED", letterSpacing: 1.2 },
+  headerGreeting: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B" },
+  headerTitle: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#1E1B4B" },
+  emptyNewsText: { color: "#64748B", fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 10 },
+  bellBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.8)" },
+  bellDot: { position: "absolute", top: 9, right: 9, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
+  welcomeCard: { marginHorizontal: 16, marginTop: 16, borderRadius: 24, padding: 20, shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 18, elevation: 8 },
+  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  heroBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255, 255, 255, 0.22)", borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 5 },
+  heroBadgeText: { color: "#FFFFFF", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  heroIdBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#1E1B4B", borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 6, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 6, elevation: 3 },
+  heroIdBtnText: { color: "#FFFFFF", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  heroGreeting: { color: "#FFFFFF", fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.3, marginBottom: 2 },
+  heroSubTitle: { color: "rgba(255, 255, 255, 0.85)", fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 16 },
+  mapRankingCard: { marginHorizontal: 16, marginTop: 14, borderRadius: 22, overflow: "hidden", minHeight: 92, elevation: 5, shadowColor: "#7C3AED", shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
+  mapRankingGradient: { minHeight: 92, paddingHorizontal: 18, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 12 },
   mapRankingText: { flex: 1, gap: 5 },
   mapRankingTitle: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold" },
-  mapRankingSubtitle: { color: "rgba(255,255,255,0.82)", fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular" },
+  mapRankingSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular" },
   mapRankingIcons: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 4 },
-  welcomeRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
+  welcomeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
   welcomeJnv: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 3 },
   welcomeRole: { color: "rgba(255,255,255,0.75)", fontSize: 13, fontFamily: "Inter_400Regular" },
-  houseTag: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
-  houseTagText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  teacherStats: { flexDirection: "row", gap: 0 },
+  roleTag: { backgroundColor: "#FFFFFF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 },
+  roleTagText: { color: "#6D28D9", fontSize: 12, fontFamily: "Inter_700Bold" },
+  houseTag: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
+  houseTagText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  teacherStats: { flexDirection: "row", gap: 0, marginTop: 14 },
   statBox: { flex: 1, alignItems: "center", gap: 2 },
   statVal: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
   statLabel: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "Inter_400Regular" },
@@ -592,95 +639,95 @@ const styles = StyleSheet.create({
   studentBadgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   studentBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   studentBadgeText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
-  verifyBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: 16, marginTop: 14, backgroundColor: "#FFF7ED", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1.5, borderColor: "#FDBA74" },
+  verifyBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: 16, marginTop: 14, backgroundColor: "#FFF7ED", borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16, borderWidth: 1.5, borderColor: "#FDBA74" },
   verifyBannerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
   verifyBannerTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#C2410C" },
   verifyBannerSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#EA580C", marginTop: 1 },
-  syncRow: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginTop: 14, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "#EEF2FF", borderRadius: 10 },
-  syncText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#4B5CC4" },
-  retryBanner: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 16, marginTop: 14, padding: 12, backgroundColor: "#FFFBEB", borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A" },
+  syncRow: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginTop: 14, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#F5F3FF", borderRadius: 14 },
+  syncText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#7C3AED" },
+  retryBanner: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 16, marginTop: 14, padding: 14, backgroundColor: "#FFFBEB", borderRadius: 16, borderWidth: 1, borderColor: "#FDE68A" },
   retryIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
   retryTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#92400E" },
   retryText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#A16207", marginTop: 2 },
   retryAction: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#B45309" },
-  section: { paddingHorizontal: 16, marginTop: 20 },
+  section: { paddingHorizontal: 16, marginTop: 22 },
   sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 14 },
-  seeAll: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#1E1B4B", marginBottom: 14 },
+  seeAll: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   actionFadeItem: { width: "47%", flexGrow: 0, flexShrink: 0 },
   actionCard: {
-    width: "100%", backgroundColor: "#fff", borderRadius: 14, padding: 14,
-    alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#F0F0F0",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    width: "100%", backgroundColor: "#FFFFFF", borderRadius: 22, padding: 16,
+    alignItems: "center", gap: 10, borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)",
+    shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3,
   },
-  actionIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", position: "relative" },
-  actionLock: { position: "absolute", right: -4, top: -4, width: 17, height: 17, borderRadius: 9, backgroundColor: "#6B7280", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#fff" },
-  actionLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#111827", textAlign: "center" },
+  actionIcon: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", position: "relative" },
+  actionLock: { position: "absolute", right: -4, top: -4, width: 18, height: 18, borderRadius: 9, backgroundColor: "#64748B", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#fff" },
+  actionLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", textAlign: "center" },
 
   // Announcements
-  announceBadge: { width: 24, height: 24, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
-  newsBadge: { width: 24, height: 24, borderRadius: 8, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  announceBadge: { width: 26, height: 26, borderRadius: 8, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" },
+  newsBadge: { width: 26, height: 26, borderRadius: 8, backgroundColor: "#6366F1", alignItems: "center", justifyContent: "center" },
   announceCard: {
-    flexDirection: "row", backgroundColor: "#fff", borderRadius: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    flexDirection: "row", backgroundColor: "#FFFFFF", borderRadius: 20, marginBottom: 12,
+    borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)", overflow: "hidden",
+    shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
-  announceStripe: { width: 4, backgroundColor: "#EF4444" },
-  announceBody: { flex: 1, padding: 14 },
+  announceStripe: { width: 5, backgroundColor: "#7C3AED" },
+  announceBody: { flex: 1, padding: 16 },
   announceTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
   announcerInfo: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  announcerAvatar: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
-  announcerName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  announcerJnv: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  announceDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginLeft: 4 },
-  announceTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4, lineHeight: 20 },
-  announceDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 19, marginBottom: 8 },
+  announcerAvatar: { width: 32, height: 32, borderRadius: 10, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  announcerName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E1B4B" },
+  announcerJnv: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#64748B" },
+  announceDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#64748B", marginLeft: 4 },
+  announceTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#1E1B4B", marginBottom: 4, lineHeight: 21 },
+  announceDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#64748B", lineHeight: 19, marginBottom: 10 },
   announceFooter: { flexDirection: "row" },
-  officialTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEF2F2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  officialTagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
+  officialTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F5F3FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  officialTagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
 
   // Featured news
-  featuredCard: { borderRadius: 16, overflow: "hidden" },
-  featuredGradient: { padding: 20, minHeight: 160, justifyContent: "flex-end" },
+  featuredCard: { borderRadius: 22, overflow: "hidden", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.16, shadowRadius: 14, elevation: 5 },
+  featuredGradient: { padding: 22, minHeight: 160, justifyContent: "flex-end" },
   featuredCatTag: { position: "absolute", top: 16, left: 16, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   featuredCatText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   featuredTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 26, marginBottom: 6 },
-  featuredDesc: { color: "rgba(255,255,255,0.8)", fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19, marginBottom: 12 },
+  featuredDesc: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19, marginBottom: 12 },
   featuredFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   featuredAuthorRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  featuredAuthor: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium" },
-  featuredDate: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular" },
+  featuredAuthor: { color: "rgba(255,255,255,0.9)", fontSize: 12, fontFamily: "Inter_500Medium" },
+  featuredDate: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontFamily: "Inter_400Regular" },
 
   // News cards
-  newsCard: { width: 180, backgroundColor: "#fff", borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: "#F0F0F0" },
-  newsCardHeader: { height: 70, justifyContent: "flex-end", padding: 10 },
-  newsCardCatTag: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, alignSelf: "flex-start" },
+  newsCard: { width: 190, backgroundColor: "#FFFFFF", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  newsCardHeader: { height: 74, justifyContent: "flex-end", padding: 10 },
+  newsCardCatTag: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start" },
   newsCardCatText: { color: "#fff", fontSize: 10, fontFamily: "Inter_600SemiBold" },
   newsCardBody: { padding: 12 },
-  newsCardTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827", lineHeight: 18, marginBottom: 8 },
+  newsCardTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", lineHeight: 18, marginBottom: 8 },
   newsCardFooter: { flexDirection: "row", justifyContent: "space-between" },
-  newsCardDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
+  newsCardDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#64748B" },
 
   // Explore
   exploreRow: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#fff",
-    borderRadius: 14, padding: 14, marginBottom: 10, gap: 14,
-    borderWidth: 1, borderColor: "#F0F0F0",
+    flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF",
+    borderRadius: 20, padding: 14, marginBottom: 10, gap: 14,
+    borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)",
+    shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  exploreIconWrap: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
+  exploreIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   exploreText: { flex: 1 },
-  exploreLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  exploreDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
+  exploreLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#1E1B4B" },
+  exploreDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B", marginTop: 2 },
 
   // Mentors
-  mentorsRow: { flexDirection: "row", gap: 12 },
-  mentorCard: { alignItems: "center", gap: 6, width: 72 },
-  mentorAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#3D5AF1" },
-  mentorInitial: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
-  mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  alumniEmpty: { paddingVertical: 14, color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular" },
-
+  mentorsRow: { flexDirection: "row", gap: 14 },
+  mentorCard: { alignItems: "center", gap: 6, width: 76 },
+  mentorAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#7C3AED" },
+  mentorInitial: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#7C3AED" },
+  mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#1E1B4B" },
+  mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#64748B" },
+  alumniEmpty: { paddingVertical: 14, color: "#64748B", fontSize: 13, fontFamily: "Inter_400Regular" },
 });

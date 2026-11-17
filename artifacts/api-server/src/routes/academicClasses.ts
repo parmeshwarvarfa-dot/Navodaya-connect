@@ -171,7 +171,7 @@ router.get("/academic-classes/teacher-overview", requireAuth, async (req, res) =
     const recentMaterials = await db.select().from(studyMaterialsTable).where(
       or(
         eq(studyMaterialsTable.authorId, user.id),
-        and(eq(studyMaterialsTable.jnvName, user.jnvName), eq(studyMaterialsTable.jnvState, user.jnvState))
+        eq(studyMaterialsTable.jnvName, user.jnvName)
       )
     ).orderBy(desc(studyMaterialsTable.createdAt)).limit(3);
 

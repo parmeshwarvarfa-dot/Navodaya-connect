@@ -1,50 +1,56 @@
 const colors = {
   light: {
-    text: "#111827",
-    tint: "#3D5AF1",
+    text: "#1E1B4B",
+    tint: "#7C3AED",
 
-    background: "#F5F6FA",
-    foreground: "#111827",
+    background: "#F8F7FF",
+    foreground: "#1E1B4B",
 
     card: "#FFFFFF",
-    cardForeground: "#111827",
+    cardForeground: "#1E1B4B",
 
-    primary: "#3D5AF1",
+    primary: "#7C3AED",
     primaryForeground: "#FFFFFF",
 
-    secondary: "#EEF2FF",
-    secondaryForeground: "#3D5AF1",
+    primaryDark: "#5B21B6",
+    primaryLight: "#EDE9FE",
+    primarySoft: "#F5F3FF",
+
+    secondary: "#F3E8FF",
+    secondaryForeground: "#6D28D9",
 
     muted: "#F3F4F6",
-    mutedForeground: "#6B7280",
+    mutedForeground: "#64748B",
 
-    accent: "#EEF2FF",
-    accentForeground: "#3D5AF1",
+    accent: "#F5F3FF",
+    accentForeground: "#7C3AED",
 
     destructive: "#EF4444",
     destructiveForeground: "#FFFFFF",
 
-    success: "#16A34A",
+    success: "#10B981",
     successForeground: "#FFFFFF",
 
     warning: "#F59E0B",
     warningForeground: "#FFFFFF",
 
-    border: "#E5E7EB",
-    input: "#E5E7EB",
+    border: "#E9D5FF",
+    input: "#E2E8F0",
 
     gold: "#F59E0B",
-    gradientStart: "#4B6EF5",
-    gradientEnd: "#3151E8",
-    gradientLight: "#EEF2FF",
-    shadow: "rgba(61, 90, 241, 0.12)",
+    gradientStart: "#7C3AED",
+    gradientEnd: "#5B21B6",
+    gradientLight: "#F5F3FF",
+    shadow: "rgba(124, 58, 237, 0.12)",
 
-    saffron: "#3D5AF1",
-    saffronLight: "#EEF2FF",
-    saffronDark: "#2B45D4",
+    saffron: "#7C3AED",
+    saffronLight: "#F5F3FF",
+    saffronDark: "#5B21B6",
   },
 
-  radius: 12,
+  radius: 16,
+  radiusLg: 24,
+  radiusXl: 32,
 };
 
 export default colors;

@@ -75,13 +75,13 @@ export default function StudySectionScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerGreet}>{greeting}, {profile?.fullName?.split(" ")[0] || "Student"}</Text>
-          <Text style={styles.headerTitle}>📚 Study Hub</Text>
+          <Text style={styles.headerTitle}>Study Hub</Text>
         </View>
         <TouchableOpacity style={styles.notifBtn} onPress={() => router.push("/(screens)/notifications" as any)}>
           <Ionicons name="notifications-outline" size={20} color="#fff" />
@@ -226,50 +226,58 @@ export default function StudySectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 18 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  headerGreet: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontFamily: "Inter_400Regular" },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  headerGreet: { color: "rgba(255,255,255,0.85)", fontSize: 11.5, fontFamily: "Inter_500Medium" },
   headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
-  notifBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  notifBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   notifDot: { position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.3)" },
-  statsRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginTop: 16 },
-  statCard: { flex: 1, borderRadius: 14, padding: 12, alignItems: "center", gap: 4 },
+  statsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, marginTop: 14 },
+  statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center", gap: 4, borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.6)" },
   statVal: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center" },
+  statLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: "#64748B", textAlign: "center" },
   section: { paddingHorizontal: 16, marginTop: 20 },
   sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 12 },
-  seeAll: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  nowCard: { borderRadius: 16, padding: 18 },
+  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1E1B4B", marginBottom: 12 },
+  seeAll: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
+  nowCard: { borderRadius: 20, padding: 18 },
   nowSubject: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold", marginBottom: 4 },
   nowTeacher: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontFamily: "Inter_500Medium", marginBottom: 4 },
   nowTime: { color: "rgba(255,255,255,0.65)", fontSize: 12, fontFamily: "Inter_400Regular" },
-  classCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, width: 160, borderWidth: 1, borderColor: "#F0F0F0", gap: 4 },
-  classTime: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#3D5AF1", marginBottom: 2 },
-  classSubject: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827" },
-  classTeacher: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  authorizedClassRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, marginBottom: 7, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#EAECF0" },
+  classCard: { backgroundColor: "#fff", borderRadius: 18, padding: 14, width: 160, borderWidth: 1, borderColor: "#E9D5FF", gap: 4, shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  classTime: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED", marginBottom: 2 },
+  classSubject: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#1E1B4B" },
+  classTeacher: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B" },
+  authorizedClassRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, marginBottom: 8, backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   classRoom: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
-  classRoomText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  classRoomText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#64748B" },
   assignRow: {
     flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff",
-    borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "#F0F0F0",
+    borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
   priorityDot: { width: 10, height: 10, borderRadius: 5 },
-  assignTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3 },
-  assignMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  upcomingCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, width: 150, borderWidth: 1, borderColor: "#F0F0F0", borderLeftWidth: 4, gap: 6 },
-  upcomingTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827", lineHeight: 18 },
-  upcomingDate: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  noteRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: "#F0F0F0" },
-  noteIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  noteTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3 },
-  noteMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  noteTypeBadge: { backgroundColor: "#F3F4F6", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  noteTypeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#374151" },
-  featureGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  featureCard: { width: "30%", backgroundColor: "#fff", borderRadius: 14, padding: 14, alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#F0F0F0" },
-  featureIcon: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
-  featureLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#111827", textAlign: "center" },
+  assignTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", marginBottom: 3 },
+  assignMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B" },
+  upcomingCard: { backgroundColor: "#fff", borderRadius: 18, padding: 14, width: 150, borderWidth: 1, borderColor: "#E9D5FF", borderLeftWidth: 4, gap: 6, shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  upcomingTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", lineHeight: 18 },
+  upcomingDate: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B" },
+  noteRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  noteIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
+  noteTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", marginBottom: 3 },
+  noteMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#64748B" },
+  noteTypeBadge: { backgroundColor: "#F5F3FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  noteTypeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
+  featureGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  featureCard: { width: "31%", backgroundColor: "#fff", borderRadius: 18, padding: 14, alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E9D5FF", shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  featureIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  featureLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#1E1B4B", textAlign: "center" },
 });

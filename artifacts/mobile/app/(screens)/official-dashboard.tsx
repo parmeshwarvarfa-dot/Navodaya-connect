@@ -108,7 +108,7 @@ export default function OfficialDashboardScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={["#1A3C6E", "#2D5A9E"]} style={[s.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#7C3AED", "#6366F1"]} style={[s.header, { paddingTop: topPad + 8 }]}>
         <View style={s.headerTop}>
           <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -413,30 +413,30 @@ export default function OfficialDashboardScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { paddingHorizontal: 18, paddingBottom: 18, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
+  header: { paddingHorizontal: 18, paddingBottom: 18, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   headerTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 15 },
-  iconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.16)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
-  headerEyebrow: { color: "rgba(255,255,255,0.62)", fontSize: 9, letterSpacing: 1.3, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  iconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.18)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  headerEyebrow: { color: "rgba(255,255,255,0.7)", fontSize: 9, letterSpacing: 1.3, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
-  headerSub: { color: "rgba(255,255,255,0.78)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  headerSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   snapshotHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8, paddingHorizontal: 2 },
   snapshotTitle: { color: "rgba(255,255,255,0.92)", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   snapshotStatus: { flexDirection: "row", alignItems: "center", gap: 5 },
   snapshotDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34D399" },
   snapshotDotLoading: { backgroundColor: "#FBBF24" },
-  snapshotStatusText: { color: "rgba(255,255,255,0.62)", fontSize: 10, fontFamily: "Inter_400Regular" },
-  statRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 16, paddingVertical: 11, paddingHorizontal: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  snapshotStatusText: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "Inter_400Regular" },
+  statRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 16, paddingVertical: 11, paddingHorizontal: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   statItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3 },
-  statDivider: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.12)" },
+  statDivider: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.14)" },
   statValue: { fontSize: 21, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.76)" },
+  statLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.85)" },
   quickSection: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
   quickHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 2 },
-  quickTitle: { color: "#172033", fontSize: 16, fontFamily: "Inter_700Bold" },
-  quickSubtitle: { color: "#7A8699", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
-  toolCount: { borderRadius: 12, backgroundColor: "#EAF0FF", paddingHorizontal: 10, paddingVertical: 5 },
-  toolCountText: { color: "#3151E8", fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  quickTitle: { color: "#1E1B4B", fontSize: 16, fontFamily: "Inter_700Bold" },
+  quickSubtitle: { color: "#64748B", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  toolCount: { borderRadius: 12, backgroundColor: "#F5F3FF", paddingHorizontal: 10, paddingVertical: 5 },
+  toolCountText: { color: "#7C3AED", fontSize: 10, fontFamily: "Inter_600SemiBold" },
   quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 9 },
   featureCard: {
     width: "48.5%",
@@ -448,12 +448,12 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E9ECF3",
-    elevation: 1,
-    shadowColor: "#172033",
+    borderColor: "#E9D5FF",
+    elevation: 2,
+    shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 7,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
   featureCardWide: { width: "100%", minHeight: 62, flexDirection: "row", justifyContent: "flex-start", paddingHorizontal: 14, gap: 12 },
   featureIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
