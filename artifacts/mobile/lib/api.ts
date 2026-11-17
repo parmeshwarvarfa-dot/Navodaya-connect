@@ -115,6 +115,8 @@ export const api = {
   auth: {
     signup: (data: SignupData) =>
       request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(data) }),
+    demoLogin: (role: string) =>
+      request<AuthResponse>("/auth/demo-login", { method: "POST", body: JSON.stringify({ role }) }),
     signin: (email: string, password: string) =>
       request<AuthResponse>("/auth/signin", { method: "POST", body: JSON.stringify({ email, password }) }),
     firebase: (idToken: string, profileData?: Partial<SignupData>) =>

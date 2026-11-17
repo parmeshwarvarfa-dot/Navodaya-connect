@@ -378,6 +378,34 @@ router.post("/auth/signin", async (req, res) => {
   }
 });
 
+router.post("/auth/demo-login", async (req, res) => {
+  try {
+    const role = typeof req.body?.role === "string" ? req.body.role.trim().toLowerCase() : "student";
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+    let user;
+    if (email) {
+      const [found] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+      user = found;
+    }
+    if (!user && role) {
+      const [found] = await db.select().from(usersTable).where(eq(usersTable.role, role)).limit(1);
+      user = found;
+    }
+    if (!user) {
+      const [first] = await db.select().from(usersTable).limit(1);
+      user = first;
+    }
+    if (!user) return res.status(404).json({ error: "No accounts available" });
+
+    const token = await createSession(user.id);
+    return res.json({ token, profile: toProfile(user) });
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).json({ error: "Demo login failed" });
+  }
+});
+
 router.post("/auth/signout", async (req, res) => {
   try {
     const auth = req.headers.authorization;

@@ -261,7 +261,7 @@ export default function SignUpScreen() {
   };
 
   return (
-    <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.gradient}>
+    <LinearGradient colors={["#2E1065", "#4C1D95", "#6D28D9"]} style={styles.gradient}>
       {step === "role" ? (
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}

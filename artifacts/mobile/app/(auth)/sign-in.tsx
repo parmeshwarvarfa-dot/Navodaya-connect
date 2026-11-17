@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { signIn, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
+  const { signIn, quickDemoLogin, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -30,6 +30,23 @@ export default function SignInScreen() {
   useEffect(() => {
     if (pendingProfile) router.replace("/(auth)/sign-up?completeProfile=1" as any);
   }, [pendingProfile]);
+
+  const handleDemoLogin = async (role: "student" | "alumni" | "teacher" | "official") => {
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      if (quickDemoLogin) {
+        await quickDemoLogin(role);
+      } else {
+        await signIn(role + "@test.com", "password123");
+      }
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Demo login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     setErrorMsg("");
@@ -108,7 +125,7 @@ export default function SignInScreen() {
   };
 
   return (
-    <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.gradient}>
+    <LinearGradient colors={["#2E1065", "#4C1D95", "#6D28D9"]} style={styles.gradient}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -176,6 +193,53 @@ export default function SignInScreen() {
             <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword} disabled={loading}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
+
+            
+            {/* 1-Tap Quick Preview for Testing */}
+            <View style={styles.quickSection}>
+              <View style={styles.quickHeader}>
+                <Ionicons name="flash" size={14} color="#FBBF24" />
+                <Text style={styles.quickTitle}>1-TAP PREVIEW (INSTANT LOGIN)</Text>
+              </View>
+              <View style={styles.quickRow}>
+                <TouchableOpacity
+                  style={styles.quickBtn}
+                  onPress={() => handleDemoLogin("student")}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.quickEmoji}>🎓</Text>
+                  <Text style={styles.quickText}>Student</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickBtn}
+                  onPress={() => handleDemoLogin("alumni")}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.quickEmoji}>🏛️</Text>
+                  <Text style={styles.quickText}>Alumni</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickBtn}
+                  onPress={() => handleDemoLogin("teacher")}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.quickEmoji}>📚</Text>
+                  <Text style={styles.quickText}>Teacher</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickBtn}
+                  onPress={() => handleDemoLogin("official")}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.quickEmoji}>👔</Text>
+                  <Text style={styles.quickText}>Official</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Divider */}
             <View style={styles.dividerRow}>
@@ -268,6 +332,49 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
   eyeBtn: { padding: 4 },
+  quickSection: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    marginVertical: 4,
+  },
+  quickHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+    justifyContent: "center",
+  },
+  quickTitle: {
+    color: "#FDE68A",
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 0.6,
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "space-between",
+  },
+  quickBtn: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 12,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickEmoji: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  quickText: {
+    color: "#4C1D95",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+  },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: "rgba(239,68,68,0.85)", borderRadius: 12,
@@ -278,7 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderRadius: 28, height: 54,
     alignItems: "center", justifyContent: "center", marginTop: 4,
   },
-  loginBtnText: { color: "#7C3AED", fontFamily: "Inter_700Bold", fontSize: 16 },
+  loginBtnText: { color: "#5B21B6", fontFamily: "Inter_700Bold", fontSize: 16 },
   forgotBtn: { alignItems: "center", paddingVertical: 2 },
   forgotText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 14 },
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 4 },

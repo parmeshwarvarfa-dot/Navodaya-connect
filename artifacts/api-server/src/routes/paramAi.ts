@@ -20,37 +20,24 @@ function getFallbackReply() {
 }
 
 function resolveGeminiApiKey(): string | undefined {
-  if (process.env.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY.replace(/^["']|["']$/g, "").trim();
-  }
-
-  // Attempt to reload workspace root .env in case it was updated at runtime
+  // Read workspace root .env directly so any update to .env takes effect immediately
   const candidatePaths = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "../.env"),
     path.resolve(process.cwd(), "../../.env"),
+    path.resolve(process.cwd(), "../.env"),
+    path.resolve(process.cwd(), ".env"),
     path.resolve(__dirname, "../../../../.env"),
   ];
 
   for (const envPath of candidatePaths) {
     if (existsSync(envPath)) {
-      if (typeof process.loadEnvFile === "function") {
-        try {
-          process.loadEnvFile(envPath);
-          if (process.env.GEMINI_API_KEY) {
-            return process.env.GEMINI_API_KEY.replace(/^["']|["']$/g, "").trim();
-          }
-        } catch {
-          // ignore
-        }
-      }
       try {
         const { readFileSync } = require("node:fs");
         const raw = readFileSync(envPath, "utf8");
         const match = raw.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)/);
         if (match && match[1]) {
-          process.env.GEMINI_API_KEY = match[1].trim();
-          return match[1].trim();
+          const key = match[1].trim().replace(/^["']|["']$/g, "");
+          process.env.GEMINI_API_KEY = key;
+          return key;
         }
       } catch {
         // ignore
@@ -58,7 +45,11 @@ function resolveGeminiApiKey(): string | undefined {
     }
   }
 
-  return process.env.GEMINI_API_KEY;
+  if (process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY.replace(/^["']|["']$/g, "").trim();
+  }
+
+  return undefined;
 }
 
 router.post("/param-ai/chat", requireAuth, async (req, res) => {

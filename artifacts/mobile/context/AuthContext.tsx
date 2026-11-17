@@ -29,6 +29,7 @@ interface AuthContextType {
   isVerified: boolean;
   signUp: (email: string, password: string, profileData: Omit<SignupData, "email" | "password">) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
+  quickDemoLogin: (role: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -155,6 +156,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     } finally {
       manualAuthSync.current = false;
+    }
+  };
+
+  const quickDemoLogin = async (role: string) => {
+    setLoading(true);
+    try {
+      const { token, profile: p } = await api.auth.demoLogin(role);
+      await setToken(token);
+      setProfile(p);
+    } catch (e) {
+      throw e;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -286,7 +300,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : profile?.verificationStatus === "verified");
 
   return (
-    <AuthContext.Provider value={{ user, profile, pendingProfile, loading, isVerified, signUp, signIn, signInWithGoogle, signInWithFacebook, signInWithApple, completeProfile, resendEmailVerification, forgotPassword, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, pendingProfile, loading, isVerified, signUp, signIn,
+    quickDemoLogin, signInWithGoogle, signInWithFacebook, signInWithApple, completeProfile, resendEmailVerification, forgotPassword, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
