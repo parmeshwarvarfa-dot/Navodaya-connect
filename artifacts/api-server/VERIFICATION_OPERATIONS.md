@@ -28,7 +28,7 @@ WHERE lower(email) = lower('verified.school.official@example.org')
 
 Confirm exactly one row was inserted. An authorized official can then appoint verified students, alumni, or teachers at that same JNV as school reviewers from the existing User Management screen. Cross-school assignments are not exposed by the app.
 
-Set `PUBLIC_APP_URL` on the API server to the public Navodaya Connect web origin for credential verification links. Never put private evidence URLs in a public profile or public credential.
+Set `PUBLIC_APP_URL` on the API server to the public Navodaya Connect web origin for credential verification links. The development launcher derives it from `REPLIT_DEV_DOMAIN`, `REPLIT_INTERNAL_APP_DOMAIN`, `EXPO_PUBLIC_DOMAIN`, or `EXPO_PUBLIC_APP_URL` when available; an explicit `PUBLIC_APP_URL` takes precedence. Never use a localhost URL for links intended to be shared outside the development machine, and never put private evidence URLs in a public profile or public credential.
 
 Existing verification records predate the approval workflow and do not contain proof of an official final decision. Review legacy verified users before treating their status as a newly issued Digital ID; this code does not silently rewrite existing records.
 

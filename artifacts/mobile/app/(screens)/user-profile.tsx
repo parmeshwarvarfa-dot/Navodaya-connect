@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -9,15 +11,18 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import MotionPressable from "@/components/motion/MotionPressable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, type PublicUserProfile } from "@/lib/api";
+import { api, type PublicUserProfile, type RecognitionProfile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { RoleBadge } from "@/components/RoleBadge";
 import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
 import {
   getGetSocialStatusQueryKey,
@@ -30,13 +35,6 @@ import {
   useUnfollowUser,
 } from "@workspace/api-client-react";
 
-const ROLE_LABELS: Record<string, string> = {
-  student: "Student",
-  alumni: "Alumni",
-  teacher: "Teacher",
-  official: "JNV Official",
-};
-
 function getInitials(name: string) {
   return name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -47,6 +45,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
+  const window = useWindowDimensions();
   const queryClient = useQueryClient();
   const { profile: currentUser } = useAuth();
   const params = useLocalSearchParams<{ userId?: string }>();
@@ -58,6 +57,10 @@ export default function UserProfileScreen() {
   const [messageOpen, setMessageOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [recognition, setRecognition] = useState<RecognitionProfile | null>(null);
+  const [recognitionLoading, setRecognitionLoading] = useState(false);
+  const [recognitionError, setRecognitionError] = useState("");
+  const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const isOwnProfile = !!user && (user.id === currentUser?.uid || user.id === (currentUser as any)?.id);
 
@@ -102,6 +105,26 @@ export default function UserProfileScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId || !user || user.isRestricted) { setRecognition(null); setRecognitionLoading(false); return; }
+    setRecognitionLoading(true); setRecognitionError("");
+    void (async () => {
+      try {
+        const data = await api.recognition.profile(userId);
+        if (!cancelled) setRecognition(data);
+      } catch (error) {
+        if (!cancelled) {
+          setRecognition(null);
+          setRecognitionError(getErrorMessage(error, "Could not load recognition."));
+        }
+      } finally {
+        if (!cancelled) setRecognitionLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, user?.id, user?.isRestricted]);
+
   const status = socialStatus.data;
   const busy = follow.isPending || unfollow.isPending || block.isPending || sendRequest.isPending;
   const followLabel = status?.isFollowing
@@ -129,7 +152,15 @@ export default function UserProfileScreen() {
     if (!user) return;
     const conversation = conversations.data?.find((item) => item.peerId === user.id);
     if (conversation) {
-      router.push({ pathname: "/(screens)/social-inbox", params: { conversationId: conversation.id } } as any);
+      router.push({
+        pathname: "/(screens)/direct-chat",
+        params: {
+          id: conversation.id,
+          name: conversation.peerName,
+          peerId: conversation.peerId,
+          photoURL: conversation.peerPhotoUrl || "",
+        },
+      } as any);
       return;
     }
     setMessageOpen(true);
@@ -178,7 +209,19 @@ export default function UserProfileScreen() {
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
           <View style={styles.profileCard}>
             {user.photoURL ? (
-              <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+              <TouchableOpacity
+                style={styles.avatarPressable}
+                onPress={() => setPhotoPreviewOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${user.fullName}'s profile photo`}
+                accessibilityHint="Shows the profile photo full screen"
+                activeOpacity={0.85}
+              >
+                <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+                <View style={styles.avatarExpandBadge} pointerEvents="none">
+                  <Ionicons name="expand-outline" size={13} color="#fff" />
+                </View>
+              </TouchableOpacity>
             ) : (
               <View style={styles.avatar}><Text style={styles.avatarText}>{getInitials(user.fullName || "N")}</Text></View>
             )}
@@ -186,7 +229,7 @@ export default function UserProfileScreen() {
               <Text style={styles.name}>{user.fullName}</Text>
               <VerifiedBadge status={user.verificationStatus} role={user.role} size="sm" />
             </View>
-            <Text style={styles.role}>{ROLE_LABELS[user.role] || user.role}</Text>
+            <View style={{ marginTop: 6 }}><RoleBadge role={user.role} /></View>
             <View style={styles.schoolRow}>
               <Ionicons name="school-outline" size={16} color="#6B7280" />
               <Text style={styles.schoolText}>{user.jnvName}{user.jnvState ? ` · ${user.jnvState}` : ""}</Text>
@@ -205,6 +248,18 @@ export default function UserProfileScreen() {
                 {user.class ? <Text style={styles.detail}>{user.class}</Text> : null}
                 {user.passoutYear ? <Text style={styles.detail}>Batch {user.passoutYear}</Text> : null}
                 {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
+                {recognitionLoading || recognitionError || recognition && (recognition.totalPoints > 0 || recognition.awards.length > 0) ? <View style={styles.recognitionCard}><View style={styles.recognitionHeader}><Ionicons name="trophy-outline" size={17} color="#B7791F" /><Text style={styles.recognitionTitle}>Community Recognition</Text></View>{recognitionLoading ? <Text style={styles.recognitionAward}>Loading recognition…</Text> : recognitionError ? <Text style={styles.recognitionAward}>{recognitionError}</Text> : recognition ? <><Text style={styles.recognitionPoints}>{recognition.totalPoints} points · {recognition.awardCount} awards</Text><Text style={styles.recognitionAward}>Monthly rank: {recognition.monthlyRank ? `#${recognition.monthlyRank}` : "Not ranked"} · Annual rank: {recognition.annualRank ? `#${recognition.annualRank}` : "Not ranked"}</Text>{recognition.awards.slice(0, 3).map((award) => <Text key={award.id} style={styles.recognitionAward}>🏅 {award.category.replaceAll("_", " ")} · {award.period}</Text>)}</> : null}</View> : null}
+                {user.role === "alumni" && user.resumeUrl ? (
+                  <TouchableOpacity
+                    style={styles.resumeButton}
+                    onPress={() => void Linking.openURL(user.resumeUrl!).catch(() => Alert.alert("Unable to open link", "Check the resume link and try again."))}
+                    accessibilityRole="link"
+                  >
+                    <Ionicons name="document-text-outline" size={17} color="#3D5AF1" />
+                    <Text style={styles.resumeButtonText}>View Resume / CV</Text>
+                    <Ionicons name="open-outline" size={14} color="#3D5AF1" />
+                  </TouchableOpacity>
+                ) : null}
                 {status?.followsYou ? (
                   <View style={styles.followsYou}><Text style={styles.followsYouText}>Follows you</Text></View>
                 ) : null}
@@ -215,7 +270,7 @@ export default function UserProfileScreen() {
           {!isOwnProfile ? (
             <>
               <View style={styles.actions}>
-                <TouchableOpacity
+                <MotionPressable
                   style={[styles.primaryAction, status?.isFollowing && styles.followingAction, busy && { opacity: 0.6 }]}
                   onPress={toggleFollow}
                   disabled={busy || socialStatus.isLoading || status?.isBlocked}
@@ -226,7 +281,7 @@ export default function UserProfileScreen() {
                       <Text style={styles.primaryActionText}>{followLabel}</Text>
                     </>
                   )}
-                </TouchableOpacity>
+                </MotionPressable>
                 <TouchableOpacity
                   style={[styles.secondaryAction, busy && { opacity: 0.6 }]}
                   onPress={openMessage}
@@ -262,6 +317,40 @@ export default function UserProfileScreen() {
       )}
 
       {toast ? <View style={[styles.toast, { top: topPad + 56 }]} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
+
+      <Modal
+        visible={photoPreviewOpen && !!user?.photoURL}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setPhotoPreviewOpen(false)}
+      >
+        <View style={styles.photoViewer}>
+          <View style={[styles.photoViewerHeader, { paddingTop: Math.max(insets.top, 14) }]}>
+            <View style={styles.photoViewerIdentity}>
+              <Text style={styles.photoViewerName} numberOfLines={1}>{user?.fullName}</Text>
+              <Text style={styles.photoViewerCaption}>Profile photo</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.photoViewerClose}
+              onPress={() => setPhotoPreviewOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close profile photo"
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          {user?.photoURL ? (
+            <Image
+              source={{ uri: user.photoURL }}
+              style={{ width: window.width, height: Math.max(180, window.height - Math.max(insets.top, 14) - insets.bottom - 94) }}
+              resizeMode="contain"
+              accessibilityLabel={`${user.fullName}'s profile photo`}
+            />
+          ) : null}
+          <View style={{ height: Math.max(insets.bottom, 16) }} />
+        </View>
+      </Modal>
 
       <Modal visible={messageOpen} transparent animationType="fade" onRequestClose={() => setMessageOpen(false)}>
         <View style={styles.modalOverlay}>
@@ -320,15 +409,20 @@ const styles = StyleSheet.create({
   stateText: { color: "#6B7280", fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center" },
   profileCard: { alignItems: "center", backgroundColor: "#fff", borderRadius: 14, padding: 22, borderWidth: 1, borderColor: "#F0F0F0" },
   avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  avatarImage: { width: 76, height: 76, borderRadius: 38, marginBottom: 12 },
+  avatarPressable: { width: 76, height: 76, marginBottom: 12, position: "relative" },
+  avatarImage: { width: 76, height: 76, borderRadius: 38 },
+  avatarExpandBadge: { position: "absolute", right: -1, bottom: -1, width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "#fff" },
   avatarText: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" },
   name: { color: "#111827", fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center" },
-  role: { marginTop: 4, color: "#6B7280", fontSize: 14, fontFamily: "Inter_500Medium" },
   schoolRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14 },
   schoolText: { color: "#4B5563", fontSize: 13, fontFamily: "Inter_500Medium", textAlign: "center" },
   detail: { marginTop: 7, color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   bio: { marginTop: 14, color: "#4B5563", fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 21, textAlign: "center" },
+  recognitionCard: { alignSelf: "stretch", marginTop: 14, padding: 12, backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, borderRadius: 14 },
+  recognitionHeader: { flexDirection: "row", alignItems: "center", gap: 6 }, recognitionTitle: { color: "#92400E", fontFamily: "Inter_700Bold", fontSize: 12 }, recognitionPoints: { marginTop: 5, color: "#17243A", fontFamily: "Inter_700Bold", fontSize: 15 }, recognitionAward: { marginTop: 4, color: "#7C5A19", fontFamily: "Inter_500Medium", fontSize: 11 },
+  resumeButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 14, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: "#EEF2FF" },
+  resumeButtonText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   privateNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, marginTop: 18, borderRadius: 11, backgroundColor: "#F5F3FF" },
   privateText: { flex: 1, color: "#55409A", fontSize: 12, lineHeight: 18, fontFamily: "Inter_500Medium" },
   followsYou: { marginTop: 12, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15, backgroundColor: "#EEF2FF" },
@@ -346,6 +440,12 @@ const styles = StyleSheet.create({
   toast: { position: "absolute", left: 20, right: 20, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: "#1F2937" },
   toastText: { color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium", textAlign: "center" },
   modalOverlay: { flex: 1, justifyContent: "center", padding: 22, backgroundColor: "rgba(17,24,39,0.45)" },
+  photoViewer: { flex: 1, justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(8,12,22,0.97)" },
+  photoViewerHeader: { width: "100%", minHeight: 72, paddingHorizontal: 18, paddingBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  photoViewerIdentity: { flex: 1, paddingRight: 16 },
+  photoViewerName: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  photoViewerCaption: { marginTop: 3, color: "#A7B0C0", fontSize: 12, fontFamily: "Inter_400Regular" },
+  photoViewerClose: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.12)" },
   modalCard: { backgroundColor: "#fff", borderRadius: 18, padding: 20 },
   modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   modalHelp: { marginTop: 7, fontSize: 13, lineHeight: 19, color: "#6B7280", fontFamily: "Inter_400Regular" },

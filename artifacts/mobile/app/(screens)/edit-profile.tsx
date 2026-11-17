@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
+  Alert,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -21,6 +22,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import JnvDirectoryFields from "@/components/JnvDirectoryFields";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 const HOUSE_OPTIONS = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASS_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"];
@@ -128,11 +130,14 @@ export default function EditProfileScreen() {
 
   const [linkedin, setLinkedin] = useState((profile as any)?.linkedinUrl || "");
   const [twitter, setTwitter] = useState((profile as any)?.twitterUrl || "");
+  const [resumeUrl, setResumeUrl] = useState(profile?.resumeUrl || "");
 
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+  const [photoToAdjust, setPhotoToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
 
   useEffect(() => {
     const nextType = profile?.profileImageType || (profile?.photoURL ? "photo" : "default");
@@ -153,15 +158,12 @@ export default function EditProfileScreen() {
       if (!perm.granted) { setPickingPhoto(false); return; }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.7,
-        base64: true,
       });
       if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
-        setProfileImageType("photo");
+        setPhotoToAdjust(result.assets[0]);
+        setShowImageAdjustment(true);
       }
     } catch {}
     setPickingPhoto(false);
@@ -174,15 +176,13 @@ export default function EditProfileScreen() {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) { setPickingPhoto(false); return; }
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
         quality: 0.7,
-        base64: true,
       });
       if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
-        setProfileImageType("photo");
+        setPhotoToAdjust(result.assets[0]);
+        setShowImageAdjustment(true);
       }
     } catch {}
     setPickingPhoto(false);
@@ -195,6 +195,16 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!fullName.trim()) return;
+    const trimmedResumeUrl = resumeUrl.trim();
+    if (role === "alumni" && trimmedResumeUrl) {
+      try {
+        const parsedResumeUrl = new URL(trimmedResumeUrl);
+        if (parsedResumeUrl.protocol !== "https:") throw new Error("HTTPS required");
+      } catch {
+        Alert.alert("Invalid resume link", "Enter a valid HTTPS link to your resume or CV.");
+        return;
+      }
+    }
     setSaving(true);
     try {
       const updates: any = {
@@ -217,6 +227,7 @@ export default function EditProfileScreen() {
         updates.skills = skills.split(",").map((s: string) => s.trim()).filter(Boolean);
         updates.linkedinUrl = linkedin.trim();
         updates.twitterUrl = twitter.trim();
+        updates.resumeUrl = trimmedResumeUrl;
       }
       if (role === "student") {
         updates.class = cls;
@@ -232,7 +243,9 @@ export default function EditProfileScreen() {
       await api.users.updateMe(updates);
       await refreshProfile();
       setShowSuccess(true);
-    } catch {}
+    } catch (error) {
+      Alert.alert("Profile update failed", error instanceof Error ? error.message : "Please try again.");
+    }
     setSaving(false);
   };
 
@@ -316,7 +329,9 @@ export default function EditProfileScreen() {
               onStateChange={setJnvState}
               onSchoolChange={setJnvName}
             />
-            <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} labelMap={HOUSE_LABEL_MAP} />
+            {role !== "official" && (
+              <ChipRow label="House" options={HOUSE_OPTIONS} value={house} onChange={setHouse} labelMap={HOUSE_LABEL_MAP} />
+            )}
           </Section>
 
           {/* ── Alumni ── */}
@@ -327,6 +342,10 @@ export default function EditProfileScreen() {
               <Field label="Company / Institution" value={company} onChange={setCompany} placeholder="e.g. Infosys, IIT Delhi" icon="business-outline" />
               <Field label="Field / Domain" value={field} onChange={setField} placeholder="e.g. Technology, Medicine, Law" icon="layers-outline" />
               <Field label="Skills (comma-separated)" value={skills} onChange={setSkills} placeholder="Python, Leadership, UI Design..." icon="bulb-outline" />
+              <Field label="Resume or CV Link" value={resumeUrl} onChange={setResumeUrl} placeholder="https://..." icon="document-text-outline" keyboardType="url" />
+              <Text style={{ marginTop: -8, color: "#71809A", fontSize: 12, lineHeight: 17 }}>
+                Add an HTTPS view link. People who can view your profile may open it.
+              </Text>
             </Section>
           )}
 
@@ -480,6 +499,19 @@ export default function EditProfileScreen() {
           </View>
         </View>
       </Modal>
+      <ImageAdjustmentModal
+        visible={showImageAdjustment}
+        asset={photoToAdjust}
+        title="Adjust profile photo"
+        defaultAspect="square"
+        onCancel={() => { setShowImageAdjustment(false); setPhotoToAdjust(null); }}
+        onDone={(asset) => {
+          setPhotoURL(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+          setProfileImageType("photo");
+          setShowImageAdjustment(false);
+          setPhotoToAdjust(null);
+        }}
+      />
     </View>
   );
 }

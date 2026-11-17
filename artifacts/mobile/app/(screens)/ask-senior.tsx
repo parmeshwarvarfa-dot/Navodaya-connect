@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 import type { QaQuestion, QaAnswer } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 
-const CATEGORIES = ["All", "JEE/NEET", "College Life", "Career", "Hostel Life", "Coding & Tech", "UPSC/Civics"];
+const CATEGORIES = ["All", "JEE/NEET", "College Life", "Career", "Hostel Life", "Coding & Tech", "UPSC/Civics", "Other"];
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);

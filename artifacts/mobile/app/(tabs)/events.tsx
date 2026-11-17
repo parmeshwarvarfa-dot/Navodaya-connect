@@ -9,12 +9,14 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Image,
   RefreshControl,
   KeyboardAvoidingView,
   Switch,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
@@ -22,6 +24,8 @@ import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import EventCard from "@/components/EventCard";
+import FadeIn from "@/components/motion/FadeIn";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 async function registerForEvent(
   eventId: string,
@@ -48,28 +52,68 @@ function formatDateTime(dateStr: string) {
   return dateStr;
 }
 
-const FALLBACK_EVENTS: Event[] = [
-  {
-    id: "fe1", title: "Career Guidance Webinar — Engineering & Tech", organizer: "Priya Sharma (Alumni)",
-    description: "Join JNV alumni working at top tech companies to explore engineering careers, internship tips, and JEE guidance. Interactive Q&A included.",
-    date: new Date(Date.now() + 7 * 86400000).toISOString(), location: "Online (Zoom)", jnvName: "National", createdAt: new Date().toISOString(),
-  },
-  {
-    id: "fe2", title: "Inter-JNV Alumni Sports Meet 2025", organizer: "NVS Sports Committee",
-    description: "Annual sports meet for JNV alumni and students. Events include Cricket, Kabaddi, Athletics & Volleyball. Register to confirm your participation.",
-    date: new Date(Date.now() + 14 * 86400000).toISOString(), location: "JNV Delhi Campus, Sector 3", jnvName: "JNV Delhi", createdAt: new Date().toISOString(),
-  },
-  {
-    id: "fe3", title: "UPSC Preparation Masterclass", organizer: "Amit Verma, IAS",
-    description: "Expert guidance from IAS officers who are proud JNV alumni. Covers exam strategy, optional subjects, and interview preparation for Civil Services 2025.",
-    date: new Date(Date.now() + 21 * 86400000).toISOString(), location: "Online (Google Meet)", jnvName: "National", createdAt: new Date().toISOString(),
-  },
-  {
-    id: "fe4", title: "Annual Prize Distribution & Cultural Evening", organizer: "Principal",
-    description: "Celebrate academic excellence, sports achievements, and cultural performances. Parents and guardians are cordially invited.",
-    date: new Date(Date.now() + 30 * 86400000).toISOString(), location: "School Auditorium, JNV Campus", jnvName: "JNV India", createdAt: new Date().toISOString(),
-  },
-];
+function parseEventDateValue(dateValue: string, timeValue: string): Date | null {
+  const input = dateValue.trim();
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  const isoDate = input.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const dayFirstDate = input.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  const namedDate = input.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+  if (isoDate) {
+    year = Number(isoDate[1]); month = Number(isoDate[2]); day = Number(isoDate[3]);
+  } else if (dayFirstDate) {
+    day = Number(dayFirstDate[1]); month = Number(dayFirstDate[2]); year = Number(dayFirstDate[3]);
+  } else if (namedDate) {
+    day = Number(namedDate[1]);
+    const monthToken = namedDate[2].toLowerCase();
+    month = monthNames.findIndex((name) => name === monthToken || (monthToken.length >= 3 && name.startsWith(monthToken))) + 1;
+    year = Number(namedDate[3]);
+    if (!month) return null;
+  } else {
+    return null;
+  }
+
+  let hours = 0;
+  let minutes = 0;
+  const time = timeValue.trim();
+  if (time) {
+    const timeParts = time.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+    if (!timeParts) return null;
+    hours = Number(timeParts[1]);
+    minutes = Number(timeParts[2] ?? 0);
+    const meridiem = timeParts[3]?.toLowerCase();
+    if (minutes > 59) return null;
+    if (meridiem) {
+      if (hours < 1 || hours > 12) return null;
+      if (meridiem === "pm" && hours !== 12) hours += 12;
+      if (meridiem === "am" && hours === 12) hours = 0;
+    } else if (hours > 23) {
+      return null;
+    }
+  }
+
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const result = new Date(year, month - 1, day, hours, minutes);
+  if (result.getFullYear() !== year || result.getMonth() !== month - 1 || result.getDate() !== day) return null;
+  return result;
+}
+
+function eventDateInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
+}
+
+function eventTimeInputValue(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+}
 
 const DIETARY_OPTIONS = ["No Preference", "Vegetarian", "Non-Vegetarian", "Vegan", "Jain"];
 const HOUSE_OPTIONS = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
@@ -250,25 +294,90 @@ function RegistrationModal({ event, role, profile, visible, onClose, onSuccess }
 }
 
 // ─── Create Event Modal ───────────────────────────────────────────────────────
-function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; onClose: () => void; onCreated: () => void }) {
+function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visible: boolean; onClose: () => void; onCreated: () => void; eventToEdit: Event | null }) {
   const { profile } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [eventMedia, setEventMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [mediaToAdjust, setMediaToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [createError, setCreateError] = useState("");
+
+  useEffect(() => {
+    if (!visible) return;
+    setTitle(eventToEdit?.title ?? "");
+    setDescription(eventToEdit?.description ?? "");
+    setVenue(eventToEdit?.location ?? "");
+    setDate(eventToEdit ? eventDateInputValue(eventToEdit.date) : "");
+    setTime(eventToEdit ? eventTimeInputValue(eventToEdit.date) : "");
+    setEventMedia(null);
+    setCreateError("");
+    setSuccess(false);
+  }, [visible, eventToEdit?.id]);
+
+  const chooseEventMedia = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setCreateError("Allow photo library access to attach event media.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images", "videos"],
+        allowsMultipleSelection: false,
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset) return;
+      if ((asset.fileSize ?? 0) > 100 * 1024 * 1024) {
+        setCreateError("Choose a photo or video under 100 MB.");
+        return;
+      }
+      setCreateError("");
+      if (asset.type === "image") {
+        setMediaToAdjust(asset);
+        setShowImageAdjustment(true);
+      } else {
+        setEventMedia(asset);
+      }
+    } catch {
+      setCreateError("Could not open your photo library. Please try again.");
+    }
+  };
 
   const handleCreate = async () => {
     if (!title.trim() || !description.trim() || !venue.trim() || !date.trim()) return;
+    const eventDate = parseEventDateValue(date, time);
+    if (!eventDate) {
+      setCreateError("Enter the date as DD-MM-YYYY (for example, 25-12-2026) and use a valid time such as 10:00 AM.");
+      return;
+    }
     setSubmitting(true);
+    setCreateError("");
+    let uploadedKey: string | undefined;
     try {
-      const fullDate = time.trim() ? `${date.trim()} at ${time.trim()}` : date.trim();
-      await api.events.create({ title: title.trim(), description: description.trim(), date: fullDate, location: venue.trim() });
+      if (eventMedia) {
+        const fileName = eventMedia.fileName?.replace(/[^a-zA-Z0-9._ -]/g, "_") || "event-media";
+        const uploaded = await api.memories.uploadMedia(eventMedia.uri, fileName, eventMedia.mimeType);
+        uploadedKey = uploaded.key;
+      }
+      const payload = { title: title.trim(), description: description.trim(), date: eventDate.toISOString(), location: venue.trim(), ...(uploadedKey ? { mediaKey: uploadedKey } : {}) };
+      if (eventToEdit) await api.events.update(eventToEdit.id, payload);
+      else await api.events.create(payload);
       setSuccess(true);
-      setTitle(""); setDescription(""); setVenue(""); setDate(""); setTime("");
-    } catch {}
+      setTitle(""); setDescription(""); setVenue(""); setDate(""); setTime(""); setEventMedia(null);
+    } catch (error) {
+      if (uploadedKey) {
+        try { await api.memories.cleanupUploads([uploadedKey]); } catch {}
+      }
+      setCreateError(error instanceof Error ? error.message : "Could not publish the event. Please try again.");
+    }
     setSubmitting(false);
   };
 
@@ -280,8 +389,8 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
             <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={cStyles.successIcon}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </LinearGradient>
-            <Text style={cStyles.successTitle}>Event Created!</Text>
-            <Text style={cStyles.successDesc}>Your event has been published. Other Navodayans can now view and register for it.</Text>
+            <Text style={cStyles.successTitle}>{eventToEdit ? "Event Updated!" : "Event Created!"}</Text>
+            <Text style={cStyles.successDesc}>{eventToEdit ? "Your event details have been updated." : "Your event has been published. Other Navodayans can now view and register for it."}</Text>
             <TouchableOpacity style={cStyles.successBtn} onPress={() => { setSuccess(false); onCreated(); onClose(); }}>
               <Text style={cStyles.successBtnText}>Done</Text>
             </TouchableOpacity>
@@ -294,10 +403,11 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
   const canSubmit = title.trim() && description.trim() && venue.trim() && date.trim();
 
   return (
+    <>
     <Modal visible={visible} animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <View style={cStyles.container}>
         <View style={cStyles.header}>
-          <Text style={cStyles.headerTitle}>Organise an Event</Text>
+          <Text style={cStyles.headerTitle}>{eventToEdit ? "Edit Event" : "Organise an Event"}</Text>
           <TouchableOpacity onPress={onClose} style={cStyles.closeBtn}>
             <Ionicons name="close" size={22} color="#374151" />
           </TouchableOpacity>
@@ -320,7 +430,7 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
             {[
               { label: "Event Title", value: title, onChange: setTitle, placeholder: "e.g. Annual Alumni Reunion 2025", icon: "megaphone-outline", required: true },
               { label: "Venue / Location", value: venue, onChange: setVenue, placeholder: "e.g. School Auditorium / Online (Zoom)", icon: "location-outline", required: true },
-              { label: "Date", value: date, onChange: setDate, placeholder: "e.g. 15 August 2025", icon: "calendar-outline", required: true },
+              { label: "Date", value: date, onChange: setDate, placeholder: "DD-MM-YYYY (e.g. 25-12-2026)", icon: "calendar-outline", required: true },
               { label: "Time", value: time, onChange: setTime, placeholder: "e.g. 10:00 AM", icon: "time-outline", required: false },
             ].map((f) => (
               <View key={f.label} style={cStyles.fieldWrap}>
@@ -352,6 +462,41 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
               </View>
             </View>
 
+            <View style={cStyles.fieldWrap}>
+              <Text style={cStyles.fieldLabel}>Event photo or video <Text style={cStyles.optionalLabel}>(Optional)</Text></Text>
+              {eventMedia ? (
+                <View style={cStyles.mediaPreview}>
+                  {eventMedia.type === "video" ? (
+                    <View style={cStyles.videoPreview}>
+                      <Ionicons name="play-circle" size={42} color="#fff" />
+                      <Text style={cStyles.videoPreviewText}>Video selected</Text>
+                    </View>
+                  ) : (
+                    <Image source={{ uri: eventMedia.uri }} style={cStyles.mediaImage} resizeMode="cover" />
+                  )}
+                  <TouchableOpacity style={cStyles.removeMedia} onPress={() => setEventMedia(null)} accessibilityLabel="Remove event media">
+                    <Ionicons name="close" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ) : eventToEdit?.mediaUrl ? (
+                <View style={cStyles.mediaPreview}>
+                  {eventToEdit.mediaType === "video" ? (
+                    <View style={cStyles.videoPreview}><Ionicons name="play-circle" size={42} color="#fff" /><Text style={cStyles.videoPreviewText}>Current event video</Text></View>
+                  ) : <Image source={{ uri: eventToEdit.mediaUrl }} style={cStyles.mediaImage} resizeMode="cover" />}
+                </View>
+              ) : null}
+              {!eventMedia && <TouchableOpacity style={cStyles.mediaPicker} onPress={chooseEventMedia} activeOpacity={0.8}>
+                <View style={cStyles.mediaPickerIcon}><Ionicons name="images-outline" size={21} color="#3D5AF1" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={cStyles.mediaPickerTitle}>{eventToEdit?.mediaUrl ? "Replace current media" : "Add a photo or video"}</Text>
+                  <Text style={cStyles.mediaPickerSub}>{eventToEdit?.mediaUrl ? "Leave this blank to keep the current media" : "Give attendees a preview of the event"}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>}
+            </View>
+
+            {createError ? <Text style={cStyles.createError}>{createError}</Text> : null}
+
             <View style={cStyles.tipBox}>
               <Ionicons name="information-circle-outline" size={16} color="#3D5AF1" />
               <Text style={cStyles.tipText}>Tip: Include specific timings, dress code, what to bring, and any eligibility criteria so attendees come prepared.</Text>
@@ -363,8 +508,8 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
             >
               {submitting ? <ActivityIndicator color="#fff" /> : (
                 <>
-                  <Ionicons name="add-circle-outline" size={20} color="#fff" />
-                  <Text style={cStyles.submitBtnText}>Publish Event</Text>
+                  <Ionicons name={eventToEdit ? "save-outline" : "add-circle-outline"} size={20} color="#fff" />
+                  <Text style={cStyles.submitBtnText}>{eventToEdit ? "Save Changes" : "Publish Event"}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -372,6 +517,14 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
         </KeyboardAvoidingView>
       </View>
     </Modal>
+    <ImageAdjustmentModal
+      visible={showImageAdjustment}
+      asset={mediaToAdjust}
+      title="Adjust event photo"
+      onCancel={() => { setShowImageAdjustment(false); setMediaToAdjust(null); }}
+      onDone={(asset) => { setEventMedia(asset); setShowImageAdjustment(false); setMediaToAdjust(null); }}
+    />
+    </>
   );
 }
 
@@ -381,15 +534,20 @@ export default function EventsScreen() {
   const { profile, isVerified } = useAuth();
   const { tryAccess, modal: gateModal } = useVerificationGate(isVerified);
   const [events, setEvents] = useState<Event[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [regEvent, setRegEvent] = useState<Event | null>(null);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [successEvent, setSuccessEvent] = useState<string | null>(null);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchEvents = async () => {
-    try { setEvents(await api.events.list()); } catch {}
+    try { setEvents(await api.events.list()); setLoadError(false); } catch { setLoadError(true); }
   };
 
   useEffect(() => { fetchEvents(); }, []);
@@ -400,7 +558,7 @@ export default function EventsScreen() {
     setRefreshing(false);
   }, []);
 
-  const displayEvents = events.length > 0 ? events : FALLBACK_EVENTS;
+  const displayEvents = events;
 
   const openOrganizerProfile = useCallback(async (organizerId?: string, organizerName?: string) => {
     if (organizerId) {
@@ -429,6 +587,26 @@ export default function EventsScreen() {
     setSuccessEvent(eventId);
   };
 
+  const confirmDeleteEvent = async () => {
+    if (!deleteTarget || deletingEvent) return;
+    setDeletingEvent(true);
+    setDeleteError("");
+    try {
+      await api.events.delete(deleteTarget.id);
+      setEvents((current) => current.filter((event) => event.id !== deleteTarget.id));
+      setRegistered((current) => {
+        const next = new Set(current);
+        next.delete(deleteTarget.id);
+        return next;
+      });
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Could not delete this event. Please try again.");
+    } finally {
+      setDeletingEvent(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
@@ -436,7 +614,7 @@ export default function EventsScreen() {
           <Text style={styles.headerTitle}>Events</Text>
           <Text style={styles.headerSub}>JNV functions, webinars & reunions</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => { setEditingEvent(null); setShowCreate(true); }}>
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addBtnText}>Organise</Text>
         </TouchableOpacity>
@@ -447,16 +625,21 @@ export default function EventsScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
       >
+        {loadError ? <TouchableOpacity onPress={fetchEvents} style={{ padding: 18, backgroundColor: "#FFF4E5", borderRadius: 12, marginBottom: 14 }}><Text style={{ color: "#8A4B08", fontFamily: "Inter_600SemiBold" }}>Could not load events. Tap to retry.</Text></TouchableOpacity> : null}
+        {!loadError && displayEvents.length === 0 ? <View style={{ alignItems: "center", paddingVertical: 48 }}><Ionicons name="calendar-outline" size={42} color="#9CA3AF" /><Text style={{ color: "#6B7280", marginTop: 12, fontFamily: "Inter_600SemiBold" }}>No events yet</Text></View> : null}
         {displayEvents.map((event, idx) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            index={idx}
-            registered={registered.has(event.id)}
-            registrationSuccess={successEvent === event.id}
-            onRegister={() => tryAccess("Events", () => setRegEvent(event))}
-            onOrganizerPress={openOrganizerProfile}
-          />
+          <FadeIn key={event.id} delay={Math.min(idx, 4) * 35}>
+            <EventCard
+              event={event}
+              index={idx}
+              registered={registered.has(event.id)}
+              registrationSuccess={successEvent === event.id}
+              onRegister={() => tryAccess("Events", () => setRegEvent(event))}
+              onOrganizerPress={openOrganizerProfile}
+              onEdit={event.organizerId && event.organizerId === profile?.uid ? () => { setEditingEvent(event); setShowCreate(true); } : undefined}
+              onDelete={event.organizerId && event.organizerId === profile?.uid ? () => { setDeleteError(""); setDeleteTarget(event); } : undefined}
+            />
+          </FadeIn>
         ))}
       </ScrollView>
 
@@ -464,9 +647,30 @@ export default function EventsScreen() {
 
       <CreateEventModal
         visible={showCreate}
-        onClose={() => setShowCreate(false)}
+        onClose={() => { setShowCreate(false); setEditingEvent(null); }}
         onCreated={fetchEvents}
+        eventToEdit={editingEvent}
       />
+
+      <Modal visible={!!deleteTarget} transparent animationType="fade" onRequestClose={() => !deletingEvent && setDeleteTarget(null)}>
+        <View style={deleteStyles.backdrop}>
+          <View style={deleteStyles.dialog}>
+            <View style={deleteStyles.icon}><Ionicons name="trash-outline" size={24} color="#B42318" /></View>
+            <Text style={deleteStyles.title}>Delete this event?</Text>
+            <Text style={deleteStyles.eventTitle} numberOfLines={2}>{deleteTarget?.title}</Text>
+            <Text style={deleteStyles.description}>This will permanently delete the event and all attendee registrations for it.</Text>
+            {deleteError ? <Text style={deleteStyles.error}>{deleteError}</Text> : null}
+            <View style={deleteStyles.actions}>
+              <TouchableOpacity style={deleteStyles.cancelButton} onPress={() => setDeleteTarget(null)} disabled={deletingEvent}>
+                <Text style={deleteStyles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={deleteStyles.confirmButton} onPress={() => void confirmDeleteEvent()} disabled={deletingEvent}>
+                {deletingEvent ? <ActivityIndicator size="small" color="#fff" /> : <Text style={deleteStyles.confirmText}>Delete event</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {regEvent && (
         <RegistrationModal
@@ -573,6 +777,21 @@ const regStyles = StyleSheet.create({
   privacyNote: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", marginTop: 12, lineHeight: 17 },
 });
 
+const deleteStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.48)", justifyContent: "center", alignItems: "center", padding: 24 },
+  dialog: { width: "100%", maxWidth: 420, backgroundColor: "#fff", borderRadius: 22, padding: 24, alignItems: "center" },
+  icon: { width: 52, height: 52, borderRadius: 18, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  title: { color: "#111827", fontSize: 19, fontFamily: "Inter_700Bold", textAlign: "center" },
+  eventTitle: { color: "#374151", fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 8 },
+  description: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19, textAlign: "center", marginTop: 10 },
+  error: { color: "#B42318", fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center", marginTop: 12 },
+  actions: { flexDirection: "row", gap: 10, width: "100%", marginTop: 22 },
+  cancelButton: { flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" },
+  cancelText: { color: "#374151", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  confirmButton: { flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: "#DC2626", justifyContent: "center", alignItems: "center" },
+  confirmText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
+});
+
 const cStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: {
@@ -593,6 +812,17 @@ const cStyles = StyleSheet.create({
   sectionLabel: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 14 },
   fieldWrap: { marginBottom: 14 },
   fieldLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 6 },
+  optionalLabel: { color: "#9CA3AF", fontFamily: "Inter_400Regular" },
+  mediaPicker: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderStyle: "dashed", borderColor: "#C7D2FE", backgroundColor: "#F8FAFF", borderRadius: 14, padding: 14 },
+  mediaPickerIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  mediaPickerTitle: { color: "#1F2937", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  mediaPickerSub: { color: "#6B7280", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 3 },
+  mediaPreview: { height: 180, borderRadius: 14, overflow: "hidden", backgroundColor: "#111827" },
+  mediaImage: { width: "100%", height: "100%" },
+  videoPreview: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1F2937" },
+  videoPreviewText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold", marginTop: 5 },
+  removeMedia: { position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(17,24,39,0.75)", alignItems: "center", justifyContent: "center" },
+  createError: { color: "#B91C1C", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 12 },
   fieldRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB" },
   fieldIcon: { width: 44, alignItems: "center", justifyContent: "center" },
   fieldInput: { flex: 1, paddingVertical: 12, paddingRight: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,6 +6,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
+import { api, type SchoolSupportRequest } from "@/lib/api";
 
 const SUPPORT_TYPES = [
   { label: "Sponsor an Event",      icon: "calendar-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF", desc: "Co-sponsor school events, sports days, science fairs"     },
@@ -16,34 +18,41 @@ const SUPPORT_TYPES = [
   { label: "Other Contribution",    icon: "heart-outline"      as const, color: "#EC4899", bg: "#FDF2F8", desc: "Any other contribution for your JNV school"                },
 ];
 
-const RECENT_CONTRIBUTIONS = [
-  { name: "Rahul Verma",       jnv: "JNV Lucknow", type: "Scholarship Fund",   amount: "‚Çπ10,000", status: "approved", date: "3 May 2026",  impact: "Funded 2 students' NTSE prep"   },
-  { name: "Dr. Meera Iyer",    jnv: "JNV Kochi",   type: "Mentorship Program", amount: "Time",    status: "approved", date: "28 Apr 2026", impact: "6 mentorship sessions completed" },
-  { name: "Kavita Singh",      jnv: "JNV Patna",   type: "Donate Books",       amount: "25 Books",status: "pending",  date: "5 May 2026",  impact: "Pending coordinator approval"   },
-  { name: "Arjun Sharma",      jnv: "JNV Jaipur",  type: "Sponsor an Event",   amount: "‚Çπ5,000",  status: "approved", date: "20 Apr 2026", impact: "Annual Science Fair 2026"       },
-];
-
-const STATUS_CFG: Record<string, { color: string; bg: string }> = {
-  approved: { color: "#10B981", bg: "#ECFDF5" },
-  pending:  { color: "#F59E0B", bg: "#FFFBEB" },
-  rejected: { color: "#EF4444", bg: "#FEF2F2" },
-};
-
 export default function AlumniSupportScreen() {
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
+  const { profile } = useAuth();
+  const [requests, setRequests] = useState<SchoolSupportRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, string>>({});
+  const [updatingId, setUpdatingId] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selType,   setSelType]   = useState("");
   const [note,      setNote]      = useState("");
   const [toast,     setToast]     = useState("");
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+  const loadRequests = async () => {
+    try { setRequests(await api.schoolSupport.list()); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not load school support requests."); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void loadRequests(); }, []);
 
-  const handleSubmit = () => {
-    if (!selType) return;
-    setShowModal(false);
-    showToast("Contribution request submitted! School coordinator will review and reach out.");
-    setSelType(""); setNote("");
+  const handleSubmit = async () => {
+    if (!selType || saving) return;
+    setSaving(true);
+    try { await api.schoolSupport.submit(selType, note.trim()); setShowModal(false); setNote(""); setSelType(""); showToast("Request sent to your JNV coordinator."); await loadRequests(); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not submit the request."); }
+    finally { setSaving(false); }
+  };
+  const updateRequest = async (request: SchoolSupportRequest, status: string) => {
+    if (status === "fulfilled" && (outcomeDrafts[request.id] ?? "").trim().length < 10) { showToast("Add a short outcome summary before marking fulfilled."); return; }
+    setUpdatingId(request.id);
+    try { await api.schoolSupport.update(request.id, status, (outcomeDrafts[request.id] ?? "").trim()); setOutcomeDrafts((drafts) => ({ ...drafts, [request.id]: "" })); await loadRequests(); showToast("Request updated."); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not update request."); }
+    finally { setUpdatingId(""); }
   };
 
   return (
@@ -59,13 +68,13 @@ export default function AlumniSupportScreen() {
 
         {/* Hero */}
         <View style={styles.heroCard}>
-          <Text style={styles.heroEmoji}>üè´</Text>
+          <Text style={styles.heroEmoji}>Yè´</Text>
           <Text style={styles.heroTitle}>Give Back to Your School</Text>
-          <Text style={styles.heroText}>Your JNV gave you everything. Now it's your turn to give back ‚Äî mentor a junior, sponsor an event, or donate resources. Every contribution matters.</Text>
+          <Text style={styles.heroText}>Your JNV gave you everything. Now it's your turn to give back ‚?" mentor a junior, sponsor an event, or donate resources. Every contribution matters.</Text>
         </View>
 
         {/* Support types */}
-        <View style={styles.section}>
+        {profile?.role !== "official" && <View style={styles.section}>
           <Text style={styles.sectionTitle}>How Would You Like to Help?</Text>
           <View style={styles.typeGrid}>
             {SUPPORT_TYPES.map((t) => (
@@ -81,70 +90,29 @@ export default function AlumniSupportScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View>}
 
-        {/* Total contributions banner */}
-        <View style={styles.impactBanner}>
-          <View style={styles.impactItem}>
-            <Text style={styles.impactVal}>142</Text>
-            <Text style={styles.impactLabel}>Alumni Contributed</Text>
+        {profile?.role === "official" ? <View style={styles.section}>
+          <Text style={styles.sectionTitle}>JNV Support Requests</Text>
+          {loading ? <Text style={styles.transparencyText}>Loading requests...</Text> : requests.length === 0 ? <Text style={styles.transparencyText}>No support requests have been submitted for your JNV.</Text> : requests.map((request) => <View key={request.id} style={styles.contribCard}>
+            <Text style={styles.contribName}>{request.type}</Text><Text style={styles.transparencyText}>Submitted {new Date(request.createdAt).toLocaleDateString()} - {request.status.replaceAll("_", " ")}</Text>
+            {!!request.note && <Text style={styles.transparencyText}>{request.note}</Text>}
+            {!!request.outcome && <Text style={styles.transparencyText}>Outcome: {request.outcome}</Text>}
+            <TextInput style={styles.input} placeholder="Outcome summary (required when fulfilled)" value={outcomeDrafts[request.id] ?? ""} onChangeText={(value) => setOutcomeDrafts((drafts) => ({ ...drafts, [request.id]: value }))} />
+            <View style={styles.reqUpdateRow}>{[["reviewing", "Reviewing"], ["in_progress", "In progress"], ["fulfilled", "Fulfilled"], ["declined", "Declined"]].map(([status, label]) => <TouchableOpacity key={status} style={styles.reqUpdateButton} disabled={!!updatingId || request.status === "fulfilled" || request.status === "declined"} onPress={() => void updateRequest(request, status)}><Text style={styles.reqUpdateText}>{updatingId === request.id ? "Saving..." : label}</Text></TouchableOpacity>)}</View>
+          </View>)}
+        </View> : <>
+          <View style={styles.impactBanner}><Text style={styles.impactLabel}>Requests are sent to your JNV coordinator. You can follow their status and read the recorded outcome here.</Text></View>
+          <View style={styles.section}><Text style={styles.sectionTitle}>My School Support Requests</Text>
+            {loading ? <Text style={styles.transparencyText}>Loading your requests...</Text> : requests.length === 0 ? <Text style={styles.transparencyText}>Your submitted requests and outcomes will appear here.</Text> : requests.map((request) => <View key={request.id} style={styles.contribCard}>
+              <View style={styles.contribNameRow}><Text style={styles.contribName}>{request.type}</Text><View style={styles.statusPill}><Text style={styles.statusText}>{request.status.replaceAll("_", " ")}</Text></View></View>
+              <Text style={styles.transparencyText}>Submitted {new Date(request.createdAt).toLocaleDateString()}</Text>
+              {!!request.note && <Text style={styles.transparencyText}>{request.note}</Text>}
+              {!!request.outcome && <Text style={styles.transparencyText}>School outcome: {request.outcome}</Text>}
+            </View>)}
           </View>
-          <View style={styles.impactDivider} />
-          <View style={styles.impactItem}>
-            <Text style={styles.impactVal}>89</Text>
-            <Text style={styles.impactLabel}>Students Helped</Text>
-          </View>
-          <View style={styles.impactDivider} />
-          <View style={styles.impactItem}>
-            <Text style={styles.impactVal}>‚Çπ3.2L</Text>
-            <Text style={styles.impactLabel}>Total Raised</Text>
-          </View>
-        </View>
-
-        {/* Recent contributions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Contributions</Text>
-          {RECENT_CONTRIBUTIONS.map((c, i) => {
-            const cfg = STATUS_CFG[c.status];
-            return (
-              <View key={i} style={styles.contribCard}>
-                <View style={styles.contribTop}>
-                  <View style={styles.contribAvatar}><Text style={styles.contribAvatarText}>{c.name[0]}</Text></View>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.contribNameRow}>
-                      <Text style={styles.contribName}>{c.name}</Text>
-                      <Ionicons name="checkmark-circle" size={13} color="#3D5AF1" />
-                    </View>
-                    <Text style={styles.contribJnv}>{c.jnv} ¬∑ {c.date}</Text>
-                  </View>
-                  <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
-                    <Text style={[styles.statusText, { color: cfg.color }]}>{c.status.charAt(0).toUpperCase() + c.status.slice(1)}</Text>
-                  </View>
-                </View>
-                <View style={styles.contribDetails}>
-                  <View style={styles.contribDetailItem}>
-                    <Text style={styles.contribDetailLabel}>Type</Text>
-                    <Text style={styles.contribDetailVal}>{c.type}</Text>
-                  </View>
-                  <View style={styles.contribDetailItem}>
-                    <Text style={styles.contribDetailLabel}>Contribution</Text>
-                    <Text style={[styles.contribDetailVal, { color: "#10B981" }]}>{c.amount}</Text>
-                  </View>
-                  <View style={styles.contribDetailItem}>
-                    <Text style={styles.contribDetailLabel}>Impact</Text>
-                    <Text style={styles.contribDetailVal}>{c.impact}</Text>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Transparency note */}
-        <View style={styles.transparencyNote}>
-          <Ionicons name="shield-checkmark-outline" size={16} color="#10B981" />
-          <Text style={styles.transparencyText}>All contributions are reviewed and approved by school coordinators. We maintain full transparency records. No direct monetary transactions through this app.</Text>
-        </View>
+          <View style={styles.transparencyNote}><Ionicons name="shield-checkmark-outline" size={16} color="#10B981" /><Text style={styles.transparencyText}>No payment is processed in the app. Coordinate any donation directly with your JNV.</Text></View>
+        </>}
       </ScrollView>
 
       {/* Contribution Modal */}
@@ -161,10 +129,10 @@ export default function AlumniSupportScreen() {
                 <Text style={styles.coordinatorNoteText}>Your request will be reviewed by the school coordinator before proceeding. No payment is processed in the app.</Text>
               </View>
               <Text style={styles.fieldLabel}>Additional Note (optional)</Text>
-              <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Describe your contribution, availability, or any specific details‚Ä¶" placeholderTextColor="#9CA3AF" value={note} onChangeText={setNote} multiline textAlignVertical="top" />
+              <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Describe your contribution, availability, or any specific details‚?¶" placeholderTextColor="#9CA3AF" value={note} onChangeText={setNote} multiline textAlignVertical="top" />
               <TouchableOpacity style={styles.confirmBtn} onPress={handleSubmit}>
                 <Ionicons name="heart-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Submit Contribution Request</Text>
+                <Text style={styles.confirmBtnText}>{saving ? "Sending..." : "Submit Contribution Request"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -212,6 +180,9 @@ const styles = StyleSheet.create({
   contribDetailItem: { flex: 1 },
   contribDetailLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 2 },
   contribDetailVal: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  reqUpdateRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 9 },
+  reqUpdateButton: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: "#EEF2FF" },
+  reqUpdateText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   transparencyNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#ECFDF5", marginHorizontal: 16, marginBottom: 10, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#A7F3D0" },
   transparencyText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#065F46", lineHeight: 18 },
   modal: { flex: 1, backgroundColor: "#fff" },

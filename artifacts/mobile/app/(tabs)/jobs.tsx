@@ -39,7 +39,7 @@ function timeAgo(dateStr: string) {
   return `${d} days ago`;
 }
 
-export default function JobsScreen() {
+export default function JobsScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
@@ -57,7 +57,7 @@ export default function JobsScreen() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
-  const topPad = Platform.OS === "web" ? 0 : insets.top;
+  const topPad = embedded || Platform.OS === "web" ? 0 : insets.top;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -181,7 +181,7 @@ export default function JobsScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: (embedded ? 28 : 100) + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <Text style={[styles.countText, { color: colors.mutedForeground }]}>

@@ -14,17 +14,34 @@ import {
 import {
   contentReportsTable,
   db,
+  achievementsTable,
+  businessesTable,
+  eventsTable,
+  groupsTable,
   memoriesTable,
   memoryBookmarksTable,
   memoryCommentsTable,
   memoryLikesTable,
+  recognitionPointsTable,
   memoryPollVotesTable,
   userBlocksTable,
   userFollowsTable,
   usersTable,
 } from "@workspace/db";
 import { getUser, requireAuth } from "../lib/auth";
+import { awardRecognitionPoints } from "../lib/recognition";
 import { canViewProfile, createSocialNotification, hasAcceptedFollow, isBlockedBetween } from "../lib/social-access";
+import {
+  deleteMemoryMediaObject,
+  isOwnedMemoryMediaKey,
+  mediaMetadata,
+  MemoryMediaError,
+  parseStoredMemoryMedia,
+  signMemoryMedia,
+  validateOwnedMemoryMedia,
+  uploadMemoryMedia,
+  type StoredMemoryMedia,
+} from "../lib/memory-media";
 
 const router = Router();
 const POST_TYPES = new Set(["text", "photo", "video", "poll", "achievement", "event"]);
@@ -88,17 +105,25 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
     if (vote.userId === viewerId) viewerVotes.set(vote.memoryId, vote.optionIndex);
   }
 
-  return rows.map((row) => {
+  return Promise.all(rows.map(async (row) => {
     const pollOptions = parseStringArray(row.pollOptions);
     const pollCounts = pollVotesByMemory.get(row.id);
-    const mediaUrls = parseStringArray(row.mediaUrls);
-    if (mediaUrls.length === 0 && row.imageUrl) mediaUrls.push(row.imageUrl);
+    const storedMedia = parseStoredMemoryMedia(row.mediaUrls);
+    if (storedMedia.length === 0 && row.imageUrl?.startsWith("https://")) storedMedia.push(row.imageUrl);
+    const mediaUrls = await Promise.all(storedMedia.map((media) =>
+      typeof media === "string"
+        ? Promise.resolve(media)
+        : row.authorId
+          ? signMemoryMedia(media, row.authorId)
+          : Promise.resolve(""),
+    ));
     return {
       ...row,
       createdAt: (row.createdAt ?? new Date(0)).toISOString(),
       updatedAt: row.updatedAt?.toISOString() ?? null,
       postType: row.postType || "text",
-      mediaUrls,
+      mediaUrls: mediaUrls.filter(Boolean),
+      mediaMetadata: storedMedia.map(mediaMetadata).filter((item): item is NonNullable<typeof item> => item !== null),
       pollOptions,
       pollVotes: pollOptions.map((_, index) => pollCounts?.get(index) ?? 0),
       viewerVote: viewerVotes.get(row.id),
@@ -109,7 +134,7 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
       bookmarked: bookmarkedIds.has(row.id),
       authorPhotoUrl: row.authorId ? authorPhotoById.get(row.authorId) ?? undefined : undefined,
     };
-  });
+  }));
 }
 
 async function getVisibleMemory(memoryId: string, viewerId: string) {
@@ -122,6 +147,40 @@ async function getVisibleMemory(memoryId: string, viewerId: string) {
     if (memory.visibility === "followers" && !await hasAcceptedFollow(viewerId, memory.authorId)) return null;
   }
   return memory;
+}
+
+async function reverseRecognitionForDeletedMemory(memoryId: string) {
+  const comments = await db.select({ id: memoryCommentsTable.id }).from(memoryCommentsTable)
+    .where(eq(memoryCommentsTable.memoryId, memoryId));
+  const refs = [memoryId, ...comments.map((comment) => comment.id)];
+  const entries = await db.select().from(recognitionPointsTable).where(or(
+    and(eq(recognitionPointsTable.activity, "memory_post"), eq(recognitionPointsTable.referenceId, memoryId)),
+    and(eq(recognitionPointsTable.activity, "memory_comment_received"), inArray(recognitionPointsTable.referenceId, refs)),
+    and(eq(recognitionPointsTable.activity, "memory_like_received"), ilike(recognitionPointsTable.referenceId, `${memoryId}:%`)),
+  ));
+  await db.transaction(async (tx) => {
+    for (const entry of entries) {
+      if (entry.points <= 0) continue;
+      await tx.insert(recognitionPointsTable).values({
+        userId: entry.userId, actorId: entry.actorId, activity: entry.activity,
+        referenceId: `reversal:${entry.id}`, points: -entry.points,
+        reason: "Points reversed because the qualifying Memory was deleted",
+        periodMonth: entry.periodMonth,
+      }).onConflictDoNothing();
+    }
+  });
+}
+
+async function reverseRecognitionForRemovedLike(memoryId: string, likerId: string) {
+  const referenceId = `${memoryId}:${likerId}`;
+  const [entry] = await db.select().from(recognitionPointsTable).where(and(
+    eq(recognitionPointsTable.activity, "memory_like_received"), eq(recognitionPointsTable.referenceId, referenceId),
+  )).limit(1);
+  if (!entry || entry.points <= 0) return;
+  await db.insert(recognitionPointsTable).values({ userId: entry.userId, actorId: likerId,
+    activity: entry.activity, referenceId: `reversal:${entry.id}`, points: -entry.points,
+    reason: "Points reversed because the like was removed", periodMonth: entry.periodMonth,
+  }).onConflictDoNothing();
 }
 
 router.get("/memories", requireAuth, async (req, res) => {
@@ -239,16 +298,93 @@ router.get("/memories", requireAuth, async (req, res) => {
   }
 });
 
+router.post("/memories/uploads", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const contentLengthHeader = req.headers["content-length"];
+    const contentLength = typeof contentLengthHeader === "string" ? Number(contentLengthHeader) : undefined;
+    const fileNameHeader = req.headers["x-media-filename"];
+    const asset = await uploadMemoryMedia({
+      ownerId: user.id,
+      stream: req,
+      contentLength: Number.isFinite(contentLength) ? contentLength : undefined,
+      declaredContentType: req.headers["content-type"],
+      fileName: typeof fileNameHeader === "string" ? fileNameHeader : "memory-media",
+    });
+    return res.status(201).json(asset);
+  } catch (error) {
+    req.resume();
+    if (error instanceof MemoryMediaError) return res.status(error.statusCode).json({ error: error.message });
+    req.log.error({ errorName: error instanceof Error ? error.name : "unknown" }, "Memories media upload failed");
+    return res.status(502).json({ error: "The media upload failed. Please try again." });
+  }
+});
+
+router.delete("/memories/uploads", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const keys: unknown = req.body?.keys;
+    if (!Array.isArray(keys) || keys.length < 1 || keys.length > 10 ||
+      keys.some((key) => typeof key !== "string" || !isOwnedMemoryMediaKey(user.id, key)) ||
+      new Set(keys).size !== keys.length) {
+      return res.status(400).json({ error: "Choose valid uploads to remove." });
+    }
+
+    const references = await Promise.all((keys as string[]).map(async (key) => {
+      const matching = await db.select({ mediaUrls: memoriesTable.mediaUrls })
+        .from(memoriesTable).where(ilike(memoriesTable.mediaUrls, `%${key}%`));
+      if (matching.some((row) => parseStoredMemoryMedia(row.mediaUrls)
+        .some((media) => typeof media !== "string" && media.key === key))) return true;
+      const businessRows = await db.select({ media: businessesTable.media })
+        .from(businessesTable).where(ilike(businessesTable.media, `%${key}%`));
+      if (businessRows.some((row) => parseStoredMemoryMedia(row.media)
+        .some((media) => typeof media !== "string" && media.key === key))) return true;
+      const [groupAvatar] = await db.select({ id: groupsTable.id }).from(groupsTable)
+        .where(eq(groupsTable.avatarKey, key)).limit(1);
+      if (groupAvatar) return true;
+      const achievementRows = await db.select({ image: achievementsTable.image }).from(achievementsTable)
+        .where(ilike(achievementsTable.image, `%${key}%`));
+      if (achievementRows.some((row) => parseStoredMemoryMedia(row.image)
+        .some((media) => typeof media !== "string" && media.key === key))) return true;
+      const eventRows = await db.select({ media: eventsTable.media }).from(eventsTable)
+        .where(ilike(eventsTable.media, `%${key}%`));
+      return eventRows.some((row) => parseStoredMemoryMedia(row.media)
+        .some((media) => typeof media !== "string" && media.key === key));
+    }));
+    if (references.some(Boolean)) return res.status(409).json({ error: "A post, achievement, event, business, or group is already using one of these files." });
+
+    await Promise.all((keys as string[]).map((key) => deleteMemoryMediaObject(key)));
+    return res.json({ deleted: keys.length });
+  } catch (error) {
+    if (error instanceof MemoryMediaError) return res.status(error.statusCode).json({ error: error.message });
+    req.log.error({ errorName: error instanceof Error ? error.name : "unknown" }, "Memories media cleanup failed");
+    return res.status(502).json({ error: "Temporary uploads could not be removed. Please try again." });
+  }
+});
+
 router.post("/memories", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const caption = typeof req.body.caption === "string" ? req.body.caption.trim() : "";
     const postType = POST_TYPES.has(req.body.postType) ? req.body.postType : "text";
-    const mediaUrls = Array.isArray(req.body.mediaUrls)
-      ? req.body.mediaUrls.filter((value: unknown): value is string =>
-          typeof value === "string" && value.startsWith("https://"),
-        ).slice(0, 10)
-      : [];
+    if (req.body.mediaUrls !== undefined) {
+      return res.status(400).json({ error: "Upload photos and videos before creating a post." });
+    }
+    let mediaAssets: StoredMemoryMedia[] = [];
+    if (req.body.mediaAssets !== undefined) {
+      if (!Array.isArray(req.body.mediaAssets) || req.body.mediaAssets.length > 10) {
+        return res.status(400).json({ error: "Choose up to 10 valid media uploads." });
+      }
+      const keys = req.body.mediaAssets.map((asset: unknown) =>
+        asset && typeof asset === "object" && typeof (asset as { key?: unknown }).key === "string"
+          ? (asset as { key: string }).key
+          : "",
+      );
+      if (keys.some((key: string) => !key) || new Set(keys).size !== keys.length) {
+        return res.status(400).json({ error: "One or more selected uploads are invalid." });
+      }
+      mediaAssets = await Promise.all(keys.map((key: string) => validateOwnedMemoryMedia(user.id, key)));
+    }
     const pollOptions = Array.isArray(req.body.pollOptions)
       ? req.body.pollOptions.filter((value: unknown): value is string =>
           typeof value === "string" && value.trim().length > 0,
@@ -257,8 +393,15 @@ router.post("/memories", requireAuth, async (req, res) => {
     if ((!caption && postType !== "photo" && postType !== "video") || caption.length > 4000) {
       return res.status(400).json({ error: postType === "poll" ? "Add a question of up to 4,000 characters." : "Add post text of up to 4,000 characters." });
     }
-    if ((postType === "photo" || postType === "video") && mediaUrls.length === 0) {
+    if ((postType === "photo" || postType === "video") && mediaAssets.length === 0) {
       return res.status(400).json({ error: "Upload media before sharing this post." });
+    }
+    if (postType !== "photo" && postType !== "video" && mediaAssets.length > 0) {
+      return res.status(400).json({ error: "Photos and videos need a photo or video post." });
+    }
+    if ((postType === "photo" && mediaAssets.some((asset) => asset.mediaType !== "image")) ||
+      (postType === "video" && mediaAssets.some((asset) => asset.mediaType !== "video"))) {
+      return res.status(400).json({ error: "Choose photos or videos that match this post type." });
     }
     if (postType === "poll" && pollOptions.length < 2) {
       return res.status(400).json({ error: "A poll needs at least two options." });
@@ -269,8 +412,8 @@ router.post("/memories", requireAuth, async (req, res) => {
     const requestedVisibility = req.body.visibility === "followers" ? "followers" : "public";
     const [row] = await db.insert(memoriesTable).values({
       caption,
-      imageUrl: mediaUrls[0] ?? null,
-      mediaUrls: JSON.stringify(mediaUrls),
+      imageUrl: null,
+      mediaUrls: JSON.stringify(mediaAssets),
       pollOptions: JSON.stringify(pollOptions),
       postType,
       visibility: requestedVisibility,
@@ -280,6 +423,9 @@ router.post("/memories", requireAuth, async (req, res) => {
       jnvName: user.jnvName,
       likes: 0,
     }).returning();
+    if (caption.trim().length >= 40 && user.id) {
+      await awardRecognitionPoints({ userId: user.id, actorId: user.id, activity: "memory_post", referenceId: row.id, reason: "Published a meaningful Memory" });
+    }
     return res.status(201).json((await serializeMemories([row], user.id))[0]);
   } catch (error) {
     req.log.error(error, "Failed to create memory");
@@ -326,6 +472,7 @@ router.delete("/memories/:id", requireAuth, async (req, res) => {
       .where(eq(memoriesTable.id, memoryId)).limit(1);
     if (!memory) return res.status(404).json({ error: "Post not found" });
     if (memory.authorId !== user.id) return res.status(403).json({ error: "Only the author can delete this post." });
+    await reverseRecognitionForDeletedMemory(memoryId);
     await db.delete(memoryLikesTable).where(eq(memoryLikesTable.memoryId, memoryId));
     await db.delete(memoryCommentsTable).where(eq(memoryCommentsTable.memoryId, memoryId));
     await db.delete(memoryBookmarksTable).where(eq(memoryBookmarksTable.memoryId, memoryId));
@@ -347,13 +494,15 @@ router.post("/memories/:id/like", requireAuth, async (req, res) => {
     const existing = await db.select({ id: memoryLikesTable.id }).from(memoryLikesTable)
       .where(and(eq(memoryLikesTable.memoryId, memoryId), eq(memoryLikesTable.userId, user.id)));
     if (existing.length) {
+      await reverseRecognitionForRemovedLike(memoryId, user.id);
       await db.delete(memoryLikesTable).where(and(
         eq(memoryLikesTable.memoryId, memoryId),
         eq(memoryLikesTable.userId, user.id),
       ));
     } else {
       await db.insert(memoryLikesTable).values({ memoryId, userId: user.id });
-      if (memory.authorId) {
+      if (memory.authorId && memory.authorId !== user.id) {
+        await awardRecognitionPoints({ userId: memory.authorId, actorId: user.id, activity: "memory_like_received", referenceId: `${memoryId}:${user.id}`, reason: "Received a genuine like on a Memory" });
         await createSocialNotification(memory.authorId, user.id, "memory_like", memoryId, `${user.fullName} liked your post.`);
       }
     }
@@ -426,6 +575,9 @@ router.post("/memories/:id/comments", requireAuth, async (req, res) => {
       parentId,
       content,
     }).returning();
+    if (memory.authorId && memory.authorId !== user.id && content.length >= 20) {
+      await awardRecognitionPoints({ userId: memory.authorId, actorId: user.id, activity: "memory_comment_received", referenceId: row.id, reason: "Received a meaningful Memory comment" });
+    }
     if (memory.authorId) {
       await createSocialNotification(memory.authorId, user.id, "memory_comment", memoryId, `${user.fullName} commented on your post.`);
     }

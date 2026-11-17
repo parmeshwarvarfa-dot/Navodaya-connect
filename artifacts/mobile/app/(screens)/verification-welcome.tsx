@@ -24,6 +24,7 @@ export default function VerificationWelcomeScreen() {
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
   const { profile } = useAuth();
+  const isAlumni = profile?.role === "alumni";
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -74,7 +75,7 @@ export default function VerificationWelcomeScreen() {
         <Text style={s.greeting}>Welcome, {profile?.fullName?.split(" ")[0] ?? "Navodayan"}! 🎉</Text>
         <Text style={s.title}>Unlock the Full{"\n"}Navodaya Connect</Text>
         <Text style={s.subtitle}>
-          Get verified to access the complete community experience — messaging, events, mentorship, and more.
+          {isAlumni ? "One alumnus from your JNV can confirm you, whether they are verified or unverified. Community confirmation unlocks alumni participation." : "Get verified to access the complete community experience — messaging, events, mentorship, and more."}
         </Text>
 
         {/* Feature list */}
@@ -93,7 +94,7 @@ export default function VerificationWelcomeScreen() {
         {/* Pending badge hint */}
         <View style={s.pendingHint}>
           <Ionicons name="time-outline" size={14} color="#F59E0B" />
-          <Text style={s.pendingHintText}>Verification usually takes 24–48 hours after submission</Text>
+          <Text style={s.pendingHintText}>{isAlumni ? "One peer confirmation is required. Your JNV does not approve alumni verification." : "Verification timing depends on your school review."}</Text>
         </View>
 
         {/* Actions */}
@@ -105,7 +106,7 @@ export default function VerificationWelcomeScreen() {
           >
             <LinearGradient colors={["#FF7A00", "#FF9A3C"]} style={s.verifyBtnGrad}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#fff" />
-              <Text style={s.verifyBtnText}>Complete Verification</Text>
+              <Text style={s.verifyBtnText}>{isAlumni ? "Find an alumnus" : "Complete Verification"}</Text>
             </LinearGradient>
           </TouchableOpacity>
 

@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useReducedMotion } from "@/components/motion/MotionProvider";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -14,9 +15,9 @@ const TAB_ITEMS: {
   icon: IoniconsName;
   activeIcon: IoniconsName;
 }[] = [
-  { name: "index",    title: "JNV Connect", icon: "home-outline",        activeIcon: "home"        },
+  { name: "index",    title: "Home",        icon: "home-outline",        activeIcon: "home"        },
   { name: "memories", title: "Memories",    icon: "heart-outline",        activeIcon: "heart"       },
-  { name: "chats",    title: "Chat Groups", icon: "chatbubble-outline",   activeIcon: "chatbubble"  },
+  { name: "chats",    title: "Chats",       icon: "chatbubble-outline",   activeIcon: "chatbubble"  },
   { name: "events",   title: "Events",      icon: "calendar-outline",     activeIcon: "calendar"    },
   { name: "profile",  title: "Profile",     icon: "person-outline",       activeIcon: "person"      },
 ];
@@ -70,6 +71,7 @@ export default function TabLayout() {
   const tabBarHeight = (isWeb ? 60 : 80) + bottomInset;
   const paddingBottom = isWeb ? 8 : Math.max(12, bottomInset);
   const { profile } = useAuth();
+  const reducedMotion = useReducedMotion();
 
   const activeColor = useMemo(
     () => HOUSE_COLOR[profile?.house ?? ""] ?? DEFAULT_COLOR,
@@ -80,6 +82,7 @@ export default function TabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
+          animation: reducedMotion === false ? "fade" : "none",
           tabBarActiveTintColor: activeColor,
           tabBarInactiveTintColor: "#9CA3AF",
           headerShown: false,

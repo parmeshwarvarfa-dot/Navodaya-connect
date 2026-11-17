@@ -1,20 +1,27 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
+  Alert,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
   Modal,
   Image,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { RoleBadge } from "@/components/RoleBadge";
 import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
+import MotionPressable from "@/components/motion/MotionPressable";
+import FadeIn from "@/components/motion/FadeIn";
+import { api, type RecognitionProfile } from "@/lib/api";
+import type { DigitalCredential } from "@/lib/api";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -33,7 +40,53 @@ export default function ProfileScreen() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showBioDetails, setShowBioDetails] = useState(false);
+  const [recognition, setRecognition] = useState<RecognitionProfile | null>(null);
+  const [recognitionLoading, setRecognitionLoading] = useState(true);
+  const [recognitionError, setRecognitionError] = useState("");
+  const [digitalCredential, setDigitalCredential] = useState<DigitalCredential | null>(null);
+  const [digitalIdLoading, setDigitalIdLoading] = useState(false);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
+
+  useEffect(() => {
+    let active = true;
+    if (!profile?.uid) { setRecognition(null); setRecognitionLoading(false); return; }
+    setRecognitionLoading(true); setRecognitionError("");
+    void (async () => {
+      try {
+        const data = await api.recognition.profile(profile.uid);
+        if (active) setRecognition(data);
+      } catch (error) {
+        if (active) {
+          setRecognition(null);
+          setRecognitionError(error instanceof Error ? error.message : "Could not load recognition.");
+        }
+      } finally {
+        if (active) setRecognitionLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [profile?.uid]);
+
+  useEffect(() => {
+    let active = true;
+    const eligible = profile?.role === "alumni"
+      ? profile.verificationStatus === "community_verified" && !!profile.communityVerifiedAt
+      : profile?.verificationStatus === "verified";
+    if (!profile || !eligible) {
+      setDigitalCredential(null);
+      setDigitalIdLoading(false);
+      return () => { active = false; };
+    }
+    setDigitalIdLoading(true);
+    void api.verification.myCredential().then((credential) => {
+      if (active) setDigitalCredential(credential);
+    }).catch(() => {
+      if (active) setDigitalCredential(null);
+    }).finally(() => {
+      if (active) setDigitalIdLoading(false);
+    });
+    return () => { active = false; };
+  }, [profile?.uid, profile?.role, profile?.verificationStatus, profile?.communityVerifiedAt]);
 
   const handleSignOut = () => setShowSignOutModal(true);
 
@@ -76,14 +129,15 @@ export default function ProfileScreen() {
   ];
 
   const menuItems = [
+    { icon: "trophy-outline" as const, label: "Achievements & Leaderboard", onPress: () => router.push("/(screens)/alumni-contributions" as any) },
+    { icon: "map-outline" as const, label: "JNV Communities", onPress: () => router.push("/(screens)/school-directory" as any) },
+    { icon: "book-outline" as const, label: "Digital Yearbook", onPress: () => router.push("/(screens)/yearbook" as any) },
+    { icon: "scan-outline" as const, label: "Scan Digital ID", onPress: () => router.push("/(screens)/digital-id-scanner" as any) },
     { icon: "mail-unread-outline" as const, label: "Social Inbox", onPress: () => router.push("/(screens)/social-inbox" as any) },
     { icon: "lock-closed-outline" as const, label: "Privacy & Requests", onPress: () => router.push("/(screens)/privacy-settings" as any) },
-    ...(profile.role !== "student"
-      ? [{ icon: "newspaper-outline" as const, label: "News & Announcements", onPress: () => router.push("/(screens)/news" as any) }]
-      : []),
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
     ...(profile.role === "alumni"
-      ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-verify" as any) }]
+      ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-peer-verification" as any) }]
       : []),
   ];
 
@@ -129,18 +183,16 @@ export default function ProfileScreen() {
           {(profile as any).bio ? (
             <Text style={styles.profileBio} numberOfLines={2}>{(profile as any).bio}</Text>
           ) : null}
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>{roleLabel}</Text>
-          </View>
-          {profile.verificationStatus !== "verified" ? (
+          <View style={{ marginTop: 4 }}><RoleBadge role={profile.role} /></View>
+          {(profile.role === "alumni" ? profile.verificationStatus !== "community_verified" || !profile.communityVerifiedAt : profile.verificationStatus !== "verified") ? (
             <TouchableOpacity
               style={styles.profileVerifyBadge}
-              onPress={() => router.push("/(screens)/verification-center" as any)}
+              onPress={() => router.push((profile.role === "alumni" ? "/(screens)/alumni-peer-verification" : "/(screens)/verification-center") as any)}
               activeOpacity={0.8}
             >
               <Ionicons name="shield-outline" size={14} color="#FF7A00" />
               <Text style={styles.profileVerifyText}>
-                {profile.verificationStatus === "pending" ? "Verification Pending" : "Get Verified"}
+                {profile.role === "alumni" ? "Get Community Verified" : profile.verificationStatus === "pending" ? "Verification Pending" : "Get Verified"}
               </Text>
               <Ionicons name="chevron-forward" size={12} color="#FF7A00" />
             </TouchableOpacity>
@@ -149,16 +201,34 @@ export default function ProfileScreen() {
               <VerifiedBadge status={profile.verificationStatus} role={profile.role} size="md" />
             </View>
           )}
-          {profile.verificationStatus === "verified" && (
+          {digitalCredential ? (
+            <TouchableOpacity
+              style={styles.digitalIdButton}
+              onPress={() => router.push("/(screens)/digital-id" as any)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <Ionicons name="card-outline" size={17} color="#FFFFFF" />
+              <Text style={styles.digitalIdButtonText}>View Digital ID</Text>
+              <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : digitalIdLoading ? (
+            <View style={styles.digitalIdPending}><Text style={styles.digitalIdPendingText}>Loading your Navodaya Digital ID…</Text></View>
+          ) : (profile.role === "alumni" ? profile.verificationStatus === "community_verified" && !!profile.communityVerifiedAt : profile.verificationStatus === "verified") ? (
             <TouchableOpacity
               style={styles.profileVerifyBadge}
               onPress={() => router.push("/(screens)/digital-id" as any)}
               activeOpacity={0.8}
             >
               <Ionicons name="card-outline" size={14} color="#3D5AF1" />
-              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Navodaya Digital ID</Text>
+              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Digital ID</Text>
               <Ionicons name="chevron-forward" size={12} color="#3D5AF1" />
             </TouchableOpacity>
+          ) : (
+            <View style={styles.digitalIdPending}>
+              <Ionicons name="lock-closed-outline" size={15} color="#738099" />
+              <Text style={styles.digitalIdPendingText}>{profile.role === "alumni" ? "Community verification unlocks your Digital ID" : "School verification unlocks your Digital ID"}</Text>
+            </View>
           )}
           {((profile as any).linkedinUrl || (profile as any).twitterUrl) && (
             <View style={styles.socialRow}>
@@ -176,11 +246,22 @@ export default function ProfileScreen() {
               )}
             </View>
           )}
+          {profile.role === "alumni" && profile.resumeUrl ? (
+            <TouchableOpacity
+              style={[styles.profileVerifyBadge, { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" }]}
+              onPress={() => void Linking.openURL(profile.resumeUrl!).catch(() => Alert.alert("Unable to open link", "Check the resume link and try again."))}
+              accessibilityRole="link"
+            >
+              <Ionicons name="document-text-outline" size={14} color="#3D5AF1" />
+              <Text style={[styles.profileVerifyText, { color: "#3D5AF1" }]}>View Resume / CV</Text>
+              <Ionicons name="open-outline" size={12} color="#3D5AF1" />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <ProfilePostsSection userId={profile.uid} isOwner />
 
-        <View style={styles.infoCard}>
+        <FadeIn><View style={styles.infoCard}>
           <TouchableOpacity
             style={styles.bioToggle}
             onPress={() => setShowBioDetails((open) => !open)}
@@ -196,8 +277,8 @@ export default function ProfileScreen() {
             <Ionicons name={showBioDetails ? "chevron-up" : "chevron-down"} size={20} color="#69758B" />
           </TouchableOpacity>
           {showBioDetails && infoItems.map((item, index) => (
+            <FadeIn key={item.label} delay={Math.min(index, 4) * 30}>
             <View
-              key={item.label}
               style={[
                 styles.infoRow,
                 index < infoItems.length - 1 && styles.infoRowBorder,
@@ -210,12 +291,12 @@ export default function ProfileScreen() {
                 <Text style={styles.infoLabel}>{item.label}</Text>
                 <Text style={styles.infoValue}>{item.value}</Text>
               </View>
-            </View>
+            </View></FadeIn>
           ))}
-        </View>
+        </View></FadeIn>
 
         {showBioDetails && profile.skills && profile.skills.length > 0 && (
-          <View style={styles.skillsCard}>
+          <FadeIn><View style={styles.skillsCard}>
             <Text style={styles.cardTitle}>Skills</Text>
             <View style={styles.skillsWrap}>
               {profile.skills.map((s) => (
@@ -224,10 +305,10 @@ export default function ProfileScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </View></FadeIn>
         )}
 
-        {showBioDetails && <View style={styles.aboutCard}>
+        {showBioDetails && <FadeIn><View style={styles.aboutCard}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.aboutText}>
             {profile.role === "student"
@@ -238,51 +319,33 @@ export default function ProfileScreen() {
               ? `${profile.subject || "Teacher"} at ${profile.jnvName || "JNV"}`
               : `JNV Official at ${profile.jnvName || "JNV"}`}
           </Text>
-        </View>}
+        </View></FadeIn>}
 
-        {/* Character Badge Section — students only */}
-        {profile.role === "student" && (
-          <View style={styles.badgeCard}>
-            <View style={styles.badgeCardHeader}>
-              <Ionicons name="medal-outline" size={18} color="#F59E0B" />
-              <Text style={styles.cardTitle}>Character Badges</Text>
-            </View>
-            <Text style={styles.badgeSubtitle}>Awarded by teachers for exceptional qualities</Text>
-            <View style={styles.badgesGrid}>
-              {[
-                { emoji: "🌟", label: "Academic Star",   color: "#FEF9C3", earned: true  },
-                { emoji: "🤝", label: "Team Player",     color: "#DCFCE7", earned: true  },
-                { emoji: "🎯", label: "Goal Setter",     color: "#EEF2FF", earned: true  },
-                { emoji: "📚", label: "Bookworm",        color: "#FEF3C7", earned: false },
-                { emoji: "🏆", label: "House Champion",  color: "#FEE2E2", earned: false },
-                { emoji: "💡", label: "Innovator",       color: "#F0FDF4", earned: false },
-              ].map((b) => (
-                <View key={b.label} style={[styles.badgeItem, !b.earned && styles.badgeItemLocked]}>
-                  <View style={[styles.badgeEmoji, { backgroundColor: b.earned ? b.color : "#F3F4F6" }]}>
-                    <Text style={[styles.badgeEmojiText, !b.earned && { opacity: 0.3 }]}>{b.emoji}</Text>
-                  </View>
-                  <Text style={[styles.badgeLabel, !b.earned && { color: "#D1D5DB" }]}>{b.label}</Text>
-                  {!b.earned && <Ionicons name="lock-closed" size={10} color="#D1D5DB" style={{ marginTop: 2 }} />}
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
+        <View style={styles.recognitionCard}>
+          <View style={styles.recognitionHeader}><Ionicons name="trophy-outline" size={18} color="#B7791F" /><Text style={styles.cardTitle}>Community Recognition</Text></View>
+          {recognitionLoading ? <Text style={styles.badgeSubtitle}>Loading your points and awards…</Text> : recognitionError ? <Text style={styles.badgeSubtitle}>{recognitionError}</Text> : <>
+            <Text style={styles.recognitionPoints}>{recognition?.totalPoints ?? 0} points earned</Text>
+            <Text style={styles.recognitionAward}>This month: {recognition?.monthlyRank ? `rank #${recognition.monthlyRank}` : "not ranked yet"} · Annual: {recognition?.annualRank ? `rank #${recognition.annualRank}` : "not ranked yet"}</Text>
+            <Text style={styles.recognitionAward}>{recognition?.awardCount ?? 0} awards earned</Text>
+            {recognition?.awards.slice(0, 3).map((award) => <Text key={award.id} style={styles.recognitionAward}>🏅 {award.category.replaceAll("_", " ")} · {award.period}</Text>)}
+            {!recognition?.awards.length && <Text style={styles.badgeSubtitle}>No finalized awards yet. Earned badges and award history appear here.</Text>}
+          </>}
+          <View style={styles.recognitionLinks}>{[{ label: "Points History", section: "history" }, { label: "My Awards", section: "awards" }, { label: "Leaderboard", section: "leaderboard" }, { label: "Hall of Fame", section: "hall" }].map((item) => <TouchableOpacity key={item.section} onPress={() => router.push({ pathname: "/(screens)/alumni-contributions", params: { section: item.section } } as any)}><Text style={styles.recognitionLink}>{item.label} ›</Text></TouchableOpacity>)}</View>
+        </View>
 
         <View style={styles.menuCard}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
+            <MotionPressable
               key={item.label}
               style={[styles.menuRow, index < menuItems.length - 1 && styles.menuRowBorder]}
               onPress={item.onPress}
-              activeOpacity={0.7}
             >
               <View style={styles.menuIconWrap}>
                 <Ionicons name={item.icon} size={18} color="#3D5AF1" />
               </View>
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-            </TouchableOpacity>
+            </MotionPressable>
           ))}
         </View>
 
@@ -362,6 +425,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
+  digitalIdPending: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, backgroundColor: "#F4F6FA" },
+  digitalIdPendingText: { color: "#738099", fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center", flexShrink: 1 },
+  digitalIdButton: { minHeight: 46, width: "100%", marginTop: 10, paddingHorizontal: 16, borderRadius: 13, backgroundColor: "#3D5AF1", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9 },
+  digitalIdButtonText: { color: "#FFFFFF", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   profileVerifyBadge: {
     flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8,
     backgroundColor: "#FFF7ED", borderRadius: 20, paddingVertical: 5, paddingHorizontal: 12,
@@ -395,14 +462,6 @@ const styles = StyleSheet.create({
     fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280",
     textAlign: "center", marginHorizontal: 24, marginBottom: 8, lineHeight: 19,
   },
-  roleBadge: {
-    backgroundColor: "#EEF2FF",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 5,
-    marginTop: 4,
-  },
-  roleBadgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   socialRow: { flexDirection: "row", gap: 8, marginTop: 12 },
   socialPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
@@ -499,6 +558,8 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
   signOutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
+  recognitionCard: { marginHorizontal: 16, marginTop: 14, padding: 14, backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, borderRadius: 15 }, recognitionLinks: { flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 8, marginTop: 9 },
+  recognitionHeader: { flexDirection: "row", alignItems: "center", gap: 7 }, recognitionPoints: { marginTop: 8, color: "#17243A", fontFamily: "Inter_700Bold", fontSize: 18 }, recognitionAward: { marginTop: 5, color: "#7C5A19", fontFamily: "Inter_500Medium", fontSize: 11 }, recognitionLink: { marginTop: 9, color: "#3D5AF1", fontFamily: "Inter_600SemiBold", fontSize: 11 },
   badgeCard: {
     backgroundColor: "#fff", borderRadius: 16, marginTop: 14,
     padding: 16, borderWidth: 1, borderColor: "#F0F0F0",

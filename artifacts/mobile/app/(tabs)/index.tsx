@@ -14,40 +14,42 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { api } from "@/lib/api";
-import type { NewsItem } from "@/lib/api";
+import type { AlumniUser, NewsItem, SchoolAdminDashboardMetrics } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import AchievementsHighlights from "@/components/AchievementsHighlights";
+import MotionPressable from "@/components/motion/MotionPressable";
+import FadeIn from "@/components/motion/FadeIn";
 
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-section"          },
+  { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
   { label: "Ask Senior",       icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"             },
   { label: "Report Problem",   icon: "alert-circle-outline"   as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/report-problem"         },
-  { label: "Rate Teacher",     icon: "star-outline"           as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/teacher-feedback-submit" },
 ];
 const TEACHER_ACTIONS = [
   { label: "Teacher Zone",    icon: "school-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/teacher-zone"     },
   { label: "Post Update",     icon: "megaphone-outline"       as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/create-news"      },
-  { label: "Create Event",    icon: "calendar-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"              },
   { label: "My Classes",      icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/teacher-classes"  },
+  { label: "Opportunities",   icon: "sparkles-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities" },
 ];
 const ALUMNI_ACTIONS = [
   { label: "Alumni Zone",     icon: "school-outline"          as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/alumni-zone"       },
-  { label: "Mentorship",      icon: "people-outline"          as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-mentorship" },
-  { label: "Connect",         icon: "people-outline"          as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/alumni-connect"     },
+  { label: "Business Network", icon: "business-outline"       as const, color: "#5B21B6", bg: "#F2EBFB", route: "/(screens)/alumni-business" },
+  { label: "Alumni Directory", icon: "people-outline"         as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(tabs)/alumni" },
   { label: "Opportunities",   icon: "briefcase-outline"       as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/alumni-opportunities"},
 ];
 const OFFICIAL_ACTIONS = [
   { label: "Dashboard",       icon: "grid-outline"             as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/official-dashboard" },
   { label: "Verify Users",    icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management"    },
   { label: "View Problems",   icon: "alert-circle-outline"    as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"      },
-  { label: "Post Update",     icon: "megaphone-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/create-news"        },
+  { label: "School Directory", icon: "people-outline"          as const, color: "#3151E8", bg: "#EEF2FF", route: "/(screens)/school-directory"  },
 ];
 
-const ANNOUNCEMENT_CATEGORIES = ["announcement", "notice", "official", "circular"];
+const ANNOUNCEMENT_CATEGORIES = ["announcement", "notice", "official", "circular", "holiday", "exam", "other"];
 const NEWS_CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   Academic: { bg: "#EEF2FF", color: "#3D5AF1" },
   Exam: { bg: "#FEF3C7", color: "#D97706" },
@@ -91,33 +93,75 @@ export default function HomeScreen() {
   const [newsError, setNewsError] = useState(false);
   const [newsLinkError, setNewsLinkError] = useState("");
   const [canReviewVerification, setCanReviewVerification] = useState(false);
+  const [officialMetrics, setOfficialMetrics] = useState<SchoolAdminDashboardMetrics | null>(null);
+  const [officialMetricsLoading, setOfficialMetricsLoading] = useState(false);
+  const [officialMetricsError, setOfficialMetricsError] = useState(false);
+  const [schoolAlumni, setSchoolAlumni] = useState<AlumniUser[]>([]);
+  const [schoolAlumniLoading, setSchoolAlumniLoading] = useState(true);
+  const [schoolAlumniError, setSchoolAlumniError] = useState(false);
   const headerTopPad = Platform.OS === "web" ? 0 : insets.top + 8;
-
-  useEffect(() => {
-    api.verification.permissions().then((permissions) => setCanReviewVerification(permissions.canReview)).catch(() => {});
-  }, []);
 
   const role = profile?.role ?? "student";
   const isTeacher = role === "teacher";
   const isAlumni = role === "alumni";
   const isOfficial = role === "official";
 
+  useEffect(() => {
+    api.verification.permissions().then((permissions) => setCanReviewVerification(permissions.canReview)).catch(() => {});
+  }, []);
+
+  const fetchOfficialMetrics = useCallback(async () => {
+    if (!isOfficial) return;
+    setOfficialMetricsLoading(true);
+    setOfficialMetricsError(false);
+    try {
+      setOfficialMetrics(await api.schoolAdmin.dashboardMetrics());
+    } catch {
+      setOfficialMetrics(null);
+      setOfficialMetricsError(true);
+    } finally {
+      setOfficialMetricsLoading(false);
+    }
+  }, [isOfficial]);
+
+  useFocusEffect(useCallback(() => {
+    if (isOfficial) void fetchOfficialMetrics();
+    return undefined;
+  }, [fetchOfficialMetrics, isOfficial]));
+
+  useEffect(() => {
+    let active = true;
+    setSchoolAlumniLoading(true);
+    setSchoolAlumniError(false);
+    api.users.alumni().then((alumni) => {
+      if (active) setSchoolAlumni(alumni.filter((person) => !person.isRestricted && person.id !== profile?.uid).slice(0, 4));
+    }).catch(() => {
+      if (active) {
+        setSchoolAlumni([]);
+        setSchoolAlumniError(true);
+      }
+    }).finally(() => { if (active) setSchoolAlumniLoading(false); });
+    return () => { active = false; };
+  }, [profile?.jnvName, profile?.jnvState, profile?.uid]);
+
   const roleActions = isOfficial ? OFFICIAL_ACTIONS : isTeacher ? TEACHER_ACTIONS : isAlumni ? ALUMNI_ACTIONS : STUDENT_ACTIONS;
   const verifyAction = { label: "Verify Users", icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management" };
   const quickActions = canReviewVerification && !isOfficial
     ? [...roleActions, verifyAction]
     : roleActions;
-  const limitedActionLabels = role === "student" ? new Set(["Study Hub", "Report Problem"]) : new Set<string>();
-
+  const limitedActionLabels = new Set(["Opportunities", ...(role === "student" ? ["Study Hub", "Report Problem"] : [])]);
   const openFeature = (route: string, featureName: string, limited = false) => {
-    if (limited || isVerified) {
+    // Official accounts are authorized by their JNV assignment, not by the
+    // standard alumni/student verification badge. Keep their management tools
+    // reachable from the home screen.
+    if (limited || isVerified || isOfficial) {
       router.push(route as any);
       return;
     }
     tryAccess(featureName, () => router.push(route as any));
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setNewsError(false);
     try {
       const n = await api.news.list();
@@ -127,15 +171,18 @@ export default function HomeScreen() {
     } finally {
       setNewsLoading(false);
     }
-  };
+  }, [profile?.uid]);
 
-  useEffect(() => { fetchData(); }, []);
+  useFocusEffect(useCallback(() => {
+    void fetchData();
+    return undefined;
+  }, [fetchData]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([fetchData(), isOfficial ? fetchOfficialMetrics() : Promise.resolve()]);
     setRefreshing(false);
-  }, []);
+  }, [fetchData, fetchOfficialMetrics, isOfficial]);
 
   const openArticle = async (item: NewsItem) => {
     if (!item.sourceUrl) {
@@ -188,41 +235,48 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3D5AF1" />}
       >
         {/* Welcome + Stats Card */}
-        <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.welcomeCard}>
+        <FadeIn><LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.welcomeCard}>
           <View style={styles.welcomeRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.welcomeJnv}>{profile?.jnvName || "JNV India"}</Text>
+              <Text style={styles.welcomeJnv}>{profile?.jnvName || "School not set"}</Text>
               <Text style={styles.welcomeRole}>{getRoleLabel(role)}</Text>
             </View>
-            {(role === "student" || role === "alumni") && (
+            {(role === "student" || role === "alumni") && profile?.house && (
               <View style={styles.houseTag}>
-                <Text style={styles.houseTagText}>{profile?.house || "Aravali"}</Text>
+                <Text style={styles.houseTagText}>{profile.house}</Text>
               </View>
             )}
           </View>
-          {isTeacher || isOfficial ? (
-            <View style={styles.teacherStats}>
-              {[
-                { label: "Classes", value: "3", icon: "school-outline" as const },
-                { label: "Students", value: "86", icon: "people-outline" as const },
-                { label: "Events", value: "4", icon: "calendar-outline" as const },
-                { label: "Issues", value: "7", icon: "alert-circle-outline" as const },
-              ].map((s) => (
-                <View key={s.label} style={styles.statBox}>
-                  <Ionicons name={s.icon} size={14} color="rgba(255,255,255,0.75)" />
-                  <Text style={styles.statVal}>{s.value}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
+          {isOfficial ? (
+            <>
+              <View style={styles.teacherStats}>
+                {[
+                  { label: "Classes", value: String(officialMetrics?.classes ?? "—"), icon: "school-outline" as const },
+                  { label: "Students", value: String(officialMetrics?.students ?? "—"), icon: "people-outline" as const },
+                  { label: "Events", value: String(officialMetrics?.events ?? "—"), icon: "calendar-outline" as const },
+                  { label: "Open Issues", value: String(officialMetrics?.issues ?? "—"), icon: "alert-circle-outline" as const },
+                ].map((stat) => (
+                  <View key={stat.label} style={styles.statBox}>
+                    <Ionicons name={stat.icon} size={14} color="rgba(255,255,255,0.75)" />
+                    <Text style={styles.statVal}>{stat.value}</Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
+              {(officialMetricsLoading || officialMetricsError) && (
+                <Text style={styles.metricsHint}>
+                  {officialMetricsError ? "Live school metrics unavailable. Pull to refresh." : "Loading live school metrics…"}
+                </Text>
+              )}
+            </>
+          ) : role === "student" || role === "alumni" ? (
             <View style={styles.studentBadgeRow}>
               {profile?.class && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Class {profile.class.replace(/^class\s+/i, "")}</Text></View>}
               {profile?.passoutYear && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>Batch {profile.passoutYear}</Text></View>}
               {profile?.jnvState && <View style={styles.studentBadge}><Text style={styles.studentBadgeText}>{profile.jnvState}</Text></View>}
             </View>
-          )}
-        </LinearGradient>
+          ) : null}
+        </LinearGradient></FadeIn>
 
         <AchievementsHighlights />
 
@@ -230,14 +284,14 @@ export default function HomeScreen() {
         {!isVerified && role !== "official" && (
           <TouchableOpacity
             style={styles.verifyBanner}
-            onPress={() => router.push("/(screens)/verification-center" as any)}
+            onPress={() => router.push((role === "alumni" ? "/(screens)/alumni-peer-verification" : "/(screens)/verification-center") as any)}
             activeOpacity={0.85}
           >
             <View style={styles.verifyBannerLeft}>
               <Ionicons name="shield-outline" size={20} color="#FF7A00" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.verifyBannerTitle}>Complete your verification</Text>
-                <Text style={styles.verifyBannerSub}>Unlock messaging, events &amp; more features</Text>
+                <Text style={styles.verifyBannerTitle}>{role === "alumni" ? "Confirm your alumni status" : "Complete your verification"}</Text>
+                <Text style={styles.verifyBannerSub}>{role === "alumni" ? "One peer from your JNV can confirm you" : "Unlock messaging, events &amp; more features"}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FF7A00" />
@@ -268,23 +322,29 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            {quickActions.map((action) => (
-              <TouchableOpacity
+            {quickActions.map((action, actionIndex) => (
+              <FadeIn
                 key={action.label}
+                delay={Math.min(actionIndex, 4) * 35}
+                style={styles.actionFadeItem}
+              >
+              <MotionPressable
                 style={styles.actionCard}
-                activeOpacity={0.75}
                 onPress={() => openFeature(action.route, action.label, limitedActionLabels.has(action.label))}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
               >
                 <View style={[styles.actionIcon, { backgroundColor: action.bg }]}>
                   <Ionicons name={action.icon} size={22} color={action.color} />
-                  {!isVerified && !limitedActionLabels.has(action.label) && (
+                  {!isVerified && !isOfficial && !limitedActionLabels.has(action.label) && (
                     <View style={styles.actionLock}>
                       <Ionicons name="lock-closed" size={9} color="#fff" />
                     </View>
                   )}
                 </View>
                 <Text style={styles.actionLabel}>{action.label}</Text>
-              </TouchableOpacity>
+              </MotionPressable>
+              </FadeIn>
             ))}
           </View>
         </View>
@@ -315,8 +375,8 @@ export default function HomeScreen() {
                       <Ionicons name="megaphone-outline" size={14} color="#EF4444" />
                     </View>
                     <View>
-                      <Text style={styles.announcerName}>{item.authorName || "JNV Official"}</Text>
-                      <Text style={styles.announcerJnv}>{item.jnvName || "JNV India"}</Text>
+                      <Text style={styles.announcerName}>{item.authorName || "Unknown author"}</Text>
+                      <Text style={styles.announcerJnv}>{item.jnvName || "School not specified"}</Text>
                     </View>
                   </View>
                   <Text style={styles.announceDate}>{formatDate(item.createdAt)}</Text>
@@ -363,7 +423,7 @@ export default function HomeScreen() {
                 <View style={styles.featuredFooter}>
                   <View style={styles.featuredAuthorRow}>
                     <Ionicons name="person-circle-outline" size={15} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.featuredAuthor}>{featuredNews.authorName || "NVS"}</Text>
+                  <Text style={styles.featuredAuthor}>{featuredNews.authorName || "Unknown author"}</Text>
                   </View>
                   <Text style={styles.featuredDate}>{formatDate(featuredNews.createdAt)}</Text>
                 </View>
@@ -406,15 +466,33 @@ export default function HomeScreen() {
         {/* Explore More */}
         <View style={[styles.section, { marginTop: 18 }]}>
           <Text style={styles.sectionTitle}>Explore More</Text>
+          <TouchableOpacity
+            style={styles.mapRankingCard}
+            onPress={() => router.push("/(screens)/jnv-map-ranking" as any)}
+            activeOpacity={0.86}
+            accessibilityRole="button"
+            accessibilityLabel="JNV Map and Ranking. Explore Navodaya schools and discover their rankings."
+          >
+            <LinearGradient colors={["#273F8F", "#3151E8"]} style={styles.mapRankingGradient}>
+              <View style={styles.mapRankingText}>
+                <Text style={styles.mapRankingTitle}>JNV Map & Ranking</Text>
+                <Text style={styles.mapRankingSubtitle}>Explore Navodaya schools and discover their rankings.</Text>
+              </View>
+              <View style={styles.mapRankingIcons}>
+                <Ionicons name="map-outline" size={25} color="#fff" />
+                <Ionicons name="trophy-outline" size={23} color="#FDE68A" />
+              </View>
+              <Ionicons name="chevron-forward" size={19} color="rgba(255,255,255,0.9)" />
+            </LinearGradient>
+          </TouchableOpacity>
           {[
-            { label: "JNV Rankings", desc: "India-wide & state JNV rankings", icon: "trophy-outline" as const, iconColor: "#F59E0B", iconBg: "#FFFBEB", route: "/(screens)/rankings" },
             { label: "JNV Store", desc: "Books, JNV merchandise & learning essentials", icon: "bag-handle-outline" as const, iconColor: "#3D5AF1", iconBg: "#EEF2FF", route: "/(screens)/store" },
-            ...(role !== "official" ? [{ label: "House Arena", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/house-arena" }] : []),
+            ...(role !== "official" ? [{ label: "Inter House Competition", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/house-arena" }] : []),
           ].map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.exploreRow}
-              onPress={() => openFeature(item.route, item.label, item.label === "JNV Rankings" || item.label === "JNV Store")}
+              onPress={() => openFeature(item.route, item.label, item.label === "JNV Store")}
               activeOpacity={0.75}
             >
               <View style={[styles.exploreIconWrap, { backgroundColor: item.iconBg }]}>
@@ -424,39 +502,46 @@ export default function HomeScreen() {
                 <Text style={styles.exploreLabel}>{item.label}</Text>
                 <Text style={styles.exploreDesc}>{item.desc}</Text>
               </View>
-              {item.label !== "JNV Rankings" && item.label !== "JNV Store" && !isVerified && <Ionicons name="lock-closed" size={14} color="#9CA3AF" />}
+              {item.label !== "JNV Store" && !isVerified && <Ionicons name="lock-closed" size={14} color="#9CA3AF" />}
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Available Mentors */}
+        {/* Verified alumni from this JNV */}
         <View style={[styles.section, { marginTop: 18 }]}>
           <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Available Mentors</Text>
-            <TouchableOpacity onPress={() => openFeature("/(screens)/alumni", "Alumni mentors")}>
+            <Text style={styles.sectionTitle}>Verified Alumni</Text>
+            <TouchableOpacity onPress={() => openFeature("/(screens)/alumni", "Alumni directory")}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.mentorsRow}>
-            {[
-              { id: "1", name: "Priya S.", field: "Engineering" },
-              { id: "2", name: "Amit K.", field: "IAS Officer" },
-              { id: "3", name: "Neha R.", field: "Medicine" },
-              { id: "4", name: "Raj M.", field: "Research" },
-            ].map((m) => (
-              <TouchableOpacity key={m.id} style={styles.mentorCard} activeOpacity={0.8} onPress={() => openFeature("/(screens)/alumni", "Alumni mentors")}>
-                <View style={styles.mentorAvatarWrap}>
+          {schoolAlumniLoading ? (
+            <Text style={styles.alumniEmpty}>Loading alumni from your JNV…</Text>
+          ) : schoolAlumniError ? (
+            <Text style={styles.alumniEmpty}>Could not load the JNV alumni directory.</Text>
+          ) : schoolAlumni.length === 0 ? (
+            <Text style={styles.alumniEmpty}>No verified alumni profiles to show yet.</Text>
+          ) : (
+            <View style={styles.mentorsRow}>
+              {schoolAlumni.map((person) => (
+                <TouchableOpacity
+                  key={person.id}
+                  style={styles.mentorCard}
+                  activeOpacity={0.8}
+                  onPress={() => router.push({ pathname: "/(screens)/user-profile", params: { userId: person.id } } as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${person.fullName}'s profile`}
+                >
                   <View style={styles.mentorAvatar}>
-                    <Text style={styles.mentorInitial}>{m.name[0]}</Text>
+                    <Text style={styles.mentorInitial}>{person.fullName[0]?.toUpperCase() || "A"}</Text>
                   </View>
-                  <View style={styles.mentorDot} />
-                </View>
-                <Text style={styles.mentorName} numberOfLines={1}>{m.name}</Text>
-                <Text style={styles.mentorField} numberOfLines={1}>{m.field}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Text style={styles.mentorName} numberOfLines={1}>{person.fullName}</Text>
+                  <Text style={styles.mentorField} numberOfLines={1}>{person.profession || person.field || person.company || "Alumni"}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -488,6 +573,12 @@ const styles = StyleSheet.create({
   bellBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   bellDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
   welcomeCard: { marginHorizontal: 16, marginTop: 16, borderRadius: 18, padding: 18 },
+  mapRankingCard: { marginHorizontal: 16, marginTop: 14, borderRadius: 17, overflow: "hidden", minHeight: 92, elevation: 3, shadowColor: "#172554", shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  mapRankingGradient: { minHeight: 92, paddingHorizontal: 17, paddingVertical: 15, flexDirection: "row", alignItems: "center", gap: 12 },
+  mapRankingText: { flex: 1, gap: 5 },
+  mapRankingTitle: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold" },
+  mapRankingSubtitle: { color: "rgba(255,255,255,0.82)", fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular" },
+  mapRankingIcons: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 4 },
   welcomeRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
   welcomeJnv: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 3 },
   welcomeRole: { color: "rgba(255,255,255,0.75)", fontSize: 13, fontFamily: "Inter_400Regular" },
@@ -497,6 +588,7 @@ const styles = StyleSheet.create({
   statBox: { flex: 1, alignItems: "center", gap: 2 },
   statVal: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
   statLabel: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "Inter_400Regular" },
+  metricsHint: { marginTop: 8, color: "rgba(255,255,255,0.75)", fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
   studentBadgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   studentBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   studentBadgeText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
@@ -517,8 +609,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 14 },
   seeAll: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  actionFadeItem: { width: "47%", flexGrow: 0, flexShrink: 0 },
   actionCard: {
-    width: "47%", backgroundColor: "#fff", borderRadius: 14, padding: 14,
+    width: "100%", backgroundColor: "#fff", borderRadius: 14, padding: 14,
     alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#F0F0F0",
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
@@ -584,11 +677,10 @@ const styles = StyleSheet.create({
   // Mentors
   mentorsRow: { flexDirection: "row", gap: 12 },
   mentorCard: { alignItems: "center", gap: 6, width: 72 },
-  mentorAvatarWrap: { position: "relative" },
   mentorAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#3D5AF1" },
-  mentorDot: { position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: "#10B981", borderWidth: 2, borderColor: "#fff" },
   mentorInitial: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
   mentorName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#111827" },
   mentorField: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  alumniEmpty: { paddingVertical: 14, color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular" },
 
 });

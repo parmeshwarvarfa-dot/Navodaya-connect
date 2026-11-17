@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { VerificationRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import AlumniPeerVerificationScreen from "./alumni-peer-verification";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap; label: string; desc: string }> = {
   unverified:   { color: "#6B7280", bg: "#F3F4F6", icon: "shield-outline", label: "Not Verified", desc: "Submit role-specific school evidence to request verification." },
@@ -31,11 +32,17 @@ const TIMELINE_STEPS = [
 const ROLE_TIPS: Record<string, string[]> = {
   student:  ["Submit enrollment evidence connected to your selected JNV.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
   teacher:  ["Submit evidence of your teaching role at the selected JNV.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
-  alumni:   ["Submit an alumni record, transfer certificate, or marksheet.", "A school reviewer recommends a decision.", "An authorized JNV official makes the final decision."],
+  alumni:   ["Find another alumnus from your JNV.", "They can confirm you whether or not they are verified.", "One confirmation unlocks alumni community access."],
   official: ["Your request is reviewed by an assigned school reviewer.", "Final school authority must be independently confirmed.", "An authorized school official makes the final decision."],
 };
 
 export default function VerificationCenterScreen() {
+  const { profile } = useAuth();
+  if (profile?.role === "alumni") return <AlumniPeerVerificationScreen />;
+  return <SchoolVerificationCenter />;
+}
+
+function SchoolVerificationCenter() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const { profile, refreshProfile, signOut } = useAuth();
@@ -47,7 +54,6 @@ export default function VerificationCenterScreen() {
   const [toast, setToast]       = useState("");
   const [applicantResponse, setApplicantResponse] = useState("");
   const [evidenceSummary, setEvidenceSummary] = useState("");
-  const [evidenceLinks, setEvidenceLinks] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
   const pulse = new Animated.Value(1);
@@ -89,13 +95,10 @@ export default function VerificationCenterScreen() {
   const submitAdditionalInfo = async () => {
     if (!request) return;
     if (!applicantResponse.trim()) return showToast("Add the requested information before submitting.");
-    const documentUrls = evidenceLinks.split(/\s+/).map((url) => url.trim()).filter(Boolean);
-    if (!documentUrls.length) return showToast("Add at least one supporting evidence link.");
     setActionLoading(true);
     try {
-      await api.verification.resubmit(request.id, { applicantResponse: applicantResponse.trim(), documentUrls });
+      await api.verification.resubmit(request.id, { applicantResponse: applicantResponse.trim() });
       setApplicantResponse("");
-      setEvidenceLinks("");
       showToast("Additional information sent to your JNV reviewer.");
       await fetchStatus();
     } catch (error: any) { showToast(error.message || "Could not submit the information."); }
@@ -114,14 +117,11 @@ export default function VerificationCenterScreen() {
   };
 
   const submitVerificationRequest = async () => {
-    const documentUrls = evidenceLinks.split(/\s+/).map((url) => url.trim()).filter(Boolean);
     if (evidenceSummary.trim().length < 20) return showToast("Describe your role and school evidence in at least 20 characters.");
-    if (!documentUrls.length) return showToast("Add at least one supporting evidence link.");
     setActionLoading(true);
     try {
-      await api.verification.create({ evidenceSummary: evidenceSummary.trim(), documentUrls });
+      await api.verification.create({ evidenceSummary: evidenceSummary.trim() });
       setEvidenceSummary("");
-      setEvidenceLinks("");
       await refreshProfile();
       await fetchStatus();
       showToast("Verification request submitted to your JNV.");
@@ -205,9 +205,11 @@ export default function VerificationCenterScreen() {
               { icon: "mail-outline" as const,          label: "Email",   value: request.userEmail },
               { icon: "business-outline" as const,      label: "JNV",     value: `${request.jnvName}, ${request.jnvState}` },
               ...(request.evidenceSummary ? [{ icon: "document-text-outline" as const, label: "Evidence", value: request.evidenceSummary }] : []),
-              { icon: "shield-outline" as const,        label: "Method",  value: request.method === "official" ? "Official Review" : request.method },
+              { icon: "shield-outline" as const,        label: "Method",  value: request.method === "official" ? "School Review" : request.method },
               { icon: "calendar-outline" as const,      label: "Submitted", value: new Date(request.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
               ...(request.reviewedByName ? [{ icon: "checkmark-circle-outline" as const, label: "Reviewed By", value: request.reviewedByName }] : []),
+              ...(request.adminNotes ? [{ icon: "chatbubble-ellipses-outline" as const, label: "School Review", value: request.adminNotes }] : []),
+              ...(request.officialNotes ? [{ icon: "shield-checkmark-outline" as const, label: "Official Decision", value: request.officialNotes }] : []),
             ].map((row) => (
               <View key={row.label} style={s.detailRow}>
                 <Ionicons name={row.icon} size={16} color="#6B7280" />
@@ -221,7 +223,7 @@ export default function VerificationCenterScreen() {
         {status !== "verified" && status !== "pending" && status !== "suspended" && request?.status !== "info_requested" && (
           <View style={s.detailCard}>
             <Text style={s.sectionTitle}>REQUEST VERIFICATION</Text>
-            <Text style={s.evidenceHelp}>{profile?.role === "student" ? "Describe your current enrollment and attach a school record or enrollment confirmation." : profile?.role === "alumni" ? "Describe your JNV attendance and attach an alumni record, transfer certificate, or marksheet." : profile?.role === "teacher" ? "Describe your teaching role and attach an appointment or school confirmation record." : "Describe your school authority claim and attach institutional confirmation."}</Text>
+            <Text style={s.evidenceHelp}>{profile?.role === "student" ? "Describe your current enrollment and attach a school record or enrollment confirmation." : profile?.role === "alumni" ? "Alumni status is confirmed by one alumnus from your JNV in the peer verification screen." : profile?.role === "teacher" ? "Describe your teaching role and attach an appointment or school confirmation record." : "Describe your school authority claim and attach institutional confirmation."}</Text>
             <TextInput
               style={s.responseInput}
               multiline
@@ -231,18 +233,7 @@ export default function VerificationCenterScreen() {
               placeholderTextColor="#9CA3AF"
               maxLength={2000}
             />
-            <TextInput
-              style={s.responseInput}
-              multiline
-              value={evidenceLinks}
-              onChangeText={setEvidenceLinks}
-              placeholder="Paste one or more HTTPS document links"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="none"
-              keyboardType="url"
-              maxLength={10000}
-            />
-            <Text style={s.evidenceHelp}>Before submitting, restrict link access to your assigned JNV reviewers. The app stores links, not document copies.</Text>
+            <Text style={s.evidenceHelp}>For privacy, do not paste document links here. Your assigned JNV Official may contact you to review supporting records securely.</Text>
             <TouchableOpacity style={s.responseButton} onPress={submitVerificationRequest} disabled={actionLoading}>
               <Text style={s.responseButtonText}>{actionLoading ? "Submitting..." : "Submit verification request"}</Text>
             </TouchableOpacity>
@@ -262,18 +253,7 @@ export default function VerificationCenterScreen() {
               placeholderTextColor="#9CA3AF"
               maxLength={2000}
             />
-            <TextInput
-              style={s.responseInput}
-              multiline
-              value={evidenceLinks}
-              onChangeText={setEvidenceLinks}
-              placeholder="Paste updated HTTPS evidence links"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="none"
-              keyboardType="url"
-              maxLength={10000}
-            />
-            <Text style={s.evidenceHelp}>Restrict the links to your assigned JNV reviewers before submitting.</Text>
+            <Text style={s.evidenceHelp}>Do not paste document links here. Your JNV Official may contact you to review supporting records securely.</Text>
             <TouchableOpacity style={s.responseButton} onPress={submitAdditionalInfo} disabled={actionLoading}>
               <Text style={s.responseButtonText}>{actionLoading ? "Submitting..." : "Submit information"}</Text>
             </TouchableOpacity>

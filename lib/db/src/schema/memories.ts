@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const memoriesTable = pgTable("memories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -22,6 +22,6 @@ export const memoryLikesTable = pgTable("memory_likes", {
   memoryId: uuid("memory_id").notNull(),
   userId: uuid("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [uniqueIndex("memory_likes_memory_user_uidx").on(table.memoryId, table.userId)]);
 
 export type Memory = typeof memoriesTable.$inferSelect;

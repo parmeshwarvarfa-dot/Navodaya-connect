@@ -104,7 +104,7 @@ export default function AlumniConnectScreen() {
                       <View key={a.id} style={styles.suggestCard}>
                         <TouchableOpacity style={styles.suggestIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
                           <View style={styles.suggestAvatar}><Text style={styles.suggestAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                          {a.verificationStatus === "verified" && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                          {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedDot}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
                           <Text style={styles.suggestName} numberOfLines={1}>{a.fullName}</Text>
                           <Text style={styles.suggestRole} numberOfLines={1}>{a.profession || a.field || "Alumni"}</Text>
                         </TouchableOpacity>
@@ -127,7 +127,7 @@ export default function AlumniConnectScreen() {
                   <TouchableOpacity style={styles.alumniIdentity} onPress={() => openProfile(a.id)} activeOpacity={0.75}>
                     <View style={styles.alumniAvatarWrap}>
                       <View style={styles.alumniAvatar}><Text style={styles.alumniAvatarText}>{(a.fullName || "?")[0]}</Text></View>
-                      {a.verificationStatus === "verified" && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
+                      {["verified", "community_verified"].includes(a.verificationStatus ?? "") && <View style={styles.verifiedIconSmall}><Ionicons name="checkmark-circle" size={14} color="#3D5AF1" /></View>}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.alumniName}>{a.fullName}</Text>

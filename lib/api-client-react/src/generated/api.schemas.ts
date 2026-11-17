@@ -29,14 +29,59 @@ export const CreateMemoryRequestVisibility = {
   followers: "followers",
 } as const;
 
+export interface MemoryMediaAsset {
+  /** @maxLength 200 */
+  key: string;
+}
+
 export interface CreateMemoryRequest {
   /** @maxLength 4000 */
   caption: string;
   postType?: CreateMemoryRequestPostType;
-  mediaUrls?: string[];
+  /** @maxItems 10 */
+  mediaAssets?: MemoryMediaAsset[];
   pollOptions?: string[];
   visibility?: CreateMemoryRequestVisibility;
   commentsEnabled?: boolean;
+}
+
+export type MemoryMediaUploadMediaType =
+  (typeof MemoryMediaUploadMediaType)[keyof typeof MemoryMediaUploadMediaType];
+
+export const MemoryMediaUploadMediaType = {
+  image: "image",
+  video: "video",
+} as const;
+
+export interface MemoryMediaUpload {
+  key: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  mediaType: MemoryMediaUploadMediaType;
+}
+
+export interface DeleteMemoryUploadsRequest {
+  /**
+   * @minItems 1
+   * @maxItems 10
+   */
+  keys: string[];
+}
+
+export type MemoryMediaMetadataMediaType =
+  (typeof MemoryMediaMetadataMediaType)[keyof typeof MemoryMediaMetadataMediaType];
+
+export const MemoryMediaMetadataMediaType = {
+  image: "image",
+  video: "video",
+} as const;
+
+export interface MemoryMediaMetadata {
+  fileName: string;
+  contentType: string;
+  size: number;
+  mediaType: MemoryMediaMetadataMediaType;
 }
 
 export type UpdateMemoryRequestVisibility =
@@ -59,6 +104,7 @@ export interface SocialMemory {
   caption?: string;
   postType: string;
   mediaUrls: string[];
+  mediaMetadata?: MemoryMediaMetadata[];
   pollOptions: string[];
   pollVotes: number[];
   viewerVote?: number;

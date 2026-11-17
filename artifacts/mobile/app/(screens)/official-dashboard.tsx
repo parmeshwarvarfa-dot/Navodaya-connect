@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
   RefreshControl, Platform, Modal, TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,7 +11,6 @@ import { api } from "@/lib/api";
 import type { VerificationRequest, TeacherFeedbackItem } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
-import AchievementsHighlights from "@/components/AchievementsHighlights";
 
 const ROLE_COLORS: Record<string, string> = {
   student: "#3D5AF1", teacher: "#10B981", alumni: "#8B5CF6", official: "#D97706",
@@ -25,10 +24,11 @@ const STATUS_COLORS: Record<string, { color: string; bg: string; label: string }
 };
 
 const QUICK_ACTIONS = [
-  { label: "Verify Users",  icon: "shield-checkmark-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/user-management" },
-  { label: "View Problems", icon: "alert-circle-outline"     as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/view-problems"   },
+  { label: "Academic Management", icon: "school-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/assign-teachers" },
   { label: "Post Update",   icon: "megaphone-outline"        as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/create-news"     },
-  { label: "Create Event",  icon: "calendar-outline"         as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(tabs)/events"             },
+  { label: "Opportunities", icon: "briefcase-outline"        as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-opportunities" },
+  { label: "School Support", icon: "heart-outline" as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/alumni-support" },
+  { label: "Alumni Reports", icon: "shield-outline" as const, color: "#B54708", bg: "#FFFAEB", route: "/(screens)/alumni-moderation" },
 ];
 
 function timeSince(ts: string) {
@@ -45,7 +45,8 @@ export default function OfficialDashboardScreen() {
   const [feedback, setFeedback]           = useState<TeacherFeedbackItem[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
-  const [activeTab, setActiveTab]         = useState<"pending" | "history" | "feedback">("pending");
+  const [activeTab, setActiveTab]         = useState<"student" | "teacher" | "other" | "history" | "feedback">("student");
+  const [statusFilter, setStatusFilter]   = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [selected, setSelected]           = useState<VerificationRequest | null>(null);
   const [notes, setNotes]                 = useState("");
   const [infoReq, setInfoReq]             = useState("");
@@ -68,11 +69,28 @@ export default function OfficialDashboardScreen() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const pendingReqs = requests.filter((r) => r.status === "pending");
-  const historyReqs = requests.filter((r) => r.status !== "pending");
+  const queueRoles = activeTab === "student" ? ["student"] : activeTab === "teacher" ? ["teacher"] : ["official"];
+  const isOpen = (status: string) => ["pending", "info_requested", "recommended_approval", "recommended_rejection", "awaiting_official_decision"].includes(status);
+  const roleQueue = requests.filter((r) => queueRoles.includes(r.role));
+  const visibleQueue = roleQueue.filter((r) => statusFilter === "all"
+    ? true
+    : statusFilter === "pending" ? isOpen(r.status) : r.status === statusFilter);
+  const pendingReqs = requests.filter((r) => isOpen(r.status));
+  const historyReqs = requests.filter((r) => !isOpen(r.status));
 
   const handleReview = async (status: "approved" | "rejected" | "info_requested") => {
     if (!selected) return;
+    if (status === "rejected" && !notes.trim()) return showToast("Add a reason before rejecting this request.");
+    if (status === "approved" && (selected.evidenceSummary?.trim().length ?? 0) < 20) return showToast("The applicant must provide a role evidence summary before approval.");
+    const confirm = Platform.OS === "web"
+      ? window.confirm(`${status === "approved" ? "Approve" : status === "rejected" ? "Reject" : "Request more information for"} ${selected.userFullName}'s ${selected.role} verification request?`)
+      : await new Promise<boolean>((resolve) => Alert.alert(
+        "Confirm verification decision",
+        `${status === "approved" ? "Approve" : status === "rejected" ? "Reject" : "Request more information for"} ${selected.userFullName}'s ${selected.role} request?`,
+        [{ text: "Cancel", style: "cancel", onPress: () => resolve(false) }, { text: "Confirm", style: status === "rejected" ? "destructive" : "default", onPress: () => resolve(true) }],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      ));
+    if (!confirm) return;
     setActionLoading(status);
     try {
       await api.verification.review(selected.id, status, notes || undefined, infoReq || undefined);
@@ -96,6 +114,7 @@ export default function OfficialDashboardScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
+            <Text style={s.headerEyebrow}>NAVODAYA CONNECT / OFFICIAL</Text>
             <Text style={s.headerTitle}>Official Dashboard</Text>
             <Text style={s.headerSub}>{profile?.jnvName} · {profile?.jnvState}</Text>
           </View>
@@ -104,14 +123,21 @@ export default function OfficialDashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={s.snapshotHeading}>
+          <Text style={s.snapshotTitle}>Verification overview</Text>
+          <View style={s.snapshotStatus}>
+            <View style={[s.snapshotDot, loading && s.snapshotDotLoading]} />
+            <Text style={s.snapshotStatusText}>{loading ? "Updating" : "Current counts"}</Text>
+          </View>
+        </View>
         <View style={s.statRow}>
           {[
-            { label: "Pending",  value: pendingReqs.length, icon: "time-outline" as const,             color: "#FBBF24" },
-            { label: "Verified", value: verifiedCount,       icon: "checkmark-circle-outline" as const, color: "#34D399" },
-            { label: "Rejected", value: rejectedCount,       icon: "close-circle-outline" as const,     color: "#F87171" },
-            { label: "Feedback", value: feedback.length,     icon: "star-outline" as const,             color: "#A78BFA" },
-          ].map((stat) => (
-            <View key={stat.label} style={s.statItem}>
+            { label: "Pending",  value: loading ? "—" : pendingReqs.length, icon: "time-outline" as const,             color: "#FBBF24" },
+            { label: "Verified", value: loading ? "—" : verifiedCount,       icon: "checkmark-circle-outline" as const, color: "#34D399" },
+            { label: "Rejected", value: loading ? "—" : rejectedCount,       icon: "close-circle-outline" as const,     color: "#F87171" },
+            { label: "Feedback", value: loading ? "—" : feedback.length,     icon: "star-outline" as const,             color: "#A78BFA" },
+          ].map((stat, index) => (
+            <View key={stat.label} style={[s.statItem, index < 3 && s.statDivider]}>
               <Ionicons name={stat.icon} size={16} color={stat.color} />
               <Text style={[s.statValue, { color: stat.color }]}>{stat.value}</Text>
               <Text style={s.statLabel}>{stat.label}</Text>
@@ -120,22 +146,44 @@ export default function OfficialDashboardScreen() {
         </View>
       </LinearGradient>
 
-      {/* Quick actions */}
+      {/* Official dashboard feature cards */}
       <View style={s.quickSection}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, gap: 10, paddingVertical: 10 }}>
-          {QUICK_ACTIONS.map((qa) => (
-            <TouchableOpacity key={qa.label} style={[s.quickChip, { backgroundColor: qa.bg }]} onPress={() => router.push(qa.route as any)}>
-              <Ionicons name={qa.icon} size={16} color={qa.color} />
-              <Text style={[s.quickChipText, { color: qa.color }]}>{qa.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={s.quickHeading}>
+          <View>
+            <Text style={s.quickTitle}>Dashboard tools</Text>
+            <Text style={s.quickSubtitle}>Manage your school community</Text>
+          </View>
+          <View style={s.toolCount}><Text style={s.toolCountText}>{QUICK_ACTIONS.length} tools</Text></View>
+        </View>
+        <View style={s.quickGrid}>
+          {QUICK_ACTIONS.map((qa, index) => {
+            const wide = index === QUICK_ACTIONS.length - 1;
+            return (
+              <TouchableOpacity
+                key={qa.label}
+                style={[s.featureCard, wide && s.featureCardWide]}
+                onPress={() => router.push(qa.route as any)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={qa.label}
+              >
+                <View style={[s.featureIcon, { backgroundColor: qa.bg }, wide && s.featureIconWide]}>
+                  <Ionicons name={qa.icon} size={18} color={qa.color} />
+                </View>
+                <Text style={[s.featureLabel, wide && s.featureLabelWide]}>{qa.label}</Text>
+                {wide ? <Ionicons name="chevron-forward" size={18} color="#98A2B3" /> : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* Tabs */}
-      <View style={s.tabs}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabs} contentContainerStyle={s.tabsContent}>
         {[
-          { key: "pending",  label: `Pending (${pendingReqs.length})` },
+          { key: "student",  label: `Student Verification Requests (${requests.filter((r) => r.role === "student" && isOpen(r.status)).length})` },
+          { key: "teacher",  label: `Teacher Verification Requests (${requests.filter((r) => r.role === "teacher" && isOpen(r.status)).length})` },
+          { key: "other",  label: `Official Requests (${requests.filter((r) => r.role === "official" && isOpen(r.status)).length})` },
           { key: "history",  label: `History (${historyReqs.length})` },
           { key: "feedback", label: `Feedback (${feedback.length})` },
         ].map((tab) => (
@@ -147,30 +195,40 @@ export default function OfficialDashboardScreen() {
             <Text style={[s.tabText, activeTab === tab.key && s.tabTextActive]}>{tab.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
+
+      {(activeTab === "student" || activeTab === "teacher" || activeTab === "other") && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statusFilters}>
+          {(["pending", "approved", "rejected", "all"] as const).map((filter) => (
+            <TouchableOpacity key={filter} style={[s.statusFilter, statusFilter === filter && s.statusFilterActive]} onPress={() => setStatusFilter(filter)}>
+              <Text style={[s.statusFilterText, statusFilter === filter && s.statusFilterTextActive]}>{filter === "all" ? "All" : filter[0].toUpperCase() + filter.slice(1)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: insets.bottom + 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
-        <AchievementsHighlights />
-        {activeTab === "pending" && (
+        {(activeTab === "student" || activeTab === "teacher" || activeTab === "other") && (
           loading ? <Text style={s.emptyText}>Loading...</Text>
-          : pendingReqs.length === 0 ? (
+          : visibleQueue.length === 0 ? (
             <View style={s.emptyWrap}>
               <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
-              <Text style={s.emptyTitle}>All caught up!</Text>
-              <Text style={s.emptyText}>No pending verification requests.</Text>
+              <Text style={s.emptyTitle}>{statusFilter === "pending" ? "All caught up!" : "No requests"}</Text>
+              <Text style={s.emptyText}>No {statusFilter === "all" ? "" : `${statusFilter} `}{activeTab} verification requests.</Text>
             </View>
-          ) : pendingReqs.map((req) => (
-            <TouchableOpacity key={req.id} style={s.reqCard} onPress={() => { setSelected(req); setNotes(""); setInfoReq(""); }} activeOpacity={0.8}>
+          ) : visibleQueue.map((req) => (
+            <TouchableOpacity key={req.id} style={s.reqCard} disabled={!isOpen(req.status)} onPress={() => { setSelected(req); setNotes(""); setInfoReq(""); }} activeOpacity={0.8}>
               <View style={[s.reqAvatar, { backgroundColor: (ROLE_COLORS[req.role] || "#9CA3AF") + "22" }]}>
                 <Text style={[s.reqAvatarText, { color: ROLE_COLORS[req.role] || "#9CA3AF" }]}>{req.userFullName[0]}</Text>
               </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={s.reqName}>{req.userFullName}</Text>
                 <Text style={s.reqEmail}>{req.userEmail}</Text>
+                {req.evidenceSummary ? <Text style={s.reqEmail} numberOfLines={2}>{req.evidenceSummary}</Text> : null}
                 <View style={s.reqMetaRow}>
                   <View style={[s.roleChip, { backgroundColor: (ROLE_COLORS[req.role] || "#9CA3AF") + "22" }]}>
                     <Text style={[s.roleChipText, { color: ROLE_COLORS[req.role] || "#9CA3AF" }]}>{req.role}</Text>
@@ -268,6 +326,13 @@ export default function OfficialDashboardScreen() {
                   </View>
                 ))}
               </View>
+              {selected.evidenceSummary ? (
+                <View style={s.evidenceCard}>
+                  <Text style={s.inputLabel}>Applicant evidence summary</Text>
+                  <Text style={s.evidenceText}>{selected.evidenceSummary}</Text>
+                  <Text style={s.evidenceHelp}>Review supporting records directly with the applicant. Private document links are not stored in this app.</Text>
+                </View>
+              ) : null}
 
               <View style={s.inputSection}>
                 <Text style={s.inputLabel}>Notes (optional)</Text>
@@ -349,23 +414,66 @@ export default function OfficialDashboardScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { paddingHorizontal: 14, paddingBottom: 16 },
-  headerTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  headerTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
-  headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
-  statRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 14, padding: 10 },
-  statItem: { flex: 1, alignItems: "center", gap: 3 },
-  statValue: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)" },
-  quickSection: { backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  quickChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  quickChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  tabs: { flexDirection: "row", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
+  header: { paddingHorizontal: 18, paddingBottom: 18, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  headerTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 15 },
+  iconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.16)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  headerEyebrow: { color: "rgba(255,255,255,0.62)", fontSize: 9, letterSpacing: 1.3, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Inter_700Bold" },
+  headerSub: { color: "rgba(255,255,255,0.78)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  snapshotHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8, paddingHorizontal: 2 },
+  snapshotTitle: { color: "rgba(255,255,255,0.92)", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  snapshotStatus: { flexDirection: "row", alignItems: "center", gap: 5 },
+  snapshotDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34D399" },
+  snapshotDotLoading: { backgroundColor: "#FBBF24" },
+  snapshotStatusText: { color: "rgba(255,255,255,0.62)", fontSize: 10, fontFamily: "Inter_400Regular" },
+  statRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 16, paddingVertical: 11, paddingHorizontal: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  statItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3 },
+  statDivider: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.12)" },
+  statValue: { fontSize: 21, fontFamily: "Inter_700Bold" },
+  statLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.76)" },
+  quickSection: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
+  quickHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 2 },
+  quickTitle: { color: "#172033", fontSize: 16, fontFamily: "Inter_700Bold" },
+  quickSubtitle: { color: "#7A8699", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  toolCount: { borderRadius: 12, backgroundColor: "#EAF0FF", paddingHorizontal: 10, paddingVertical: 5 },
+  toolCountText: { color: "#3151E8", fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 9 },
+  featureCard: {
+    width: "48.5%",
+    minHeight: 88,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    padding: 9,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E9ECF3",
+    elevation: 1,
+    shadowColor: "#172033",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 7,
+  },
+  featureCardWide: { width: "100%", minHeight: 62, flexDirection: "row", justifyContent: "flex-start", paddingHorizontal: 14, gap: 12 },
+  featureIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  featureIconWide: { width: 38, height: 38, borderRadius: 19 },
+  featureLabel: { color: "#1F2937", fontSize: 12, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  featureLabelWide: { flex: 1, textAlign: "left", fontSize: 13 },
+  tabs: { flexGrow: 0, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E8EBF2" },
+  tabsContent: { flexDirection: "row", gap: 3, paddingHorizontal: 6 },
+  tab: { flexShrink: 0, paddingHorizontal: 14, paddingVertical: 13, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: "#1A3C6E" },
   tabText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
   tabTextActive: { color: "#1A3C6E", fontFamily: "Inter_700Bold" },
+  statusFilters: { paddingHorizontal: 14, paddingVertical: 10, gap: 8, backgroundColor: "#F5F6FA" },
+  statusFilter: { minHeight: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
+  statusFilterActive: { backgroundColor: "#1A3C6E", borderColor: "#1A3C6E" },
+  statusFilterText: { color: "#4B5563", fontSize: 12, fontFamily: "Inter_500Medium" },
+  statusFilterTextActive: { color: "#fff", fontFamily: "Inter_700Bold" },
+  evidenceCard: { borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#fff", padding: 14, gap: 8 },
+  evidenceText: { color: "#374151", fontSize: 14, lineHeight: 21, fontFamily: "Inter_400Regular" },
+  evidenceHelp: { color: "#6B7280", fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular" },
   emptyWrap: { alignItems: "center", paddingTop: 50, gap: 10 },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center" },

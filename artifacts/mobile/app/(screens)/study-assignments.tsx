@@ -25,6 +25,7 @@ export default function StudyAssignmentsScreen() {
   const { profile } = useAuth();
   const [assignments, setAssignments] = useState<AssignmentWithSubs[]>([]);
   const [loading,     setLoading]     = useState(true);
+  const [loadError,   setLoadError]   = useState("");
   const [activeTab,   setActiveTab]   = useState("All");
   const [search,      setSearch]      = useState("");
   const [expanded,    setExpanded]    = useState<string | null>(null);
@@ -36,8 +37,11 @@ export default function StudyAssignmentsScreen() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const fetchAssignments = async () => {
-    try { setAssignments(await api.assignments.list()); } catch {}
-    setLoading(false);
+    setLoading(true);
+    setLoadError("");
+    try { setAssignments(await api.assignments.list()); }
+    catch (error) { setLoadError(error instanceof Error ? error.message : "Assignments could not be loaded."); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAssignments(); }, []);
@@ -117,6 +121,12 @@ export default function StudyAssignmentsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
         {loading ? (
           <Text style={styles.loadingText}>Loading…</Text>
+        ) : loadError ? (
+          <TouchableOpacity style={styles.empty} onPress={() => void fetchAssignments()} accessibilityRole="button">
+            <Ionicons name="cloud-offline-outline" size={36} color="#9CA3AF" />
+            <Text style={styles.emptyText}>{loadError}</Text>
+            <Text style={styles.loadingText}>Tap to retry</Text>
+          </TouchableOpacity>
         ) : filtered.length === 0 ? (
           <View style={styles.empty}><Text style={styles.emptyIcon}>✅</Text><Text style={styles.emptyText}>All clear here!</Text></View>
         ) : filtered.map((a) => {

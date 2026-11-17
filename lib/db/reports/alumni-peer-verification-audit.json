@@ -1,0 +1,810 @@
+{
+    "capturedAt":  "2026-10-27T09:35:54.461Z",
+    "readOnly":  true,
+    "tables":  [
+                   {
+                       "table_name":  "achievements"
+                   },
+                   {
+                       "table_name":  "alumni_transition_batches"
+                   },
+                   {
+                       "table_name":  "alumni_transition_results"
+                   },
+                   {
+                       "table_name":  "announcements"
+                   },
+                   {
+                       "table_name":  "assignment_submissions"
+                   },
+                   {
+                       "table_name":  "assignments"
+                   },
+                   {
+                       "table_name":  "club_announcements"
+                   },
+                   {
+                       "table_name":  "club_join_requests"
+                   },
+                   {
+                       "table_name":  "club_members"
+                   },
+                   {
+                       "table_name":  "clubs"
+                   },
+                   {
+                       "table_name":  "connections"
+                   },
+                   {
+                       "table_name":  "content_reports"
+                   },
+                   {
+                       "table_name":  "digital_credentials"
+                   },
+                   {
+                       "table_name":  "direct_conversations"
+                   },
+                   {
+                       "table_name":  "direct_message_requests"
+                   },
+                   {
+                       "table_name":  "direct_messages"
+                   },
+                   {
+                       "table_name":  "email_otp_challenges"
+                   },
+                   {
+                       "table_name":  "event_registrations"
+                   },
+                   {
+                       "table_name":  "events"
+                   },
+                   {
+                       "table_name":  "game_sessions"
+                   },
+                   {
+                       "table_name":  "group_members"
+                   },
+                   {
+                       "table_name":  "group_messages"
+                   },
+                   {
+                       "table_name":  "groups"
+                   },
+                   {
+                       "table_name":  "jobs"
+                   },
+                   {
+                       "table_name":  "memories"
+                   },
+                   {
+                       "table_name":  "memory_bookmarks"
+                   },
+                   {
+                       "table_name":  "memory_comments"
+                   },
+                   {
+                       "table_name":  "memory_likes"
+                   },
+                   {
+                       "table_name":  "memory_poll_votes"
+                   },
+                   {
+                       "table_name":  "mentor_requests"
+                   },
+                   {
+                       "table_name":  "news"
+                   },
+                   {
+                       "table_name":  "problem_comments"
+                   },
+                   {
+                       "table_name":  "problems"
+                   },
+                   {
+                       "table_name":  "qa_answers"
+                   },
+                   {
+                       "table_name":  "qa_questions"
+                   },
+                   {
+                       "table_name":  "query_answers"
+                   },
+                   {
+                       "table_name":  "reports"
+                   },
+                   {
+                       "table_name":  "sessions"
+                   },
+                   {
+                       "table_name":  "social_notifications"
+                   },
+                   {
+                       "table_name":  "student_queries"
+                   },
+                   {
+                       "table_name":  "study_material_bookmarks"
+                   },
+                   {
+                       "table_name":  "study_materials"
+                   },
+                   {
+                       "table_name":  "teacher_class_assignments"
+                   },
+                   {
+                       "table_name":  "teacher_feedback"
+                   },
+                   {
+                       "table_name":  "user_blocks"
+                   },
+                   {
+                       "table_name":  "user_follows"
+                   },
+                   {
+                       "table_name":  "users"
+                   },
+                   {
+                       "table_name":  "verification_assignments"
+                   },
+                   {
+                       "table_name":  "verification_audit"
+                   },
+                   {
+                       "table_name":  "verification_requests"
+                   }
+               ],
+    "columns":  [
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "user_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "credential_id",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "public_token",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "role",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "jnv_id",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "jnv_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "jnv_state",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "issued_by",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "issued_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "digital_credentials",
+                        "column_name":  "updated_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "reported_user_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "reported_user_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "reason",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "details",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "reporter_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "reporter_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "reports",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "recipient_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "actor_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "type",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "entity_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "message",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "read_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "social_notifications",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "email",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "password_hash",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "full_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "role",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "jnv_state",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "jnv_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "house",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "photo_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "class",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "enroll_year",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "passout_year",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "profession",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "field",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "company",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "skills",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "verification_status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "subject",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "designation",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "bio",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "phone",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "linkedin_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "twitter_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "jnv_id",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "profile_visibility",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "uploaded_photo_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "avatar_config",
+                        "data_type":  "jsonb"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "avatar_thumbnail_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "profile_image_type",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "users",
+                        "column_name":  "resume_url",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "user_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "jnv_id",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "jnv_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "jnv_state",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "assignment_role",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "active",
+                        "data_type":  "boolean"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "assigned_by",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_assignments",
+                        "column_name":  "updated_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "request_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "actor_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "subject_user_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "jnv_id",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "action",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "from_status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "to_status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "reason",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_audit",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "user_id",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "user_full_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "user_email",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "role",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "jnv_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "jnv_state",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "method",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "status",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "document_urls",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "notes",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "info_request",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "reviewed_by",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "reviewed_by_name",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "reviewed_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "created_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "updated_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "evidence_summary",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "applicant_response",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "admin_recommendation",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "admin_notes",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "admin_reviewed_by",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "admin_reviewed_at",
+                        "data_type":  "timestamp without time zone"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "official_notes",
+                        "data_type":  "text"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "official_reviewed_by",
+                        "data_type":  "uuid"
+                    },
+                    {
+                        "table_name":  "verification_requests",
+                        "column_name":  "official_reviewed_at",
+                        "data_type":  "timestamp without time zone"
+                    }
+                ],
+    "users":  [
+                  {
+                      "role":  "alumni",
+                      "verification_status":  "verified",
+                      "count":  1
+                  },
+                  {
+                      "role":  "official",
+                      "verification_status":  "verified",
+                      "count":  1
+                  },
+                  {
+                      "role":  "student",
+                      "verification_status":  "pending",
+                      "count":  2
+                  },
+                  {
+                      "role":  "student",
+                      "verification_status":  "verified",
+                      "count":  1
+                  },
+                  {
+                      "role":  "teacher",
+                      "verification_status":  "verified",
+                      "count":  2
+                  }
+              ],
+    "alumni":  [
+                   {
+                       "id":  "756d26f9-7e52-43fe-9e39-f39289fb8e3e",
+                       "jnv_id":  "jnv:madhya-pradesh:ratlam-i",
+                       "jnv_name":  "JNV Ratlam-I",
+                       "jnv_state":  "Madhya Pradesh",
+                       "verification_status":  "verified"
+                   }
+               ],
+    "requests":  [
+                     {
+                         "role":  "alumni",
+                         "method":  "official",
+                         "status":  "approved",
+                         "count":  1
+                     },
+                     {
+                         "role":  "student",
+                         "method":  "official",
+                         "status":  "approved",
+                         "count":  1
+                     },
+                     {
+                         "role":  "student",
+                         "method":  "official",
+                         "status":  "pending",
+                         "count":  2
+                     },
+                     {
+                         "role":  "teacher",
+                         "method":  "official",
+                         "status":  "approved",
+                         "count":  2
+                     }
+                 ],
+    "credentials":  [
+
+                    ],
+    "constraints":  [
+                        {
+                            "tablename":  "reports",
+                            "indexname":  "reports_pkey",
+                            "indexdef":  "CREATE UNIQUE INDEX reports_pkey ON public.reports USING btree (id)"
+                        },
+                        {
+                            "tablename":  "users",
+                            "indexname":  "users_pkey",
+                            "indexdef":  "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)"
+                        },
+                        {
+                            "tablename":  "users",
+                            "indexname":  "users_email_unique",
+                            "indexdef":  "CREATE UNIQUE INDEX users_email_unique ON public.users USING btree (email)"
+                        },
+                        {
+                            "tablename":  "verification_requests",
+                            "indexname":  "verification_requests_pkey",
+                            "indexdef":  "CREATE UNIQUE INDEX verification_requests_pkey ON public.verification_requests USING btree (id)"
+                        },
+                        {
+                            "tablename":  "verification_requests",
+                            "indexname":  "verification_requests_one_open_per_user_uidx",
+                            "indexdef":  "CREATE UNIQUE INDEX verification_requests_one_open_per_user_uidx ON public.verification_requests USING btree (user_id) WHERE (status = ANY (ARRAY[\u0027pending\u0027::text, \u0027info_requested\u0027::text, \u0027recommended_approval\u0027::text, \u0027recommended_rejection\u0027::text, \u0027awaiting_official_decision\u0027::text]))"
+                        },
+                        {
+                            "tablename":  "verification_requests",
+                            "indexname":  "verification_requests_school_status_idx",
+                            "indexdef":  "CREATE INDEX verification_requests_school_status_idx ON public.verification_requests USING btree (jnv_name, status)"
+                        },
+                        {
+                            "tablename":  "verification_requests",
+                            "indexname":  "verification_requests_user_created_idx",
+                            "indexdef":  "CREATE INDEX verification_requests_user_created_idx ON public.verification_requests USING btree (user_id, created_at)"
+                        }
+                    ],
+    "migrationVerification":  {
+                                  "applied":  true,
+                                  "migration":  "20261027_add_alumni_peer_verification.sql",
+                                  "existingCountsBefore":  {
+                                                               "users":  7,
+                                                               "verificationRequests":  6,
+                                                               "verificationAudit":  0,
+                                                               "reports":  0,
+                                                               "socialNotifications":  19
+                                                           },
+                                  "existingCountsAfter":  {
+                                                              "users":  7,
+                                                              "verificationRequests":  6,
+                                                              "verificationAudit":  0,
+                                                              "reports":  0,
+                                                              "socialNotifications":  19
+                                                          },
+                                  "existingRowsChanged":  false,
+                                  "note":  "Transactional additive DDL only; no existing user, request, report, audit, or notification rows were modified."
+                              }
+}

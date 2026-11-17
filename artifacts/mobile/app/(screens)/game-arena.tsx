@@ -7,6 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import MotionPressable from "@/components/motion/MotionPressable";
+import FadeIn from "@/components/motion/FadeIn";
 
 const GAMES = [
   { id: "tictactoe", title: "Tic Tac Toe",     emoji: "⭕", desc: "Classic 3×3 strategy game", color: "#3D5AF1", bg: "#EEF2FF",  players: "2 Players", category: "Strategy"  },
@@ -220,7 +222,8 @@ export default function GameArenaScreen() {
         <Text style={styles.sectionLabel}>Choose a Game</Text>
         <View style={styles.grid}>
           {GAMES.map((g) => (
-            <TouchableOpacity key={g.id} style={styles.gameCard} activeOpacity={0.8} onPress={() => open(g.id)}>
+            <FadeIn key={g.id} delay={Math.min(GAMES.indexOf(g), 4) * 35}>
+            <MotionPressable style={styles.gameCard} onPress={() => open(g.id)} accessibilityRole="button" accessibilityLabel={`Open ${g.title}`}>
               <View style={[styles.gameIconWrap, { backgroundColor: g.bg }]}>
                 <Text style={styles.gameEmoji}>{g.emoji}</Text>
               </View>
@@ -238,7 +241,8 @@ export default function GameArenaScreen() {
               {g.id !== "tictactoe" && g.id !== "quiz" && g.id !== "math" && (
                 <View style={styles.comingSoon}><Text style={styles.comingSoonText}>Coming Soon</Text></View>
               )}
-            </TouchableOpacity>
+            </MotionPressable>
+            </FadeIn>
           ))}
         </View>
       </ScrollView>

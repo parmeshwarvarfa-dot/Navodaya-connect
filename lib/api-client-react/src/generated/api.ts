@@ -22,6 +22,7 @@ import type {
   CreateDirectMessageRequest,
   CreateMemoryCommentRequest,
   CreateMemoryRequest,
+  DeleteMemoryUploadsRequest,
   DirectConversation,
   DirectMessage,
   DirectMessageRequest,
@@ -32,6 +33,7 @@ import type {
   ListMemoriesParams,
   MemoryComment,
   MemoryFeedPage,
+  MemoryMediaUpload,
   MessageRequestDecision,
   PollResult,
   PollVoteRequest,
@@ -307,6 +309,182 @@ export const useCreateMemory = <
   TContext
 > => {
   return useMutation(getCreateMemoryMutationOptions(options));
+};
+
+/**
+ * @summary Upload a photo or video for a Memory post
+ */
+export const getUploadMemoryMediaUrl = () => {
+  return `/api/memories/uploads`;
+};
+
+export const uploadMemoryMedia = async (
+  uploadMemoryMediaBody: Blob,
+  options?: RequestInit,
+): Promise<MemoryMediaUpload> => {
+  return customFetch<MemoryMediaUpload>(getUploadMemoryMediaUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      ...options?.headers,
+    },
+    body: JSON.stringify(uploadMemoryMediaBody),
+  });
+};
+
+export const getUploadMemoryMediaMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMemoryMedia>>,
+    TError,
+    { data: BodyType<Blob> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadMemoryMedia>>,
+  TError,
+  { data: BodyType<Blob> },
+  TContext
+> => {
+  const mutationKey = ["uploadMemoryMedia"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadMemoryMedia>>,
+    { data: BodyType<Blob> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadMemoryMedia(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadMemoryMediaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadMemoryMedia>>
+>;
+export type UploadMemoryMediaMutationBody = BodyType<Blob>;
+export type UploadMemoryMediaMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upload a photo or video for a Memory post
+ */
+export const useUploadMemoryMedia = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMemoryMedia>>,
+    TError,
+    { data: BodyType<Blob> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadMemoryMedia>>,
+  TError,
+  { data: BodyType<Blob> },
+  TContext
+> => {
+  return useMutation(getUploadMemoryMediaMutationOptions(options));
+};
+
+/**
+ * @summary Delete unused uploads belonging to the authenticated user
+ */
+export const getDeleteMemoryUploadsUrl = () => {
+  return `/api/memories/uploads`;
+};
+
+export const deleteMemoryUploads = async (
+  deleteMemoryUploadsRequest: DeleteMemoryUploadsRequest,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMemoryUploadsUrl(), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(deleteMemoryUploadsRequest),
+  });
+};
+
+export const getDeleteMemoryUploadsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMemoryUploads>>,
+    TError,
+    { data: BodyType<DeleteMemoryUploadsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMemoryUploads>>,
+  TError,
+  { data: BodyType<DeleteMemoryUploadsRequest> },
+  TContext
+> => {
+  const mutationKey = ["deleteMemoryUploads"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMemoryUploads>>,
+    { data: BodyType<DeleteMemoryUploadsRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return deleteMemoryUploads(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMemoryUploadsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMemoryUploads>>
+>;
+export type DeleteMemoryUploadsMutationBody =
+  BodyType<DeleteMemoryUploadsRequest>;
+export type DeleteMemoryUploadsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete unused uploads belonging to the authenticated user
+ */
+export const useDeleteMemoryUploads = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMemoryUploads>>,
+    TError,
+    { data: BodyType<DeleteMemoryUploadsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMemoryUploads>>,
+  TError,
+  { data: BodyType<DeleteMemoryUploadsRequest> },
+  TContext
+> => {
+  return useMutation(getDeleteMemoryUploadsMutationOptions(options));
 };
 
 /**

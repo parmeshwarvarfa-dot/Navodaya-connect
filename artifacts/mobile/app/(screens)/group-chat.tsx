@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
   TextInput, Platform, KeyboardAvoidingView, Modal, Image, Share, Linking,
-  Pressable, ScrollView, Animated,
+  Pressable, ScrollView, Animated, Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,13 +10,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import * as ExpoLinking from "expo-linking";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "@/lib/api";
-import type { ChatContact, GroupMember, GroupMessage, ReactionEntry } from "@/lib/api";
+import type { ChatContact, GroupMember, GroupMessage, GroupSettings, ReactionEntry } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
+import { VerificationGateModal } from "@/components/VerificationGateModal";
 import { firebaseApp } from "@/lib/firebase";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 const EMOJI_CATEGORIES = {
   Smileys: "😀 😃 😄 😁 😆 😅 😂 🤣 🥲 ☺️ 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫣 🤭 🫢 🫡 🤫 🤥 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠",
@@ -29,6 +31,15 @@ const EMOJI_CATEGORIES = {
   Symbols: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❤️‍🔥 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉️ ☸️ ✡️ 🔯 🕎 ☯️ ☦️ 🛐 ⛎ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚛️ 🉑 ☢️ ☣️ 📴 📳 🈶 🈚 🈸 🈺 🈷️ ✴️ 🆚 💮 🉐 ㊙️ ㊗️ 🈴 🈵 🈹 🈲 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ❌ ⭕ 🛑 ⛔ 📛 🚫 💯 💢 🚷 🚯 🚳 🚱 🔞 📵 🚭 ❗ ❕ ❓ ❔ ‼️ ⁉️ 🔅 🔆 ⚠️ 🚸 🔱 ⚜️ 🔰 ♻️ ✅ ❇️ ✳️ ❎ 🌐 💠 Ⓜ️ 🌀 💤 🏧 🚾 ♿ 🅿️ 🛄 🛅 🚹 🚺 🚻 🚼 🚮 🎦 📶 🈁 🔣 ℹ️ 🔤 🔡 🔠 🆖 🆗 🆙 🆒 🆕 🆓 🔟 🔢 ▶️ ⏸️ ⏯️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔁 🔂 ◀️ 🔼 🔽 ⏫ ⏬ ➕ ➖ ➗ ✖️ 🟰 ♾️ 💲 💱 ™️ ©️ ®️ ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔉 🔊 🔇 📣 📢 🔔 🔕 🃏 🀄 🎴 🎵 🎶 🔃 🔄 🔙 🔚 🔛 🔜 🔝"
 } as const;
 const EMOJIS = Object.values(EMOJI_CATEGORIES).flatMap((category) => category.split(" "));
+const EMOJI_CATEGORY_TABS = [
+  { category: "Smileys", label: "Smileys & People", icon: "happy-outline" as const },
+  { category: "Nature", label: "Animals & Nature", icon: "leaf-outline" as const },
+  { category: "Food", label: "Food & Drink", icon: "cafe-outline" as const },
+  { category: "Activity", label: "Activities", icon: "basketball-outline" as const },
+  { category: "Travel", label: "Travel & Places", icon: "car-outline" as const },
+  { category: "Objects", label: "Objects", icon: "bulb-outline" as const },
+  { category: "Symbols", label: "Symbols & Flags", icon: "flag-outline" as const },
+] as const;
 const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 const ATTACHMENT_MARKER = "__NAVODAYA_IMAGE__:";
 const LOCATION_MARKER = "__NAVODAYA_LOCATION__:";
@@ -109,13 +120,13 @@ function isNewerMessage(message: GroupMessage, cursor: GroupMessage) {
 }
 
 export default function GroupChatScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, isVerified } = useAuth();
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
 
   const [messages, setMessages]           = useState<GroupMessage[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [groupSettings, setGroupSettings] = useState<GroupSettings | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [loadError, setLoadError]         = useState("");
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
@@ -127,6 +138,8 @@ export default function GroupChatScreen() {
   const [showSearch, setShowSearch]       = useState(false);
   const [searchQ, setSearchQ]             = useState("");
   const [showInfo, setShowInfo]           = useState(false);
+  const [pendingGroupAction, setPendingGroupAction] = useState<"leave" | "delete" | null>(null);
+  const [groupActionLoading, setGroupActionLoading] = useState(false);
   const [showChatMenu, setShowChatMenu]   = useState(false);
   const [ctxMenu, setCtxMenu]             = useState<GroupMessage | null>(null);
   const [deleteTarget, setDeleteTarget]   = useState<GroupMessage | null>(null);
@@ -135,14 +148,20 @@ export default function GroupChatScreen() {
   const [typingUsers, setTypingUsers]     = useState<string[]>([]);
   const [toast, setToast]                 = useState("");
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [imageToShare, setImageToShare] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
+  const [groupAvatarToAdjust, setGroupAvatarToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showGroupAvatarAdjustment, setShowGroupAvatarAdjustment] = useState(false);
+  const [updatingGroupAvatar, setUpdatingGroupAvatar] = useState(false);
   const [showComposerEmojis, setShowComposerEmojis] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiTargetId, setEmojiTargetId] = useState<string | null>(null);
   const [emojiSearch, setEmojiSearch] = useState("");
+  const [emojiCategory, setEmojiCategory] = useState<keyof typeof EMOJI_CATEGORIES>("Smileys");
   const [previewImage, setPreviewImage]   = useState<string | null>(null);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [groupTab, setGroupTab] = useState<"members" | "media" | "settings">("members");
-  const [darkChat, setDarkChat] = useState(true);
+  const darkChat = false;
   const [muted, setMuted] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [archived, setArchived] = useState(false);
@@ -153,6 +172,7 @@ export default function GroupChatScreen() {
   const [addMemberContacts, setAddMemberContacts] = useState<ChatContact[]>([]);
   const [selectedAddMembers, setSelectedAddMembers] = useState<ChatContact[]>([]);
   const [addingMembers, setAddingMembers] = useState(false);
+  const [updatingGroupSetting, setUpdatingGroupSetting] = useState(false);
   const [showPollComposer, setShowPollComposer] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
@@ -164,7 +184,9 @@ export default function GroupChatScreen() {
   const isTyping     = useRef(false);
   const topPad       = Platform.OS === "web" ? 0 : insets.top;
   const decName      = Array.isArray(name) ? name[0] : name || "Group";
-  const isAdmin      = profile?.role === "teacher" || profile?.role === "official" || members.some((member) => member.id === profile?.uid && member.role === "admin");
+  const groupSupportsAdmins = groupSettings?.groupType === "user_created" || groupSettings?.groupType === "school_managed"
+    || groupSettings?.groupType === "staff_managed" || groupSettings?.groupType === "club_managed";
+  const isAdmin      = groupSupportsAdmins && members.some((member) => member.id === profile?.uid && member.role === "admin");
   const dotAnim      = useRef(new Animated.Value(0)).current;
   const nearBottom   = useRef(true);
   const loadingOlderRef = useRef(false);
@@ -172,9 +194,16 @@ export default function GroupChatScreen() {
   const preserveScroll = useRef<{ offset: number; height: number } | null>(null);
   const chatKey = `group-chat-prefs:${profile?.uid ?? "guest"}:${id ?? "unknown"}`;
   const inboxKey = profile?.uid ? `chat-preferences:${profile.uid}` : null;
-  const chatPalette = darkChat
-    ? { background: "#0b141a", surface: "#202c33", incoming: "#202c33", outgoing: "#005c4b", foreground: "#e9edef", muted: "#8696a0", border: "#26343b", accent: "#00a884" }
-    : { background: "#efeae2", surface: "#ffffff", incoming: "#ffffff", outgoing: "#d9fdd3", foreground: "#111b21", muted: "#667781", border: "#e9edef", accent: "#008069" };
+  const chatPalette = {
+    background: "#F3F5FA",
+    surface: "#FFFFFF",
+    incoming: "#FFFFFF",
+    outgoing: "#3D5AF1",
+    foreground: "#111827",
+    muted: "#7B879B",
+    border: "#E3E7EF",
+    accent: "#3D5AF1",
+  };
 
   useEffect(() => {
     if (!id || !profile?.uid) return;
@@ -182,7 +211,6 @@ export default function GroupChatScreen() {
       if (!stored) return;
       try {
         const prefs = JSON.parse(stored);
-        if (typeof prefs.darkChat === "boolean") setDarkChat(prefs.darkChat);
         if (typeof prefs.muted === "boolean") setMuted(prefs.muted);
       } catch {}
     }).catch(() => {});
@@ -200,11 +228,6 @@ export default function GroupChatScreen() {
       } catch {}
     }).catch(() => {});
   }, [id, inboxKey]);
-
-  const saveChatPrefs = (next: { darkChat?: boolean }) => {
-    const value = { darkChat, ...next };
-    AsyncStorage.setItem(chatKey, JSON.stringify(value)).catch(() => {});
-  };
 
   const updateInboxPreference = async (field: "favorites" | "archived" | "muted", enabled: boolean) => {
     if (!inboxKey || !id) return;
@@ -239,8 +262,19 @@ export default function GroupChatScreen() {
     setTimeout(() => setToast(""), 2500);
   }, []);
 
-  const fetchMessages = useCallback(async () => {
+  const shareGroupInvite = useCallback(async () => {
     if (!id) return;
+    try {
+      const invite = await api.groups.createInviteLink(id);
+      const url = ExpoLinking.createURL("group-invite", { queryParams: { token: invite.token } });
+      await Share.share({ title: `Join ${invite.groupName}`, message: `Join ${invite.groupName} on Navodaya Connect:\n${url}`, url });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not create an invite link");
+    }
+  }, [id, showToast]);
+
+  const fetchMessages = useCallback(async () => {
+    if (!id || !isVerified) return;
     try {
       const data = await api.groups.getMessages(id);
       setMessages((current) => {
@@ -266,7 +300,7 @@ export default function GroupChatScreen() {
     } finally {
       setLoadingMessages(false);
     }
-  }, [id, profile?.uid]);
+  }, [id, isVerified, profile?.uid]);
 
   const loadOlderMessages = useCallback(async () => {
     const firstMessage = messages[0];
@@ -297,14 +331,15 @@ export default function GroupChatScreen() {
   }, [hasOlderMessages, id, messages, showToast]);
 
   const fetchTyping = useCallback(async () => {
-    if (!id) return;
+    if (!id || !isVerified) return;
     try {
       const { typing } = await api.groups.getTyping(id);
       setTypingUsers(typing);
     } catch {}
-  }, [id]);
+  }, [id, isVerified]);
 
   useEffect(() => {
+    if (!isVerified) return;
     fetchMessages();
     pollRef.current = setInterval(fetchMessages, 3500);
     typingRef.current = setInterval(fetchTyping, 2000);
@@ -314,12 +349,20 @@ export default function GroupChatScreen() {
       if (typingTimer.current) clearTimeout(typingTimer.current);
       if (id && isTyping.current) api.groups.setTyping(id, false).catch(() => {});
     };
-  }, [fetchMessages, fetchTyping, id]);
+  }, [fetchMessages, fetchTyping, id, isVerified]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !isVerified) return;
     api.groups.members(id).then(setMembers).catch(() => {});
-  }, [id]);
+  }, [id, isVerified]);
+
+  useEffect(() => {
+    let active = true;
+    setGroupSettings(null);
+    if (!id || !isVerified) return () => { active = false; };
+    api.groups.settings(id).then((settings) => { if (active) setGroupSettings(settings); }).catch(() => {});
+    return () => { active = false; };
+  }, [id, isVerified]);
 
   useEffect(() => {
     const query = addMemberSearch.trim();
@@ -335,7 +378,7 @@ export default function GroupChatScreen() {
 
   const handleTextChange = (val: string) => {
     setText(val);
-    if (!id) return;
+    if (!id || !isVerified) return;
     if (val.trim() && !isTyping.current) {
       isTyping.current = true;
       api.groups.setTyping(id, true).catch(() => {});
@@ -352,7 +395,7 @@ export default function GroupChatScreen() {
   };
 
   const handleSend = async () => {
-    if (!text.trim() || !id) return;
+    if (!isVerified || !text.trim() || !id) return;
     const msg = text.trim();
     const reply = replyTo;
     setText("");
@@ -398,7 +441,18 @@ export default function GroupChatScreen() {
       if (!firebaseApp?.options.storageBucket) {
         return showToast("Photo sharing needs Firebase Storage configured in .env");
       }
+      setImageToShare(asset);
+      setShowImageAdjustment(true);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not send this photo");
+    }
+  };
 
+  const sendAdjustedImage = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!id || sending) return;
+    setShowImageAdjustment(false);
+    setImageToShare(null);
+    try {
       setSending(true);
       isTyping.current = false;
       api.groups.setTyping(id, false).catch(() => {});
@@ -406,7 +460,7 @@ export default function GroupChatScreen() {
       if (!blobResponse.ok) throw new Error("Could not read the selected photo");
       const blob = await blobResponse.blob();
       const filename = asset.fileName?.replace(/[^a-zA-Z0-9._-]/g, "_") || `photo-${Date.now()}.jpg`;
-      const storageRef = ref(getStorage(firebaseApp), `group-messages/${id}/${Date.now()}-${filename}`);
+      const storageRef = ref(getStorage(firebaseApp!), `group-messages/${id}/${Date.now()}-${filename}`);
       await uploadBytes(storageRef, blob, asset.mimeType ? { contentType: asset.mimeType } : undefined);
       const url = await getDownloadURL(storageRef);
       const caption = text.trim();
@@ -435,6 +489,29 @@ export default function GroupChatScreen() {
       setShowInfo(false);
     } catch {
       showToast("Could not share this chat");
+    }
+  };
+
+  const performGroupAction = async () => {
+    if (!id || !pendingGroupAction) return;
+    const action = pendingGroupAction;
+    setGroupActionLoading(true);
+    try {
+      if (action === "delete") {
+        await api.groups.delete(id);
+      } else if (groupSettings?.clubId) {
+        await api.clubs.leave(groupSettings.clubId);
+      } else {
+        await api.groups.leave(id);
+      }
+      setPendingGroupAction(null);
+      setShowInfo(false);
+      router.back();
+    } catch (error) {
+      setPendingGroupAction(null);
+      showToast(error instanceof Error ? error.message : `Could not ${action} this group`);
+    } finally {
+      setGroupActionLoading(false);
     }
   };
 
@@ -487,6 +564,84 @@ export default function GroupChatScreen() {
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not add members");
     } finally { setAddingMembers(false); }
+  };
+
+  const updateAdminOnlyMessages = async (enabled: boolean) => {
+    if (!id || updatingGroupSetting) return;
+    setUpdatingGroupSetting(true);
+    try {
+      const updated = await api.groups.updateSettings(id, { adminOnlyMessages: enabled });
+      setGroupSettings((current) => current ? { ...current, adminOnlyMessages: updated.adminOnlyMessages } : current);
+      showToast(enabled ? "Only group admins can send messages" : "All group members can send messages");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update group settings");
+    } finally {
+      setUpdatingGroupSetting(false);
+    }
+  };
+
+  const chooseGroupAvatar = async () => {
+    if (!id || !groupSettings?.canUpdateAvatar || updatingGroupAvatar) return;
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) return showToast("Allow photo access to choose a group photo");
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
+      const asset = result.canceled ? undefined : result.assets?.[0];
+      if (!asset) return;
+      if ((asset.fileSize ?? 0) > 15 * 1024 * 1024) return showToast("Choose a group photo under 15 MB");
+      setGroupAvatarToAdjust(asset);
+      setShowGroupAvatarAdjustment(true);
+    } catch {
+      showToast("Could not open your photo library. Please try again.");
+    }
+  };
+
+  const saveGroupAvatar = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!id || !groupSettings?.canUpdateAvatar || updatingGroupAvatar) return;
+    setShowGroupAvatarAdjustment(false);
+    setGroupAvatarToAdjust(null);
+    setUpdatingGroupAvatar(true);
+    let uploadedKey: string | undefined;
+    try {
+      const uploaded = await api.memories.uploadMedia(asset.uri, asset.fileName || "group-avatar.jpg", asset.mimeType);
+      uploadedKey = uploaded.key;
+      const updated = await api.groups.updateAvatar(id, uploaded.key);
+      setGroupSettings((current) => current ? { ...current, ...updated } : current);
+      showToast("Group photo updated");
+    } catch (error) {
+      if (uploadedKey) {
+        try { await api.memories.cleanupUploads([uploadedKey]); } catch {}
+      }
+      showToast(error instanceof Error ? error.message : "Could not update the group photo");
+    } finally {
+      setUpdatingGroupAvatar(false);
+    }
+  };
+
+  const removeGroupAvatar = async () => {
+    if (!id || !groupSettings?.canUpdateAvatar || updatingGroupAvatar) return;
+    setUpdatingGroupAvatar(true);
+    try {
+      const updated = await api.groups.updateAvatar(id, null);
+      setGroupSettings((current) => current ? { ...current, ...updated } : current);
+      showToast("Group photo removed");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not remove the group photo");
+    } finally {
+      setUpdatingGroupAvatar(false);
+    }
+  };
+
+  const updateMemberRole = async (member: GroupMember) => {
+    if (!id || !groupSettings?.canManageRoles || member.id === profile?.uid) return;
+    const role = member.role === "admin" ? "member" : "admin";
+    try {
+      await api.groups.updateMemberRole(id, member.id, role);
+      setMembers((current) => current.map((item) => item.id === member.id ? { ...item, role } : item));
+      showToast(role === "admin" ? `${member.fullName} is now a group admin` : `${member.fullName} is now a member`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update member role");
+    }
   };
 
   const sendPoll = async () => {
@@ -584,8 +739,8 @@ export default function GroupChatScreen() {
       >
         <View style={[s.msgRow, mine ? s.msgRowMe : s.msgRowThem]}>
           {!mine && (
-            <View style={[s.avatar, { backgroundColor: "#26343b" }]}>
-              <Text style={[s.avatarText, { color: "#b4e1d3" }]}>
+            <View style={[s.avatar, { backgroundColor: "#EAF0FF" }]}>
+              <Text style={[s.avatarText, { color: "#3D5AF1" }]}>
                 {item.senderName?.charAt(0).toUpperCase() ?? "?"}
               </Text>
             </View>
@@ -594,11 +749,11 @@ export default function GroupChatScreen() {
             <View style={[
               s.bubble,
               mine
-                ? { backgroundColor: "#005c4b", borderBottomRightRadius: 4 }
-                : { backgroundColor: "#202c33", borderBottomLeftRadius: 4 },
+                ? { backgroundColor: chatPalette.outgoing, borderBottomRightRadius: 5 }
+                : { backgroundColor: chatPalette.incoming, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: chatPalette.border },
               isDeleted && { opacity: 0.5 },
             ]}>
-              {!mine && <Text style={[s.senderName, { color: "#53bdeb" }]}>{item.senderName}</Text>}
+              {!mine && <Text style={[s.senderName, { color: chatPalette.accent }]}>{item.senderName}</Text>}
 
               {item.replyToId && item.replyToText && (
                 <View style={s.replyBanner}>
@@ -617,21 +772,21 @@ export default function GroupChatScreen() {
                   <TouchableOpacity onPress={() => setPreviewImage(attachment.url)} activeOpacity={0.9}>
                     <Image source={{ uri: attachment.url }} style={s.messageImage} resizeMode="cover" />
                   </TouchableOpacity>
-              {!!attachment.caption && <Text style={[s.bubbleText, { color: mine ? "#e9edef" : "#e9edef" }]}>{attachment.caption}</Text>}
+              {!!attachment.caption && <Text style={[s.bubbleText, { color: mine ? "#FFFFFF" : chatPalette.foreground }]}>{attachment.caption}</Text>}
                 </View>
               ) : locationAttachment ? (
                 <TouchableOpacity
                   style={s.locationMessage}
                   onPress={() => void Linking.openURL(`https://maps.google.com/?q=${locationAttachment.latitude},${locationAttachment.longitude}`).catch(() => showToast("Could not open the map"))}
                 >
-                  <Ionicons name="location" size={22} color={mine ? "#fff" : colors.primary} />
+                  <Ionicons name="location" size={22} color={mine ? "#fff" : chatPalette.accent} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.locationTitle, { color: mine ? "#e9edef" : "#e9edef" }]}>Shared location</Text>
-                    <Text style={[s.locationCoords, { color: mine ? "rgba(233,237,239,0.75)" : "#8696a0" }]}>
+                    <Text style={[s.locationTitle, { color: mine ? "#FFFFFF" : chatPalette.foreground }]}>Shared location</Text>
+                    <Text style={[s.locationCoords, { color: mine ? "rgba(255,255,255,0.75)" : chatPalette.muted }]}>
                       {locationAttachment.latitude.toFixed(4)}, {locationAttachment.longitude.toFixed(4)}
                     </Text>
                   </View>
-                  <Ionicons name="open-outline" size={16} color={mine ? "#fff" : colors.primary} />
+                  <Ionicons name="open-outline" size={16} color={mine ? "#fff" : chatPalette.accent} />
                 </TouchableOpacity>
               ) : contactAttachment ? (
                 <TouchableOpacity style={[s.sharedContactCard, { backgroundColor: darkChat ? "#26343b" : "#eef4f5" }]} onPress={() => contactAttachment.id ? router.push({ pathname: "/(screens)/user-profile" as any, params: { userId: contactAttachment.id } }) : showToast("This contact profile is unavailable")}>
@@ -645,16 +800,16 @@ export default function GroupChatScreen() {
                   {pollAttachment.options.map((option) => {
                     const vote = reactions.find((reaction) => reaction.emoji === option);
                     const voted = !!vote?.userIds.includes(profile?.uid || "");
-                    return <TouchableOpacity key={option} style={[s.pollOption, { borderColor: chatPalette.border }, voted && { borderColor: chatPalette.accent, backgroundColor: "rgba(0,168,132,0.12)" }]} onPress={() => void handleReact(item.id, option)}><Text style={[s.pollOptionText, { color: chatPalette.foreground }]}>{option}</Text><Text style={[s.pollVoteCount, { color: chatPalette.muted }]}>{vote?.count ?? 0}</Text></TouchableOpacity>;
+                    return <TouchableOpacity key={option} style={[s.pollOption, { borderColor: chatPalette.border }, voted && { borderColor: chatPalette.accent, backgroundColor: "rgba(61,90,241,0.12)" }]} onPress={() => void handleReact(item.id, option)}><Text style={[s.pollOptionText, { color: chatPalette.foreground }]}>{option}</Text><Text style={[s.pollVoteCount, { color: chatPalette.muted }]}>{vote?.count ?? 0}</Text></TouchableOpacity>;
                   })}
                   <Text style={[s.pollHint, { color: chatPalette.muted }]}>Tap an option to vote</Text>
                 </View>
               ) : (
-                <Text style={[s.bubbleText, { color: mine ? "#e9edef" : "#e9edef" }]}>{item.text}</Text>
+                <Text style={[s.bubbleText, { color: mine ? "#FFFFFF" : chatPalette.foreground }]}>{item.text}</Text>
               )}
 
               <View style={s.timeRow}>
-                <Text style={[s.timeText, { color: mine ? "rgba(233,237,239,0.65)" : "#8696a0" }]}>
+                <Text style={[s.timeText, { color: mine ? "rgba(255,255,255,0.72)" : chatPalette.muted }]}>
                   {formatTime(item.createdAt)}
                   {item.isEdited && !isDeleted ? " Â· edited" : ""}
                 </Text>
@@ -673,7 +828,7 @@ export default function GroupChatScreen() {
                       onPress={() => handleReact(item.id, r.emoji)}
                     >
                       <Text style={{ fontSize: 12 }}>{r.emoji}</Text>
-                      <Text style={[s.reactionCount, byMe && { color: "#00a884" }]}>{r.count}</Text>
+                      <Text style={[s.reactionCount, byMe && { color: "#3D5AF1" }]}>{r.count}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -695,34 +850,35 @@ export default function GroupChatScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: chatBackground }]}>
-      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: darkChat ? "#111b21" : "#ffffff", borderBottomWidth: 1, borderBottomColor: chatPalette.border }]}>
+      <VerificationGateModal visible={!isVerified} onClose={() => router.back()} featureName="Group chats" />
+      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: "#3D5AF1", borderBottomWidth: 1, borderBottomColor: "#3151E8" }]}>
         <View style={s.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={s.iconBtn}>
-            <Ionicons name="arrow-back" size={22} color={chatPalette.foreground} />
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <TouchableOpacity style={s.headerAvatar} onPress={() => { setGroupTab("members"); setShowInfo(true); }} activeOpacity={0.8}>
-            <Ionicons name="people" size={19} color={darkChat ? "#d7f7ef" : "#087e69"} />
+            {groupSettings?.avatarUrl ? <Image source={{ uri: groupSettings.avatarUrl }} style={s.headerAvatarImage} /> : <Ionicons name="people" size={19} color="#FFFFFF" />}
           </TouchableOpacity>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => { setGroupTab("members"); setShowInfo(true); }} activeOpacity={0.8}>
-            <Text style={[s.headerTitle, { color: chatPalette.foreground }]} numberOfLines={1}>{decName}</Text>
-            <Text style={[s.headerSub, { color: chatPalette.muted }]} numberOfLines={1}>
+            <Text style={[s.headerTitle, { color: "#FFFFFF" }]} numberOfLines={1}>{decName}</Text>
+            <Text style={[s.headerSub, { color: "rgba(255,255,255,0.78)" }]} numberOfLines={1}>
               {typingUsers.length > 0
                 ? `${typingUsers.slice(0, 2).join(", ")} ${typingUsers.length === 1 ? "is" : "are"} typing...`
                 : groupMembers.length ? `${groupMembers.length} members${muted ? " · muted" : ""}` : "Group chat"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.iconBtn} onPress={() => setShowSearch(!showSearch)}>
-            <Ionicons name={showSearch ? "close" : "search"} size={20} color={chatPalette.foreground} />
+            <Ionicons name={showSearch ? "close" : "search"} size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <TouchableOpacity style={s.iconBtn} onPress={() => setShowChatMenu(true)}>
-            <Ionicons name="ellipsis-vertical" size={20} color={chatPalette.foreground} />
+            <Ionicons name="ellipsis-vertical" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
         {showSearch && (
           <View style={[s.searchBar, { backgroundColor: darkChat ? "#233138" : "#f0f2f5" }]}>
             <Ionicons name="search" size={16} color="#9CA3AF" />
             <TextInput
-              style={[s.searchInput, { color: chatPalette.foreground }]}
+              style={[s.searchInput, { color: "#FFFFFF" }]}
               placeholder="Search messages..."
               placeholderTextColor="#9CA3AF"
               value={searchQ}
@@ -785,13 +941,13 @@ export default function GroupChatScreen() {
                 <Text style={[s.emptyText, { color: chatPalette.muted }]}>Loading messagesâ€¦</Text>
               ) : loadError ? (
                 <TouchableOpacity onPress={() => void fetchMessages()} style={s.retryMessages}>
-                  <Ionicons name="refresh-outline" size={20} color={colors.primary} />
-                  <Text style={[s.emptyText, { color: colors.primary }]}>{loadError} Â· Tap to retry</Text>
+                  <Ionicons name="refresh-outline" size={20} color={chatPalette.accent} />
+                  <Text style={[s.emptyText, { color: chatPalette.accent }]}>{loadError} Â· Tap to retry</Text>
                 </TouchableOpacity>
               ) : (
                 <>
-                  <Ionicons name="chatbubbles-outline" size={40} color={colors.mutedForeground} />
-                  <Text style={[s.emptyText, { color: colors.mutedForeground }]}>
+                  <Ionicons name="chatbubbles-outline" size={40} color={chatPalette.muted} />
+                  <Text style={[s.emptyText, { color: chatPalette.muted }]}>
                     {showSearch && searchQ ? "No messages match your search" : "No messages yet â€” say hello!"}
                   </Text>
                 </>
@@ -802,7 +958,7 @@ export default function GroupChatScreen() {
         />
         {newMessagesCount > 0 && (
           <TouchableOpacity
-            style={[s.newMessagesButton, { backgroundColor: "#233138" }]}
+            style={[s.newMessagesButton, { backgroundColor: "#3D5AF1" }]}
             onPress={() => {
               flatListRef.current?.scrollToEnd({ animated: true });
               nearBottom.current = true;
@@ -835,11 +991,11 @@ export default function GroupChatScreen() {
         )}
 
         {replyTo && (
-          <View style={[s.replyingTo, { backgroundColor: "#26343b" }]}>
+          <View style={[s.replyingTo, { backgroundColor: "#EAF0FF" }]}>
             <View style={s.replyingToBar} />
             <View style={{ flex: 1 }}>
-              <Text style={[s.replyingToName, { color: colors.primary }]}>â†© Replying to {replyTo.senderName}</Text>
-              <Text style={[s.replyingToText, { color: colors.foreground }]} numberOfLines={1}>{messagePreview(replyTo.text)}</Text>
+              <Text style={[s.replyingToName, { color: chatPalette.accent }]}>â†© Replying to {replyTo.senderName}</Text>
+              <Text style={[s.replyingToText, { color: chatPalette.foreground }]} numberOfLines={1}>{messagePreview(replyTo.text)}</Text>
             </View>
             <TouchableOpacity onPress={() => setReplyTo(null)}>
               <Ionicons name="close" size={18} color="#9CA3AF" />
@@ -877,8 +1033,12 @@ export default function GroupChatScreen() {
             <TouchableOpacity style={s.allEmojiButton} onPress={() => openEmojiPicker()}><Text style={s.allEmojiText}>All</Text></TouchableOpacity>
           </View>
         )}
-        <View style={[s.inputBar, { backgroundColor: darkChat ? "#111b21" : "#f0f2f5", borderTopColor: chatPalette.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
-          <View style={[s.composerPill, { backgroundColor: darkChat ? "#202c33" : "#ffffff" }]}>
+        {groupSupportsAdmins && groupSettings?.adminOnlyMessages && !isAdmin ? (
+          <View style={{ paddingHorizontal: 18, paddingVertical: 16, paddingBottom: Math.max(insets.bottom, 16), backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: chatPalette.border }}>
+            <Text style={{ color: chatPalette.muted, textAlign: "center", fontFamily: "Inter_500Medium" }}>Only group admins can send messages.</Text>
+          </View>
+        ) : <View style={[s.inputBar, { backgroundColor: "#FFFFFF", borderTopColor: chatPalette.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
+          <View style={[s.composerPill, { backgroundColor: "#F0F2F6" }]}>
             <TouchableOpacity style={s.emojiToggle} onPress={() => setShowComposerEmojis((shown) => !shown)}>
               <Ionicons name="happy-outline" size={22} color={chatPalette.muted} />
             </TouchableOpacity>
@@ -903,14 +1063,14 @@ export default function GroupChatScreen() {
             </TouchableOpacity>}
           </View>
           <TouchableOpacity
-            style={[s.sendBtn, { backgroundColor: "#00a884" }]}
+            style={[s.sendBtn, { backgroundColor: "#3D5AF1" }]}
             onPress={text.trim() ? handleSend : () => showToast("Voice messages are not available yet")}
             disabled={sending}
             accessibilityLabel={text.trim() ? "Send message" : "Voice messages unavailable"}
           >
             <Ionicons name={text.trim() ? "send" : "mic"} size={19} color="#fff" />
           </TouchableOpacity>
-        </View>
+        </View>}
       </KeyboardAvoidingView>
 
       <Modal visible={showChatMenu} transparent animationType="fade" onRequestClose={() => setShowChatMenu(false)}>
@@ -929,27 +1089,56 @@ export default function GroupChatScreen() {
       </Modal>
 
       <Modal visible={showEmojiPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowEmojiPicker(false)}>
-        <View style={[s.emojiModal, { backgroundColor: darkChat ? "#111b21" : "#ffffff" }]}>
-          <View style={[s.emojiModalHeader, { borderBottomColor: chatPalette.border }]}>
-            <Text style={[s.emojiModalTitle, { color: chatPalette.foreground }]}>{emojiTargetId ? "React to message" : "Choose an emoji"}</Text>
-            <TouchableOpacity onPress={() => setShowEmojiPicker(false)}><Ionicons name="close" size={24} color={chatPalette.foreground} /></TouchableOpacity>
+        <View style={s.emojiModal}>
+          <View style={s.emojiModalHeader}>
+            <Text style={s.emojiModalTitle}>{emojiTargetId ? "React to message" : "Choose an emoji"}</Text>
+            <TouchableOpacity onPress={() => setShowEmojiPicker(false)} accessibilityLabel="Close emoji picker"><Ionicons name="close" size={24} color="#e9edef" /></TouchableOpacity>
           </View>
-          <View style={[s.emojiSearch, { backgroundColor: darkChat ? "#202c33" : "#f0f2f5" }]}>
-            <Ionicons name="search" size={18} color={chatPalette.muted} />
-            <TextInput style={[s.emojiSearchInput, { color: chatPalette.foreground }]} placeholder="Search or type any emoji" placeholderTextColor={chatPalette.muted} value={emojiSearch} onChangeText={setEmojiSearch} />
-            {!!emojiSearch && <TouchableOpacity onPress={() => chooseEmoji(emojiSearch)}><Text style={{ color: chatPalette.accent, fontFamily: "Inter_600SemiBold" }}>Use</Text></TouchableOpacity>}
+          <View style={s.emojiTabBar}>
+            {EMOJI_CATEGORY_TABS.map((tab) => {
+              const selected = emojiCategory === tab.category;
+              return (
+                <TouchableOpacity
+                  key={tab.category}
+                  style={s.emojiCategoryTab}
+                  onPress={() => { setEmojiCategory(tab.category); setEmojiSearch(""); }}
+                  accessibilityRole="tab"
+                  accessibilityLabel={tab.label}
+                  accessibilityState={{ selected }}
+                >
+                  <Ionicons name={tab.icon} size={23} color={selected ? "#e9edef" : "#8696a0"} />
+                  {selected && <View style={s.emojiTabIndicator} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <View style={s.emojiSearch}>
+            <Ionicons name="search" size={19} color="#aebac1" />
+            <TextInput style={s.emojiSearchInput} placeholder="Search reaction" placeholderTextColor="#8696a0" value={emojiSearch} onChangeText={setEmojiSearch} />
+            {!!emojiSearch && <TouchableOpacity onPress={() => chooseEmoji(emojiSearch)}><Text style={s.emojiUseText}>Use</Text></TouchableOpacity>}
           </View>
           <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={s.emojiCategories}>
-            {Object.entries(EMOJI_CATEGORIES).map(([category, value]) => {
-              const categoryEmojis = value.split(" ");
-              const filteredEmojis = emojiSearch ? categoryEmojis.filter((emoji) => emoji.includes(emojiSearch)) : categoryEmojis;
-              if (!filteredEmojis.length) return null;
-              return <View key={category}>
-                <Text style={[s.emojiCategoryTitle, { color: chatPalette.muted }]}>{category}</Text>
-                <View style={s.emojiGrid}>{filteredEmojis.map((emoji, index) => <TouchableOpacity key={`${emoji}-${index}`} style={s.emojiCell} onPress={() => chooseEmoji(emoji)}><Text style={s.emojiCellText}>{emoji}</Text></TouchableOpacity>)}</View>
-              </View>;
-            })}
-            {emojiSearch && !EMOJIS.some((emoji) => emoji.includes(emojiSearch)) && <Text style={[s.infoEmpty, { color: chatPalette.muted }]}>Type an emoji and tap Use to insert it.</Text>}
+            {(() => {
+              const tab = EMOJI_CATEGORY_TABS.find((item) => item.category === emojiCategory) ?? EMOJI_CATEGORY_TABS[0];
+              const categoryEmojis = emojiSearch
+                ? EMOJIS.filter((emoji) => emoji.includes(emojiSearch))
+                : emojiCategory === "Smileys"
+                  ? [...EMOJI_CATEGORIES.Smileys.split(" "), ...EMOJI_CATEGORIES.People.split(" ")]
+                  : EMOJI_CATEGORIES[emojiCategory].split(" ");
+              return (
+                <View>
+                  <Text style={s.emojiCategoryTitle}>{emojiSearch ? "Search Results" : tab.label}</Text>
+                  <View style={s.emojiGrid}>
+                    {categoryEmojis.map((emoji, index) => (
+                      <TouchableOpacity key={`${emoji}-${index}`} style={s.emojiCell} onPress={() => chooseEmoji(emoji)} activeOpacity={0.65} accessibilityLabel={`Choose ${emoji}`}>
+                        <Text style={s.emojiCellText}>{emoji}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {!!emojiSearch && !categoryEmojis.length && <Text style={s.emojiEmptyText}>Type an emoji to find it, or tap Use to insert it.</Text>}
+                </View>
+              );
+            })()}
           </ScrollView>
         </View>
       </Modal>
@@ -1017,7 +1206,11 @@ export default function GroupChatScreen() {
           </View>
           <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
             <View style={[s.infoHero, { backgroundColor: darkChat ? "#111b21" : "#ffffff" }]}>
-              <View style={s.infoGroupAvatar}><Ionicons name="people" size={40} color="#d7f7ef" /></View>
+              <TouchableOpacity style={s.infoGroupAvatar} onPress={() => void chooseGroupAvatar()} disabled={!groupSettings?.canUpdateAvatar || updatingGroupAvatar} accessibilityLabel="Change group photo">
+                {groupSettings?.avatarUrl ? <Image source={{ uri: groupSettings.avatarUrl }} style={s.infoGroupAvatarImage} /> : <Ionicons name="people" size={40} color="#d7f7ef" />}
+                {groupSettings?.canUpdateAvatar ? <View style={s.groupAvatarCamera}><Ionicons name="camera" size={13} color="#fff" /></View> : null}
+              </TouchableOpacity>
+              {groupSettings?.canUpdateAvatar ? <Text style={[s.groupPhotoHint, { color: chatPalette.muted }]}>{updatingGroupAvatar ? "Updating photo..." : "Tap to change group photo"}</Text> : null}
               <Text style={[s.infoGroupName, { color: chatPalette.foreground }]}>{decName}</Text>
               <Text style={[s.infoGroupMeta, { color: chatPalette.muted }]}>Group · {groupMembers.length} active participants</Text>
               <Text style={[s.groupDescription, { color: chatPalette.accent }]}>Add group description</Text>
@@ -1027,27 +1220,62 @@ export default function GroupChatScreen() {
               </View>
             </View>
             <View style={[s.infoTabs, { backgroundColor: darkChat ? "#111b21" : "#ffffff", borderBottomWidth: 1, borderBottomColor: chatPalette.border }]}>
-              {(["members", "media", "settings"] as const).map((tab) => <TouchableOpacity key={tab} style={[s.infoTab, groupTab === tab && { borderBottomColor: "#00a884", borderBottomWidth: 3 }]} onPress={() => setGroupTab(tab)}><Text style={[s.infoTabText, { color: groupTab === tab ? chatPalette.foreground : chatPalette.muted }]}>{tab[0].toUpperCase() + tab.slice(1)}</Text></TouchableOpacity>)}
+              {(["members", "media", "settings"] as const).map((tab) => <TouchableOpacity key={tab} style={[s.infoTab, groupTab === tab && { borderBottomColor: chatPalette.accent, borderBottomWidth: 3 }]} onPress={() => setGroupTab(tab)}><Text style={[s.infoTabText, { color: groupTab === tab ? chatPalette.foreground : chatPalette.muted }]}>{tab[0].toUpperCase() + tab.slice(1)}</Text></TouchableOpacity>)}
             </View>
             {groupTab === "members" && <View style={s.infoPage}>
               <View style={s.infoCountRow}><Text style={[s.infoSectionTitle, { color: chatPalette.muted }]}>{groupMembers.length} members · active in chat</Text><TouchableOpacity onPress={() => setMemberSearch((value) => value ? "" : "a")}><Ionicons name="search" size={20} color={chatPalette.muted} /></TouchableOpacity></View>
               {memberSearch !== "" && <TextInput style={[s.memberSearch, { color: chatPalette.foreground, backgroundColor: chatPalette.surface }]} value={memberSearch.trim()} onChangeText={setMemberSearch} placeholder="Search members" placeholderTextColor={chatPalette.muted} />}
-              {isAdmin && <TouchableOpacity style={s.infoMemberRow} onPress={() => setShowAddMembers(true)}><View style={[s.infoMemberAvatar, { backgroundColor: "#00a884" }]}><Ionicons name="person-add" size={18} color="#fff" /></View><Text style={[s.infoMemberName, { color: chatPalette.accent }]}>Add members</Text></TouchableOpacity>}
-              {visibleMembers.map(([uid, memberName]) => <View key={uid} style={s.infoMemberRow}><View style={[s.infoMemberAvatar, { backgroundColor: darkChat ? "#26343b" : "#e9edef" }]}><Text style={{ color: chatPalette.accent, fontFamily: "Inter_700Bold", fontSize: 14 }}>{memberName?.[0]?.toUpperCase() ?? "?"}</Text></View><Text style={[s.infoMemberName, { color: chatPalette.foreground }]}>{memberName}</Text>{uid === profile?.uid && <View style={[s.youTag, { backgroundColor: "rgba(0,168,132,0.14)" }]}><Text style={[s.youTagText, { color: chatPalette.accent }]}>You</Text></View>}</View>)}
+              {groupSettings?.canManageRoles && <TouchableOpacity style={s.infoMemberRow} onPress={() => setShowAddMembers(true)}><View style={[s.infoMemberAvatar, { backgroundColor: chatPalette.accent }]}><Ionicons name="person-add" size={18} color="#fff" /></View><Text style={[s.infoMemberName, { color: chatPalette.accent }]}>Add members</Text></TouchableOpacity>}
+              {visibleMembers.map(([uid, memberName]) => {
+                const member = members.find((item) => item.id === uid);
+                const roleLabel = member?.accountRole === "teacher" ? "Verified teacher" : member?.accountRole === "official" ? "Authorized JNV official" : groupSupportsAdmins && member?.role === "admin" ? "Group admin" : "Member";
+                const responsibility = member?.subject ? `${roleLabel} · ${member.subject}` : roleLabel;
+                return <View key={uid} style={s.infoMemberRow}><View style={[s.infoMemberAvatar, { backgroundColor: "#EAF0FF" }]}><Text style={{ color: chatPalette.accent, fontFamily: "Inter_700Bold", fontSize: 14 }}>{memberName?.[0]?.toUpperCase() ?? "?"}</Text></View><View style={{ flex: 1 }}><Text style={[s.infoMemberName, { color: chatPalette.foreground }]}>{memberName}</Text><Text style={{ fontSize: 11, color: chatPalette.muted }}>{responsibility}</Text></View>{uid === profile?.uid && <View style={[s.youTag, { backgroundColor: "rgba(61,90,241,0.12)" }]}><Text style={[s.youTagText, { color: chatPalette.accent }]}>You</Text></View>}{groupSettings?.canManageRoles && member && uid !== profile?.uid && <TouchableOpacity onPress={() => void updateMemberRole(member)} accessibilityLabel={member.role === "admin" ? `Remove admin role from ${member.fullName}` : `Make ${member.fullName} an admin`}><Text style={{ color: chatPalette.accent, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>{member.role === "admin" ? "Remove admin" : "Make admin"}</Text></TouchableOpacity>}</View>;
+              })}
             </View>}
             {groupTab === "media" && <View style={s.infoPage}><Text style={[s.infoSectionTitle, { color: chatPalette.muted }]}>MEDIA, LINKS, AND DOCS ï¿½ {groupMedia.length} photos</Text>{groupMedia.length ? <View style={s.mediaGrid}>{groupMedia.map(({ message, attachment }) => attachment && <TouchableOpacity key={message.id} onPress={() => setPreviewImage(attachment.url)}><Image source={{ uri: attachment.url }} style={s.mediaThumb} /></TouchableOpacity>)}</View> : <Text style={[s.infoEmpty, { color: chatPalette.muted }]}>Photos shared in this chat will appear here.</Text>}<View style={[s.infoSection, { backgroundColor: darkChat ? "#111b21" : "#fff" }]}><Text style={[s.infoSectionTitle, { color: chatPalette.muted }]}>CHAT ACTIONS</Text><TouchableOpacity style={s.adminRow} onPress={exportChat}><Ionicons name="share-outline" size={19} color={chatPalette.accent} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Export chat</Text><Ionicons name="chevron-forward" size={16} color={chatPalette.muted} /></TouchableOpacity></View></View>}
             {groupTab === "settings" && <View style={s.infoPage}><Text style={[s.infoSectionTitle, { color: chatPalette.muted }]}>SETTINGS</Text><View style={[s.infoSection, { backgroundColor: darkChat ? "#111b21" : "#fff" }]}>
+              <TouchableOpacity style={s.adminRow} onPress={() => void shareGroupInvite()}><Ionicons name="link-outline" size={20} color={chatPalette.accent} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Share invite link</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>Anyone with an eligible account can join</Text></View><Ionicons name="chevron-forward" size={18} color={chatPalette.muted} /></TouchableOpacity>
+              {groupSettings?.canUpdateAvatar ? <><TouchableOpacity style={s.adminRow} onPress={() => void chooseGroupAvatar()} disabled={updatingGroupAvatar}><Ionicons name="image-outline" size={20} color={chatPalette.accent} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Change group photo</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>Crop, rotate, and adjust the image</Text></View>{updatingGroupAvatar ? <ActivityIndicator size="small" color={chatPalette.accent} /> : <Ionicons name="chevron-forward" size={18} color={chatPalette.muted} />}</TouchableOpacity>{groupSettings.avatarUrl ? <TouchableOpacity style={s.adminRow} onPress={() => void removeGroupAvatar()} disabled={updatingGroupAvatar}><Ionicons name="trash-outline" size={20} color="#EF4444" /><Text style={[s.adminLabel, { color: "#EF4444" }]}>Remove group photo</Text></TouchableOpacity> : null}</> : null}
               <TouchableOpacity style={s.adminRow} onPress={() => void updateInboxPreference("muted", !muted)}><Ionicons name="notifications-outline" size={20} color={chatPalette.muted} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Notifications</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>{muted ? "Muted on this device" : "On"}</Text></View><Ionicons name={muted ? "volume-mute-outline" : "chevron-forward"} size={18} color={chatPalette.muted} /></TouchableOpacity>
+              {groupSettings?.canConfigureAdminOnlyMessages ? <View style={s.adminRow}><Ionicons name="chatbubble-ellipses-outline" size={20} color={chatPalette.muted} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Admin-only messages</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>{groupSettings.adminOnlyMessages ? "Only admins can send messages" : "All members can send messages"}</Text></View><Switch value={!!groupSettings.adminOnlyMessages} onValueChange={(enabled) => void updateAdminOnlyMessages(enabled)} disabled={updatingGroupSetting} trackColor={{ false: "#D1D5DB", true: "#A5B4FC" }} thumbColor={groupSettings.adminOnlyMessages ? chatPalette.accent : "#FFFFFF"} /></View> : null}
+              {groupSettings?.requiresAdminDecision && <Text style={{ color: chatPalette.muted, fontSize: 13, lineHeight: 19, paddingHorizontal: 14, paddingBottom: 12 }}>This group has no active admin. An explicit administrative decision is needed.</Text>}
               <TouchableOpacity style={s.adminRow} onPress={() => showToast("Media is shared in this group chat")}><Ionicons name="image-outline" size={20} color={chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Media visibility</Text><Ionicons name="chevron-forward" size={16} color={chatPalette.muted} /></TouchableOpacity>
               <View style={s.adminRow}><Ionicons name="lock-closed-outline" size={20} color={chatPalette.muted} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Transport security</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>Messages use the app connection. End-to-end encryption is not enabled.</Text></View></View>
               <TouchableOpacity style={s.adminRow} onPress={() => showToast("Disappearing messages are not available yet")}><Ionicons name="timer-outline" size={20} color={chatPalette.muted} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Disappearing messages</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>Off</Text></View><Ionicons name="chevron-forward" size={16} color={chatPalette.muted} /></TouchableOpacity>
               <View style={s.adminRow}><Ionicons name="shield-checkmark-outline" size={20} color={chatPalette.muted} /><View style={{ flex: 1 }}><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Chat lock</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>Not available in this app version</Text></View></View>
-              <TouchableOpacity style={s.adminRow} onPress={() => { setDarkChat((value) => !value); saveChatPrefs({ darkChat: !darkChat }); }}><Ionicons name="color-palette-outline" size={20} color={chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Chat theme</Text><Text style={[s.settingSub, { color: chatPalette.muted }]}>{darkChat ? "Dark" : "Light"}</Text></TouchableOpacity>
+              <View style={s.adminRow}><Ionicons name="color-palette-outline" size={20} color={chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Chat theme</Text><Text style={[s.settingSub, { color: chatPalette.accent }]}>Blue &amp; white</Text></View>
               <TouchableOpacity style={s.adminRow} onPress={() => void updateInboxPreference("favorites", !favorite)}><Ionicons name={favorite ? "star" : "star-outline"} size={20} color={favorite ? "#f5c451" : chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>{favorite ? "Remove from favorites" : "Add to favorites"}</Text></TouchableOpacity>
               <TouchableOpacity style={s.adminRow} onPress={() => void updateInboxPreference("archived", !archived)}><Ionicons name={archived ? "archive" : "archive-outline"} size={20} color={chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>{archived ? "Unarchive chat" : "Archive chat"}</Text></TouchableOpacity>
               <TouchableOpacity style={s.adminRow} onPress={exportChat}><Ionicons name="download-outline" size={20} color={chatPalette.muted} /><Text style={[s.adminLabel, { color: chatPalette.foreground }]}>Export chat</Text><Ionicons name="chevron-forward" size={16} color={chatPalette.muted} /></TouchableOpacity>
+              {groupSettings?.canLeave && <TouchableOpacity style={s.adminRow} onPress={() => setPendingGroupAction("leave")}><Ionicons name="exit-outline" size={20} color="#EF4444" /><Text style={[s.adminLabel, { color: "#EF4444" }]}>Leave group</Text></TouchableOpacity>}
+              {groupSettings?.canDelete && <TouchableOpacity style={s.adminRow} onPress={() => setPendingGroupAction("delete")}><Ionicons name="trash-outline" size={20} color="#EF4444" /><Text style={[s.adminLabel, { color: "#EF4444" }]}>Delete group</Text></TouchableOpacity>}
             </View></View>}
           </ScrollView>
+          {pendingGroupAction && <View style={s.groupConfirmOverlay}>
+            <View style={s.confirmCard}>
+              <Text style={s.confirmTitle}>{pendingGroupAction === "delete" ? "Delete this group?" : "Leave this group?"}</Text>
+              <Text style={s.confirmText}>
+                {pendingGroupAction === "delete"
+                  ? "This permanently deletes the group and its messages for everyone."
+                  : groupSettings?.clubId
+                    ? "You will leave this group's chat and club. You can request to join again later."
+                    : groupSettings?.subject === "Staff Group"
+                      ? "You will leave the Staff Group. Open it again from Chats if you want to rejoin."
+                      : "You will leave this group and stop seeing its messages. A group admin can add you again."}
+              </Text>
+              <View style={s.confirmActions}>
+                <TouchableOpacity style={s.confirmCancel} onPress={() => setPendingGroupAction(null)} disabled={groupActionLoading}>
+                  <Text style={s.confirmCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.confirmDelete} onPress={() => void performGroupAction()} disabled={groupActionLoading}>
+                  <Text style={s.confirmDeleteText}>
+                    {groupActionLoading ? "Working..." : pendingGroupAction === "delete" ? "Delete group" : "Leave group"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>}
         </View>
       </Modal>
       <Modal visible={showAttachMenu} transparent animationType="fade" onRequestClose={() => setShowAttachMenu(false)}>
@@ -1082,7 +1310,7 @@ export default function GroupChatScreen() {
       <Modal visible={showContactPicker} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowContactPicker(false)}>
         <View style={s.pickerModal}>
           <View style={s.infoHeader}><Text style={s.infoTitle}>Share a contact</Text><TouchableOpacity style={s.iconBtn2} onPress={() => setShowContactPicker(false)}><Ionicons name="close" size={22} color="#111827" /></TouchableOpacity></View>
-          {members.map((member) => <TouchableOpacity key={member.id} style={s.infoMemberRow} onPress={() => void shareContact(member)}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{member.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{member.fullName}</Text><Ionicons name="send-outline" size={18} color="#00a884" /></TouchableOpacity>)}
+          {members.map((member) => <TouchableOpacity key={member.id} style={s.infoMemberRow} onPress={() => void shareContact(member)}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{member.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{member.fullName}</Text><Ionicons name="send-outline" size={18} color="#3D5AF1" /></TouchableOpacity>)}
           {!members.length && <Text style={s.infoEmpty}>No group contacts are available yet.</Text>}
         </View>
       </Modal>
@@ -1093,7 +1321,7 @@ export default function GroupChatScreen() {
           <TextInput style={[s.memberSearch, { backgroundColor: "#fff" }]} value={addMemberSearch} onChangeText={setAddMemberSearch} placeholder="Search Navodayans by name" />
           {selectedAddMembers.length > 0 && <View style={s.selectedMemberChips}>{selectedAddMembers.map((member) => <TouchableOpacity key={member.id} style={s.memberChip} onPress={() => setSelectedAddMembers((current) => current.filter((item) => item.id !== member.id))}><Text style={s.memberChipText}>{member.fullName} ×</Text></TouchableOpacity>)}</View>}
           <ScrollView keyboardShouldPersistTaps="handled">
-            {addMemberContacts.filter((contact) => !members.some((member) => member.id === contact.id) && !selectedAddMembers.some((member) => member.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={s.infoMemberRow} onPress={() => setSelectedAddMembers((current) => [...current, contact])}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{contact.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{contact.fullName}</Text><Ionicons name="add-circle-outline" size={20} color="#008069" /></TouchableOpacity>)}
+            {addMemberContacts.filter((contact) => !members.some((member) => member.id === contact.id) && !selectedAddMembers.some((member) => member.id === contact.id)).map((contact) => <TouchableOpacity key={contact.id} style={s.infoMemberRow} onPress={() => setSelectedAddMembers((current) => [...current, contact])}><View style={s.infoMemberAvatar}><Text style={s.avatarText}>{contact.fullName[0]?.toUpperCase() || "?"}</Text></View><Text style={s.infoMemberName}>{contact.fullName}</Text><Ionicons name="add-circle-outline" size={20} color="#3D5AF1" /></TouchableOpacity>)}
           </ScrollView>
           <TouchableOpacity style={[s.createPollButton, (!selectedAddMembers.length || addingMembers) && { opacity: 0.5 }]} disabled={!selectedAddMembers.length || addingMembers} onPress={() => void addSelectedMembers()}><Text style={s.createPollText}>{addingMembers ? "Adding…" : `Add ${selectedAddMembers.length} member${selectedAddMembers.length === 1 ? "" : "s"}`}</Text></TouchableOpacity>
         </View>
@@ -1105,7 +1333,7 @@ export default function GroupChatScreen() {
           <View style={{ padding: 18 }}>
             <TextInput style={s.pollInput} value={pollQuestion} onChangeText={setPollQuestion} placeholder="Ask a question" maxLength={300} />
             {pollOptions.map((option, index) => <TextInput key={index} style={s.pollInput} value={option} onChangeText={(value) => setPollOptions((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} placeholder={`Option ${index + 1}`} maxLength={80} />)}
-            {pollOptions.length < 8 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => [...current, ""])}><Ionicons name="add-circle-outline" size={18} color="#008069" /><Text style={{ color: "#008069", fontFamily: "Inter_600SemiBold" }}>Add option</Text></TouchableOpacity>}
+            {pollOptions.length < 8 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => [...current, ""])}><Ionicons name="add-circle-outline" size={18} color="#3D5AF1" /><Text style={{ color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }}>Add option</Text></TouchableOpacity>}
             {pollOptions.length > 2 && <TouchableOpacity style={s.addPollOption} onPress={() => setPollOptions((current) => current.slice(0, -1))}><Ionicons name="remove-circle-outline" size={18} color="#6B7280" /><Text style={{ color: "#6B7280", fontFamily: "Inter_600SemiBold" }}>Remove last option</Text></TouchableOpacity>}
             <TouchableOpacity style={[s.createPollButton, (!pollQuestion.trim() || pollOptions.filter((option) => option.trim()).length < 2 || sending) && { opacity: 0.5 }]} onPress={() => void sendPoll()} disabled={!pollQuestion.trim() || pollOptions.filter((option) => option.trim()).length < 2 || sending}><Text style={s.createPollText}>{sending ? "Sending…" : "Send poll"}</Text></TouchableOpacity>
           </View>
@@ -1121,6 +1349,22 @@ export default function GroupChatScreen() {
         </Pressable>
       </Modal>
 
+      <ImageAdjustmentModal
+        visible={showImageAdjustment}
+        asset={imageToShare}
+        title="Adjust chat photo"
+        onCancel={() => { setShowImageAdjustment(false); setImageToShare(null); }}
+        onDone={(asset) => void sendAdjustedImage(asset)}
+      />
+      <ImageAdjustmentModal
+        visible={showGroupAvatarAdjustment}
+        asset={groupAvatarToAdjust}
+        title="Adjust group photo"
+        defaultAspect="square"
+        onCancel={() => { setShowGroupAvatarAdjustment(false); setGroupAvatarToAdjust(null); }}
+        onDone={(asset) => void saveGroupAvatar(asset)}
+      />
+
       {toast ? (
         <View style={s.toast} pointerEvents="none">
           <Text style={s.toastText}>{toast}</Text>
@@ -1135,15 +1379,16 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 12, paddingBottom: 9 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   iconBtn: { width: 36, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#26343b", alignItems: "center", justifyContent: "center" },
+  headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  headerAvatarImage: { width: "100%", height: "100%" },
   headerTitle: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold" },
-  headerSub: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_400Regular" },
+  headerSub: { color: "rgba(255,255,255,0.78)", fontSize: 11, fontFamily: "Inter_400Regular" },
   searchBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10 },
   searchInput: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 14 },
   pinnedBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#FFFBEB", borderBottomWidth: 1, borderBottomColor: "#FDE68A" },
   pinnedLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#F59E0B" },
   pinnedText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151" },
-  chatContent: { paddingHorizontal: 10, paddingVertical: 12, gap: 6 },
+  chatContent: { paddingHorizontal: 14, paddingVertical: 18, gap: 7 },
   loadOlderBtn: { alignItems: "center", paddingVertical: 8 },
   loadOlderText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   newMessagesButton: { position: "absolute", right: 14, bottom: 78, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#3D5AF1", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, elevation: 4, shadowColor: "#111827", shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
@@ -1151,11 +1396,11 @@ const s = StyleSheet.create({
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginBottom: 4 },
   msgRowMe: { justifyContent: "flex-end" },
   msgRowThem: { justifyContent: "flex-start" },
-  avatar: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#26343b" },
+  avatar: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#EAF0FF" },
   avatarText: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  bubble: { paddingHorizontal: 10, paddingTop: 7, paddingBottom: 5, borderRadius: 13, gap: 3, minWidth: 80 },
-  senderName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#53bdeb" },
-  replyBanner: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(0,0,0,0.18)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 },
+  bubble: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 7, borderRadius: 20, gap: 3, minWidth: 80 },
+  senderName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  replyBanner: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 4 },
   replyBannerSender: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   replyBannerText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
   // Leave the typeface to the platform so emoji use the native color emoji font.
@@ -1201,19 +1446,25 @@ const s = StyleSheet.create({
   chatMenu: { width: 245, borderRadius: 12, paddingVertical: 6, elevation: 12, shadowColor: "#000", shadowOpacity: 0.24, shadowRadius: 16, shadowOffset: { width: 0, height: 5 } },
   chatMenuItem: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 13 },
   chatMenuText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  emojiModal: { flex: 1, paddingBottom: 12 },
-  emojiModalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: 1 },
-  emojiModalTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  emojiSearch: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 14, marginTop: 12, paddingHorizontal: 12, borderRadius: 12 },
-  emojiSearchInput: { flex: 1, minHeight: 44, fontSize: 14 },
-  emojiCategories: { padding: 14, gap: 18 },
-  emojiCategoryTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 8 },
+  emojiModal: { flex: 1, paddingBottom: 12, backgroundColor: "#111b21" },
+  emojiModalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 12 },
+  emojiModalTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#e9edef" },
+  emojiTabBar: { flexDirection: "row", justifyContent: "space-around", borderBottomWidth: 1, borderBottomColor: "#26343b", paddingHorizontal: 4 },
+  emojiCategoryTab: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center", position: "relative" },
+  emojiTabIndicator: { position: "absolute", height: 3, borderRadius: 2, bottom: 0, left: 7, right: 7, backgroundColor: "#00a884" },
+  emojiSearch: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, marginHorizontal: 14, marginTop: 12, paddingHorizontal: 14, borderRadius: 28, backgroundColor: "#111b21", borderWidth: 1.5, borderColor: "#00a884" },
+  emojiSearchInput: { flex: 1, minHeight: 44, fontSize: 14, color: "#e9edef" },
+  emojiUseText: { color: "#00a884", fontFamily: "Inter_600SemiBold" },
+  emojiCategories: { paddingHorizontal: 12, paddingTop: 18, paddingBottom: 20 },
+  emojiCategoryTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#aebac1", marginBottom: 10, paddingHorizontal: 4 },
   emojiGrid: { flexDirection: "row", flexWrap: "wrap" },
-  emojiCell: { width: "12.5%", minWidth: 38, height: 44, alignItems: "center", justifyContent: "center" },
-  emojiCellText: { fontSize: 25 },
-  allEmojiButton: { height: 34, minWidth: 44, borderRadius: 17, backgroundColor: "#26343b", alignItems: "center", justifyContent: "center" },
-  allEmojiText: { color: "#e9edef", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  emojiCell: { width: "12.5%", minWidth: 0, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 8 },
+  emojiCellText: { fontSize: 28 },
+  emojiEmptyText: { color: "#8696a0", fontSize: 13, paddingHorizontal: 4, paddingVertical: 8 },
+  allEmojiButton: { height: 34, minWidth: 44, borderRadius: 17, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
+  allEmojiText: { color: "#FFFFFF", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   confirmOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", paddingHorizontal: 28 },
+  groupConfirmOverlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", paddingHorizontal: 28, zIndex: 10, elevation: 10 },
   confirmCard: { backgroundColor: "#fff", borderRadius: 20, padding: 20, gap: 10 },
   confirmTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   confirmText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280", lineHeight: 20 },
@@ -1228,17 +1479,20 @@ const s = StyleSheet.create({
   ctxRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 13, borderTopWidth: 1, borderTopColor: "#F9FAFB" },
   ctxLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#374151" },
   infoModal: { flex: 1, backgroundColor: "#0b141a" },
-  infoHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#111b21", borderBottomWidth: 1, borderBottomColor: "#26343b" },
-  infoTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#e9edef" },
+  infoHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#E3E7EF" },
+  infoTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   iconBtn2: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   infoGroupCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#F0F0F0" },
-  infoGroupAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  infoGroupAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1", overflow: "hidden" },
+  infoGroupAvatarImage: { width: "100%", height: "100%" },
+  groupAvatarCamera: { position: "absolute", right: 0, bottom: 0, width: 25, height: 25, borderRadius: 13, backgroundColor: "#3D5AF1", borderWidth: 2, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
+  groupPhotoHint: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 7 },
   infoGroupName: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   infoGroupMeta: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
   infoHero: { alignItems: "center", paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16 },
   groupDescription: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginTop: 14 },
   infoQuickActions: { flexDirection: "row", gap: 26, marginTop: 18 },
-  infoQuickAction: { width: 92, height: 76, borderRadius: 26, backgroundColor: "#26343b", alignItems: "center", justifyContent: "center", gap: 4 },
+  infoQuickAction: { width: 92, height: 76, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", gap: 4 },
   infoQuickText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   infoTabs: { flexDirection: "row", borderBottomWidth: 1, marginTop: 1 },
   infoTab: { flex: 1, alignItems: "center", paddingVertical: 14, borderBottomWidth: 3, borderBottomColor: "transparent" },
@@ -1250,11 +1504,11 @@ const s = StyleSheet.create({
   mediaThumb: { width: 104, height: 104, borderRadius: 6, backgroundColor: "#26343b" },
   infoEmpty: { fontSize: 14, paddingVertical: 14 },
   settingSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 3, flexShrink: 1 },
-  infoSection: { backgroundColor: "#111b21", borderRadius: 12, padding: 14, marginTop: 18 },
+  infoSection: { backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, marginTop: 18, borderWidth: 1, borderColor: "#E3E7EF" },
   infoSectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#9CA3AF", letterSpacing: 0.8, marginBottom: 12 },
   infoMemberRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
   infoMemberAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  infoMemberName: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#e9edef" },
+  infoMemberName: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#111827" },
   attachmentMenu: { backgroundColor: "#fff", borderRadius: 20, margin: 12, padding: 18, gap: 6 },
   attachmentTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
   attachmentOption: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
@@ -1263,9 +1517,9 @@ const s = StyleSheet.create({
   pickerModal: { flex: 1, backgroundColor: "#f5f6f8", paddingTop: 10 },
   selectedMemberChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingVertical: 6 },
   memberChip: { borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7, backgroundColor: "#e1f5ef" },
-  memberChipText: { color: "#008069", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  memberChipText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   sharedContactCard: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 220, padding: 10, borderRadius: 10 },
-  sharedContactAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#00a884", alignItems: "center", justifyContent: "center" },
+  sharedContactAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
   pollCard: { minWidth: 235, maxWidth: 290, padding: 11, borderRadius: 10, gap: 8 },
   pollQuestion: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 2 },
   pollOption: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10 },
@@ -1274,16 +1528,16 @@ const s = StyleSheet.create({
   pollHint: { fontSize: 11 },
   pollInput: { minHeight: 46, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#fff", marginBottom: 10, borderWidth: 1, borderColor: "#d9dfe2", color: "#111827" },
   addPollOption: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
-  createPollButton: { marginTop: 12, borderRadius: 10, alignItems: "center", paddingVertical: 13, backgroundColor: "#008069" },
+  createPollButton: { marginTop: 12, borderRadius: 10, alignItems: "center", paddingVertical: 13, backgroundColor: "#3D5AF1" },
   createPollText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },
   imagePreviewBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.96)", justifyContent: "center", alignItems: "center" },
   imagePreview: { width: "100%", height: "82%" },
   imagePreviewClose: { position: "absolute", top: 48, right: 20, width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   youTag: { backgroundColor: "#EEF2FF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   youTagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  adminSection: { backgroundColor: "#111b21", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#26343b" },
+  adminSection: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E3E7EF" },
   adminRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderRadius: 10, paddingHorizontal: 4, marginBottom: 4 },
-  adminLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#e9edef" },
+  adminLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: "#111827" },
   toast: { position: "absolute", bottom: 90, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, alignItems: "center" },
   toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },
 });

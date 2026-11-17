@@ -11,6 +11,13 @@ if (existsSync(envFile) && typeof process.loadEnvFile === "function") {
 }
 
 const env = { ...process.env, NODE_ENV: "development" };
+env.PUBLIC_APP_URL ??= env.REPLIT_DEV_DOMAIN
+  ? `https://${env.REPLIT_DEV_DOMAIN}`
+  : env.REPLIT_INTERNAL_APP_DOMAIN
+    ? `https://${env.REPLIT_INTERNAL_APP_DOMAIN}`
+    : env.EXPO_PUBLIC_DOMAIN
+      ? `https://${env.EXPO_PUBLIC_DOMAIN}`
+      : env.EXPO_PUBLIC_APP_URL;
 const build = spawnSync(process.execPath, ["./build.mjs"], {
   cwd: packageDir,
   env,
@@ -21,7 +28,12 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
-const server = spawn(process.execPath, ["--enable-source-maps", "./dist/index.mjs"], {
+// Local HTTPS connections should use certificates already trusted by Windows.
+const tlsArgs = process.platform === "win32" && process.allowedNodeEnvironmentFlags.has("--use-system-ca")
+  ? ["--use-system-ca"]
+  : [];
+
+const server = spawn(process.execPath, [...tlsArgs, "--enable-source-maps", "./dist/index.mjs"], {
   cwd: packageDir,
   env,
   stdio: "inherit",

@@ -34,6 +34,16 @@ export const ListMemoriesResponse = zod.object({
       caption: zod.string().optional(),
       postType: zod.string(),
       mediaUrls: zod.array(zod.string()),
+      mediaMetadata: zod
+        .array(
+          zod.object({
+            fileName: zod.string(),
+            contentType: zod.string(),
+            size: zod.number(),
+            mediaType: zod.enum(["image", "video"]),
+          }),
+        )
+        .optional(),
       pollOptions: zod.array(zod.string()),
       pollVotes: zod.array(zod.number()),
       viewerVote: zod.number().optional(),
@@ -59,6 +69,10 @@ export const ListMemoriesResponse = zod.object({
  */
 export const createMemoryBodyCaptionMax = 4000;
 
+export const createMemoryBodyMediaAssetsItemKeyMax = 200;
+
+export const createMemoryBodyMediaAssetsMax = 10;
+
 export const createMemoryBodyPollOptionsItemMax = 100;
 
 export const CreateMemoryBody = zod.object({
@@ -66,12 +80,39 @@ export const CreateMemoryBody = zod.object({
   postType: zod
     .enum(["text", "photo", "video", "poll", "achievement", "event"])
     .optional(),
-  mediaUrls: zod.array(zod.string().url()).optional(),
+  mediaAssets: zod
+    .array(
+      zod.object({
+        key: zod.string().max(createMemoryBodyMediaAssetsItemKeyMax),
+      }),
+    )
+    .max(createMemoryBodyMediaAssetsMax)
+    .optional(),
   pollOptions: zod
     .array(zod.string().max(createMemoryBodyPollOptionsItemMax))
     .optional(),
   visibility: zod.enum(["public", "followers"]).optional(),
   commentsEnabled: zod.boolean().optional(),
+});
+
+/**
+ * @summary Upload a photo or video for a Memory post
+ */
+export const uploadMemoryMediaHeaderXMediaFilenameMax = 500;
+
+export const UploadMemoryMediaHeader = zod.object({
+  "X-Media-Filename": zod
+    .string()
+    .max(uploadMemoryMediaHeaderXMediaFilenameMax),
+});
+
+/**
+ * @summary Delete unused uploads belonging to the authenticated user
+ */
+export const deleteMemoryUploadsBodyKeysMax = 10;
+
+export const DeleteMemoryUploadsBody = zod.object({
+  keys: zod.array(zod.string()).min(1).max(deleteMemoryUploadsBodyKeysMax),
 });
 
 /**
@@ -94,6 +135,16 @@ export const UpdateMemoryResponse = zod.object({
   caption: zod.string().optional(),
   postType: zod.string(),
   mediaUrls: zod.array(zod.string()),
+  mediaMetadata: zod
+    .array(
+      zod.object({
+        fileName: zod.string(),
+        contentType: zod.string(),
+        size: zod.number(),
+        mediaType: zod.enum(["image", "video"]),
+      }),
+    )
+    .optional(),
   pollOptions: zod.array(zod.string()),
   pollVotes: zod.array(zod.number()),
   viewerVote: zod.number().optional(),

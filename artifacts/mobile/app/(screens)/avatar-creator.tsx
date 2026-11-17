@@ -10,6 +10,7 @@ import { AVATAR_PRESETS } from "@/components/avatar/avatarConfig";
 export default function AvatarCreatorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const [gridWidth, setGridWidth] = useState(0);
   const { profile, refreshProfile } = useAuth();
   const savedPreset = AVATAR_PRESETS.find((item) => item.id === profile?.avatarConfig?.presetId) ?? AVATAR_PRESETS[0];
   const [selectedId, setSelectedId] = useState(savedPreset.id);
@@ -20,9 +21,10 @@ export default function AvatarCreatorScreen() {
     (!profile?.profileImageType && !profile?.photoURL && !profile?.uploadedPhotoURL),
   );
   const selectedPreset = useMemo(() => AVATAR_PRESETS.find((item) => item.id === selectedId) ?? AVATAR_PRESETS[0], [selectedId]);
-  const columns = width >= 520 ? 4 : 3;
   const horizontalPadding = width >= 520 ? 24 : 16;
-  const cardWidth = (Math.min(width, 900) - horizontalPadding * 2 - 12 * (columns - 1)) / columns;
+  const columns = gridWidth >= 700 ? 5 : gridWidth >= 520 ? 4 : gridWidth >= 360 ? 3 : 2;
+  const gridGap = 10;
+  const cardWidth = gridWidth > 0 ? Math.floor((gridWidth - gridGap * (columns - 1)) / columns) : 0;
 
   const saveAvatar = async () => {
     setSaving(true);
@@ -71,8 +73,8 @@ export default function AvatarCreatorScreen() {
         <Text style={styles.sectionTitle}>Choose a portrait</Text>
         <Text style={styles.count}>{AVATAR_PRESETS.length} portraits</Text>
       </View>
-      <View style={styles.grid}>
-        {AVATAR_PRESETS.map((item) => {
+      <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>
+        {gridWidth > 0 && AVATAR_PRESETS.map((item) => {
           const selected = selectedId === item.id;
           return <TouchableOpacity
             key={item.id}
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "800", color: "#182033" },
   count: { color: "#758097", fontSize: 12, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "flex-start" },
+  grid: { width: "100%", flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "flex-start" },
   presetCard: { borderRadius: 15, padding: 5, backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#ECEEF3", alignItems: "center", overflow: "hidden" },
   presetSelected: { borderColor: "#3D5AF1", backgroundColor: "#F3F5FF" },
   presetImage: { width: "100%", aspectRatio: 0.72, backgroundColor: "#EAE7FF", borderRadius: 10 },

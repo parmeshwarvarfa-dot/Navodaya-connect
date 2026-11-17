@@ -159,7 +159,7 @@ export default function ViewProblemsScreen() {
       </View>
 
       {/* Stats row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingVertical: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingVertical: 8, alignItems: "center" }}>
         {Object.entries(STATUS_CONFIG).map(([status, cfg]) => (
           <View key={status} style={[styles.statChip, { backgroundColor: cfg.bg, borderColor: cfg.color + "40" }]}>
             <Ionicons name={cfg.icon} size={14} color={cfg.color} />
@@ -183,7 +183,7 @@ export default function ViewProblemsScreen() {
       </View>
 
       {/* Filter tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, gap: 8, paddingBottom: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalRail} contentContainerStyle={{ paddingHorizontal: 14, gap: 8, paddingVertical: 4, alignItems: "center" }}>
         {FILTER_TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
@@ -411,13 +411,14 @@ const styles = StyleSheet.create({
   refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
   headerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  statsRow: { backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  statChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  statsRow: { flexGrow: 0, flexShrink: 0, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
+  statChip: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   statChipCount: { fontSize: 15, fontFamily: "Inter_700Bold" },
   statChipLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
   searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fff", marginHorizontal: 16, marginVertical: 10, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
-  filterTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
+  horizontalRail: { flexGrow: 0, flexShrink: 0 },
+  filterTab: { flexShrink: 0, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
   filterTabActive: { backgroundColor: "#1A3C6E" },
   filterTabText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   filterTabTextActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },

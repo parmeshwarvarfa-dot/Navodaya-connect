@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -14,6 +14,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Sports: "#EC4899",
   Award: "#D97706",
   Career: "#6366F1",
+  Other: "#6B7280",
 };
 
 export default function AchievementsHighlights() {
@@ -48,9 +49,9 @@ export default function AchievementsHighlights() {
           const color = CATEGORY_COLORS[item.category] || "#6B7280";
           return (
             <View key={item.id} style={styles.item}>
-              <View style={[styles.marker, { backgroundColor: `${color}18` }]}>
+              {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.thumbnail} accessibilityLabel={`Photo for ${item.title}`} /> : <View style={[styles.marker, { backgroundColor: `${color}18` }]}>
                 <Ionicons name="ribbon-outline" size={17} color={color} />
-              </View>
+              </View>}
               <View style={{ flex: 1 }}>
                 <Text style={styles.achievementTitle} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.meta} numberOfLines={1}>
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
   link: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#6D4AFF" },
   item: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 9, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
   marker: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  thumbnail: { width: 42, height: 42, borderRadius: 10, backgroundColor: "#F5F6FA" },
   achievementTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827" },
   meta: { marginTop: 3, fontSize: 11, fontFamily: "Inter_400Regular", color: "#8B93A1" },
   empty: { paddingVertical: 10, color: "#737B89", fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular" },

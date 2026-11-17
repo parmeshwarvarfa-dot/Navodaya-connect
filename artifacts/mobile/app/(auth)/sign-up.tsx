@@ -16,8 +16,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
-import JnvDirectoryFields from "@/components/JnvDirectoryFields";
-import { isValidJnvSelection } from "@/data/jnvData";
+import { JNV_DATA, STATES } from "@/data/jnvData";
 
 const HOUSES   = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASSES  = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
@@ -40,22 +39,17 @@ const HOUSE_LABEL_MAP: Record<string, string> = {
 };
 
 function BluePicker({
-  placeholder, value, options, onSelect, icon, labelMap, searchable = false,
+  placeholder, value, options, onSelect, icon, labelMap,
 }: {
   placeholder: string; value: string; options: string[];
   onSelect: (v: string) => void; icon: keyof typeof Ionicons.glyphMap;
   labelMap?: Record<string, string>;
-  searchable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const displayValue = labelMap?.[value] ?? value;
-  const filteredOptions = searchable && search.trim()
-    ? options.filter((option) => option.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
-    : options;
   return (
     <>
-      <TouchableOpacity style={styles.inputWrap} onPress={() => { setSearch(""); setOpen(true); }}>
+      <TouchableOpacity style={styles.inputWrap} onPress={() => setOpen(true)}>
         <Ionicons name={icon} size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
         <Text style={[styles.inputText, !value && styles.placeholderText]}>
           {displayValue || placeholder}
@@ -66,34 +60,17 @@ function BluePicker({
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{placeholder}</Text>
-            <TouchableOpacity onPress={() => { setOpen(false); setSearch(""); }}>
+            <TouchableOpacity onPress={() => setOpen(false)}>
               <Ionicons name="close" size={24} color="#111" />
             </TouchableOpacity>
           </View>
-          {searchable ? (
-            <View style={modalStyles.searchWrap}>
-              <Ionicons name="search-outline" size={18} color="#9CA3AF" />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder={`Search ${placeholder.toLocaleLowerCase()}…`}
-                placeholderTextColor="#9CA3AF"
-                style={modalStyles.searchInput}
-                autoFocus
-                autoCorrect={false}
-              />
-              {search ? <TouchableOpacity onPress={() => setSearch("")}><Ionicons name="close-circle" size={17} color="#9CA3AF" /></TouchableOpacity> : null}
-            </View>
-          ) : null}
           <FlatList
-            data={filteredOptions}
+            data={options}
             keyExtractor={(i) => i}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={<Text style={modalStyles.noResults}>No matching entry.</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={modalStyles.option}
-                onPress={() => { onSelect(item); setOpen(false); setSearch(""); }}
+                onPress={() => { onSelect(item); setOpen(false); }}
               >
                 <Text style={[modalStyles.optionText, item === value && { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" }]}>
                   {labelMap?.[item] ?? item}
@@ -143,14 +120,16 @@ export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ completeProfile?: string }>();
   const isCompletingProfile = params.completeProfile === "1";
-  const { signUp, completeProfile, pendingProfile } = useAuth();
-  const topPad    = Platform.OS === "web" ? 0 : insets.top;
+  const { signUp, completeProfile, resendEmailVerification, pendingProfile } = useAuth();
+  const topPad    = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   const [step, setStep] = useState<"role" | "form">("role");
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [emailVerificationPending, setEmailVerificationPending] = useState(false);
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState("");
 
   const [fullName,       setFullName]       = useState(pendingProfile?.fullName ?? "");
   const [email,          setEmail]          = useState(pendingProfile?.email ?? "");
@@ -183,19 +162,35 @@ export default function SignUpScreen() {
       : [studentClass, section].filter(Boolean).join(" ")
     : "";
 
+  const jnvOptions = jnvState ? JNV_DATA[jnvState] || [] : [];
   const needsHouse = role === "student" || role === "alumni";
 
   const selectRole = (r: UserRole) => { setRole(r); setStep("form"); };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailVerificationPending(false);
+    setEmailVerificationMessage("");
+  };
+
+  const resendVerificationEmail = async () => {
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      await resendEmailVerification();
+      setEmailVerificationMessage("Verification email sent again. Check your inbox and spam folder.");
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Could not resend the verification email.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignUp = async () => {
     setErrorMsg("");
 
     if (!fullName.trim() || !email.trim() || (!isCompletingProfile && !password) || !jnvState || !jnvName) {
       setErrorMsg("Please fill in all required fields.");
-      return;
-    }
-    if (!isValidJnvSelection(jnvState, jnvName)) {
-      setErrorMsg("Choose a JNV listed for the selected state or union territory.");
       return;
     }
     if (!isCompletingProfile && password !== confirmPwd) {
@@ -225,10 +220,15 @@ export default function SignUpScreen() {
         designation: role === "official"? principalName: undefined,
         subject:     role === "teacher" ? subject      : undefined,
       };
-      if (isCompletingProfile) {
+      if (isCompletingProfile || emailVerificationPending) {
         await completeProfile(profileData);
       } else {
-        await signUp(email.trim(), password, profileData);
+        const created = await signUp(email.trim(), password, profileData);
+        if (!created) {
+          setEmailVerificationPending(true);
+          setEmailVerificationMessage(`We sent a verification link to ${email.trim()}. Open it, return here, then tap I've verified my email.`);
+          return;
+        }
       }
       if (role === "official") {
         router.replace("/(tabs)");
@@ -237,6 +237,12 @@ export default function SignUpScreen() {
       }
     } catch (err: any) {
       const msg: string = err?.message ?? "";
+      if (msg.toLowerCase().includes("email is not verified")) {
+        setEmailVerificationPending(true);
+        setEmailVerificationMessage("Open the verification link in your inbox, return here, then tap I've verified my email.");
+        setErrorMsg("");
+        return;
+      }
       setErrorMsg(
         msg.toLowerCase().includes("already") ? "This email is already registered. Try signing in instead." :
         msg.toLowerCase().includes("network")  ? "Network error. Check your connection." :
@@ -309,7 +315,17 @@ export default function SignUpScreen() {
             <View style={styles.form}>
               {/* Common fields */}
               <BlueInput placeholder="Full Name"  value={fullName} onChangeText={setFullName} icon="person-outline" />
-              <BlueInput placeholder="Email" value={email} onChangeText={setEmail} icon="mail-outline" keyboardType="email-address" editable={!isCompletingProfile} />
+              <BlueInput placeholder="Email" value={email} onChangeText={handleEmailChange} icon="mail-outline" keyboardType="email-address" editable={!isCompletingProfile && !emailVerificationPending} />
+              {!emailVerificationPending ? <Text style={styles.emailHint}>Create Account will send a verification link to this email.</Text> : null}
+              {emailVerificationPending ? (
+                <View style={styles.emailVerifyBox}>
+                  <Ionicons name="mail-open-outline" size={21} color="#fff" />
+                  <Text style={styles.emailVerifyText}>{emailVerificationMessage || `Verify ${email.trim()} using the link we emailed you.`}</Text>
+                  <TouchableOpacity style={styles.emailVerifyButton} onPress={() => void resendVerificationEmail()} disabled={loading}>
+                    <Text style={styles.emailVerifyButtonText}>Resend email</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               {!isCompletingProfile && <>
                 <BlueInput placeholder="Password" value={password} onChangeText={setPassword} icon="lock-closed-outline" secureTextEntry />
                 <BlueInput placeholder="Confirm Password" value={confirmPwd} onChangeText={setConfirmPwd} icon="shield-checkmark-outline" secureTextEntry />
@@ -366,12 +382,19 @@ export default function SignUpScreen() {
                 <BluePicker placeholder="Select House" value={house} options={HOUSES} onSelect={setHouse} icon="home-outline" labelMap={HOUSE_LABEL_MAP} />
               )}
 
-              <JnvDirectoryFields
-                state={jnvState}
-                school={jnvName}
-                variant="blue"
-                onStateChange={setJnvState}
-                onSchoolChange={setJnvName}
+              <BluePicker
+                placeholder="Select JNV State"
+                value={jnvState}
+                options={STATES}
+                onSelect={(v) => { setJnvState(v); setJnvName(""); }}
+                icon="location-outline"
+              />
+              <BluePicker
+                placeholder="Select JNV Name"
+                value={jnvName}
+                options={jnvOptions}
+                onSelect={setJnvName}
+                icon="business-outline"
               />
 
               {role === "alumni" && (
@@ -400,7 +423,7 @@ export default function SignUpScreen() {
               ) : null}
 
               <TouchableOpacity style={styles.createBtn} onPress={handleSignUp} disabled={loading} activeOpacity={0.85}>
-                <Text style={styles.createBtnText}>{loading ? "Saving Profile..." : isCompletingProfile ? "Complete Profile" : "Create Account"}</Text>
+                <Text style={styles.createBtnText}>{loading ? "Checking..." : emailVerificationPending ? "I've verified my email" : isCompletingProfile ? "Complete Profile" : "Create Account"}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -413,9 +436,6 @@ export default function SignUpScreen() {
 const modalStyles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   title: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111" },
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: 9, margin: 14, paddingHorizontal: 12, height: 44, borderRadius: 12, backgroundColor: "#F3F4F6" },
-  searchInput: { flex: 1, height: "100%", color: "#111827", fontSize: 14 },
-  noResults: { padding: 22, textAlign: "center", color: "#7B8492", fontSize: 13 },
   option: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB" },
   optionText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#111" },
 });
@@ -442,6 +462,11 @@ const styles = StyleSheet.create({
   formTitle: { fontFamily: "Pacifico_400Regular", fontSize: 26, color: "#fff", marginBottom: 6 },
   formSub: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 28 },
   form: { gap: 14 },
+  emailHint: { marginTop: -7, marginLeft: 14, color: "rgba(255,255,255,0.76)", fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16 },
+  emailVerifyBox: { gap: 9, padding: 13, borderRadius: 16, backgroundColor: "rgba(24,45,145,0.24)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+  emailVerifyText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 19 },
+  emailVerifyButton: { alignSelf: "flex-start", minHeight: 38, paddingHorizontal: 13, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.17)", borderWidth: 1, borderColor: "rgba(255,255,255,0.42)", justifyContent: "center" },
+  emailVerifyButtonText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 12 },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.18)",

@@ -13,9 +13,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import type { CreateMemoryRequest, SocialMemory } from "@workspace/api-client-react";
-import { firebaseApp } from "@/lib/firebase";
+import { api, type UploadedMemoryMedia } from "@/lib/api";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 type Visibility = "public" | "followers";
 type PostType = NonNullable<CreateMemoryRequest["postType"]>;
@@ -44,6 +44,9 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [assets, setAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [pendingImageEdits, setPendingImageEdits] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [editingImageIndex, setEditingImageIndex] = useState(0);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,6 +57,9 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
     setCommentsEnabled(initial?.commentsEnabled ?? true);
     setPollOptions(["", ""]);
     setAssets([]);
+    setPendingImageEdits([]);
+    setEditingImageIndex(0);
+    setShowImageAdjustment(false);
   }, [visible, initial?.id]);
 
   const chooseMedia = async () => {
@@ -71,6 +77,10 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
       });
       if (!result.canceled) {
         const chosen = result.assets ?? [];
+        if (chosen.length > 10) {
+          onMessage("Choose up to 10 photos or videos for one post.");
+          return;
+        }
         const tooLarge = chosen.find((asset) => (asset.fileSize ?? 0) > 100 * 1024 * 1024);
         if (tooLarge) {
           onMessage("Each photo or video must be under 100 MB.");
@@ -84,7 +94,13 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
         }
         setAssets(chosen);
         if (hasVideo) setPostType("video");
-        else if (chosen.length) setPostType("photo");
+        else if (chosen.length) {
+          setPostType("photo");
+          const chosenImages = chosen.filter((asset) => asset.type === "image");
+          setPendingImageEdits(chosenImages);
+          setEditingImageIndex(0);
+          setShowImageAdjustment(chosenImages.length > 0);
+        }
       }
     } catch {
       onMessage("Could not open your photo library. Please try again.");
@@ -98,22 +114,14 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
     setPostType(type);
   };
 
-  const uploadMedia = async () => {
+  const uploadMedia = async (uploadedKeys: string[]) => {
     if (!assets.length) return [];
-    if (!firebaseApp?.options.storageBucket) {
-      throw new Error("Photo and video posts need Firebase Storage. Set EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET in .env and restart Expo.");
-    }
-    const storage = getStorage(firebaseApp);
-    const uploaded: string[] = [];
+    const uploaded: UploadedMemoryMedia[] = [];
     for (const asset of assets) {
-      const response = await fetch(asset.uri);
-      if (!response.ok) throw new Error("Could not read the selected media file.");
-      const blob = await response.blob();
-      const name = asset.fileName?.replace(/[^a-zA-Z0-9._-]/g, "_") || `upload-${Date.now()}`;
-      const path = `memories/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${name}`;
-      const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, blob, asset.mimeType ? { contentType: asset.mimeType } : undefined);
-      uploaded.push(await getDownloadURL(storageRef));
+      const name = asset.fileName?.replace(/[^a-zA-Z0-9._ -]/g, "_") || "memory-media";
+      const uploadedAsset = await api.memories.uploadMedia(asset.uri, name, asset.mimeType);
+      uploaded.push(uploadedAsset);
+      uploadedKeys.push(uploadedAsset.key);
     }
     return uploaded;
   };
@@ -134,6 +142,7 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
       return;
     }
     setBusy(true);
+    const uploadedKeys: string[] = [];
     try {
       if (initial) {
         await onSubmit({
@@ -142,11 +151,11 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
           commentsEnabled,
         });
       } else {
-        const mediaUrls = await uploadMedia();
+        const mediaAssets = await uploadMedia(uploadedKeys);
         await onSubmit({
           caption: cleanCaption,
           postType,
-          mediaUrls,
+          mediaAssets: mediaAssets.map(({ key }) => ({ key })),
           pollOptions: postType === "poll" ? cleanPollOptions.slice(0, 4) : [],
           visibility,
           commentsEnabled,
@@ -154,13 +163,23 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
       }
       onClose();
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : "Could not share this post.");
+      const originalMessage = error instanceof Error ? error.message : "Could not share this post.";
+      if (uploadedKeys.length > 0) {
+        try {
+          await api.memories.cleanupUploads(uploadedKeys);
+        } catch {
+          onMessage(`${originalMessage} A temporary upload may remain; retry the post when your connection is available.`);
+          return;
+        }
+      }
+      onMessage(originalMessage);
     } finally {
       setBusy(false);
     }
   };
 
   return (
+    <>
     <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}>
       <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.header}>
@@ -233,7 +252,7 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
                   ))}
                 </ScrollView>
               )}
-              <Text style={styles.helper}>Photos and videos are uploaded to this app’s existing Firebase Storage bucket.</Text>
+              <Text style={styles.helper}>Choose up to 10 photos or videos. Photos can be cropped, rotated, and zoomed before sharing.</Text>
             </View>
           )}
 
@@ -293,6 +312,28 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
+    <ImageAdjustmentModal
+      visible={showImageAdjustment}
+      asset={pendingImageEdits[editingImageIndex] ?? null}
+      title={pendingImageEdits.length > 1 ? `Adjust photo ${editingImageIndex + 1} of ${pendingImageEdits.length}` : "Adjust post photo"}
+      onCancel={() => {
+        setShowImageAdjustment(false);
+        setPendingImageEdits([]);
+        setEditingImageIndex(0);
+        setAssets([]);
+      }}
+      onDone={(adjustedAsset) => {
+        const source = pendingImageEdits[editingImageIndex];
+        setAssets((previous) => previous.map((asset) => asset.uri === source?.uri ? adjustedAsset : asset));
+        if (editingImageIndex + 1 < pendingImageEdits.length) setEditingImageIndex((current) => current + 1);
+        else {
+          setShowImageAdjustment(false);
+          setPendingImageEdits([]);
+          setEditingImageIndex(0);
+        }
+      }}
+    />
+    </>
   );
 }
 

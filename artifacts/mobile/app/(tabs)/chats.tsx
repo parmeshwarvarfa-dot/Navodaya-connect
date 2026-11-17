@@ -12,18 +12,24 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { useVerificationGate } from "@/components/VerificationGateModal";
 import { api } from "@/lib/api";
 import type { ChatContact, DirectConversation, DirectMessageRequest, Group } from "@/lib/api";
+import MotionPressable from "@/components/motion/MotionPressable";
+import GroupNameEmojiPicker from "@/components/GroupNameEmojiPicker";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 type CommunityKind = "house" | "class" | "batch" | "school" | "all" | "interest";
-type GroupCard = { id: string; kind?: CommunityKind; interestId?: string; icon: any; name: string; lastMessage: string; time: string; color: string; iconColor: string; lastMessageAt?: string | null; lastMessageSenderId?: string | null; lastMessageSenderName?: string | null };
-type ChatFilter = "all" | "unread" | "favorites" | "archived";
-type ChatPreferences = { favorites: string[]; archived: string[]; muted: string[]; readAt: Record<string, string> };
-const DEFAULT_CHAT_PREFERENCES: ChatPreferences = { favorites: [], archived: [], muted: [], readAt: {} };
+type GroupCard = { id: string; kind?: CommunityKind; interestId?: string; icon: any; name: string; avatarUrl?: string; lastMessage: string; time: string; color: string; iconColor: string; lastMessageAt?: string | null; lastMessageSenderId?: string | null; lastMessageSenderName?: string | null };
+type ChatFilter = "all" | "groups" | "unread" | "favorites" | "archived";
+type ChatPreferences = { favorites: string[]; archived: string[]; muted: string[]; pinned: string[]; markedUnread: string[]; readAt: Record<string, string> };
+type ChatActionTarget = { id: string; name: string; kind: "group" | "direct"; lastActivityAt?: string | null; lastActivitySenderId?: string | null };
+const DEFAULT_CHAT_PREFERENCES: ChatPreferences = { favorites: [], archived: [], muted: [], pinned: [], markedUnread: [], readAt: {} };
 
 const ALL_NAVODAYANS: GroupCard = { id: "all-navodayans", kind: "all", icon: "chatbubbles-outline", name: "All Navodayans", lastMessage: "Join the JNV community conversation", time: "", color: "#FFF7ED", iconColor: "#F59E0B" };
 const IMAGE_MARKER = "__NAVODAYA_IMAGE__:";
@@ -105,7 +111,8 @@ const EXPLORE_GROUPS = [
 
 export default function ChatsScreen() {
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, isVerified, refreshProfile } = useAuth();
+  const { tryAccess, modal: verificationGate } = useVerificationGate(isVerified);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [joinedExplore, setJoinedExplore] = useState<Set<string>>(new Set());
@@ -115,6 +122,10 @@ export default function ChatsScreen() {
   const [selectedGroupMembers, setSelectedGroupMembers] = useState<ChatContact[]>([]);
   const [joinToast, setJoinToast] = useState("");
   const [schoolGroups, setSchoolGroups] = useState<Group[]>([]);
+  const [newGroupAvatar, setNewGroupAvatar] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [avatarToAdjust, setAvatarToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showAvatarAdjuster, setShowAvatarAdjuster] = useState(false);
+  const [staffGroupError, setStaffGroupError] = useState("");
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [openingGroup, setOpeningGroup] = useState(false);
   const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
@@ -130,6 +141,8 @@ export default function ChatsScreen() {
   const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
   const [filter, setFilter] = useState<ChatFilter>("all");
   const [chatPreferences, setChatPreferences] = useState<ChatPreferences>(DEFAULT_CHAT_PREFERENCES);
+  const [chatActionTarget, setChatActionTarget] = useState<ChatActionTarget | null>(null);
+  const [chatActionBusy, setChatActionBusy] = useState(false);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const preferencesKey = profile?.uid ? `chat-preferences:${profile.uid}` : null;
@@ -140,18 +153,36 @@ export default function ChatsScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
+    void refreshProfile().catch(() => {});
     const refreshInbox = () => {
-      api.groups.list().then((groups) => {
+      if (isVerified) api.groups.list().then((groups) => {
         if (!active) return;
         const visibleGroups = groups.filter((group) => isGroupVisibleForProfile(group, profile?.role, profile?.class));
         setSchoolGroups(visibleGroups);
+        setStaffGroupError("");
         const names = new Set(visibleGroups.map((group) => normalizeGroupName(group.name)));
         setJoinedExplore(new Set(EXPLORE_GROUPS.filter((group) => names.has(normalizeGroupName(group.name))).map((group) => group.id)));
-      }).catch(() => {});
+      }).catch((error) => {
+        if (!active) return;
+        if (profile?.role === "teacher" || profile?.role === "official") {
+          setStaffGroupError(error instanceof Error ? error.message : "Could not sync the Staff Group.");
+        }
+      });
       api.directMessages.conversations().then((rows) => { if (active) setDirectConversations(rows); }).catch(() => {});
       api.directMessages.requests().then((rows) => { if (active) setMessageRequests(rows); }).catch(() => {});
     };
-    refreshInbox();
+    if (isVerified && (profile?.role === "teacher" || profile?.role === "official")) {
+      api.groups.ensureStaffWorkspace().then(() => {
+        if (!active) return;
+        setStaffGroupError("");
+        refreshInbox();
+      }).catch((error) => {
+        if (active) setStaffGroupError(error instanceof Error ? error.message : "Could not open the Staff Group.");
+        refreshInbox();
+      });
+    } else {
+      refreshInbox();
+    }
     const refreshTimer = setInterval(refreshInbox, 5000);
     if (preferencesKey) {
       setPreferencesReady(false);
@@ -164,6 +195,8 @@ export default function ChatsScreen() {
               favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
               archived: Array.isArray(parsed.archived) ? parsed.archived : [],
               muted: Array.isArray(parsed.muted) ? parsed.muted : [],
+              pinned: Array.isArray(parsed.pinned) ? parsed.pinned : [],
+              markedUnread: Array.isArray(parsed.markedUnread) ? parsed.markedUnread : [],
               readAt: parsed.readAt && typeof parsed.readAt === "object" ? parsed.readAt : {},
             });
           } catch { setChatPreferences(DEFAULT_CHAT_PREFERENCES); }
@@ -172,7 +205,7 @@ export default function ChatsScreen() {
       }).catch(() => setPreferencesReady(true));
     }
     return () => { active = false; clearInterval(refreshTimer); };
-  }, [preferencesKey, profile?.class, profile?.role]));
+  }, [isVerified, preferencesKey, profile?.class, profile?.role]));
 
   useEffect(() => {
     const creatingGroup = showNewGroup;
@@ -223,24 +256,24 @@ export default function ChatsScreen() {
   const persistedPersonalGroups = personalGroups.map((personal) => {
     const saved = schoolGroups.find((group) => normalizeGroupName(group.name) === normalizeGroupName(personal.name));
     return saved
-      ? { ...personal, id: saved.id, kind: undefined, lastMessage: previewLastMessage(saved.lastMessage), time: formatListTime(saved.lastMessageAt), lastMessageAt: saved.lastMessageAt, lastMessageSenderId: saved.lastMessageSenderId, lastMessageSenderName: saved.lastMessageSenderName }
+      ? { ...personal, id: saved.id, kind: undefined, avatarUrl: saved.avatarUrl, lastMessage: previewLastMessage(saved.lastMessage), time: formatListTime(saved.lastMessageAt), lastMessageAt: saved.lastMessageAt, lastMessageSenderId: saved.lastMessageSenderId, lastMessageSenderName: saved.lastMessageSenderName }
       : personal;
   });
   const YOUR_GROUPS: GroupCard[] = [
     ...persistedPersonalGroups,
     ...schoolGroups
       .filter((group) => !persistedPersonalGroups.some((personal) => normalizeGroupName(personal.name) === normalizeGroupName(group.name)))
-      .map((group) => ({ id: group.id, icon: "people-outline", name: group.name, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: "#EEF2FF", iconColor: "#3D5AF1", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
+      .map((group) => ({ id: group.id, icon: group.subject === "Staff Group" ? "people-circle-outline" : "people-outline", name: group.name, avatarUrl: group.avatarUrl, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: group.subject === "Staff Group" ? "#EAF0FF" : "#EEF2FF", iconColor: "#3D5AF1", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
   ];
 
   const unreadIds = useMemo(() => new Set(YOUR_GROUPS.filter((group) => {
     const lastRead = chatPreferences.readAt[group.id];
-    return !!group.lastMessageAt
+    const hasNewMessage = !!group.lastMessageAt
       && group.lastMessageSenderId !== profile?.uid
-      && !chatPreferences.muted.includes(group.id)
       && (!lastRead || new Date(group.lastMessageAt).getTime() > new Date(lastRead).getTime());
+    return (hasNewMessage || chatPreferences.markedUnread.includes(group.id)) && !chatPreferences.muted.includes(group.id);
   }).map((group) => group.id)), [YOUR_GROUPS, chatPreferences, profile?.uid]);
-  const unreadChatCount = unreadIds.size + directConversations.filter((chat) => chat.unreadCount > 0 && !chatPreferences.muted.includes(chat.id)).length;
+  const unreadChatCount = unreadIds.size + directConversations.filter((chat) => (chat.unreadCount > 0 || chatPreferences.markedUnread.includes(chat.id)) && !chatPreferences.muted.includes(chat.id)).length;
 
   const filtered = useMemo(() => {
     let groups = YOUR_GROUPS;
@@ -252,6 +285,8 @@ export default function ChatsScreen() {
     }
     if (filter !== "archived") {
       groups = [...groups].sort((a, b) => {
+        const pinnedOrder = Number(chatPreferences.pinned.includes(b.id)) - Number(chatPreferences.pinned.includes(a.id));
+        if (pinnedOrder) return pinnedOrder;
         const favoriteOrder = Number(chatPreferences.favorites.includes(b.id)) - Number(chatPreferences.favorites.includes(a.id));
         if (favoriteOrder) return favoriteOrder;
         const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
@@ -264,7 +299,7 @@ export default function ChatsScreen() {
   }, [YOUR_GROUPS, filter, chatPreferences, unreadIds, searchQuery]);
 
   const visibleDirectConversations = useMemo(() => {
-    let conversations = directConversations;
+    let conversations = filter === "groups" ? [] : directConversations;
     if (filter === "archived") conversations = conversations.filter((chat) => chatPreferences.archived.includes(chat.id));
     else {
       conversations = conversations.filter((chat) => !chatPreferences.archived.includes(chat.id));
@@ -272,24 +307,81 @@ export default function ChatsScreen() {
       if (filter === "favorites") conversations = conversations.filter((chat) => chatPreferences.favorites.includes(chat.id));
     }
     if (searchQuery.trim()) conversations = conversations.filter((chat) => chat.peerName.toLowerCase().includes(searchQuery.trim().toLowerCase()));
-    return [...conversations].sort((a, b) => Number(chatPreferences.favorites.includes(b.id)) - Number(chatPreferences.favorites.includes(a.id)) || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return [...conversations].sort((a, b) =>
+      Number(chatPreferences.pinned.includes(b.id)) - Number(chatPreferences.pinned.includes(a.id))
+      || Number(chatPreferences.favorites.includes(b.id)) - Number(chatPreferences.favorites.includes(a.id))
+      || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [directConversations, filter, chatPreferences, searchQuery]);
 
-  const updateGroupPreference = (field: "favorites" | "archived" | "muted", groupId: string) => {
+  const updateGroupPreference = (field: "favorites" | "archived" | "muted" | "pinned", groupId: string) => {
     setChatPreferences((current) => {
       const values = current[field];
       return { ...current, [field]: values.includes(groupId) ? values.filter((id) => id !== groupId) : [...values, groupId] };
     });
   };
 
+  const showChatActions = (target: ChatActionTarget) => setChatActionTarget(target);
+
+  const toggleMarkedUnread = (chatId: string) => {
+    setChatPreferences((current) => ({
+      ...current,
+      markedUnread: current.markedUnread.includes(chatId)
+        ? current.markedUnread.filter((id) => id !== chatId)
+        : [...current.markedUnread, chatId],
+    }));
+  };
+
+  const applyChatAction = async (action: "pinned" | "favorites" | "muted" | "archived" | "markUnread" | "markRead") => {
+    if (!chatActionTarget || chatActionBusy) return;
+    if (action === "markUnread") {
+      toggleMarkedUnread(chatActionTarget.id);
+      setChatActionTarget(null);
+      return;
+    }
+    if (action === "markRead" && chatActionTarget.kind === "direct") {
+      setChatActionBusy(true);
+      try {
+        await api.directMessages.messages(chatActionTarget.id);
+        const conversations = await api.directMessages.conversations();
+        setDirectConversations(conversations);
+        setChatPreferences((current) => ({
+          ...current,
+          markedUnread: current.markedUnread.filter((id) => id !== chatActionTarget.id),
+        }));
+        setChatActionTarget(null);
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : "Could not mark chat as read");
+      } finally {
+        setChatActionBusy(false);
+      }
+      return;
+    }
+    if (action === "markRead") {
+      setChatPreferences((current) => ({
+        ...current,
+        readAt: { ...current.readAt, [chatActionTarget.id]: chatActionTarget.lastActivityAt || new Date().toISOString() },
+        markedUnread: current.markedUnread.filter((id) => id !== chatActionTarget.id),
+      }));
+    } else if (chatActionTarget.kind === "group") {
+      updateGroupPreference(action, chatActionTarget.id);
+    } else {
+      setChatPreferences((current) => {
+        const values = current[action];
+        return { ...current, [action]: values.includes(chatActionTarget.id) ? values.filter((id) => id !== chatActionTarget.id) : [...values, chatActionTarget.id] };
+      });
+    }
+    setChatActionTarget(null);
+  };
+
   const openGroup = async (group: GroupCard) => {
+    if (!tryAccess(group.name)) return;
     if (openingGroup) return;
     setOpeningGroup(true);
     try {
       const chat = group.kind
         ? await api.groups.ensureCommunity({ kind: group.kind, interestId: group.interestId })
         : { id: group.id };
-      setChatPreferences((current) => ({ ...current, readAt: { ...current.readAt, [chat.id]: new Date().toISOString() } }));
+      setChatPreferences((current) => ({ ...current, readAt: { ...current.readAt, [chat.id]: group.lastMessageAt ?? new Date().toISOString() }, markedUnread: current.markedUnread.filter((id) => id !== chat.id) }));
       router.push({ pathname: "/(screens)/group-chat" as any, params: { id: chat.id, name: group.name } });
     } catch (error) {
       showToast(chatOpenError(error, "Could not open this group"));
@@ -299,8 +391,16 @@ export default function ChatsScreen() {
   };
 
   const openDirectChat = (chat: DirectConversation) => {
+    setChatPreferences((current) => ({ ...current, markedUnread: current.markedUnread.filter((id) => id !== chat.id) }));
     router.push({ pathname: "/(screens)/direct-chat" as any, params: { id: chat.id, name: chat.peerName, peerId: chat.peerId, photoURL: chat.peerPhotoUrl || "" } });
   };
+
+  const chatActionIsUnread = chatActionTarget ? chatActionTarget.kind === "group"
+    ? chatPreferences.markedUnread.includes(chatActionTarget.id)
+      || (!!chatActionTarget.lastActivityAt && chatActionTarget.lastActivitySenderId !== profile?.uid
+        && (!chatPreferences.readAt[chatActionTarget.id] || new Date(chatActionTarget.lastActivityAt).getTime() > new Date(chatPreferences.readAt[chatActionTarget.id]).getTime()))
+    : (directConversations.find((chat) => chat.id === chatActionTarget.id)?.unreadCount ?? 0) > 0 || chatPreferences.markedUnread.includes(chatActionTarget.id)
+    : false;
 
   const selectContact = (contact: ChatContact) => {
     const conversation = directConversations.find((item) => item.peerId === contact.id);
@@ -343,6 +443,7 @@ export default function ChatsScreen() {
   };
 
   const toggleExplore = async (id: string, name: string) => {
+    if (!tryAccess(name)) return;
     try {
       const group = await api.groups.ensureCommunity({ kind: "interest", interestId: id });
       if (!joinedExplore.has(id)) {
@@ -356,23 +457,57 @@ export default function ChatsScreen() {
   };
 
   const handleCreateGroup = async () => {
+    if (!tryAccess("Create a group")) return;
     if (!newGroupName.trim() || !selectedGroupMembers.length) return;
     const name = newGroupName.trim();
     setCreatingGroup(true);
+    let uploadedAvatarKey: string | undefined;
     try {
-      const group = await api.groups.create({ name, memberIds: selectedGroupMembers.map((member) => member.id) });
+      if (newGroupAvatar) {
+        const uploaded = await api.memories.uploadMedia(newGroupAvatar.uri, newGroupAvatar.fileName || "group-avatar.jpg", newGroupAvatar.mimeType);
+        uploadedAvatarKey = uploaded.key;
+      }
+      const group = await api.groups.create({ name, memberIds: selectedGroupMembers.map((member) => member.id), ...(uploadedAvatarKey ? { avatarKey: uploadedAvatarKey } : {}) });
       setSchoolGroups((current) => [group, ...current.filter((item) => item.id !== group.id)]);
-      setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setContacts([]); setShowNewGroup(false);
+      setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setContacts([]); setNewGroupAvatar(null); setShowNewGroup(false);
       router.push({ pathname: "/(screens)/group-chat" as any, params: { id: group.id, name: group.name } });
     } catch (error) {
+      if (uploadedAvatarKey) {
+        try { await api.memories.cleanupUploads([uploadedAvatarKey]); } catch {}
+      }
       showToast(error instanceof Error ? error.message : "Could not create this group");
     } finally {
       setCreatingGroup(false);
     }
   };
 
+  const chooseGroupAvatar = async (camera = false) => {
+    try {
+      const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) return showToast(camera ? "Allow camera access to take a group photo" : "Allow photo access to choose a group photo");
+      const result = camera
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.85 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
+      const asset = result.canceled ? null : result.assets?.[0] ?? null;
+      if (!asset) return;
+      setAvatarToAdjust(asset);
+      setShowAvatarAdjuster(true);
+    } catch {
+      showToast("Could not open the photo picker. Please try again.");
+    }
+  };
+
+  const chatActionRows = chatActionTarget ? [
+    { key: "pinned" as const, title: chatPreferences.pinned.includes(chatActionTarget.id) ? "Unpin chat" : "Pin chat", icon: "pin-outline" },
+    { key: "favorites" as const, title: chatPreferences.favorites.includes(chatActionTarget.id) ? "Remove from favorites" : "Add to favorites", icon: "star-outline" },
+    { key: "muted" as const, title: chatPreferences.muted.includes(chatActionTarget.id) ? "Unmute notifications" : "Mute notifications", icon: "notifications-off-outline" },
+    { key: "archived" as const, title: chatPreferences.archived.includes(chatActionTarget.id) ? "Restore from archive" : "Archive chat", icon: "archive-outline" },
+    { key: chatActionIsUnread ? "markRead" as const : "markUnread" as const, title: chatActionIsUnread ? "Mark as read" : "Mark as unread", icon: chatActionIsUnread ? "mail-open-outline" : "mail-unread-outline" },
+  ] : [];
+
   return (
     <View style={styles.container}>
+      {verificationGate}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         {showSearch ? (
           <View style={styles.searchRow}>
@@ -393,13 +528,13 @@ export default function ChatsScreen() {
             <Text style={styles.headerTitle}>Chats</Text>
             <View style={styles.headerRight}>
               <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(true)}>
-                <Ionicons name="search-outline" size={20} color="#3D5AF1" />
+                <Ionicons name="search-outline" size={20} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconBtn} onPress={() => { setSelectedContact(null); setShowNewChat(true); }} accessibilityLabel="Start a direct chat">
-                <Ionicons name="person-add-outline" size={19} color="#3D5AF1" />
+                <Ionicons name="person-add-outline" size={19} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => { setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setShowNewGroup(true); }} accessibilityLabel="Create a group">
-                <Ionicons name="people-outline" size={19} color="#3D5AF1" />
+              <TouchableOpacity style={styles.iconBtn} onPress={() => { if (!tryAccess("Create a group")) return; setNewGroupName(""); setGroupMemberSearch(""); setSelectedGroupMembers([]); setNewGroupAvatar(null); setShowNewGroup(true); }} accessibilityLabel="Create a group">
+                <Ionicons name="people-outline" size={19} color="#fff" />
               </TouchableOpacity>
             </View>
           </>
@@ -424,7 +559,7 @@ export default function ChatsScreen() {
         {!showSearch && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {([
-              ["all", "All"], ["unread", `Unread${unreadChatCount ? ` (${unreadChatCount})` : ""}`], ["favorites", "Favorites"], ["archived", "Archived"],
+              ["all", "All"], ["groups", "Groups"], ["unread", `Unread${unreadChatCount ? ` (${unreadChatCount})` : ""}`], ["favorites", "Favorites"], ["archived", "Archived"],
             ] as [ChatFilter, string][]).map(([key, label]) => (
               <TouchableOpacity key={key} style={[styles.filterChip, filter === key && styles.filterChipActive]} onPress={() => setFilter(key)}>
                 <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>{label}</Text>
@@ -433,21 +568,29 @@ export default function ChatsScreen() {
           </ScrollView>
         )}
 
+        {!!staffGroupError && (profile?.role === "teacher" || profile?.role === "official") && (
+          <View style={styles.staffGroupError}>
+            <Ionicons name="alert-circle-outline" size={18} color="#B45309" />
+            <Text style={styles.staffGroupErrorText}>Staff Group could not sync: {staffGroupError}</Text>
+          </View>
+        )}
+
         {/* Your Groups */}
         <View style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>{filter === "archived" ? "Archived chats" : filter === "favorites" ? "Favorite chats" : filter === "unread" ? "Unread chats" : "Recent chats"}</Text>
+            <Text style={styles.sectionTitle}>{filter === "archived" ? "Archived chats" : filter === "favorites" ? "Favorite chats" : filter === "unread" ? "Unread chats" : filter === "groups" ? "Group chats" : "Recent chats"}</Text>
             <Text style={styles.chatCount}>{filtered.length + visibleDirectConversations.length}</Text>
           </View>
           {visibleDirectConversations.map((chat) => {
-            const unread = chat.unreadCount > 0 && !chatPreferences.muted.includes(chat.id);
+            const unread = (chat.unreadCount > 0 || chatPreferences.markedUnread.includes(chat.id)) && !chatPreferences.muted.includes(chat.id);
             return (
               <View key={`direct-${chat.id}`} style={styles.groupRow}>
-                <TouchableOpacity style={styles.groupRowMain} onPress={() => openDirectChat(chat)} activeOpacity={0.7}>
+                <MotionPressable style={styles.groupRowMain} onPress={() => openDirectChat(chat)}>
                   <View style={[styles.groupIcon, styles.directAvatar]}>{chat.peerPhotoUrl ? <Image source={{ uri: chat.peerPhotoUrl }} style={styles.contactPhoto} /> : <Text style={styles.directAvatarText}>{chat.peerName.charAt(0).toUpperCase()}</Text>}</View>
                   <View style={styles.groupInfo}>
                     <View style={styles.groupTitleLine}>
                       <Text style={[styles.groupName, unread && styles.groupNameUnread]} numberOfLines={1}>{chat.peerName}</Text>
+                      {chatPreferences.pinned.includes(chat.id) ? <Ionicons name="pin" size={13} color="#5268F5" /> : null}
                       <Text style={[styles.groupTime, unread && styles.unreadText]}>{formatListTime(chat.updatedAt)}</Text>
                     </View>
                     <View style={styles.groupPreviewLine}>
@@ -455,8 +598,10 @@ export default function ChatsScreen() {
                       {unread ? <View style={styles.unreadBadge} /> : null}
                     </View>
                   </View>
+                </MotionPressable>
+                <TouchableOpacity style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Actions for ${chat.peerName}`} onPress={() => showChatActions({ id: chat.id, name: chat.peerName, kind: "direct", lastActivityAt: chat.updatedAt })}>
+                  <Ionicons name="ellipsis-vertical" size={18} color="#8A94A6" />
                 </TouchableOpacity>
-
               </View>
             );
           })}
@@ -467,13 +612,14 @@ export default function ChatsScreen() {
               const preview = group.lastMessageSenderId === profile?.uid ? `You: ${group.lastMessage}` : group.lastMessageSenderName ? `${group.lastMessageSenderName}: ${group.lastMessage}` : group.lastMessage;
               return (
                 <View key={group.id} style={styles.groupRow}>
-                  <TouchableOpacity style={styles.groupRowMain} activeOpacity={0.7} onPress={() => openGroup(group)}>
+                  <MotionPressable style={styles.groupRowMain} onPress={() => openGroup(group)}>
                     <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
-                      <Ionicons name={group.icon} size={22} color={group.iconColor} />
+                      {group.avatarUrl ? <Image source={{ uri: group.avatarUrl }} style={styles.groupAvatarPhoto} /> : <Ionicons name={group.icon} size={22} color={group.iconColor} />}
                     </View>
                     <View style={styles.groupInfo}>
                       <View style={styles.groupTitleLine}>
                         <Text style={[styles.groupName, unread && styles.groupNameUnread]} numberOfLines={1}>{group.name}</Text>
+                        {chatPreferences.pinned.includes(group.id) ? <Ionicons name="pin" size={13} color="#5268F5" /> : null}
                         {group.time ? <Text style={[styles.groupTime, unread && styles.unreadText]}>{group.time}</Text> : null}
                       </View>
                       <View style={styles.groupPreviewLine}>
@@ -481,12 +627,14 @@ export default function ChatsScreen() {
                         {unread ? <View style={styles.unreadBadge} /> : null}
                       </View>
                     </View>
-                  </TouchableOpacity>
-
+                  </MotionPressable>
+                  {!group.kind ? <TouchableOpacity style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Actions for ${group.name}`} onPress={() => showChatActions({ id: group.id, name: group.name, kind: "group", lastActivityAt: group.lastMessageAt, lastActivitySenderId: group.lastMessageSenderId })}>
+                    <Ionicons name="ellipsis-vertical" size={18} color="#8A94A6" />
+                  </TouchableOpacity> : null}
                 </View>
               );
             })}
-            {!filtered.length && !visibleDirectConversations.length && <View style={styles.emptyList}><Ionicons name={filter === "unread" ? "mail-open-outline" : "chatbubbles-outline"} size={28} color="#9CA3AF" /><Text style={styles.emptyListText}>{filter === "unread" ? "YouÃ¢â‚¬â„¢re all caught up" : filter === "archived" ? "No archived chats" : filter === "favorites" ? "Star chats to keep them here" : "No chats match your search"}</Text></View>}
+            {!filtered.length && !visibleDirectConversations.length && <View style={styles.emptyList}><Ionicons name={filter === "unread" ? "mail-open-outline" : "chatbubbles-outline"} size={28} color="#9CA3AF" /><Text style={styles.emptyListText}>{filter === "unread" ? "YouÃ¢â‚¬â„¢re all caught up" : filter === "archived" ? "No archived chats" : filter === "favorites" ? "Star chats to keep them here" : filter === "groups" ? "No group chats yet" : "No chats match your search"}</Text></View>}
           </View>
         </View>
 
@@ -537,6 +685,24 @@ export default function ChatsScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal visible={!!chatActionTarget} transparent animationType="fade" onRequestClose={() => { if (!chatActionBusy) setChatActionTarget(null); }}>
+        <View style={styles.actionBackdrop}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { if (!chatActionBusy) setChatActionTarget(null); }} accessibilityLabel="Close conversation actions" />
+          <View style={[styles.actionSheet, { paddingBottom: 18 + Math.max(insets.bottom, 8) }]}>
+            <View style={styles.actionHandle} />
+            <Text style={styles.actionTitle} numberOfLines={1}>{chatActionTarget?.name}</Text>
+            {chatActionRows.map((row) => (
+              <TouchableOpacity key={row.key} style={styles.actionRow} onPress={() => void applyChatAction(row.key)} disabled={chatActionBusy} accessibilityRole="button">
+                {chatActionBusy && row.key === "markRead" ? <ActivityIndicator size="small" color="#3D5AF1" /> : <Ionicons name={row.icon as any} size={20} color="#5268F5" />}
+                <Text style={styles.actionRowText}>{row.title}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#A0A8B6" />
+              </TouchableOpacity>
+            ))}
+            <Text style={styles.actionFootnote}>These chat list preferences are saved on this device.</Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* New Group Modal */}
       <Modal visible={showNewChat} animationType="slide" presentationStyle="formSheet" onRequestClose={() => { setShowNewChat(false); setSelectedContact(null); }}>
@@ -601,15 +767,32 @@ export default function ChatsScreen() {
       </Modal>
 
       {/* New Group Modal */}
-      <Modal visible={showNewGroup} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowNewGroup(false)}>
+      <Modal visible={showNewGroup} animationType="slide" presentationStyle="formSheet" onRequestClose={() => { setShowNewGroup(false); setNewGroupAvatar(null); }}>
         <View style={styles.modalWrap}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create group</Text>
-            <TouchableOpacity onPress={() => setShowNewGroup(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowNewGroup(false); setNewGroupAvatar(null); }}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
             <Text style={styles.inputLabel}>Group name</Text>
             <TextInput style={styles.modalInput} placeholder="Enter group name" placeholderTextColor="#9CA3AF" value={newGroupName} onChangeText={setNewGroupName} maxLength={80} />
+            <GroupNameEmojiPicker onSelect={(emoji) => setNewGroupName((current) => `${current.trimEnd()}${current.trim() ? " " : ""}${emoji}`)} />
+            <Text style={[styles.inputLabel, { marginTop: 20 }]}>Group photo</Text>
+            <View style={styles.groupPhotoRow}>
+              <View style={styles.groupPhotoPreview}>
+                {newGroupAvatar ? <Image source={{ uri: newGroupAvatar.uri }} style={styles.groupPhotoImage} /> : <Ionicons name="people-outline" size={26} color="#3D5AF1" />}
+              </View>
+              <View style={styles.groupPhotoActions}>
+                <TouchableOpacity style={styles.groupPhotoAction} onPress={() => void chooseGroupAvatar(false)}>
+                  <Ionicons name="images-outline" size={17} color="#3D5AF1" /><Text style={styles.groupPhotoActionText}>{newGroupAvatar ? "Change photo" : "Choose photo"}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.groupPhotoAction} onPress={() => void chooseGroupAvatar(true)}>
+                  <Ionicons name="camera-outline" size={17} color="#3D5AF1" /><Text style={styles.groupPhotoActionText}>Take photo</Text>
+                </TouchableOpacity>
+                {newGroupAvatar ? <TouchableOpacity onPress={() => setNewGroupAvatar(null)}><Text style={styles.removeGroupPhoto}>Remove photo</Text></TouchableOpacity> : null}
+              </View>
+            </View>
+            <Text style={styles.groupPhotoHint}>Crop, rotate, and zoom the photo before adding it.</Text>
             <Text style={styles.inputLabel}>Add participants</Text>
             <TextInput style={styles.modalInput} placeholder="Search Navodayans by name" placeholderTextColor="#9CA3AF" value={groupMemberSearch} onChangeText={setGroupMemberSearch} />
             {selectedGroupMembers.length > 0 && <View style={styles.selectedMembers}><Text style={styles.inputLabel}>{selectedGroupMembers.length} selected</Text><View style={styles.selectedMemberChips}>{selectedGroupMembers.map((member) => <TouchableOpacity key={member.id} style={styles.memberChip} onPress={() => setSelectedGroupMembers((current) => current.filter((item) => item.id !== member.id))}><Text style={styles.memberChipText}>{member.fullName} Ã—</Text></TouchableOpacity>)}</View></View>}
@@ -621,6 +804,14 @@ export default function ChatsScreen() {
           </ScrollView>
         </View>
       </Modal>
+      <ImageAdjustmentModal
+        visible={showAvatarAdjuster}
+        asset={avatarToAdjust}
+        title="Adjust group photo"
+        defaultAspect="square"
+        onCancel={() => { setShowAvatarAdjuster(false); setAvatarToAdjust(null); }}
+        onDone={(asset) => { setNewGroupAvatar(asset); setShowAvatarAdjuster(false); setAvatarToAdjust(null); }}
+      />
       {/* Toast */}
       {joinToast ? (
         <View style={styles.toast} pointerEvents="none">
@@ -633,14 +824,14 @@ export default function ChatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F0F0F0", backgroundColor: "#fff" },
-  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
+  container: { flex: 1, backgroundColor: "#F3F5FA" },
+  header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#3151E8", backgroundColor: "#3D5AF1" },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#fff" },
   headerRight: { position: "absolute", right: 16, bottom: 12, flexDirection: "row", gap: 4 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  searchInput: { flex: 1, backgroundColor: "#F3F4F6", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
-  cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
+  searchInput: { flex: 1, backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, fontSize: 14, fontFamily: "Inter_400Regular", color: "#fff" },
+  cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff" },
   section: { paddingHorizontal: 20, paddingTop: 20 },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#111827", marginBottom: 4 },
   sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5 },
@@ -650,11 +841,15 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: "#EAF0FF", borderColor: "#C7D2FE" },
   filterText: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_500Medium" },
   filterTextActive: { color: "#3D5AF1", fontFamily: "Inter_700Bold" },
+  staffGroupError: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 20, marginTop: 12, padding: 12, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A", borderRadius: 12 },
+  staffGroupErrorText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium", color: "#92400E" },
   sectionSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 14 },
   groupList: {},
-  groupRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F3F5", gap: 4 },
+  groupRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, borderRadius: 16, borderWidth: 1, borderColor: "#E8EBF2", backgroundColor: "#fff", gap: 4 },
   groupRowMain: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", paddingVertical: 4, gap: 12 },
+  moreButton: { width: 36, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   groupIcon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  groupAvatarPhoto: { width: 50, height: 50, borderRadius: 25 },
   groupInfo: { flex: 1, minWidth: 0, gap: 3 },
   groupTitleLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   groupPreviewLine: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -662,8 +857,8 @@ const styles = StyleSheet.create({
   groupNameUnread: { fontFamily: "Inter_700Bold" },
   groupMessage: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
   groupMessageUnread: { color: "#374151", fontFamily: "Inter_600SemiBold" },
-  unreadText: { color: "#16A34A", fontFamily: "Inter_600SemiBold" },
-  unreadBadge: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#16A34A" },
+  unreadText: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  unreadBadge: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#3D5AF1" },
   directAvatar: { backgroundColor: "#EAF0FF" },
   contactPhoto: { width: "100%", height: "100%", borderRadius: 28 },
   directAvatarText: { color: "#3D5AF1", fontSize: 19, fontFamily: "Inter_700Bold" },
@@ -710,12 +905,27 @@ const styles = StyleSheet.create({
   joinSmText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
   // Modals
+  actionBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.32)" },
+  actionSheet: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 10 },
+  actionHandle: { alignSelf: "center", width: 38, height: 4, borderRadius: 2, backgroundColor: "#D6DAE3", marginBottom: 14 },
+  actionTitle: { color: "#111827", fontSize: 17, fontFamily: "Inter_700Bold", paddingBottom: 8 },
+  actionRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 13, borderTopWidth: 1, borderTopColor: "#F0F2F6" },
+  actionRowText: { flex: 1, color: "#273247", fontSize: 14, fontFamily: "Inter_500Medium" },
+  actionFootnote: { color: "#8A94A6", fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", paddingTop: 9 },
   modalWrap: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
   modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
   modalBody: { padding: 20 },
   inputLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 8 },
   modalInput: { borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
+  groupPhotoRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 7 },
+  groupPhotoPreview: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#EAF0FF", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  groupPhotoImage: { width: "100%", height: "100%" },
+  groupPhotoActions: { flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  groupPhotoAction: { minHeight: 38, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 12, borderRadius: 20, backgroundColor: "#F2F4FF" },
+  groupPhotoActionText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  removeGroupPhoto: { color: "#EF4444", fontSize: 12, fontFamily: "Inter_600SemiBold", padding: 8 },
+  groupPhotoHint: { color: "#8A94A6", fontSize: 11, fontFamily: "Inter_400Regular", marginBottom: 18 },
   createBtn: { backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15, alignItems: "center" },
   createBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   toast: { position: "absolute", bottom: 24, left: 24, right: 24, backgroundColor: "#1F2937", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 8 },

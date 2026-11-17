@@ -5,6 +5,7 @@ export const achievementsTable = pgTable("achievements", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull().default("Career"),
+  image: text("image"),
   authorId: uuid("author_id"),
   authorName: text("author_name"),
   jnvName: text("jnv_name"),

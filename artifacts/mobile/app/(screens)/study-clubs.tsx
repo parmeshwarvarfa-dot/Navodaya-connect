@@ -95,7 +95,7 @@ export default function StudyClubsScreen() {
               {myClubs.map((c) => (
                 <View key={c.id} style={[styles.myClubCard, { borderColor: c.color }]}>
                   <View style={[styles.myClubIcon, { backgroundColor: c.bg }]}>
-                    <Ionicons name={c.icon} size={20} color={c.color} />
+                    <Ionicons name={c.icon as any} size={20} color={c.color} />
                   </View>
                   <Text style={styles.myClubName}>{c.name}</Text>
                   <Text style={styles.myClubUpcoming}>{c.nextEvent}</Text>

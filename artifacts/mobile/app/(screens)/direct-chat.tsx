@@ -12,8 +12,8 @@ import * as Location from "expo-location";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { api, type DirectMessage } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
 import { firebaseApp } from "@/lib/firebase";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 const IMAGE_MARKER = "__NAVODAYA_IMAGE__:";
 const LOCATION_MARKER = "__NAVODAYA_LOCATION__:";
@@ -42,7 +42,6 @@ function timeLabel(value: string) {
 
 export default function DirectChatScreen() {
   const { profile } = useAuth();
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { id, name, peerId, photoURL } = useLocalSearchParams<{ id: string; name: string; peerId: string; photoURL?: string }>();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
@@ -55,6 +54,8 @@ export default function DirectChatScreen() {
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showAttachments, setShowAttachments] = useState(false);
+  const [imageToShare, setImageToShare] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const listRef = useRef<FlatList<DirectMessage>>(null);
@@ -158,6 +159,19 @@ export default function DirectChatScreen() {
       const asset = result.canceled ? undefined : result.assets?.[0];
       if (!asset) return;
       if ((asset.fileSize ?? 0) > 15 * 1024 * 1024) throw new Error("Choose a photo under 15 MB");
+      setImageToShare(asset);
+      setShowImageAdjustment(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not send this photo");
+    }
+  };
+
+  const sendAdjustedPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!id || sending) return;
+    setShowImageAdjustment(false);
+    setImageToShare(null);
+    try {
+      if (!firebaseApp?.options.storageBucket) throw new Error("Photo sharing needs Firebase Storage configured in .env");
       setSending(true);
       const response = await fetch(asset.uri);
       if (!response.ok) throw new Error("Could not read the selected photo");
@@ -200,8 +214,8 @@ export default function DirectChatScreen() {
     : messages;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+    <View style={[styles.container, { backgroundColor: "#F3F5FA" }]}>
+      <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconButton} accessibilityLabel="Back">
             <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -265,7 +279,7 @@ export default function DirectChatScreen() {
             );
           }}
           ListEmptyComponent={loading
-            ? <ActivityIndicator style={{ marginTop: 36 }} color={colors.primary} />
+            ? <ActivityIndicator style={{ marginTop: 36 }} color="#3D5AF1" />
             : <View style={styles.empty}><Ionicons name="chatbubble-ellipses-outline" size={34} color="#9CA3AF" /><Text style={styles.emptyText}>{error || (query ? "No matching messages" : "Say hello to start the conversation")}</Text></View>}
         />
         {newMessagesCount > 0 && (
@@ -314,12 +328,19 @@ export default function DirectChatScreen() {
           <TouchableOpacity style={styles.previewClose} onPress={() => setPreviewImage(null)}><Ionicons name="close" size={24} color="#fff" /></TouchableOpacity>
         </Pressable>
       </Modal>
+      <ImageAdjustmentModal
+        visible={showImageAdjustment}
+        asset={imageToShare}
+        title="Adjust photo"
+        onCancel={() => { setShowImageAdjustment(false); setImageToShare(null); }}
+        onDone={(asset) => void sendAdjustedPhoto(asset)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#F3F5FA" },
   flex: { flex: 1 },
   header: { paddingHorizontal: 12, paddingBottom: 12 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -331,19 +352,19 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   subtitle: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontFamily: "Inter_400Regular" },
   search: { marginTop: 10, color: "#fff", borderRadius: 12, backgroundColor: "rgba(255,255,255,0.16)", paddingHorizontal: 12, paddingVertical: 9, fontFamily: "Inter_400Regular" },
-  messageList: { padding: 14, gap: 8, flexGrow: 1, justifyContent: "flex-end" },
+  messageList: { paddingHorizontal: 14, paddingVertical: 18, gap: 8, flexGrow: 1, justifyContent: "flex-end" },
   messageRow: { flexDirection: "row", width: "100%" },
   mineRow: { justifyContent: "flex-end" },
   theirRow: { justifyContent: "flex-start" },
-  bubble: { maxWidth: "82%", borderRadius: 18, paddingHorizontal: 12, paddingTop: 9, paddingBottom: 6 },
-  mineBubble: { backgroundColor: "#3D5AF1", borderBottomRightRadius: 5 },
-  theirBubble: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB", borderBottomLeftRadius: 5 },
-  messageText: { color: "#111827", fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
+  bubble: { maxWidth: "88%", borderRadius: 22, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  mineBubble: { backgroundColor: "#3D5AF1", borderBottomRightRadius: 6 },
+  theirBubble: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E3E7EF", borderBottomLeftRadius: 6 },
+  messageText: { color: "#111827", fontSize: 16, lineHeight: 22, fontFamily: "Inter_400Regular" },
   mineText: { color: "#fff" },
   messageImage: { width: 220, height: 185, borderRadius: 12, backgroundColor: "#E5E7EB" },
   locationMessage: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5 },
   messageMeta: { marginTop: 3, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 3 },
-  time: { color: "#9CA3AF", fontSize: 10, fontFamily: "Inter_400Regular" },
+  time: { color: "#8893A7", fontSize: 11, fontFamily: "Inter_400Regular" },
   mineTime: { color: "rgba(255,255,255,0.7)" },
   empty: { alignItems: "center", gap: 10, paddingVertical: 32 },
   emptyText: { color: "#6B7280", fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
@@ -352,8 +373,8 @@ const styles = StyleSheet.create({
   error: { color: "#DC2626", textAlign: "center", paddingHorizontal: 10, paddingVertical: 5, fontSize: 12 },
   emojiBar: { flexDirection: "row", justifyContent: "space-around", paddingVertical: 8, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#F3F4F6" },
   emoji: { fontSize: 22 },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E5E7EB" },
-  input: { flex: 1, maxHeight: 110, minHeight: 42, borderRadius: 22, backgroundColor: "#F3F4F6", paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: "#111827", fontFamily: "Inter_400Regular" },
+  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E2E6EF" },
+  input: { flex: 1, maxHeight: 110, minHeight: 48, borderRadius: 28, backgroundColor: "#F0F2F6", paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: "#111827", fontFamily: "Inter_400Regular" },
   sendButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
   disabledSend: { backgroundColor: "#9CA3AF" },
   modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.35)" },

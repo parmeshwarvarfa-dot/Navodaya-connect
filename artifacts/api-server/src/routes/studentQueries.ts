@@ -1,15 +1,20 @@
 import { Router } from "express";
 import { db, studentQueriesTable, queryAnswersTable } from "@workspace/db";
-import { requireAuth } from "../lib/auth";
-import { desc, eq } from "drizzle-orm";
+import { getUser, isAuthorizedJnvOfficial, isCommunityVerifiedAlumni, isVerifiedTeacher, requireAuth } from "../lib/auth";
+import { and, desc, eq } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/student-queries", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
+    const canAnswer = isCommunityVerifiedAlumni(user) || isVerifiedTeacher(user) || await isAuthorizedJnvOfficial(user);
+    if (user.role !== "student" && !canAnswer) return res.status(403).json({ error: "Student query access is unavailable for this account" });
+    const schoolScope = eq(studentQueriesTable.jnvName, user.jnvName);
     const rows = await db.select().from(studentQueriesTable)
-      .where(eq(studentQueriesTable.jnvName, user.jnvName))
+      .where(user.role === "student"
+        ? and(schoolScope, eq(studentQueriesTable.studentId, user.id))
+        : schoolScope)
       .orderBy(desc(studentQueriesTable.createdAt));
     const withAnswers = await Promise.all(rows.map(async (q) => {
       const answers = await db.select().from(queryAnswersTable)
@@ -26,9 +31,10 @@ router.get("/student-queries", requireAuth, async (req, res) => {
 
 router.post("/student-queries", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    const { question, subject, category } = req.body;
-    if (!question?.trim()) return res.status(400).json({ error: "Question required" });
+    const user = getUser(req);
+    if (user.role !== "student") return res.status(403).json({ error: "Only students can create student queries" });
+    const { question, subject, category } = req.body ?? {};
+    if (typeof question !== "string" || !question.trim() || question.length > 4000 || (subject !== undefined && (typeof subject !== "string" || subject.length > 100)) || (category !== undefined && (typeof category !== "string" || category.length > 80))) return res.status(400).json({ error: "Provide a question of 1 to 4,000 characters" });
     const [row] = await db.insert(studentQueriesTable).values({
       question: question.trim(),
       subject: subject?.trim() || "General",
@@ -47,12 +53,18 @@ router.post("/student-queries", requireAuth, async (req, res) => {
 
 router.post("/student-queries/:id/answer", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    if (user.role !== "teacher" && user.role !== "official" && user.role !== "alumni") {
+    const user = getUser(req);
+    const canAnswer = isCommunityVerifiedAlumni(user) || isVerifiedTeacher(user) || await isAuthorizedJnvOfficial(user);
+    if (!canAnswer) {
       return res.status(403).json({ error: "Only teachers/alumni can answer" });
     }
-    const { answer } = req.body;
-    if (!answer?.trim()) return res.status(400).json({ error: "Answer required" });
+    const [query] = await db.select().from(studentQueriesTable).where(and(
+      eq(studentQueriesTable.id, req.params.id as string),
+      eq(studentQueriesTable.jnvName, user.jnvName),
+    )).limit(1);
+    if (!query) return res.status(404).json({ error: "Student query not found" });
+    const { answer } = req.body ?? {};
+    if (typeof answer !== "string" || !answer.trim() || answer.length > 4000) return res.status(400).json({ error: "Provide an answer of 1 to 4,000 characters" });
     const [ansRow] = await db.insert(queryAnswersTable).values({
       queryId: req.params.id as string,
       answer: answer.trim(),

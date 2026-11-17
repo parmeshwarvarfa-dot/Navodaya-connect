@@ -1,6 +1,7 @@
 import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { usersTable } from "./users";
+import { reportsTable } from "./reports";
 
 export const verificationRequestsTable = pgTable("verification_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -63,6 +64,7 @@ export const verificationAuditTable = pgTable("verification_audit", {
   fromStatus: text("from_status"),
   toStatus: text("to_status"),
   reason: text("reason"),
+  reportId: uuid("report_id").references(() => reportsTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [
   index("verification_audit_request_created_idx").on(table.requestId, table.createdAt),

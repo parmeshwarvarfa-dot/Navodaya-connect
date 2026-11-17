@@ -6,6 +6,7 @@ export const eventsTable = pgTable("events", {
   description: text("description").notNull(),
   date: text("date").notNull(),
   location: text("location"),
+  media: text("media"),
   organizer: text("organizer"),
   organizerId: uuid("organizer_id"),
   jnvName: text("jnv_name"),

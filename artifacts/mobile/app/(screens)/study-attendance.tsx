@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import AcademicFeatureUnavailable from "@/components/AcademicFeatureUnavailable";
 
 const MONTHS = ["January", "February", "March", "April", "May"];
 const SUBJECT_DATA = [
@@ -35,6 +36,7 @@ const progressStyles = StyleSheet.create({
 });
 
 export default function StudyAttendanceScreen() {
+  return <AcademicFeatureUnavailable title="Attendance" message="Attendance records are not connected to a school service yet. The app will not display sample attendance statistics as your personal record." />;
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeMonth, setActiveMonth] = useState("May");

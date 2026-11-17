@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 
 const FEATURES = [
-  { label: "Communities",    icon: "globe-outline"            as const, color: "#EC4899", bg: "#FDF2F8", route: "/(screens)/alumni-communities"    },
+  { label: "Mentorship", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/alumni-mentorship" },
+  { label: "Blood Donation Help", icon: "water-outline" as const, color: "#DC2626", bg: "#FEF2F2", route: "/(screens)/alumni-community" },
   { label: "Contributions",  icon: "ribbon-outline"           as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/alumni-contributions"  },
   { label: "Support JNV",    icon: "heart-outline"            as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/alumni-support"        },
 ];
@@ -15,10 +17,31 @@ const FEATURES = [
 export default function AlumniZoneScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
+  const [connectionsCount, setConnectionsCount] = useState<number | null>(null);
+  const [contributionCount, setContributionCount] = useState<number | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-  const isVerified = profile?.verificationStatus === "verified";
+  const isVerified = profile?.role === "alumni"
+    ? ["community_verified", "under_review"].includes(profile.verificationStatus ?? "") && !!profile.communityVerifiedAt
+    : profile?.verificationStatus === "verified";
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setStatsLoading(true);
+    Promise.allSettled([api.connections.list(), api.recognition.summary()])
+      .then(([connectionsResult, recognitionResult]) => {
+        if (!active) return;
+        setConnectionsCount(connectionsResult.status === "fulfilled"
+          ? connectionsResult.value.filter((connection) => connection.status === "connected").length
+          : null);
+        const count = recognitionResult.status === "fulfilled" ? recognitionResult.value.contributionCount : null;
+        setContributionCount(typeof count === "number" && Number.isFinite(count) && count >= 0 ? count : null);
+      })
+      .finally(() => { if (active) setStatsLoading(false); });
+    return () => { active = false; };
+  }, [profile?.uid]));
 
   return (
     <View style={styles.container}>
@@ -46,8 +69,8 @@ export default function AlumniZoneScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: "Connections",    value: "48",  icon: "people-outline"   as const, color: "#3D5AF1", bg: "#EEF2FF" },
-            { label: "Contributions",  value: "12",  icon: "ribbon-outline"   as const, color: "#8B5CF6", bg: "#F5F3FF" },
+            { label: "Connections", value: statsLoading ? "—" : connectionsCount ?? "—", icon: "people-outline" as const, color: "#3D5AF1", bg: "#EEF2FF" },
+            { label: "Contributions", value: statsLoading ? "—" : contributionCount ?? "—", icon: "ribbon-outline" as const, color: "#8B5CF6", bg: "#F5F3FF" },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Ionicons name={s.icon} size={16} color={s.color} />

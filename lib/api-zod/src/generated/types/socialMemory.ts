@@ -5,12 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MemoryMediaMetadata } from "./memoryMediaMetadata";
 
 export interface SocialMemory {
   id: string;
   caption?: string;
   postType: string;
   mediaUrls: string[];
+  mediaMetadata?: MemoryMediaMetadata[];
   pollOptions: string[];
   pollVotes: number[];
   viewerVote?: number;

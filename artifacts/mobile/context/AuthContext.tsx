@@ -13,6 +13,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
+  sendEmailVerification,
 } from "firebase/auth";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { firebaseAuth, requireFirebaseAuth } from "@/lib/firebase";
@@ -26,12 +27,13 @@ interface AuthContextType {
   pendingProfile: { email: string; fullName: string } | null;
   loading: boolean;
   isVerified: boolean;
-  signUp: (email: string, password: string, profileData: Omit<SignupData, "email" | "password">) => Promise<void>;
+  signUp: (email: string, password: string, profileData: Omit<SignupData, "email" | "password">) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   completeProfile: (profileData: Omit<SignupData, "email" | "password">) => Promise<void>;
+  resendEmailVerification: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -109,9 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncFirebaseUser = async (
     firebaseUser: import("firebase/auth").User,
     profileData?: Omit<SignupData, "email" | "password">,
+    forceRefresh = false,
   ) => {
     try {
-      const response = await api.auth.firebase(await firebaseUser.getIdToken(), profileData);
+      const response = await api.auth.firebase(await firebaseUser.getIdToken(forceRefresh), profileData);
       await setToken(response.token);
       setProfile(response.profile);
       setPendingFirebaseUser(null);
@@ -124,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (
     email: string,
     password: string,
-    profileData: Omit<SignupData, "email" | "password">
+    profileData: Omit<SignupData, "email" | "password">,
   ) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       throw new Error("Please enter a valid email address.");
@@ -141,7 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? currentFirebaseUser
         : (await createUserWithEmailAndPassword(auth, email.trim(), password)).user;
       setPendingFirebaseUser(firebaseUser);
-      await syncFirebaseUser(firebaseUser, profileData);
+      await firebaseUser.reload();
+      if (!firebaseUser.emailVerified) {
+        await sendEmailVerification(firebaseUser);
+        return false;
+      }
+      await syncFirebaseUser(firebaseUser, profileData, true);
+      return true;
     } catch (error) {
       throw error;
     } finally {
@@ -159,23 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       await syncFirebaseUser(credential.user);
     } catch (firebaseError: any) {
-      const canUseApiCredentials =
-        firebaseError?.code === "auth/user-not-found" ||
-        firebaseError?.code === "auth/invalid-credential";
-      const firebaseNetworkError = firebaseError?.code === "auth/network-request-failed";
-
-      if (canUseApiCredentials || firebaseNetworkError) {
-        try {
-          const { token, profile: p } = await api.auth.signin(email.trim(), password);
-          await setToken(token);
-          setProfile(p);
-        } catch (apiError: any) {
-          // Retain Firebase's useful network diagnosis if an API-backed password
-          // account was not found; don't turn a transient Firebase outage into
-          // a misleading invalid-password message for Firebase-only accounts.
-          if (firebaseNetworkError && apiError?.status === 401) throw firebaseError;
-          throw apiError;
-        }
+      if (firebaseError?.code === "auth/user-not-found" || firebaseError?.code === "auth/invalid-credential") {
+        const { token, profile: p } = await api.auth.signin(email.trim(), password);
+        await setToken(token);
+        setProfile(p);
       } else {
         throw firebaseError;
       }
@@ -244,10 +240,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     manualAuthSync.current = true;
     try {
-      await syncFirebaseUser(pendingFirebaseUser, profileData);
+      await pendingFirebaseUser.reload();
+      if (!pendingFirebaseUser.emailVerified) {
+        throw new Error("Your email is not verified yet. Open the verification link from your inbox, then try again.");
+      }
+      await syncFirebaseUser(pendingFirebaseUser, profileData, true);
     } finally {
       manualAuthSync.current = false;
     }
+  };
+
+  const resendEmailVerification = async () => {
+    if (!pendingFirebaseUser) throw new Error("Your sign-up session expired. Start signing up again.");
+    await sendEmailVerification(pendingFirebaseUser);
   };
 
   const forgotPassword = async (email: string) => {
@@ -275,10 +280,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pendingProfile = pendingFirebaseUser
     ? { email: pendingFirebaseUser.email ?? "", fullName: pendingFirebaseUser.displayName ?? "" }
     : null;
-  const isVerified = profile?.verificationStatus === "verified";
+  const isVerified = profile?.role === "official"
+    || (profile?.role === "alumni"
+      ? ["community_verified", "under_review"].includes(profile.verificationStatus ?? "") && !!profile.communityVerifiedAt
+      : profile?.verificationStatus === "verified");
 
   return (
-    <AuthContext.Provider value={{ user, profile, pendingProfile, loading, isVerified, signUp, signIn, signInWithGoogle, signInWithFacebook, signInWithApple, completeProfile, forgotPassword, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, pendingProfile, loading, isVerified, signUp, signIn, signInWithGoogle, signInWithFacebook, signInWithApple, completeProfile, resendEmailVerification, forgotPassword, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

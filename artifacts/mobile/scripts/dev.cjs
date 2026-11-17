@@ -22,11 +22,14 @@ if (env.REPL_ID) env.EXPO_PUBLIC_REPL_ID ??= env.REPL_ID;
 
 const isReplit = Boolean(env.REPLIT_DEV_DOMAIN || env.REPLIT_INTERNAL_APP_DOMAIN);
 const port = env.EXPO_PORT ?? (isReplit ? env.PORT : undefined) ?? "8081";
-const hostMode = isReplit ? "--localhost" : "--lan";
+const host = env.EXPO_DEV_HOST ?? "lan";
+if (!["localhost", "lan", "tunnel"].includes(host)) {
+  throw new Error("EXPO_DEV_HOST must be localhost, lan, or tunnel.");
+}
 const expoCli = require.resolve("expo/bin/cli", { paths: [projectDir] });
 const child = spawn(
   process.execPath,
-  [expoCli, "start", hostMode, "--port", port],
+  [expoCli, "start", `--${host}`, "--port", port],
   { cwd: projectDir, env, stdio: "inherit" },
 );
 

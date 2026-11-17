@@ -1,236 +1,1338 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api, getApiOrigin } from "@/lib/api";
+import type { StudyMaterial } from "@/lib/api";
 
-const SUBJECTS = ["Physics", "Chemistry", "Maths", "English", "Biology", "History", "Geography", "Computer Science"];
-const CLASSES  = ["Class 6 A", "Class 6 B", "Class 7 A", "Class 7 B", "Class 8 A", "Class 8 B", "Class 9 A", "Class 9 B", "Class 10 A", "Class 10 B", "Class 11 Sci A", "Class 11 Sci B", "Class 11 Com A", "Class 12 Sci A", "Class 12 Sci B", "Class 12 Com A"];
-const TYPES    = ["PDF", "Notes", "PYQ", "Slides", "Link", "Assignment"];
-
-const TYPE_COLOR: Record<string, string> = {
-  PDF: "#EF4444", Notes: "#3D5AF1", PYQ: "#8B5CF6",
-  Slides: "#F59E0B", Link: "#10B981", Assignment: "#EC4899",
-};
-
-const INITIAL_UPLOADS = [
-  { id: "1", title: "Electromagnetic Waves — Chapter Notes", subject: "Physics",   class: "Class 11 Sci A", type: "PDF",   date: "Today",     pinned: true  },
-  { id: "2", title: "Organic Chemistry — Hydrocarbons",      subject: "Chemistry", class: "Class 12 Sci B", type: "PDF",   date: "Yesterday", pinned: false },
-  { id: "3", title: "JEE PYQs — Physics 2020–2024",         subject: "Physics",   class: "Class 12 Sci A", type: "PYQ",   date: "3 days ago",pinned: true  },
-  { id: "4", title: "Trigonometry Identities Slides",         subject: "Maths",    class: "Class 10 A",     type: "Slides",date: "1 week ago", pinned: false },
-  { id: "5", title: "Essay Writing Guide",                   subject: "English",   class: "Class 9 A",      type: "Notes", date: "2 weeks ago",pinned: false },
+const DEFAULT_SUBJECTS = [
+  "Physics",
+  "Chemistry",
+  "Maths",
+  "English",
+  "Biology",
+  "History",
+  "Geography",
+  "Computer Science",
+  "Economics",
+  "Hindi",
+  "Social Science",
 ];
 
+const TYPES = ["PDF", "Notes", "PYQ", "Slides", "Link", "Assignment"];
+
+const TYPE_COLOR: Record<string, string> = {
+  PDF: "#EF4444",
+  Notes: "#3D5AF1",
+  PYQ: "#8B5CF6",
+  Slides: "#F59E0B",
+  Link: "#10B981",
+  Assignment: "#EC4899",
+};
+
+interface SelectedLocalFile {
+  name: string;
+  size: string;
+  sizeBytes: number;
+  type: string;
+  base64: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function inferTypeFromFileName(fileName: string): string {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "pdf":
+      return "PDF";
+    case "ppt":
+    case "pptx":
+      return "Slides";
+    case "doc":
+    case "docx":
+    case "txt":
+      return "Notes";
+    default:
+      return "Notes";
+  }
+}
+
 export default function TeacherUploadScreen() {
-  const insets  = useSafeAreaInsets();
-  const topPad  = Platform.OS === "web" ? 0 : insets.top;
-  const [uploads,    setUploads]    = useState(INITIAL_UPLOADS);
-  const [showModal,  setShowModal]  = useState(false);
-  const [search,     setSearch]     = useState("");
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
+
+  const [uploads, setUploads] = useState<StudyMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
   const [filterSubj, setFilterSubj] = useState("All");
-  const [toast,      setToast]      = useState("");
+  const [toast, setToast] = useState("");
 
-  // New upload form state
-  const [title,    setTitle]    = useState("");
-  const [subject,  setSubject]  = useState("");
-  const [cls,      setCls]      = useState("");
-  const [type,     setType]     = useState("");
-  const [formErr,  setFormErr]  = useState("");
+  // Upload Form Mode: "file" (direct upload) or "link" (external URL)
+  const [uploadMode, setUploadMode] = useState<"file" | "link">("file");
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  // Form Fields
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState("");
+  const [isCustomSubject, setIsCustomSubject] = useState(false);
+  const [customSubjectInput, setCustomSubjectInput] = useState("");
+  const [type, setType] = useState("PDF");
+  const [url, setUrl] = useState("");
+  const [formErr, setFormErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleUpload = () => {
-    if (!title.trim() || !subject || !cls || !type) { setFormErr("Please fill all fields."); return; }
-    setUploads((p) => [{ id: Date.now().toString(), title, subject, class: cls, type, date: "Just now", pinned: false }, ...p]);
-    setTitle(""); setSubject(""); setCls(""); setType(""); setFormErr("");
-    setShowModal(false);
-    showToast("Material uploaded successfully!");
+  // Selected file for upload
+  const [selectedFile, setSelectedFile] = useState<SelectedLocalFile | null>(null);
+  const fileInputRef = useRef<any>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
   };
 
-  const togglePin = (id: string) => {
-    setUploads((p) => p.map((u) => u.id === id ? { ...u, pinned: !u.pinned } : u));
+  const fetchMaterials = async () => {
+    try {
+      setLoadError("");
+      const rows = await api.studyMaterials.list();
+      setUploads(rows.filter((row) => row.authorId));
+    } catch (error: any) {
+      setLoadError(error?.message || "Could not load materials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteUpload = (id: string) => {
-    setUploads((p) => p.filter((u) => u.id !== id));
-    showToast("Material deleted.");
+  useEffect(() => {
+    fetchMaterials();
+  }, []);
+
+  // Compute all available subjects (defaults + existing uploads)
+  const availableSubjects = useMemo(() => {
+    const set = new Set(DEFAULT_SUBJECTS);
+    uploads.forEach((u) => {
+      if (u.subject) set.add(u.subject);
+    });
+    return Array.from(set);
+  }, [uploads]);
+
+  const allFilterSubjects = ["All", ...availableSubjects];
+
+  // Open file in browser / app
+  const openMaterial = async (materialUrl?: string) => {
+    if (!materialUrl) return;
+    try {
+      const fullUrl = materialUrl.startsWith("/") ? `${getApiOrigin()}${materialUrl}` : materialUrl;
+      if (Platform.OS === "web") {
+        window.open(fullUrl, "_blank");
+      } else {
+        await Linking.openURL(fullUrl);
+      }
+    } catch {
+      showToast("Could not open this material.");
+    }
+  };
+
+  // Handle picking a local file on web/mobile
+  const handlePickFile = () => {
+    if (Platform.OS === "web") {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    } else {
+      showToast("File selection opened.");
+    }
+  };
+
+  const handleWebFileChange = (event: any) => {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      setFormErr("File exceeds 50MB maximum limit. Please choose a smaller file.");
+      return;
+    }
+
+    setFormErr("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const formattedSize = formatBytes(file.size);
+      const inferred = inferTypeFromFileName(file.name);
+
+      setSelectedFile({
+        name: file.name,
+        size: formattedSize,
+        sizeBytes: file.size,
+        type: file.type || "application/octet-stream",
+        base64,
+      });
+
+      // Auto-set title if empty
+      if (!title.trim()) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        setTitle(nameWithoutExt);
+      }
+
+      // Auto-set type
+      setType(inferred);
+    };
+    reader.onerror = () => {
+      setFormErr("Failed to read the selected file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadSubmit = async () => {
+    const finalSubject = (isCustomSubject ? customSubjectInput : subject).trim();
+
+    if (!title.trim()) {
+      setFormErr("Please enter a title for this material.");
+      return;
+    }
+    if (!finalSubject) {
+      setFormErr("Please select or enter a subject.");
+      return;
+    }
+
+    let finalUrl = url.trim();
+    let finalSize: string | undefined = undefined;
+
+    // Validate based on mode
+    if (uploadMode === "file") {
+      if (!selectedFile) {
+        setFormErr("Please select a file to upload from your device, or switch to 'Web Link' mode.");
+        return;
+      }
+    } else {
+      if (!finalUrl || !/^(https?:\/\/)/i.test(finalUrl)) {
+        setFormErr("Please provide a valid https:// or http:// web link.");
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    setFormErr("");
+
+    try {
+      // 1. If direct file mode, upload the file first
+      if (uploadMode === "file" && selectedFile) {
+        const uploadRes = await api.studyMaterials.uploadFile({
+          fileName: selectedFile.name,
+          contentType: selectedFile.type,
+          base64Data: selectedFile.base64,
+        });
+        finalUrl = uploadRes.url;
+        finalSize = uploadRes.size;
+      }
+
+      // 2. Publish the study material record
+      const row = await api.studyMaterials.create({
+        title: title.trim(),
+        subject: finalSubject,
+        type: type || "Notes",
+        url: finalUrl,
+        size: finalSize,
+      });
+
+      setUploads((prev) => [row, ...prev]);
+
+      // Reset Form
+      setTitle("");
+      setSubject("");
+      setIsCustomSubject(false);
+      setCustomSubjectInput("");
+      setType("PDF");
+      setUrl("");
+      setSelectedFile(null);
+      setShowModal(false);
+      showToast(uploadMode === "file" ? "File uploaded & published for students!" : "Material link published!");
+    } catch (error: any) {
+      setFormErr(error?.message || "Failed to publish study material. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const filtered = uploads
-    .filter((u) => (filterSubj === "All" || u.subject === filterSubj) && (!search || u.title.toLowerCase().includes(search.toLowerCase())))
-    .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-
-  const allSubjects = ["All", ...SUBJECTS];
+    .filter(
+      (u) =>
+        (filterSubj === "All" || u.subject.toLowerCase() === filterSubj.toLowerCase()) &&
+        (!search || u.title.toLowerCase().includes(search.toLowerCase()) || u.subject.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
+      {/* Hidden Web File Input for Direct Uploads */}
+      {Platform.OS === "web" ? (
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.zip"
+          onChange={handleWebFileChange}
+        />
+      ) : null}
+
+      {/* Screen Header */}
+      <View style={[styles.header, { paddingTop: topPad + 10 }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Notes / Materials</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
-          <Ionicons name="add" size={20} color="#fff" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Study Materials & Notes</Text>
+          <Text style={styles.headerSub}>Publish and manage academic notes accessible to JNV students</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => {
+            setFormErr("");
+            setShowModal(true);
+          }}
+          accessibilityLabel="Upload New Material"
+        >
+          <Ionicons name="add" size={20} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>Upload Notes</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Search Bar */}
       <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-        <TextInput style={styles.searchInput} placeholder="Search materials…" placeholderTextColor="#9CA3AF" value={search} onChangeText={setSearch} />
+        <Ionicons name="search" size={17} color="#94A3B8" style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search published materials by title or subject…"
+          placeholderTextColor="#94A3B8"
+          value={search}
+          onChangeText={setSearch}
+        />
+        {search ? (
+          <TouchableOpacity onPress={() => setSearch("")}>
+            <Ionicons name="close-circle" size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
-        {allSubjects.map((s) => (
-          <TouchableOpacity key={s} style={[styles.chip, filterSubj === s && styles.chipActive]} onPress={() => setFilterSubj(s)}>
+      {/* Subject Filter Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+        style={{ flexGrow: 0 }}
+      >
+        {allFilterSubjects.map((s) => (
+          <TouchableOpacity
+            key={s}
+            style={[styles.chip, filterSubj === s && styles.chipActive]}
+            onPress={() => setFilterSubj(s)}
+          >
             <Text style={[styles.chipText, filterSubj === s && styles.chipTextActive]}>{s}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}>
-        <Text style={styles.resultCount}>{filtered.length} materials · {uploads.filter((u) => u.pinned).length} pinned</Text>
+      {/* Materials List */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 + insets.bottom }}
+      >
+        <Text style={styles.resultCount}>
+          {loading ? "Loading published materials…" : `${filtered.length} Published Study Materials`}
+        </Text>
 
-        {filtered.map((u) => (
-          <View key={u.id} style={[styles.card, u.pinned && styles.cardPinned]}>
-            <View style={styles.cardLeft}>
-              <View style={[styles.typeIcon, { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" }]}>
-                <Ionicons name="document-text-outline" size={20} color={TYPE_COLOR[u.type] || "#3D5AF1"} />
-              </View>
-            </View>
-            <View style={{ flex: 1 }}>
-              {u.pinned && <View style={styles.pinnedBadge}><Ionicons name="pin" size={10} color="#3D5AF1" /><Text style={styles.pinnedText}>Pinned</Text></View>}
-              <Text style={styles.cardTitle} numberOfLines={2}>{u.title}</Text>
-              <Text style={styles.cardMeta}>{u.subject} · {u.class}</Text>
-              <View style={styles.cardFooter}>
-                <View style={[styles.typePill, { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" }]}>
-                  <Text style={[styles.typePillText, { color: TYPE_COLOR[u.type] || "#3D5AF1" }]}>{u.type}</Text>
-                </View>
-                <Text style={styles.cardDate}>{u.date}</Text>
-              </View>
-            </View>
-            <View style={styles.cardActions}>
-              <TouchableOpacity onPress={() => togglePin(u.id)} style={styles.actionBtn}>
-                <Ionicons name={u.pinned ? "pin" : "pin-outline"} size={18} color={u.pinned ? "#3D5AF1" : "#9CA3AF"} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => deleteUpload(u.id)} style={styles.actionBtn}>
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
-              </TouchableOpacity>
-            </View>
+        {loadError ? (
+          <TouchableOpacity onPress={fetchMaterials} style={styles.errorAlert}>
+            <Ionicons name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errText}>{loadError} Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {!loading && !loadError && filtered.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="cloud-upload-outline" size={44} color="#94A3B8" />
+            <Text style={styles.emptyCardTitle}>No Study Materials Published Yet</Text>
+            <Text style={styles.emptyCardSub}>
+              Tap the "+ Upload Notes" button at the top to publish your first document or resource link.
+            </Text>
           </View>
-        ))}
+        ) : null}
+
+        {filtered.map((u) => {
+          const isDirectFile = u.url?.includes("/api/study-materials/files/");
+          return (
+            <TouchableOpacity
+              key={u.id}
+              style={styles.card}
+              onPress={() => openMaterial(u.url)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.typeIcon,
+                  { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    u.type === "PDF"
+                      ? "document-text"
+                      : u.type === "Slides"
+                      ? "easel"
+                      : u.type === "Link"
+                      ? "link"
+                      : "book"
+                  }
+                  size={20}
+                  color={TYPE_COLOR[u.type] || "#3D5AF1"}
+                />
+              </View>
+
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={styles.cardTitle} numberOfLines={2}>
+                  {u.title}
+                </Text>
+
+                <View style={styles.cardMetaRow}>
+                  <View style={styles.subjectTag}>
+                    <Text style={styles.subjectTagText}>{u.subject}</Text>
+                  </View>
+                  <Text style={styles.cardMeta}>· {u.targetClass || "Whole School"}</Text>
+                  {u.size ? (
+                    <View style={styles.fileSizeBadge}>
+                      <Ionicons name="document-outline" size={11} color="#64748B" />
+                      <Text style={styles.fileSizeText}>{u.size}</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <View style={styles.cardFooter}>
+                  <View
+                    style={[
+                      styles.typePill,
+                      { backgroundColor: (TYPE_COLOR[u.type] || "#3D5AF1") + "18" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.typePillText,
+                        { color: TYPE_COLOR[u.type] || "#3D5AF1" },
+                      ]}
+                    >
+                      {u.type}
+                    </Text>
+                  </View>
+
+                  {isDirectFile ? (
+                    <View style={styles.directFileTag}>
+                      <Ionicons name="cloud-done-outline" size={12} color="#059669" />
+                      <Text style={styles.directFileText}>Direct File</Text>
+                    </View>
+                  ) : null}
+
+                  <Text style={styles.cardDate}>{new Date(u.createdAt).toLocaleDateString()}</Text>
+                </View>
+              </View>
+
+              <View style={styles.openPill}>
+                <Text style={styles.openPillText}>Open</Text>
+                <Ionicons name="open-outline" size={14} color="#3D5AF1" />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
-      {/* Upload Modal */}
+      {/* UPLOAD / PUBLISH MODAL */}
       <Modal visible={showModal} animationType="slide" presentationStyle="formSheet">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Upload New Material</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
+              <View>
+                <Text style={styles.modalTitle}>Publish Study Materials & Notes</Text>
+                <Text style={styles.modalSubtitle}>
+                  Make learning resources directly downloadable or link external guides
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowModal(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
             </View>
+
             <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-              <Text style={styles.fieldLabel}>Title *</Text>
-              <TextInput style={styles.input} placeholder="e.g. Chapter 5 – Electromagnetic Waves" placeholderTextColor="#9CA3AF" value={title} onChangeText={setTitle} />
-
-              <Text style={styles.fieldLabel}>Subject *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {SUBJECTS.map((s) => (
-                  <TouchableOpacity key={s} style={[styles.pill, subject === s && styles.pillActive]} onPress={() => setSubject(s)}>
-                    <Text style={[styles.pillText, subject === s && styles.pillTextActive]}>{s}</Text>
+              {/* PUBLISH METHOD SELECTOR: Direct Upload vs Web Link */}
+              <View style={styles.modeSelectorCard}>
+                <Text style={styles.sectionHeading}>HOW WOULD YOU LIKE TO SHARE?</Text>
+                <View style={styles.modeTabs}>
+                  <TouchableOpacity
+                    onPress={() => setUploadMode("file")}
+                    style={[styles.modeTab, uploadMode === "file" && styles.modeTabActive]}
+                  >
+                    <Ionicons
+                      name="cloud-upload"
+                      size={18}
+                      color={uploadMode === "file" ? "#3D5AF1" : "#64748B"}
+                    />
+                    <View>
+                      <Text
+                        style={[
+                          styles.modeTabTitle,
+                          uploadMode === "file" && styles.modeTabTitleActive,
+                        ]}
+                      >
+                        Upload File Directly
+                      </Text>
+                      <Text style={styles.modeTabSub}>PDF, Word, PPT, Notes file</Text>
+                    </View>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
 
-              <Text style={styles.fieldLabel}>Target Class *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {CLASSES.slice(0, 8).map((c) => (
-                  <TouchableOpacity key={c} style={[styles.pill, cls === c && styles.pillActive]} onPress={() => setCls(c)}>
-                    <Text style={[styles.pillText, cls === c && styles.pillTextActive]}>{c}</Text>
+                  <TouchableOpacity
+                    onPress={() => setUploadMode("link")}
+                    style={[styles.modeTab, uploadMode === "link" && styles.modeTabActive]}
+                  >
+                    <Ionicons
+                      name="link"
+                      size={18}
+                      color={uploadMode === "link" ? "#3D5AF1" : "#64748B"}
+                    />
+                    <View>
+                      <Text
+                        style={[
+                          styles.modeTabTitle,
+                          uploadMode === "link" && styles.modeTabTitleActive,
+                        ]}
+                      >
+                        Provide Web Link
+                      </Text>
+                      <Text style={styles.modeTabSub}>Google Drive, Dropbox, URL</Text>
+                    </View>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.fieldLabel}>Material Type *</Text>
-              <View style={styles.typeGrid}>
-                {TYPES.map((t) => (
-                  <TouchableOpacity key={t} style={[styles.typeCard, type === t && { borderColor: TYPE_COLOR[t], backgroundColor: TYPE_COLOR[t] + "10" }]} onPress={() => setType(t)}>
-                    <Text style={[styles.typeCardText, type === t && { color: TYPE_COLOR[t] }]}>{t}</Text>
-                  </TouchableOpacity>
-                ))}
+                </View>
               </View>
 
-              <TouchableOpacity style={styles.uploadBox}>
-                <Ionicons name="cloud-upload-outline" size={28} color="#3D5AF1" />
-                <Text style={styles.uploadBoxText}>Tap to attach file</Text>
-                <Text style={styles.uploadBoxHint}>PDF, PPT, DOC, Image</Text>
-              </TouchableOpacity>
+              {/* Title Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.fieldLabel}>Material Title *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Chapter 5 – Electromagnetic Waves Formula Sheet"
+                  placeholderTextColor="#94A3B8"
+                  value={title}
+                  onChangeText={setTitle}
+                  maxLength={180}
+                />
+              </View>
 
-              {formErr ? <Text style={styles.errText}>{formErr}</Text> : null}
+              {/* SUBJECT SELECTOR (Select Existing OR Create Custom) */}
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.fieldLabel}>Subject *</Text>
+                  {isCustomSubject ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setIsCustomSubject(false);
+                        setCustomSubjectInput("");
+                      }}
+                      style={styles.switchSubjectLink}
+                    >
+                      <Text style={styles.switchSubjectText}>← Choose from predefined subjects</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
 
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleUpload}>
-                <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Upload Material</Text>
+                {!isCustomSubject ? (
+                  <>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingBottom: 6 }}
+                    >
+                      {availableSubjects.map((s) => (
+                        <TouchableOpacity
+                          key={s}
+                          style={[styles.pill, subject === s && styles.pillActive]}
+                          onPress={() => setSubject(s)}
+                        >
+                          <Text style={[styles.pillText, subject === s && styles.pillTextActive]}>
+                            {s}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+
+                      {/* "+ New Subject" Pill */}
+                      <TouchableOpacity
+                        style={[styles.pill, styles.pillCustom]}
+                        onPress={() => {
+                          setIsCustomSubject(true);
+                          setSubject("");
+                        }}
+                      >
+                        <Ionicons name="add-circle-outline" size={15} color="#3D5AF1" />
+                        <Text style={styles.pillCustomText}>+ Add New Subject</Text>
+                      </TouchableOpacity>
+                    </ScrollView>
+                  </>
+                ) : (
+                  <View style={styles.customSubjectBox}>
+                    <Ionicons name="create-outline" size={17} color="#3D5AF1" />
+                    <TextInput
+                      style={styles.customSubjectInput}
+                      placeholder="Type custom subject name (e.g. Sanskrit, Accountancy, Arts...)"
+                      placeholderTextColor="#94A3B8"
+                      value={customSubjectInput}
+                      onChangeText={setCustomSubjectInput}
+                      maxLength={80}
+                      autoFocus
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* DIRECT FILE UPLOAD ZONE (When in "file" mode) */}
+              {uploadMode === "file" && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.fieldLabel}>Select File from Device *</Text>
+                  {selectedFile ? (
+                    <View style={styles.selectedFileBox}>
+                      <View style={styles.fileIconBadge}>
+                        <Ionicons name="document-text" size={24} color="#3D5AF1" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.selectedFileName} numberOfLines={1}>
+                          {selectedFile.name}
+                        </Text>
+                        <Text style={styles.selectedFileSize}>
+                          {selectedFile.size} · Direct upload ready
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={handlePickFile}
+                        style={styles.changeFileBtn}
+                      >
+                        <Text style={styles.changeFileText}>Change</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setSelectedFile(null)}
+                        style={styles.removeFileBtn}
+                      >
+                        <Ionicons name="trash-outline" size={17} color="#DC2626" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.dropZone}
+                      onPress={handlePickFile}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropZoneIcon}>
+                        <Ionicons name="cloud-upload" size={28} color="#3D5AF1" />
+                      </View>
+                      <Text style={styles.dropZoneTitle}>Click to Choose Notes File</Text>
+                      <Text style={styles.dropZoneSub}>
+                        Supports PDF, Word (.docx), PowerPoint (.pptx), Text, and Images (up to 50MB)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* SECURE URL INPUT (When in "link" mode) */}
+              {uploadMode === "link" && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.fieldLabel}>Resource Web Link *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="https://drive.google.com/... or web URL"
+                    placeholderTextColor="#94A3B8"
+                    value={url}
+                    onChangeText={setUrl}
+                    autoCapitalize="none"
+                    keyboardType="url"
+                  />
+                  <Text style={styles.uploadBoxHint}>
+                    Paste a shared public or institutional link from Google Drive, Dropbox, or school portal.
+                  </Text>
+                </View>
+              )}
+
+              {/* Material Type Selection */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.fieldLabel}>Material Classification *</Text>
+                <View style={styles.typeGrid}>
+                  {TYPES.map((t) => {
+                    const active = type === t;
+                    return (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          styles.typeCard,
+                          active && {
+                            borderColor: TYPE_COLOR[t] || "#3D5AF1",
+                            backgroundColor: (TYPE_COLOR[t] || "#3D5AF1") + "14",
+                          },
+                        ]}
+                        onPress={() => setType(t)}
+                      >
+                        <Ionicons
+                          name={
+                            t === "PDF"
+                              ? "document-text"
+                              : t === "Slides"
+                              ? "easel"
+                              : t === "Link"
+                              ? "link"
+                              : "book"
+                          }
+                          size={15}
+                          color={active ? TYPE_COLOR[t] || "#3D5AF1" : "#64748B"}
+                        />
+                        <Text
+                          style={[
+                            styles.typeCardText,
+                            active && { color: TYPE_COLOR[t] || "#3D5AF1", fontWeight: "700" },
+                          ]}
+                        >
+                          {t}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Form Error Banner */}
+              {formErr ? (
+                <View style={styles.errorAlert}>
+                  <Ionicons name="alert-circle" size={17} color="#DC2626" />
+                  <Text style={styles.errText}>{formErr}</Text>
+                </View>
+              ) : null}
+
+              {/* Submit Confirmation Button */}
+              <TouchableOpacity
+                style={[styles.confirmBtn, submitting && { opacity: 0.65 }]}
+                onPress={handleUploadSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={styles.confirmBtnText}>Uploading & Publishing…</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons
+                      name={uploadMode === "file" ? "cloud-upload" : "checkmark-circle"}
+                      size={19}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.confirmBtnText}>
+                      {uploadMode === "file" ? "Upload & Publish Notes" : "Publish Material Link"}
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {toast ? <View style={styles.toast} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
+      {/* Toast Notification */}
+      {toast ? (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
-  searchWrap: { flexDirection: "row", alignItems: "center", margin: 14, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
-  chips: { paddingHorizontal: 14, gap: 8, paddingBottom: 12 },
-  chip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
-  chipActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
-  chipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  chipTextActive: { color: "#fff" },
-  resultCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 12, marginTop: 4 },
-  card: { flexDirection: "row", gap: 12, backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "#F0F0F0" },
-  cardPinned: { borderColor: "#C7D2FE", borderWidth: 1.5 },
-  cardLeft: {},
-  typeIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  pinnedBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
-  pinnedText: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3, lineHeight: 20 },
-  cardMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 6 },
-  cardFooter: { flexDirection: "row", alignItems: "center", gap: 8 },
-  typePill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  typePillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  cardDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginLeft: "auto" },
-  cardActions: { justifyContent: "space-between" },
-  actionBtn: { padding: 4 },
-  modal: { flex: 1, backgroundColor: "#fff" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
-  modalBody: { padding: 20 },
-  fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10, marginTop: 8 },
-  input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
-  pill: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" },
-  pillActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
-  pillText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  pillTextActive: { color: "#fff" },
-  typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  typeCard: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB", backgroundColor: "#fff" },
-  typeCardText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
-  uploadBox: { borderWidth: 2, borderColor: "#C7D2FE", borderStyle: "dashed", borderRadius: 14, padding: 20, alignItems: "center", gap: 6, marginBottom: 20, backgroundColor: "#FAFBFF" },
-  uploadBoxText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
-  uploadBoxHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  errText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 12 },
-  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3D5AF1", borderRadius: 14, paddingVertical: 15 },
-  confirmBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
-  toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
-  toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#0F172A",
+  },
+  headerSub: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#64748B",
+    marginTop: 1,
+  },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 8,
+    backgroundColor: "#3D5AF1",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  addBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#0F172A",
+    outlineStyle: "none" as any,
+  },
+  chips: {
+    paddingHorizontal: 16,
+    gap: 8,
+    paddingBottom: 12,
+  },
+  chip: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  chipActive: {
+    backgroundColor: "#3D5AF1",
+    borderColor: "#3D5AF1",
+  },
+  chipText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#475569",
+  },
+  chipTextActive: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+  },
+  resultCount: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#64748B",
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  typeIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#0F172A",
+    lineHeight: 18,
+  },
+  cardMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: 2,
+  },
+  subjectTag: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  subjectTagText: {
+    color: "#3D5AF1",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+  fileSizeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  fileSizeText: {
+    color: "#475569",
+    fontSize: 10,
+    fontFamily: "Inter_500Medium",
+  },
+  cardMeta: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#64748B",
+  },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 3,
+  },
+  typePill: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  typePillText: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+  },
+  directFileTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  directFileText: {
+    color: "#059669",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+  cardDate: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    color: "#94A3B8",
+    marginLeft: "auto",
+  },
+  openPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  openPillText: {
+    color: "#3D5AF1",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Empty State Card */
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 36,
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+  },
+  emptyCardTitle: {
+    color: "#0F172A",
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+  },
+  emptyCardSub: {
+    color: "#64748B",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    maxWidth: 320,
+  },
+
+  /* Modal */
+  modal: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    padding: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#0F172A",
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#64748B",
+    marginTop: 2,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 18,
+    gap: 16,
+    maxWidth: 700,
+    width: "100%",
+    alignSelf: "center",
+  },
+
+  /* Mode Selector */
+  modeSelectorCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 12,
+    gap: 8,
+  },
+  sectionHeading: {
+    color: "#94A3B8",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+  },
+  modeTabs: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  modeTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 8,
+    padding: 10,
+  },
+  modeTabActive: {
+    borderColor: "#3D5AF1",
+    backgroundColor: "#EEF2FF",
+  },
+  modeTabTitle: {
+    color: "#334155",
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+  },
+  modeTabTitleActive: {
+    color: "#1E40AF",
+  },
+  modeTabSub: {
+    color: "#64748B",
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+
+  /* Form Elements */
+  inputGroup: {
+    gap: 6,
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "#334155",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 42,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#0F172A",
+    backgroundColor: "#FFFFFF",
+    outlineStyle: "none" as any,
+  },
+  switchSubjectLink: {
+    padding: 2,
+  },
+  switchSubjectText: {
+    color: "#3D5AF1",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+  pill: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  pillActive: {
+    backgroundColor: "#3D5AF1",
+    borderColor: "#3D5AF1",
+  },
+  pillText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#334155",
+  },
+  pillTextActive: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+  },
+  pillCustom: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EEF2FF",
+    borderColor: "#C7D2FE",
+  },
+  pillCustomText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#3D5AF1",
+  },
+  customSubjectBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#3D5AF1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 42,
+    backgroundColor: "#FFFFFF",
+  },
+  customSubjectInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#0F172A",
+    outlineStyle: "none" as any,
+  },
+
+  /* Drop Zone */
+  dropZone: {
+    borderWidth: 2,
+    borderColor: "#C7D2FE",
+    borderStyle: "dashed",
+    borderRadius: 10,
+    padding: 22,
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F8FAFC",
+  },
+  dropZoneIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dropZoneTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#3D5AF1",
+  },
+  dropZoneSub: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#64748B",
+    textAlign: "center",
+  },
+
+  /* Selected File */
+  selectedFileBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+    borderRadius: 8,
+    padding: 10,
+  },
+  fileIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedFileName: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "#1E40AF",
+  },
+  selectedFileSize: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    color: "#475569",
+    marginTop: 1,
+  },
+  changeFileBtn: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  changeFileText: {
+    color: "#334155",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+  removeFileBtn: {
+    padding: 4,
+  },
+
+  /* Type Cards Grid */
+  typeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  typeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  typeCardText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#475569",
+  },
+  uploadBoxHint: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#94A3B8",
+    marginTop: 2,
+  },
+
+  /* Buttons & Errors */
+  errorAlert: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    padding: 10,
+    borderRadius: 8,
+  },
+  errText: {
+    flex: 1,
+    color: "#DC2626",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+  },
+  confirmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3D5AF1",
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  confirmBtnText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  toast: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: "#0F172A",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  toastText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+  },
 });

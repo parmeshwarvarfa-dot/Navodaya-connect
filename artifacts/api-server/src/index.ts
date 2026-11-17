@@ -1,3 +1,27 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const envPaths = [
+  path.resolve(currentDir, "../../../.env"),
+  path.resolve(currentDir, "../../.env"),
+  path.resolve(currentDir, "../.env"),
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(process.cwd(), "../../.env"),
+];
+
+for (const envPath of envPaths) {
+  if (existsSync(envPath) && typeof process.loadEnvFile === "function") {
+    try {
+      process.loadEnvFile(envPath);
+      break;
+    } catch {
+      // ignore
+    }
+  }
+}
+
 import app from "./app";
 import { logger } from "./lib/logger";
 

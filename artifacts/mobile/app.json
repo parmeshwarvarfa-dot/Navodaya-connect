@@ -31,8 +31,30 @@
         }
       ],
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Navodaya Connect to access photos you choose to share.",
+          "cameraPermission": "Allow Navodaya Connect to take photos you choose to share."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Navodaya Connect to scan Digital ID QR codes."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Navodaya Connect to save your Digital ID QR code.",
+          "savePhotosPermission": "Allow Navodaya Connect to save your Digital ID QR code.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "expo-web-browser",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "@maplibre/maplibre-react-native"
     ],
     "experiments": {
       "typedRoutes": true,

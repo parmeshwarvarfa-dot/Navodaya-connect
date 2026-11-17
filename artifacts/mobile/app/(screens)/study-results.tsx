@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import AcademicFeatureUnavailable from "@/components/AcademicFeatureUnavailable";
 
 const EXAMS = [
   {
@@ -43,6 +44,7 @@ function ScoreBar({ marks, total, color }: { marks: number; total: number; color
 }
 
 export default function StudyResultsScreen() {
+  return <AcademicFeatureUnavailable title="Results & Performance" message="Your school has no results connected through the app yet. Sample marks and class rankings are hidden." />;
   const insets   = useSafeAreaInsets();
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeExam, setActiveExam] = useState("1");

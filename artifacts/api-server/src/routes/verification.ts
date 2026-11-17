@@ -1,6 +1,5 @@
-import { randomBytes } from "node:crypto";
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import {
   alumniTransitionBatchesTable,
   alumniTransitionResultsTable,
@@ -13,11 +12,13 @@ import {
   verificationRequestsTable,
 } from "@workspace/db";
 import { getUser, requireAuth } from "../lib/auth";
+import { issueDigitalCredential } from "../lib/digital-credential";
+import { getPublicAppUrl } from "../lib/public-app-url";
 import { makeJnvId } from "../lib/jnv-identity";
 
 const router = Router();
 const ACTIVE_REQUEST_STATUSES = ["pending", "info_requested", "recommended_approval", "recommended_rejection", "awaiting_official_decision"];
-const REQUEST_ROLES = new Set(["student", "alumni", "teacher", "official"]);
+const REQUEST_ROLES = new Set(["student", "teacher", "official"]);
 type AssignmentRole = "admin" | "official";
 const publicLookups = new Map<string, number[]>();
 const GRADUATION_CONFIRMATION = "I confirm that I reviewed the selected students and verified their graduation eligibility for this JNV batch.";
@@ -30,29 +31,11 @@ function isYear(value: unknown): value is string {
   return typeof value === "string" && /^(19|20|21)\d{2}$/.test(value);
 }
 
-async function issueCredential(tx: any, user: typeof usersTable.$inferSelect, jnvId: string, issuedBy: string, role: string) {
-  const prefix: Record<string, string> = { student: "STU", alumni: "ALU", teacher: "TCH", official: "OFC" };
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const [created] = await tx.insert(digitalCredentialsTable).values({
-      userId: user.id,
-      credentialId: `NC-${prefix[role] ?? "MEM"}-${randomBytes(5).toString("hex").toUpperCase()}`,
-      publicToken: randomBytes(32).toString("base64url"),
-      role,
-      jnvId,
-      jnvName: user.jnvName,
-      jnvState: user.jnvState,
-      issuedBy,
-    }).onConflictDoNothing().returning();
-    if (created) return { credential: created, created: true };
-    const [active] = await tx.select().from(digitalCredentialsTable).where(and(
-      eq(digitalCredentialsTable.userId, user.id), eq(digitalCredentialsTable.status, "active"),
-    )).limit(1);
-    if (active) return { credential: active, created: false };
-  }
-  throw new Error("Could not issue a unique Navodaya ID");
-}
-
 async function hasAssignment(userId: string, jnvId: string, assignmentRole: AssignmentRole) {
+  if (assignmentRole === "official") {
+    const [identity] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (identity?.role !== "official") return false;
+  }
   const [assignment] = await db.select({ id: verificationAssignmentsTable.id })
     .from(verificationAssignmentsTable)
     .where(and(
@@ -64,17 +47,18 @@ async function hasAssignment(userId: string, jnvId: string, assignmentRole: Assi
   return Boolean(assignment);
 }
 
-function safeRequest(request: typeof verificationRequestsTable.$inferSelect) {
-  // Evidence references are returned only to the applicant and authorized school reviewers.
-  return request;
+function safeRequest(request: typeof verificationRequestsTable.$inferSelect, includeReviewerLinks = false) {
+  // Preserve links for same-JNV assigned reviewers only; applicants and other
+  // consumers never receive document URLs from status/profile responses.
+  if (includeReviewerLinks) return request;
+  const { documentUrls: _documentUrls, ...safe } = request;
+  return safe;
 }
 
 function hasEvidence(request: typeof verificationRequestsTable.$inferSelect) {
-  if (!request.evidenceSummary || request.evidenceSummary.trim().length < 20) return false;
-  try {
-    const urls: unknown = request.documentUrls ? JSON.parse(request.documentUrls) : [];
-    return Array.isArray(urls) && urls.some((url) => typeof url === "string" && /^https:\/\//i.test(url));
-  } catch { return false; }
+  // Only the applicant's description is stored here. Public document URLs are
+  // not accepted as evidence because the server cannot enforce their privacy.
+  return Boolean(request.evidenceSummary && request.evidenceSummary.trim().length >= 20);
 }
 
 async function notify(recipientId: string, actorId: string, type: string, requestId: string, message: string) {
@@ -88,10 +72,11 @@ router.get("/verification/requests", requireAuth, async (req, res) => {
     const isOfficial = await hasAssignment(actor.id, jnvId, "official");
     const isAdmin = await hasAssignment(actor.id, jnvId, "admin");
     if (!isOfficial && !isAdmin) return res.status(403).json({ error: "Assigned school verification staff only" });
-    const requests = await db.select().from(verificationRequestsTable)
-      .where(and(eq(verificationRequestsTable.jnvName, actor.jnvName), eq(verificationRequestsTable.jnvState, actor.jnvState)))
+    const requestRows = await db.select({ request: verificationRequestsTable }).from(verificationRequestsTable)
+      .innerJoin(usersTable, eq(usersTable.id, verificationRequestsTable.userId))
+      .where(and(eq(verificationRequestsTable.jnvName, actor.jnvName), eq(verificationRequestsTable.jnvState, actor.jnvState), ne(verificationRequestsTable.role, "alumni"), ne(usersTable.role, "alumni")))
       .orderBy(desc(verificationRequestsTable.createdAt));
-    return res.json(requests.map(safeRequest));
+    return res.json(requestRows.map(({ request }) => safeRequest(request, true)));
   } catch (error) {
     req.log.error(error, "Failed to fetch verification requests");
     return res.status(500).json({ error: "Failed to fetch verification requests" });
@@ -242,21 +227,13 @@ router.post("/verification/alumni-batches/:id/process", requireAuth, async (req,
                 if (activeCredential && activeCredential.role !== "alumni") {
                   await tx.update(digitalCredentialsTable).set({ status: "superseded", updatedAt: new Date() }).where(eq(digitalCredentialsTable.id, activeCredential.id));
                 }
+                // School confirmation of graduation changes the role only. It is
+                // not alumni community verification and never issues an alumni ID.
+                await tx.update(usersTable).set({ verificationStatus: "unverified", communityVerifiedAt: null }).where(eq(usersTable.id, student.id));
                 const [openRequest] = await tx.select().from(verificationRequestsTable).where(eq(verificationRequestsTable.userId, student.id)).orderBy(desc(verificationRequestsTable.createdAt)).limit(1);
                 if (openRequest && ACTIVE_REQUEST_STATUSES.includes(openRequest.status)) {
-                  await tx.update(verificationRequestsTable).set({ role: "alumni", updatedAt: new Date() }).where(eq(verificationRequestsTable.id, openRequest.id));
-                  await tx.insert(verificationAuditTable).values({ requestId: openRequest.id, actorId: actor.id, subjectUserId: student.id, jnvId: batch.jnvId, action: "batch_role_updated", fromStatus: openRequest.status, toStatus: openRequest.status, reason: `Role updated with JNV-confirmed ${batch.graduationYear} graduation batch` });
-                }
-                if (student.verificationStatus === "verified") {
-                  const [current] = await tx.select().from(digitalCredentialsTable).where(and(
-                    eq(digitalCredentialsTable.userId, student.id), eq(digitalCredentialsTable.status, "active"),
-                  )).limit(1);
-                  if (current?.role === "alumni") credentialId = current.credentialId;
-                  else {
-                    if (current) await tx.update(digitalCredentialsTable).set({ status: "superseded", updatedAt: new Date() }).where(eq(digitalCredentialsTable.id, current.id));
-                    const issued = await issueCredential(tx, transitioned, batch.jnvId, actor.id, "alumni");
-                    credentialId = issued.credential.credentialId;
-                  }
+                  await tx.update(verificationRequestsTable).set({ status: "superseded_peer_only", updatedAt: new Date() }).where(eq(verificationRequestsTable.id, openRequest.id));
+                  await tx.insert(verificationAuditTable).values({ requestId: openRequest.id, actorId: actor.id, subjectUserId: student.id, jnvId: batch.jnvId, action: "student_request_closed_on_alumni_transition", fromStatus: openRequest.status, toStatus: "superseded_peer_only", reason: `Role updated with JNV-confirmed ${batch.graduationYear} graduation batch; alumni verification requires a peer` });
                 }
                 result = "succeeded";
                 reason = `Official confirmed graduation for batch ${batch.graduationYear}`;
@@ -342,7 +319,10 @@ router.get("/verification/my-status", requireAuth, async (req, res) => {
     const [request] = await db.select().from(verificationRequestsTable)
       .where(eq(verificationRequestsTable.userId, actor.id))
       .orderBy(desc(verificationRequestsTable.createdAt)).limit(1);
-    return res.json({ verificationStatus: dbUser?.verificationStatus ?? "unverified", request: request ?? null });
+    const status = dbUser?.role === "alumni" && dbUser.verificationStatus === "verified" && !dbUser.communityVerifiedAt
+      ? "legacy_approval_peer_required"
+      : dbUser?.verificationStatus ?? "unverified";
+    return res.json({ verificationStatus: status, request: request ? safeRequest(request) : null });
   } catch (error) {
     req.log.error(error, "Failed to fetch verification status");
     return res.status(500).json({ error: "Failed to fetch status" });
@@ -352,42 +332,44 @@ router.get("/verification/my-status", requireAuth, async (req, res) => {
 router.post("/verification/requests", requireAuth, async (req, res) => {
   try {
     const actor = getUser(req);
+    if (actor.role === "alumni") return res.status(410).json({ error: "Alumni verification is handled only through same-JNV peer confirmation." });
     if (!REQUEST_ROLES.has(actor.role)) return res.status(403).json({ error: "This account role cannot request verification" });
     const [dbUser] = await db.select().from(usersTable).where(eq(usersTable.id, actor.id)).limit(1);
     if (!dbUser) return res.status(404).json({ error: "User not found" });
     if (dbUser.verificationStatus === "verified") return res.status(409).json({ error: "This account is already verified" });
+    if (["suspended", "revoked"].includes(dbUser.verificationStatus ?? "")) return res.status(403).json({ error: "This account cannot submit a verification request while its status is restricted." });
+    if (!dbUser.jnvName || !dbUser.jnvState || makeJnvId(dbUser.jnvState, dbUser.jnvName) !== dbUser.jnvId) {
+      return res.status(409).json({ error: "Your JNV association must be corrected before requesting verification." });
+    }
     const [existing] = await db.select().from(verificationRequestsTable)
       .where(eq(verificationRequestsTable.userId, actor.id)).orderBy(desc(verificationRequestsTable.createdAt)).limit(1);
-    if (existing && ACTIVE_REQUEST_STATUSES.includes(existing.status)) return res.status(409).json({ error: "An active verification request already exists", request: existing });
+    if (existing && ACTIVE_REQUEST_STATUSES.includes(existing.status)) return res.status(409).json({ error: "An active verification request already exists", request: safeRequest(existing) });
     const evidenceSummary = typeof req.body?.evidenceSummary === "string" ? req.body.evidenceSummary.trim().slice(0, 2000) : "";
     if (evidenceSummary.length < 20) return res.status(400).json({ error: "Describe the role-specific evidence you are submitting (at least 20 characters)" });
-    const documentUrls = req.body?.documentUrls;
-    if (documentUrls !== undefined && (!Array.isArray(documentUrls) || documentUrls.length > 5 || documentUrls.some((url: unknown) => typeof url !== "string" || url.length > 2000 || !/^https:\/\//i.test(url)))) {
-      return res.status(400).json({ error: "Evidence must be up to five HTTPS document links" });
-    }
-    if (!documentUrls?.length) return res.status(400).json({ error: "At least one supporting evidence document is required for this role" });
-    const [request] = await db.insert(verificationRequestsTable).values({
-      userId: actor.id,
-      userFullName: dbUser.fullName,
-      userEmail: dbUser.email,
-      role: dbUser.role,
-      jnvName: dbUser.jnvName,
-      jnvState: dbUser.jnvState,
-      method: "official",
-      status: "pending",
-      evidenceSummary,
-      documentUrls: documentUrls?.length ? JSON.stringify(documentUrls) : null,
-    }).returning();
-    await db.update(usersTable).set({ verificationStatus: "pending" }).where(eq(usersTable.id, actor.id));
-    await db.insert(verificationAuditTable).values({
-      requestId: request.id, actorId: actor.id, subjectUserId: actor.id,
-      jnvId: makeJnvId(dbUser.jnvState, dbUser.jnvName), action: "request_submitted", toStatus: "pending",
+    if (req.body?.documentUrls !== undefined) return res.status(400).json({ error: "Document links are not accepted because their access privacy cannot be verified. Describe the evidence and provide it directly to your JNV official." });
+    const [created] = await db.transaction(async (tx) => {
+      const [row] = await tx.insert(verificationRequestsTable).values({
+        userId: dbUser.id,
+        userFullName: dbUser.fullName,
+        userEmail: dbUser.email,
+        role: dbUser.role,
+        jnvName: dbUser.jnvName,
+        jnvState: dbUser.jnvState,
+        method: "official",
+        status: "pending",
+        evidenceSummary,
+      }).returning();
+      await tx.update(usersTable).set({ verificationStatus: "pending" }).where(eq(usersTable.id, dbUser.id));
+      await tx.insert(verificationAuditTable).values({ requestId: row.id, actorId: dbUser.id, subjectUserId: dbUser.id, jnvId: dbUser.jnvId!, action: "request_submitted", fromStatus: dbUser.verificationStatus ?? "unverified", toStatus: "pending" });
+      await tx.insert(socialNotificationsTable).values({ recipientId: dbUser.id, actorId: dbUser.id, type: "verification_request_submitted", entityId: row.id, message: "Your verification request was submitted to your JNV." });
+      const officials = await tx.select({ userId: verificationAssignmentsTable.userId }).from(verificationAssignmentsTable)
+        .innerJoin(usersTable, eq(usersTable.id, verificationAssignmentsTable.userId)).where(and(
+          eq(verificationAssignmentsTable.jnvId, dbUser.jnvId!), eq(verificationAssignmentsTable.assignmentRole, "official"), eq(verificationAssignmentsTable.active, true), eq(usersTable.role, "official"),
+        ));
+      if (officials.length) await tx.insert(socialNotificationsTable).values(officials.map(({ userId }) => ({ recipientId: userId, actorId: dbUser.id, type: "verification_request_submitted", entityId: row.id, message: `A ${dbUser.role} verification request is ready for review.` })));
+      return [row];
     });
-    const jnvId = makeJnvId(dbUser.jnvState, dbUser.jnvName);
-    const staff = await db.select({ userId: verificationAssignmentsTable.userId }).from(verificationAssignmentsTable)
-      .where(and(eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.active, true)));
-    await Promise.all(staff.filter((item) => item.userId !== actor.id).map((item) => notify(item.userId, actor.id, "verification_submitted", request.id, "A new school verification request needs review.")));
-    return res.status(201).json(request);
+    return res.status(201).json(safeRequest(created));
   } catch (error) {
     if ((error as { code?: string })?.code === "23505") return res.status(409).json({ error: "An active verification request already exists" });
     req.log.error(error, "Failed to create verification request");
@@ -400,9 +382,11 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
     const actor = getUser(req);
     const [existing] = await db.select().from(verificationRequestsTable).where(eq(verificationRequestsTable.id, req.params.id as string)).limit(1);
     if (!existing) return res.status(404).json({ error: "Request not found" });
+    if (existing.role === "alumni" || existing.method === "alumni_peer") return res.status(410).json({ error: "Alumni verification is handled only by same-JNV alumni." });
     if (existing.userId === actor.id) return res.status(403).json({ error: "You cannot review your own request" });
     const [applicant] = await db.select().from(usersTable).where(eq(usersTable.id, existing.userId)).limit(1);
     if (!applicant) return res.status(404).json({ error: "Applicant account not found" });
+    if (applicant.role === "alumni") return res.status(410).json({ error: "Alumni verification is handled only by same-JNV alumni." });
     if (applicant.role !== existing.role || applicant.jnvName !== existing.jnvName || applicant.jnvState !== existing.jnvState) {
       return res.status(409).json({ error: "The applicant's current role or school differs from this request. Refresh the request before deciding." });
     }
@@ -437,7 +421,9 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
       });
       await notify(existing.userId, actor.id, "verification_reviewed", existing.id, status === "info_requested" ? "Your school requested more information for verification." : "Your verification request was reviewed and sent for an official decision.");
       const officials = await db.select({ userId: verificationAssignmentsTable.userId }).from(verificationAssignmentsTable)
-        .where(and(eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.assignmentRole, "official"), eq(verificationAssignmentsTable.active, true)));
+        .innerJoin(usersTable, eq(usersTable.id, verificationAssignmentsTable.userId)).where(and(
+          eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.assignmentRole, "official"), eq(verificationAssignmentsTable.active, true), eq(usersTable.role, "official"),
+        ));
       await Promise.all(officials.map((item) => notify(item.userId, actor.id, "verification_decision_needed", existing.id, "A verification request is awaiting your final decision.")));
       return res.json(updated);
     }
@@ -446,7 +432,7 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
     if (!["approved", "rejected", "info_requested", "pending"].includes(status)) return res.status(400).json({ error: "Invalid official decision" });
     if (status === "rejected" && !reason) return res.status(400).json({ error: "A rejection reason is required" });
     if (status === "approved" && !hasEvidence(existing)) return res.status(409).json({ error: "The applicant must submit role evidence before approval" });
-    if (status === "approved" && existing.status !== "awaiting_official_decision") return res.status(409).json({ error: "A school reviewer must complete a recommendation before final approval" });
+    if (status === "approved" && applicant.role === "official" && existing.status !== "awaiting_official_decision") return res.status(409).json({ error: "An assigned reviewer must complete the official verification recommendation first" });
     if (existing.status === "approved" || existing.status === "rejected" || existing.status === "withdrawn") return res.status(409).json({ error: "This request is already closed" });
 
     let result: { updated: typeof verificationRequestsTable.$inferSelect; credential: typeof digitalCredentialsTable.$inferSelect | null };
@@ -467,21 +453,19 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
       if (!updated) throw Object.assign(new Error("This verification request was already processed"), { code: "VERIFICATION_ALREADY_PROCESSED" });
       let credential = null;
       if (status === "approved") {
-        const [current] = await tx.select().from(digitalCredentialsTable).where(and(
-          eq(digitalCredentialsTable.userId, existing.userId), eq(digitalCredentialsTable.status, "active"),
-        )).limit(1);
-        if (current?.role === applicant.role) credential = current;
-        else {
-          if (current) await tx.update(digitalCredentialsTable).set({ status: "superseded", updatedAt: now }).where(eq(digitalCredentialsTable.id, current.id));
-          const issued = await issueCredential(tx, applicant, jnvId, actor.id, applicant.role);
-          credential = issued.credential;
-        }
+        const issued = await issueDigitalCredential(tx, applicant, jnvId, actor.id, applicant.role);
+        credential = issued.credential;
       }
       await tx.update(usersTable).set({ verificationStatus: status === "approved" ? "verified" : status === "rejected" ? "rejected" : "pending" }).where(eq(usersTable.id, existing.userId));
       await tx.insert(verificationAuditTable).values({ requestId: existing.id, actorId: actor.id, subjectUserId: existing.userId, jnvId, action: `official_${status}`, fromStatus: existing.status, toStatus: status, reason: reason || null });
-      if (status === "approved") {
-        await tx.insert(socialNotificationsTable).values({ recipientId: existing.userId, actorId: actor.id, type: "verification_approved", entityId: existing.id, message: "Your verification was approved and your Navodaya Connect ID is ready." });
-      }
+      const decisionMessage = status === "approved"
+        ? "Your verification was approved and your Navodaya Connect ID is ready."
+        : status === "rejected"
+          ? `Your verification request was rejected: ${reason}`
+          : status === "info_requested"
+            ? `More information is needed: ${requestedInfo || reason}`
+            : "Your verification was returned for further review.";
+      await tx.insert(socialNotificationsTable).values({ recipientId: existing.userId, actorId: actor.id, type: status === "approved" ? "verification_approved" : "verification_decision", entityId: existing.id, message: decisionMessage });
       return { updated, credential };
       });
     } catch (error) {
@@ -493,9 +477,6 @@ router.patch("/verification/requests/:id", requireAuth, async (req, res) => {
         }).catch((auditError) => req.log.error(auditError, "Could not record credential issuance failure"));
       }
       throw error;
-    }
-    if (status !== "approved") {
-      await notify(existing.userId, actor.id, "verification_decision", existing.id, status === "rejected" ? `Your verification request was rejected: ${reason}` : status === "info_requested" ? `More information is needed: ${requestedInfo || reason}` : "Your verification was returned for further review.");
     }
     return res.json({ ...result.updated, credential: result.credential ? { credentialId: result.credential.credentialId, status: result.credential.status } : null });
   } catch (error) {
@@ -510,14 +491,18 @@ router.post("/verification/requests/:id/withdraw", requireAuth, async (req, res)
     const actor = getUser(req);
     const [request] = await db.select().from(verificationRequestsTable).where(and(eq(verificationRequestsTable.id, req.params.id as string), eq(verificationRequestsTable.userId, actor.id))).limit(1);
     if (!request) return res.status(404).json({ error: "Request not found" });
+    if (request.role !== actor.role || request.role === "alumni") return res.status(403).json({ error: "This account cannot withdraw that verification request." });
     if (!ACTIVE_REQUEST_STATUSES.includes(request.status)) return res.status(409).json({ error: "This request cannot be withdrawn" });
     await db.transaction(async (tx) => {
-      await tx.update(verificationRequestsTable).set({ status: "withdrawn", updatedAt: new Date() }).where(eq(verificationRequestsTable.id, request.id));
+      const [withdrawn] = await tx.update(verificationRequestsTable).set({ status: "withdrawn", updatedAt: new Date() })
+        .where(and(eq(verificationRequestsTable.id, request.id), eq(verificationRequestsTable.userId, actor.id), eq(verificationRequestsTable.status, request.status))).returning({ id: verificationRequestsTable.id });
+      if (!withdrawn) throw Object.assign(new Error("This request was already updated"), { code: "VERIFICATION_ALREADY_UPDATED" });
       await tx.update(usersTable).set({ verificationStatus: "unverified" }).where(eq(usersTable.id, actor.id));
       await tx.insert(verificationAuditTable).values({ requestId: request.id, actorId: actor.id, subjectUserId: actor.id, jnvId: makeJnvId(request.jnvState, request.jnvName), action: "request_withdrawn", fromStatus: request.status, toStatus: "withdrawn" });
     });
     return res.json({ success: true, status: "withdrawn" });
   } catch (error) {
+    if ((error as { code?: string })?.code === "VERIFICATION_ALREADY_UPDATED") return res.status(409).json({ error: "This request was already updated. Refresh its status." });
     req.log.error(error, "Failed to withdraw verification request");
     return res.status(500).json({ error: "Failed to withdraw request" });
   }
@@ -528,14 +513,12 @@ router.post("/verification/requests/:id/resubmit", requireAuth, async (req, res)
     const actor = getUser(req);
     const [request] = await db.select().from(verificationRequestsTable).where(and(eq(verificationRequestsTable.id, req.params.id as string), eq(verificationRequestsTable.userId, actor.id))).limit(1);
     if (!request) return res.status(404).json({ error: "Request not found" });
+    if (request.role !== actor.role || request.role === "alumni") return res.status(403).json({ error: "This account cannot update that verification request." });
     if (request.status !== "info_requested") return res.status(409).json({ error: "This request is not waiting for additional information" });
     const documentUrls = req.body?.documentUrls;
     const applicantResponse = typeof req.body?.applicantResponse === "string" ? req.body.applicantResponse.trim().slice(0, 2000) : "";
     if (applicantResponse.length < 20) return res.status(400).json({ error: "Provide a detailed response of at least 20 characters" });
-    if (documentUrls !== undefined && (!Array.isArray(documentUrls) || documentUrls.length > 5 || documentUrls.some((url: unknown) => typeof url !== "string" || url.length > 2000 || !/^https:\/\//i.test(url)))) {
-      return res.status(400).json({ error: "Evidence must be up to five HTTPS document links" });
-    }
-    if (!documentUrls?.length) return res.status(400).json({ error: "Submit at least one supporting evidence link with your response" });
+    if (documentUrls !== undefined) return res.status(400).json({ error: "Document links are not accepted because their access privacy cannot be verified. Provide supporting evidence directly to your JNV official." });
     const now = new Date();
     const [updated] = await db.transaction(async (tx) => {
       const [row] = await tx.update(verificationRequestsTable).set({
@@ -543,19 +526,21 @@ router.post("/verification/requests/:id/resubmit", requireAuth, async (req, res)
         adminReviewedBy: null, adminReviewedAt: null,
         applicantResponse: applicantResponse || null,
         evidenceSummary: applicantResponse || request.evidenceSummary,
-        documentUrls: documentUrls?.length ? JSON.stringify(documentUrls) : request.documentUrls,
+        documentUrls: request.documentUrls,
         updatedAt: now,
-      }).where(eq(verificationRequestsTable.id, request.id)).returning();
+      }).where(and(eq(verificationRequestsTable.id, request.id), eq(verificationRequestsTable.userId, actor.id), eq(verificationRequestsTable.status, "info_requested"))).returning();
+      if (!row) throw Object.assign(new Error("This request was already updated"), { code: "VERIFICATION_ALREADY_UPDATED" });
       await tx.update(usersTable).set({ verificationStatus: "pending" }).where(eq(usersTable.id, actor.id));
       await tx.insert(verificationAuditTable).values({ requestId: request.id, actorId: actor.id, subjectUserId: actor.id, jnvId: makeJnvId(request.jnvState, request.jnvName), action: "additional_information_submitted", fromStatus: request.status, toStatus: "pending" });
       return [row];
     });
     const jnvId = makeJnvId(request.jnvState, request.jnvName);
     const staff = await db.select({ userId: verificationAssignmentsTable.userId }).from(verificationAssignmentsTable)
-      .where(and(eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.assignmentRole, "admin"), eq(verificationAssignmentsTable.active, true)));
+      .where(and(eq(verificationAssignmentsTable.jnvId, jnvId), inArray(verificationAssignmentsTable.assignmentRole, ["admin", "official"]), eq(verificationAssignmentsTable.active, true)));
     await Promise.all(staff.map((item) => notify(item.userId, actor.id, "verification_resubmitted", request.id, "An applicant submitted additional verification information.")));
-    return res.json(updated);
+    return res.json(safeRequest(updated));
   } catch (error) {
+    if ((error as { code?: string })?.code === "VERIFICATION_ALREADY_UPDATED") return res.status(409).json({ error: "This request was already updated. Refresh its status." });
     req.log.error(error, "Failed to resubmit verification request");
     return res.status(500).json({ error: "Failed to resubmit request" });
   }
@@ -567,7 +552,7 @@ router.get("/verification/credentials/reconcile-preview", requireAuth, async (re
     const jnvId = makeJnvId(actor.jnvState, actor.jnvName);
     if (!await hasAssignment(actor.id, jnvId, "official")) return res.status(403).json({ error: "Assigned JNV official only" });
     const schoolUsers = await db.select().from(usersTable).where(and(
-      eq(usersTable.jnvName, actor.jnvName), eq(usersTable.jnvState, actor.jnvState), eq(usersTable.verificationStatus, "verified"),
+      eq(usersTable.jnvName, actor.jnvName), eq(usersTable.jnvState, actor.jnvState), eq(usersTable.verificationStatus, "verified"), ne(usersTable.role, "alumni"),
     ));
     const candidates: Array<{ id: string; fullName: string; role: string }> = [];
     let reviewRequired = 0;
@@ -604,18 +589,14 @@ router.post("/verification/credentials/reconcile", requireAuth, async (req, res)
     for (const userId of userIds as string[]) {
       const didIssue = await db.transaction(async (tx) => {
         const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-        if (!user || user.jnvName !== actor.jnvName || user.jnvState !== actor.jnvState || user.verificationStatus !== "verified") return false;
-        const [current] = await tx.select().from(digitalCredentialsTable).where(and(
-          eq(digitalCredentialsTable.userId, user.id), eq(digitalCredentialsTable.status, "active"),
-        )).limit(1);
-        if (current) return false;
+        if (!user || user.jnvName !== actor.jnvName || user.jnvState !== actor.jnvState || user.verificationStatus !== "verified" || user.role === "alumni") return false;
         const [approved] = await tx.select().from(verificationRequestsTable).where(and(
           eq(verificationRequestsTable.userId, user.id), eq(verificationRequestsTable.status, "approved"),
           eq(verificationRequestsTable.role, user.role), eq(verificationRequestsTable.jnvName, user.jnvName), eq(verificationRequestsTable.jnvState, user.jnvState),
           eq(verificationRequestsTable.adminRecommendation, "approval"),
         )).orderBy(desc(verificationRequestsTable.officialReviewedAt)).limit(1);
         if (!approved || !approved.officialReviewedBy || !approved.officialReviewedAt || !hasEvidence(approved)) return false;
-        const issued = await issueCredential(tx, user, jnvId, actor.id, user.role);
+        const issued = await issueDigitalCredential(tx, user, jnvId, actor.id, user.role);
         if (!issued.created) return false;
         const { credential } = issued;
         await tx.insert(verificationAuditTable).values({ requestId: approved.id, actorId: actor.id, subjectUserId: user.id, jnvId, action: "legacy_credential_reconciled", toStatus: "active", reason: `Reconciled from existing official approval; credential ${credential.credentialId}` });
@@ -634,19 +615,119 @@ router.post("/verification/credentials/reconcile", requireAuth, async (req, res)
 
 router.get("/verification/my-credential", requireAuth, async (req, res) => {
   const actor = getUser(req);
-  const [credential] = await db.select().from(digitalCredentialsTable)
-    .where(and(eq(digitalCredentialsTable.userId, actor.id), eq(digitalCredentialsTable.status, "active"))).limit(1);
-  if (!credential) return res.status(404).json({ error: "No active Navodaya Connect ID" });
-  return res.json({
-    credentialId: credential.credentialId,
-    fullName: actor.fullName,
-    publicVerificationUrl: `${(process.env.PUBLIC_APP_URL || "").replace(/\/$/, "")}/verify/${credential.publicToken}`,
-    status: credential.status,
-    role: credential.role,
-    jnvName: credential.jnvName,
-    jnvState: credential.jnvState,
-    issuedAt: credential.issuedAt,
-  });
+  try {
+    const result = await db.transaction(async (tx) => {
+      await tx.execute(sql`select id from users where id = ${actor.id} for update`);
+      const [account] = await tx.select().from(usersTable).where(eq(usersTable.id, actor.id)).limit(1);
+      const eligible = account && (account.role === "alumni"
+        ? account.verificationStatus === "community_verified" && Boolean(account.communityVerifiedAt)
+        : account.verificationStatus === "verified");
+      if (!account || !eligible) return { error: "unverified" as const };
+
+      let [credential] = await tx.select().from(digitalCredentialsTable).where(and(
+        eq(digitalCredentialsTable.userId, actor.id), eq(digitalCredentialsTable.status, "active"),
+      )).limit(1);
+      let matchedApprovalId: string | null = null;
+
+      if (!credential) {
+        const jnvId = account.jnvId || makeJnvId(account.jnvState, account.jnvName);
+        const approvals = await tx.select().from(verificationRequestsTable).where(and(
+          eq(verificationRequestsTable.userId, account.id),
+          eq(verificationRequestsTable.role, account.role),
+          eq(verificationRequestsTable.status, "approved"),
+          eq(verificationRequestsTable.jnvName, account.jnvName),
+          eq(verificationRequestsTable.jnvState, account.jnvState),
+        )).orderBy(desc(verificationRequestsTable.reviewedAt), desc(verificationRequestsTable.createdAt)).limit(10);
+
+        for (const approval of approvals) {
+          if (account.role === "alumni") {
+            if (approval.method !== "alumni_peer" || !approval.reviewedBy || !account.communityVerifiedAt) continue;
+            const [confirmation] = await tx.select({ id: verificationAuditTable.id }).from(verificationAuditTable).where(and(
+              eq(verificationAuditTable.requestId, approval.id),
+              eq(verificationAuditTable.subjectUserId, account.id),
+              eq(verificationAuditTable.actorId, approval.reviewedBy),
+              eq(verificationAuditTable.action, "alumni_peer_confirmed"),
+              eq(verificationAuditTable.jnvId, jnvId),
+            )).limit(1);
+            if (!confirmation) continue;
+            const issued = await issueDigitalCredential(tx, account, jnvId, approval.reviewedBy, "alumni");
+            credential = issued.credential;
+            matchedApprovalId = approval.id;
+            break;
+          }
+
+          const officialId = approval.officialReviewedBy || approval.reviewedBy;
+          const officialReviewTime = approval.officialReviewedAt || approval.reviewedAt;
+          if (approval.method === "alumni_peer" || !officialId || !officialReviewTime || !hasEvidence(approval)) continue;
+          const [officialApproval] = await tx.select({ id: verificationAuditTable.id }).from(verificationAuditTable).where(and(
+            eq(verificationAuditTable.requestId, approval.id),
+            eq(verificationAuditTable.subjectUserId, account.id),
+            eq(verificationAuditTable.actorId, officialId),
+            eq(verificationAuditTable.action, "official_approved"),
+            eq(verificationAuditTable.jnvId, jnvId),
+          )).limit(1);
+          if (!officialApproval) continue;
+          const issued = await issueDigitalCredential(tx, account, jnvId, officialId, account.role);
+          credential = issued.credential;
+          matchedApprovalId = approval.id;
+          break;
+        }
+
+        // Verification status is the authoritative eligibility check for accounts
+        // approved before Digital ID issuance was added. New approvals issue the
+        // credential in the approval transaction above; this backfills older
+        // verified accounts the first time their profile or Digital ID is opened.
+        // Alumni must still have an explicit community_verified status and date,
+        // as enforced by `eligible` above.
+        if (!credential) {
+          const issued = await issueDigitalCredential(tx, account, jnvId, account.id, account.role);
+          credential = issued.credential;
+        }
+
+        if (credential) {
+          await tx.insert(verificationAuditTable).values({
+            requestId: matchedApprovalId,
+            actorId: credential.issuedBy,
+            subjectUserId: account.id,
+            jnvId: credential.jnvId,
+            action: matchedApprovalId ? "digital_id_backfilled_on_access" : "digital_id_issued_for_verified_account",
+            fromStatus: account.verificationStatus,
+            toStatus: "active",
+            reason: matchedApprovalId
+              ? `Issued ${credential.credentialId} from an existing completed verification record`
+              : `Issued ${credential.credentialId} because this account already has an eligible verified status`,
+          });
+        }
+      }
+
+      if (!credential || credential.role !== account.role) return { error: "missing" as const };
+      return { account, credential };
+    });
+
+    if ("error" in result) {
+      if (result.error === "unverified") return res.status(403).json({ error: "Complete the required verification before accessing a Digital ID." });
+      return res.status(404).json({ error: "No matching completed verification approval was found for this Digital ID." });
+    }
+
+    const { account, credential } = result;
+    const publicAppUrl = getPublicAppUrl();
+    return res.json({
+      credentialId: credential.credentialId,
+      userId: account.id,
+      fullName: account.fullName,
+      photoURL: account.photoURL,
+      publicVerificationUrl: publicAppUrl ? `${publicAppUrl}/verify/${credential.publicToken}` : null,
+      publicProfileUrl: publicAppUrl ? `${publicAppUrl}/profile/${account.id}` : null,
+      status: credential.status,
+      role: credential.role,
+      jnvName: credential.jnvName,
+      jnvState: credential.jnvState,
+      issuedAt: credential.issuedAt,
+    });
+  } catch (error) {
+    req.log.error(error, "Failed to load or restore the caller's Digital ID");
+    return res.status(500).json({ error: "Could not load your Digital ID." });
+  }
 });
 
 router.get("/verification/public/:token", async (req, res) => {
@@ -685,7 +766,7 @@ router.post("/verification/assignments", requireAuth, async (req, res) => {
     const userId = typeof req.body?.userId === "string" ? req.body.userId : "";
     const [target] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!target || makeJnvId(target.jnvState, target.jnvName) !== jnvId) return res.status(404).json({ error: "Select an existing user from your JNV" });
-    if (target.id === actor.id || target.role === "official" || target.verificationStatus !== "verified") return res.status(400).json({ error: "A reviewer must be a different verified student, alumnus, or teacher at this JNV" });
+    if (target.id === actor.id || target.role === "official" || (target.role === "alumni" ? !(target.verificationStatus === "community_verified" && target.communityVerifiedAt) : target.verificationStatus !== "verified")) return res.status(400).json({ error: "A reviewer must be a different community verified alumnus or verified student or teacher at this JNV" });
     const [existing] = await db.select().from(verificationAssignmentsTable).where(and(eq(verificationAssignmentsTable.userId, target.id), eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.assignmentRole, "admin"))).limit(1);
     const [assignment] = existing
       ? await db.update(verificationAssignmentsTable).set({ active: true, assignedBy: actor.id, updatedAt: new Date() }).where(eq(verificationAssignmentsTable.id, existing.id)).returning()
@@ -728,6 +809,7 @@ router.patch("/users/:id/suspend", requireAuth, async (req, res) => {
     const actor = getUser(req);
     const [target] = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id as string)).limit(1);
     if (!target) return res.status(404).json({ error: "User not found" });
+    if (target.role === "alumni") return res.status(410).json({ error: "Alumni status is moderated through peer-verification reports." });
     const jnvId = makeJnvId(target.jnvState, target.jnvName);
     if (target.id === actor.id || !await hasAssignment(actor.id, jnvId, "official")) return res.status(403).json({ error: "Only an authorized JNV official can update another member's credential status" });
     const suspended = req.body?.suspended === true;

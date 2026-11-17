@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, clubsTable, clubAnnouncementsTable, clubMembersTable, clubJoinRequestsTable, groupMembersTable, groupsTable, usersTable } from "@workspace/db";
-import { requireAuth } from "../lib/auth";
-import { desc, eq, and, inArray } from "drizzle-orm";
+import { getUser, isAuthorizedJnvOfficial, isAuthorizedSchoolStaff, requireAuth } from "../lib/auth";
+import { count, desc, eq, and, inArray } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
 const router = Router();
@@ -12,6 +12,7 @@ async function syncClubChatGroup(clubId: string) {
   await db.insert(groupsTable).values({
     name: club.name,
     subject: "Club chat",
+    groupType: "club_managed",
     jnvName: club.jnvName,
     jnvState: null,
     teacherName: club.managerName,
@@ -34,18 +35,25 @@ async function syncClubChatGroup(clubId: string) {
 
 router.get("/clubs", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    const rows = await db.select().from(clubsTable)
+    const user = getUser(req);
+    const rows = await db.select({
+      club: clubsTable,
+    }).from(clubsTable)
+      .innerJoin(usersTable, eq(clubsTable.managerId, usersTable.id))
+      .where(and(eq(clubsTable.jnvName, user.jnvName), eq(usersTable.jnvState, user.jnvState)))
       .orderBy(desc(clubsTable.createdAt));
+    const schoolClubs = rows.map((row) => row.club);
     const memberships = await db.select().from(clubMembersTable)
       .where(eq(clubMembersTable.userId, user.id));
     const memberSet = new Set(memberships.map((m) => m.clubId));
     const requests = await db.select().from(clubJoinRequestsTable)
       .where(eq(clubJoinRequestsTable.studentId, user.id));
     const requestStatus = new Map(requests.map((request) => [request.clubId, request.status]));
-    const anns = await db.select().from(clubAnnouncementsTable)
-      .orderBy(desc(clubAnnouncementsTable.createdAt));
-    res.json(rows.map((c) => ({
+    const clubIds = schoolClubs.map((club) => club.id);
+    const anns = clubIds.length ? await db.select().from(clubAnnouncementsTable)
+      .where(inArray(clubAnnouncementsTable.clubId, clubIds))
+      .orderBy(desc(clubAnnouncementsTable.createdAt)) : [];
+    res.json(schoolClubs.map((c) => ({
       ...c,
       managed: c.managerId === user.id,
       joined: memberSet.has(c.id),
@@ -60,10 +68,8 @@ router.get("/clubs", requireAuth, async (req, res) => {
 
 router.post("/clubs", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    if (user.role !== "teacher" && user.role !== "official") {
-      return res.status(403).json({ error: "Only teachers can create clubs" });
-    }
+    const user = getUser(req);
+    if (!await isAuthorizedSchoolStaff(user)) return res.status(403).json({ error: "Verified school staff access is required" });
     const { name, description, icon, color, bg } = req.body;
     if (!name?.trim() || !description?.trim()) {
       return res.status(400).json({ error: "Name and description required" });
@@ -89,22 +95,23 @@ router.post("/clubs", requireAuth, async (req, res) => {
 
 router.get("/clubs/requests", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    if (user.role !== "teacher" && user.role !== "official") return res.status(403).json({ error: "Teacher access required" });
+    const user = getUser(req);
+    if (!await isAuthorizedSchoolStaff(user)) return res.status(403).json({ error: "Verified school staff access is required" });
+    if (user.role === "official" && !await isAuthorizedJnvOfficial(user)) return res.status(403).json({ error: "Assigned JNV official access is required" });
     const managedClubs = user.role === "official"
-      ? await db.select({ id: clubsTable.id, name: clubsTable.name }).from(clubsTable)
-      : await db.select({ id: clubsTable.id, name: clubsTable.name }).from(clubsTable).where(eq(clubsTable.managerId, user.id));
+      ? await db.select({ id: clubsTable.id, name: clubsTable.name }).from(clubsTable).innerJoin(usersTable, eq(clubsTable.managerId, usersTable.id)).where(and(eq(clubsTable.jnvName, user.jnvName), eq(usersTable.jnvState, user.jnvState)))
+      : await db.select({ id: clubsTable.id, name: clubsTable.name }).from(clubsTable).where(and(eq(clubsTable.managerId, user.id), eq(clubsTable.jnvName, user.jnvName)));
     const clubIds = managedClubs.map((club) => club.id);
     if (!clubIds.length) return res.json([]);
     const pending = await db.select().from(clubJoinRequestsTable)
       .where(and(inArray(clubJoinRequestsTable.clubId, clubIds), eq(clubJoinRequestsTable.status, "pending")))
       .orderBy(desc(clubJoinRequestsTable.createdAt));
     const studentIds = [...new Set(pending.map((request) => request.studentId))];
-    const students = studentIds.length ? await db.select({ id: usersTable.id, fullName: usersTable.fullName, role: usersTable.role, class: usersTable.class, jnvName: usersTable.jnvName })
+    const students = studentIds.length ? await db.select({ id: usersTable.id, fullName: usersTable.fullName, role: usersTable.role, class: usersTable.class, jnvName: usersTable.jnvName, jnvState: usersTable.jnvState })
       .from(usersTable).where(inArray(usersTable.id, studentIds)) : [];
     const studentById = new Map(students.map((student) => [student.id, student]));
     const clubById = new Map(managedClubs.map((club) => [club.id, club]));
-    res.json(pending.map((request) => ({ ...request, student: studentById.get(request.studentId), club: clubById.get(request.clubId) })));
+    res.json(pending.filter((request) => studentById.get(request.studentId)?.jnvState === user.jnvState).map((request) => ({ ...request, student: studentById.get(request.studentId), club: clubById.get(request.clubId) })));
   } catch (e) {
     req.log.error(e, "club join requests error");
     res.status(500).json({ error: "Failed to fetch club requests" });
@@ -113,8 +120,12 @@ router.get("/clubs/requests", requireAuth, async (req, res) => {
 
 router.post("/clubs/:id/chat", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
     const clubId = req.params.id as string;
+    const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, clubId)).limit(1);
+    if (!club || club.jnvName !== user.jnvName) return res.status(404).json({ error: "Club not found" });
+    const [manager] = await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club.managerId!)).limit(1);
+    if (manager?.jnvState !== user.jnvState) return res.status(404).json({ error: "Club not found" });
     const [membership] = await db.select({ id: clubMembersTable.id }).from(clubMembersTable)
       .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.userId, user.id))).limit(1);
     if (!membership) return res.status(403).json({ error: "Join the club before opening its chat" });
@@ -129,10 +140,12 @@ router.post("/clubs/:id/chat", requireAuth, async (req, res) => {
 
 router.post("/clubs/:id/join", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
     const clubId = req.params.id as string;
     const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, clubId)).limit(1);
     if (!club) return res.status(404).json({ error: "Club not found" });
+    const [manager] = await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club.managerId!)).limit(1);
+    if (club.jnvName !== user.jnvName || manager?.jnvState !== user.jnvState) return res.status(404).json({ error: "Club not found" });
     if (user.role !== "student") {
       const [existingMember] = await db.select({ id: clubMembersTable.id }).from(clubMembersTable)
         .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.userId, user.id))).limit(1);
@@ -169,14 +182,22 @@ router.post("/clubs/:id/join", requireAuth, async (req, res) => {
 
 router.post("/clubs/:id/leave", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
     const clubId = req.params.id as string;
+    const [club] = await db.select({ id: clubsTable.id, jnvName: clubsTable.jnvName, managerId: clubsTable.managerId }).from(clubsTable).where(eq(clubsTable.id, clubId)).limit(1);
+    if (!club || club.jnvName !== user.jnvName) return res.status(404).json({ error: "Club not found" });
+    const [manager] = await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club.managerId!)).limit(1);
+    if (manager?.jnvState !== user.jnvState) return res.status(404).json({ error: "Club not found" });
     const [member] = await db.select({ id: clubMembersTable.id }).from(clubMembersTable)
       .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.userId, user.id))).limit(1);
     if (!member) return res.json({ joined: false });
     await db.delete(clubMembersTable).where(eq(clubMembersTable.id, member.id));
     const [clubGroup] = await db.select({ id: groupsTable.id }).from(groupsTable).where(eq(groupsTable.clubId, clubId)).limit(1);
-    if (clubGroup) await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, clubGroup.id), eq(groupMembersTable.userId, user.id)));
+    if (clubGroup) {
+      await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, clubGroup.id), eq(groupMembersTable.userId, user.id)));
+      const [activeMembers] = await db.select({ total: count() }).from(groupMembersTable).where(eq(groupMembersTable.groupId, clubGroup.id));
+      await db.update(groupsTable).set({ memberCount: activeMembers.total }).where(eq(groupsTable.id, clubGroup.id));
+    }
     await db.update(clubsTable).set({ members: sql`greatest(0, ${clubsTable.members} - 1)` }).where(eq(clubsTable.id, clubId));
     res.json({ joined: false, joinStatus: "none" });
   } catch (e) {
@@ -187,14 +208,17 @@ router.post("/clubs/:id/leave", requireAuth, async (req, res) => {
 
 router.patch("/clubs/:clubId/requests/:requestId", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    if (user.role !== "teacher" && user.role !== "official") return res.status(403).json({ error: "Teacher access required" });
+    const user = getUser(req);
+    if (!await isAuthorizedSchoolStaff(user)) return res.status(403).json({ error: "Verified school staff access is required" });
     const clubId = req.params.clubId as string;
     const requestId = req.params.requestId as string;
     const decision = req.body?.decision;
     if (decision !== "approved" && decision !== "denied") return res.status(400).json({ error: "Choose approve or deny" });
+    if (user.role === "official" && !await isAuthorizedJnvOfficial(user)) return res.status(403).json({ error: "Assigned JNV official access is required" });
     const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, clubId)).limit(1);
-    if (!club) return res.status(404).json({ error: "Club not found" });
+    if (!club || club.jnvName !== user.jnvName) return res.status(404).json({ error: "Club not found" });
+    const [manager] = club.managerId ? await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club.managerId)).limit(1) : [];
+    if (manager?.jnvState !== user.jnvState) return res.status(404).json({ error: "Club not found" });
     if (club.managerId !== user.id && user.role !== "official") return res.status(403).json({ error: "Only the club's managing teacher can review requests" });
     const [request] = await db.select().from(clubJoinRequestsTable)
       .where(and(eq(clubJoinRequestsTable.id, requestId), eq(clubJoinRequestsTable.clubId, clubId), eq(clubJoinRequestsTable.status, "pending"))).limit(1);
@@ -219,14 +243,15 @@ router.patch("/clubs/:clubId/requests/:requestId", requireAuth, async (req, res)
 
 router.post("/clubs/:id/announcements", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
+    const user = getUser(req);
     const club = await db.select().from(clubsTable).where(eq(clubsTable.id, req.params.id as string));
     if (!club.length) return res.status(404).json({ error: "Club not found" });
-    if (club[0].managerId !== user.id && user.role !== "official") {
+    const [manager] = club[0]?.managerId ? await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club[0].managerId)).limit(1) : [];
+    if (!await isAuthorizedSchoolStaff(user) || (user.role === "official" && !await isAuthorizedJnvOfficial(user)) || club[0].jnvName !== user.jnvName || manager?.jnvState !== user.jnvState || (club[0].managerId !== user.id && user.role !== "official")) {
       return res.status(403).json({ error: "Only club manager can post announcements" });
     }
-    const { text } = req.body;
-    if (!text?.trim()) return res.status(400).json({ error: "Text required" });
+    const { text } = req.body ?? {};
+    if (typeof text !== "string" || !text.trim() || text.length > 3000) return res.status(400).json({ error: "Provide announcement text up to 3,000 characters" });
     const [row] = await db.insert(clubAnnouncementsTable).values({
       clubId: req.params.id as string,
       text: text.trim(),
@@ -241,19 +266,17 @@ router.post("/clubs/:id/announcements", requireAuth, async (req, res) => {
 
 router.patch("/clubs/:id/manager", requireAuth, async (req, res) => {
   try {
-    const user = (req as any).user;
-    if (user.role !== "teacher" && user.role !== "official") {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    const [row] = await db.update(clubsTable)
-      .set({ managerId: user.id, managerName: user.fullName })
-      .where(eq(clubsTable.id, req.params.id as string))
-      .returning();
-    const existing = await db.select().from(clubMembersTable)
-      .where(and(eq(clubMembersTable.clubId, req.params.id as string), eq(clubMembersTable.userId, user.id)));
-    if (!existing.length) {
-      await db.insert(clubMembersTable).values({ clubId: req.params.id as string, userId: user.id, role: "manager" });
-    }
+    const user = getUser(req);
+    if (!await isAuthorizedSchoolStaff(user)) return res.status(403).json({ error: "Verified school staff access is required" });
+    const [club] = await db.select().from(clubsTable).where(eq(clubsTable.id, req.params.id as string)).limit(1);
+    if (!club || club.jnvName !== user.jnvName) return res.status(404).json({ error: "Club not found" });
+    const [manager] = club.managerId ? await db.select({ jnvState: usersTable.jnvState }).from(usersTable).where(eq(usersTable.id, club.managerId)).limit(1) : [];
+    if (manager?.jnvState !== user.jnvState) return res.status(404).json({ error: "Club not found" });
+    if (user.role === "official" && !await isAuthorizedJnvOfficial(user)) return res.status(403).json({ error: "Assigned JNV official access is required" });
+    if (user.role !== "official" && club.managerId !== user.id) return res.status(403).json({ error: "Only the club's manager or assigned school official can change its manager" });
+    const [row] = await db.update(clubsTable).set({ managerId: user.id, managerName: user.fullName }).where(eq(clubsTable.id, club.id)).returning();
+    const existing = await db.select().from(clubMembersTable).where(and(eq(clubMembersTable.clubId, club.id), eq(clubMembersTable.userId, user.id)));
+    if (!existing.length) await db.insert(clubMembersTable).values({ clubId: club.id, userId: user.id, role: "manager" });
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: "Failed to take over management" });

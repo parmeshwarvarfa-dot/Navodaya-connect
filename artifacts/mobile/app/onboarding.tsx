@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import FadeIn from "@/components/motion/FadeIn";
 
 const { width } = Dimensions.get("window");
 
@@ -79,11 +80,14 @@ export default function OnboardingScreen() {
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
+            <FadeIn style={styles.slideContent}>
             <View style={styles.iconCircle}>
               <Ionicons name={item.icon} size={56} color="#fff" />
             </View>
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.subtitle}>{item.subtitle}</Text>
+            {item.id === "1" ? <FadeIn delay={160}><Text style={styles.motto}>शिक्षार्थ आइए, सेवार्थ जाइए।</Text></FadeIn> : null}
+            </FadeIn>
           </View>
         )}
       />
@@ -123,6 +127,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingBottom: 20,
   },
+  slideContent: { flex: 1, alignItems: "center", justifyContent: "center" },
+  motto: { marginTop: 16, color: "rgba(255,255,255,0.9)", fontSize: 15, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   iconCircle: {
     width: 140,
     height: 140,

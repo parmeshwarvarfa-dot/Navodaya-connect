@@ -1,260 +1,640 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+  TextInput,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import {
+  api,
+  type TeacherClassAssignment,
+  type AcademicStudent,
+  type ClassAssessmentRecord,
+} from "@/lib/api";
 
-const CLASSES  = ["Class 11 Sci A", "Class 12 Sci B", "Class 10 A"];
-const SUBJECTS = ["Physics", "Chemistry", "Maths", "English", "Biology"];
-
-const PUBLISHED_RESULTS = [
-  {
-    id: "1", exam: "Unit Test – Term I", class: "Class 11 Sci A", subject: "Physics",
-    date: "15 Feb 2026", totalMarks: 50, published: true,
-    students: [
-      { name: "Ananya Sharma", marks: 44, grade: "A+" },
-      { name: "Rohit Kumar",   marks: 38, grade: "A"  },
-      { name: "Priya Mehta",   marks: 36, grade: "B+" },
-      { name: "Rahul Singh",   marks: 29, grade: "B"  },
-      { name: "Kavya Nair",    marks: 41, grade: "A"  },
-    ],
-  },
-  {
-    id: "2", exam: "Mid-Term", class: "Class 12 Sci B", subject: "Physics",
-    date: "20 Mar 2026", totalMarks: 100, published: true,
-    students: [
-      { name: "Meera Iyer",   marks: 88, grade: "A+" },
-      { name: "Karan Verma",  marks: 74, grade: "A"  },
-      { name: "Tanya Singh",  marks: 61, grade: "B"  },
-    ],
-  },
-];
-
-const gradeFromPct = (pct: number) => pct >= 90 ? "A+" : pct >= 80 ? "A" : pct >= 70 ? "B+" : pct >= 60 ? "B" : "C";
-const GRADE_COLOR: Record<string, string> = { "A+": "#10B981", "A": "#3D5AF1", "B+": "#8B5CF6", "B": "#F59E0B", "C": "#EF4444" };
+const GRADE_COLOR: Record<string, string> = {
+  "A+": "#10B981",
+  A: "#3D5AF1",
+  "B+": "#8B5CF6",
+  B: "#F59E0B",
+  C: "#EF4444",
+  D: "#F97316",
+  E: "#DC2626",
+};
 
 export default function TeacherResultsScreen() {
-  const insets   = useSafeAreaInsets();
-  const topPad   = Platform.OS === "web" ? 0 : insets.top;
-  const [results,    setResults]    = useState(PUBLISHED_RESULTS);
-  const [expanded,   setExpanded]   = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
+
+  const [classes, setClasses] = useState<TeacherClassAssignment[]>([]);
+  const [selectedClass, setSelectedClass] = useState<TeacherClassAssignment | null>(null);
+  const [students, setStudents] = useState<AcademicStudent[]>([]);
+  const [assessments, setAssessments] = useState<ClassAssessmentRecord[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [toast, setToast] = useState("");
+
+  // Create Assessment Modal
   const [showCreate, setShowCreate] = useState(false);
-  const [toast,      setToast]      = useState("");
-
-  // Form state
-  const [examName,  setExamName]  = useState("");
-  const [cls,       setCls]       = useState("");
-  const [subject,   setSubject]   = useState("");
-  const [maxMarks,  setMaxMarks]  = useState("50");
+  const [title, setTitle] = useState("");
+  const [maxMarks, setMaxMarks] = useState("50");
+  const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
   const [studentMarks, setStudentMarks] = useState<Record<string, string>>({});
-  const [formErr,   setFormErr]   = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
+  };
 
-  const handlePublish = () => {
-    if (!examName.trim() || !cls || !subject) { setFormErr("Fill exam name, class and subject."); return; }
-    const newResult = {
-      id: Date.now().toString(), exam: examName, class: cls, subject,
-      date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-      totalMarks: parseInt(maxMarks) || 50, published: true,
-      students: Object.entries(studentMarks).map(([name, m]) => {
-        const marks = parseInt(m) || 0;
-        const pct   = (marks / (parseInt(maxMarks) || 50)) * 100;
-        return { name, marks, grade: gradeFromPct(pct) };
-      }),
-    };
-    setResults((p) => [newResult, ...p]);
-    setExamName(""); setCls(""); setSubject(""); setMaxMarks("50"); setStudentMarks({}); setFormErr("");
-    setShowCreate(false);
-    showToast("Results published!");
+  const fetchClasses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await api.academicClasses.list();
+      const active = list.filter((c) => c.active);
+      setClasses(active);
+      if (active.length > 0) {
+        setSelectedClass(active[0]);
+      }
+    } catch {
+      showToast("Unable to load assigned classes.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  const loadClassAssessments = useCallback(async (classItem: TeacherClassAssignment) => {
+    setDataLoading(true);
+    try {
+      const [roster, resultsList] = await Promise.all([
+        api.academicClasses.roster(classItem.id),
+        api.academicClasses.results(classItem.id),
+      ]);
+      setStudents(roster);
+      setAssessments(resultsList);
+    } catch {
+      showToast("Could not load class marks.");
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedClass) {
+      loadClassAssessments(selectedClass);
+    }
+  }, [selectedClass, loadClassAssessments]);
+
+  const handleSaveAssessment = async () => {
+    if (!selectedClass) return showToast("Select a class first.");
+    if (!title.trim() || !maxMarks) return showToast("Enter title and max marks.");
+    const total = Number(maxMarks);
+    if (isNaN(total) || total <= 0) return showToast("Enter a valid maximum marks number.");
+
+    setSubmitting(true);
+    try {
+      const scoresPayload = students.map((s) => {
+        const raw = studentMarks[s.id];
+        const marksObtained = raw !== undefined && raw.trim() !== "" ? Number(raw) : 0;
+        return {
+          studentId: s.id,
+          studentName: s.fullName,
+          marksObtained: Math.min(Math.max(0, marksObtained), total),
+        };
+      });
+
+      await api.academicClasses.recordAssessment(selectedClass.id, {
+        title: title.trim(),
+        subject: selectedClass.subject,
+        totalMarks: total,
+        date: examDate,
+        scores: scoresPayload,
+        published: true,
+      });
+
+      showToast("Results recorded and published!");
+      setShowCreate(false);
+      setTitle("");
+      setStudentMarks({});
+
+      // Reload
+      const updated = await api.academicClasses.results(selectedClass.id);
+      setAssessments(updated);
+    } catch (err: any) {
+      showToast(err?.message || "Failed to save results.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: topPad + 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
+          <Ionicons name="arrow-back" size={20} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Publish Results</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
-          <Ionicons name="add" size={20} color="#fff" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Academic Results & Tests</Text>
+          <Text style={styles.headerSubtitle}>Record assessments, unit marks and term grading</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => setShowCreate(true)}
+          disabled={!selectedClass}
+        >
+          <Ionicons name="add" size={18} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>New Test</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
-        {results.map((r) => {
-          const isEx   = expanded === r.id;
-          const avg    = r.students.length ? Math.round(r.students.reduce((s, st) => s + st.marks, 0) / r.students.length) : 0;
-          const avgPct = Math.round((avg / r.totalMarks) * 100);
-          const highest = r.students.reduce((max, s) => s.marks > max ? s.marks : max, 0);
-          return (
-            <View key={r.id} style={styles.card}>
-              <TouchableOpacity onPress={() => setExpanded(isEx ? null : r.id)} activeOpacity={0.85}>
-                <View style={styles.cardTop}>
-                  <View style={styles.cardIcon}><Ionicons name="stats-chart-outline" size={20} color="#0891B2" /></View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{r.exam}</Text>
-                    <Text style={styles.cardMeta}>{r.subject} · {r.class} · {r.date}</Text>
-                  </View>
-                  <View style={styles.publishedBadge}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={styles.publishedText}>Published</Text></View>
-                  <Ionicons name={isEx ? "chevron-up" : "chevron-down"} size={16} color="#9CA3AF" />
-                </View>
-                <View style={styles.statsRow}>
-                  {[
-                    { label: "Students",   value: String(r.students.length), color: "#6B7280" },
-                    { label: "Avg Marks",  value: String(avg),              color: "#3D5AF1" },
-                    { label: "Avg %",      value: `${avgPct}%`,             color: avgPct >= 75 ? "#10B981" : "#F59E0B" },
-                    { label: "Highest",    value: String(highest),          color: "#8B5CF6" },
-                  ].map((s) => (
-                    <View key={s.label} style={styles.statChip}>
-                      <Text style={[styles.statVal, { color: s.color }]}>{s.value}</Text>
-                      <Text style={styles.statLabel}>{s.label}</Text>
-                    </View>
-                  ))}
-                </View>
-              </TouchableOpacity>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40, gap: 14 }}
+      >
+        {/* Class Selection Tabs */}
+        {loading ? (
+          <ActivityIndicator color="#1A3C6E" />
+        ) : classes.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="school-outline" size={32} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>No Classes Assigned</Text>
+            <Text style={styles.emptyDesc}>Contact your JNV Principal to assign your academic classes.</Text>
+          </View>
+        ) : (
+          <>
+            <View>
+              <Text style={styles.sectionHeading}>Class Section</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.classTabs}
+              >
+                {classes.map((c) => {
+                  const isSelected = selectedClass?.id === c.id;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.classTab, isSelected && styles.classTabActive]}
+                      onPress={() => setSelectedClass(c)}
+                    >
+                      <Text style={[styles.classTabText, isSelected && styles.classTabTextActive]}>
+                        {c.className} {c.section && c.section !== "Unspecified" ? `(${c.section})` : ""}
+                      </Text>
+                      <Text style={[styles.classTabSub, isSelected && styles.classTabSubActive]}>
+                        {c.subject}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
-              {isEx && (
-                <View style={styles.studentList}>
-                  <Text style={styles.studentListTitle}>Student Marks</Text>
-                  {r.students.map((s) => {
-                    const pct = Math.round((s.marks / r.totalMarks) * 100);
-                    const gColor = GRADE_COLOR[s.grade] || "#6B7280";
-                    return (
-                      <View key={s.name} style={styles.studentRow}>
-                        <View style={styles.studentAvatar}><Text style={styles.studentAvatarText}>{s.name[0]}</Text></View>
+            {/* Assessment Records */}
+            {dataLoading ? (
+              <ActivityIndicator color="#1A3C6E" style={{ paddingVertical: 20 }} />
+            ) : assessments.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Ionicons name="stats-chart-outline" size={32} color="#94A3B8" />
+                <Text style={styles.emptyTitle}>No Assessments Recorded Yet</Text>
+                <Text style={styles.emptyDesc}>
+                  Tap "+ New Test" above to record marks and grade your students for{" "}
+                  {selectedClass?.className}.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 12 }}>
+                {assessments.map((ass) => {
+                  const passCount = ass.scores.filter(
+                    (s) => ass.totalMarks > 0 && (s.marksObtained / ass.totalMarks) >= 0.4
+                  ).length;
+                  const passRate =
+                    ass.scores.length > 0 ? Math.round((passCount / ass.scores.length) * 100) : 0;
+
+                  return (
+                    <View key={ass.id} style={styles.assessmentCard}>
+                      <View style={styles.cardTop}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.studentName}>{s.name}</Text>
-                          <View style={styles.progressTrack}>
-                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: gColor }]} />
-                          </View>
+                          <Text style={styles.cardTitle}>{ass.title}</Text>
+                          <Text style={styles.cardMeta}>
+                            {ass.subject} · Total Marks: {ass.totalMarks} · Date: {ass.date}
+                          </Text>
                         </View>
-                        <Text style={styles.marksText}>{s.marks}/{r.totalMarks}</Text>
-                        <View style={[styles.gradePill, { backgroundColor: gColor + "18" }]}>
-                          <Text style={[styles.gradeText, { color: gColor }]}>{s.grade}</Text>
+                        <View style={styles.passChip}>
+                          <Text style={styles.passChipText}>{passRate}% Passed</Text>
                         </View>
                       </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          );
-        })}
+
+                      {/* Score Roll */}
+                      <View style={styles.scoresWrap}>
+                        <Text style={styles.scoresHeading}>
+                          Student Marks Roll ({ass.scores.length})
+                        </Text>
+                        {ass.scores.map((score, idx) => {
+                          const gradeColor = GRADE_COLOR[score.grade || "A"] || "#3D5AF1";
+                          return (
+                            <View key={score.studentId} style={styles.scoreRow}>
+                              <Text style={styles.scoreIndex}>#{idx + 1}</Text>
+                              <Text style={styles.scoreStudentName}>{score.studentName}</Text>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <Text style={styles.scoreValue}>
+                                  {score.marksObtained}/{ass.totalMarks}
+                                </Text>
+                                <View style={[styles.gradeBadge, { backgroundColor: `${gradeColor}18` }]}>
+                                  <Text style={[styles.gradeBadgeText, { color: gradeColor }]}>
+                                    {score.grade || "A"}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
 
-      {/* Create Modal */}
-      <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <View style={styles.modal}>
+      {/* Modal: Create Assessment */}
+      <Modal visible={showCreate} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "90%" }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Publish Results</Text>
-              <TouchableOpacity onPress={() => setShowCreate(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
+              <Text style={styles.modalTitle}>Record New Assessment</Text>
+              <TouchableOpacity onPress={() => setShowCreate(false)}>
+                <Ionicons name="close" size={22} color="#1E293B" />
+              </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-              <Text style={styles.fieldLabel}>Exam Name *</Text>
-              <TextInput style={styles.input} placeholder="e.g. Unit Test – Physics" placeholderTextColor="#9CA3AF" value={examName} onChangeText={setExamName} />
 
-              <Text style={styles.fieldLabel}>Class *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {CLASSES.map((c) => (
-                  <TouchableOpacity key={c} style={[styles.pill, cls === c && styles.pillActive]} onPress={() => setCls(c)}>
-                    <Text style={[styles.pillText, cls === c && styles.pillTextActive]}>{c}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+            <ScrollView contentContainerStyle={{ gap: 12 }}>
+              <View>
+                <Text style={styles.inputLabel}>Assessment Title *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. Unit Test 1 / Mid-Term Exam"
+                  value={title}
+                  onChangeText={setTitle}
+                />
+              </View>
 
-              <Text style={styles.fieldLabel}>Subject *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {SUBJECTS.map((s) => (
-                  <TouchableOpacity key={s} style={[styles.pill, subject === s && styles.pillActive]} onPress={() => setSubject(s)}>
-                    <Text style={[styles.pillText, subject === s && styles.pillTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.fieldLabel}>Max Marks</Text>
-              <TextInput style={styles.input} placeholder="50" placeholderTextColor="#9CA3AF" value={maxMarks} onChangeText={setMaxMarks} keyboardType="numeric" />
-
-              <Text style={styles.fieldLabel}>Enter Student Marks</Text>
-              {(cls ? (["Ananya Sharma", "Rohit Kumar", "Priya Mehta", "Rahul Singh", "Kavya Nair"]) : []).map((name) => (
-                <View key={name} style={styles.markRow}>
-                  <Text style={styles.markStudentName}>{name}</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Maximum Marks *</Text>
                   <TextInput
-                    style={styles.markInput}
-                    placeholder="0"
-                    placeholderTextColor="#9CA3AF"
+                    style={styles.textInput}
                     keyboardType="numeric"
-                    value={studentMarks[name] || ""}
-                    onChangeText={(v) => setStudentMarks((p) => ({ ...p, [name]: v }))}
+                    value={maxMarks}
+                    onChangeText={setMaxMarks}
                   />
-                  <Text style={styles.markMax}>/ {maxMarks}</Text>
                 </View>
-              ))}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Exam Date</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={examDate}
+                    onChangeText={setExamDate}
+                  />
+                </View>
+              </View>
 
-              {formErr ? <Text style={styles.errText}>{formErr}</Text> : null}
-              <TouchableOpacity style={styles.confirmBtn} onPress={handlePublish}>
-                <Ionicons name="stats-chart-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Publish Results</Text>
+              <Text style={[styles.inputLabel, { marginTop: 6 }]}>Student Marks Entry</Text>
+              <View style={{ gap: 8 }}>
+                {students.map((student) => (
+                  <View key={student.id} style={styles.scoreInputRow}>
+                    <Text style={styles.scoreInputName}>{student.fullName}</Text>
+                    <TextInput
+                      style={styles.scoreInputBox}
+                      placeholder="0"
+                      keyboardType="numeric"
+                      value={studentMarks[student.id] || ""}
+                      onChangeText={(val) =>
+                        setStudentMarks((prev) => ({ ...prev, [student.id]: val }))
+                      }
+                    />
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.modalPrimaryBtn}
+                onPress={handleSaveAssessment}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.modalPrimaryBtnText}>Save & Publish Marks</Text>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
-      {toast ? <View style={styles.toast} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
+      {/* Floating Toast */}
+      {toast ? (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 20, fontFamily: "Inter_700Bold", color: "#111827" },
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0891B2", alignItems: "center", justifyContent: "center" },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#F0F0F0" },
-  cardTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  cardIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E0F2FE", alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 3 },
-  cardMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  publishedBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  publishedText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#10B981" },
-  statsRow: { flexDirection: "row", gap: 8 },
-  statChip: { flex: 1, backgroundColor: "#F9FAFB", borderRadius: 10, padding: 8, alignItems: "center" },
-  statVal: { fontSize: 15, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 9, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  studentList: { marginTop: 14, borderTopWidth: 1, borderTopColor: "#F0F0F0", paddingTop: 14 },
-  studentListTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#374151", marginBottom: 10 },
-  studentRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
-  studentAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  studentAvatarText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#3D5AF1" },
-  studentName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#111827", marginBottom: 4 },
-  progressTrack: { height: 4, backgroundColor: "#F3F4F6", borderRadius: 2, overflow: "hidden" },
-  progressFill: { height: "100%", borderRadius: 2 },
-  marksText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151", width: 50, textAlign: "right" },
-  gradePill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 4 },
-  gradeText: { fontSize: 12, fontFamily: "Inter_700Bold" },
-  modal: { flex: 1, backgroundColor: "#fff" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
-  modalBody: { padding: 20 },
-  fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#374151", marginBottom: 10, marginTop: 6 },
-  input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827", marginBottom: 16 },
-  pill: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" },
-  pillActive: { backgroundColor: "#3D5AF1", borderColor: "#3D5AF1" },
-  pillText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  pillTextActive: { color: "#fff" },
-  markRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
-  markStudentName: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#374151" },
-  markInput: { width: 60, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 8, fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#111827", textAlign: "center" },
-  markMax: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#9CA3AF", width: 30 },
-  errText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 12, marginTop: 8 },
-  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#0891B2", borderRadius: 14, paddingVertical: 15, marginTop: 10 },
-  confirmBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
-  toast: { position: "absolute", bottom: 36, left: 24, right: 24, backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16 },
-  toastText: { color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, textAlign: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F7FB",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    color: "#0F172A",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+  },
+  headerSubtitle: {
+    color: "#64748B",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1A3C6E",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  sectionHeading: {
+    color: "#334155",
+    fontSize: 12.5,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 6,
+  },
+  classTabs: {
+    gap: 8,
+  },
+  classTab: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  classTabActive: {
+    backgroundColor: "#1A3C6E",
+    borderColor: "#1A3C6E",
+  },
+  classTabText: {
+    color: "#334155",
+    fontSize: 12.5,
+    fontFamily: "Inter_600SemiBold",
+  },
+  classTabTextActive: {
+    color: "#FFFFFF",
+  },
+  classTabSub: {
+    color: "#64748B",
+    fontSize: 10.5,
+    fontFamily: "Inter_400Regular",
+  },
+  classTabSubActive: {
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  assessmentCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 10,
+  },
+  cardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  cardTitle: {
+    color: "#0F172A",
+    fontSize: 14.5,
+    fontFamily: "Inter_700Bold",
+  },
+  cardMeta: {
+    color: "#64748B",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
+  },
+  passChip: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  passChipText: {
+    color: "#059669",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+  scoresWrap: {
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    paddingTop: 8,
+    gap: 6,
+  },
+  scoresHeading: {
+    color: "#64748B",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 2,
+  },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 3,
+  },
+  scoreIndex: {
+    width: 24,
+    color: "#94A3B8",
+    fontSize: 10.5,
+    fontFamily: "Inter_500Medium",
+  },
+  scoreStudentName: {
+    flex: 1,
+    color: "#0F172A",
+    fontSize: 12.5,
+    fontFamily: "Inter_500Medium",
+  },
+  scoreValue: {
+    color: "#334155",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  gradeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  gradeBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+  },
+  emptyCard: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 6,
+  },
+  emptyTitle: {
+    color: "#0F172A",
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+  },
+  emptyDesc: {
+    color: "#64748B",
+    fontSize: 11.5,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    justifyContent: "center",
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 18,
+    gap: 12,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    color: "#0F172A",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+  },
+  inputLabel: {
+    color: "#334155",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 4,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#0F172A",
+  },
+  scoreInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  scoreInputName: {
+    color: "#0F172A",
+    fontSize: 12.5,
+    fontFamily: "Inter_500Medium",
+    flex: 1,
+  },
+  scoreInputBox: {
+    width: 60,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#0F172A",
+    textAlign: "center",
+  },
+  modalPrimaryBtn: {
+    backgroundColor: "#1A3C6E",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  modalPrimaryBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontFamily: "Inter_600SemiBold",
+  },
+  toast: {
+    position: "absolute",
+    bottom: 32,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(15, 23, 42, 0.92)",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  toastText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+  },
 });

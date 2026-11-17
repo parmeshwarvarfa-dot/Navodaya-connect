@@ -1,19 +1,48 @@
 import { Router } from "express";
-import { eq, and, inArray, or, ilike, ne } from "drizzle-orm";
-import { db, userBlocksTable, userFollowsTable, usersTable } from "@workspace/db";
+import { eq, and, inArray, or, ilike, ne, asc, isNotNull } from "drizzle-orm";
+import { db, digitalCredentialsTable, userBlocksTable, userFollowsTable, usersTable } from "@workspace/db";
 import { avatarConfigSchema } from "@workspace/api-zod";
 import { requireAuth, getUser } from "../lib/auth";
 import { isValidUserId } from "./user-validation";
 import { canViewProfile, isBlockedBetween } from "../lib/social-access";
 import { makeJnvId } from "../lib/jnv-identity";
+import { hasValidAlumniSchool } from "../lib/alumni-peer-policy";
 
 const router = Router();
 
 router.get("/users/search", requireAuth, async (req, res) => {
   const viewer = getUser(req);
-  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 100) : "";
   if (query.length < 2) return res.json([]);
   try {
+    const normalizedDigitalId = query.replace(/\s/g, "").toUpperCase();
+    if (/^NC-(?:STU|ALU|TCH|OFC)-[A-F0-9]{10}$/.test(normalizedDigitalId)) {
+      const [match] = await db.select({
+        id: usersTable.id, fullName: usersTable.fullName, role: usersTable.role,
+        jnvName: usersTable.jnvName, photoURL: usersTable.photoURL,
+      }).from(digitalCredentialsTable).innerJoin(usersTable, eq(digitalCredentialsTable.userId, usersTable.id))
+        .where(and(
+          eq(digitalCredentialsTable.credentialId, normalizedDigitalId),
+          eq(digitalCredentialsTable.status, "active"),
+          eq(usersTable.role, digitalCredentialsTable.role),
+          or(
+            and(eq(usersTable.role, "alumni"), eq(usersTable.verificationStatus, "community_verified"), isNotNull(usersTable.communityVerifiedAt)),
+            and(ne(usersTable.role, "alumni"), eq(usersTable.verificationStatus, "verified")),
+          ),
+          ne(usersTable.id, viewer.id),
+        )).limit(1);
+      if (!match || await isBlockedBetween(viewer.id, match.id)) return res.json([]);
+      // Returning only the ordinary minimal search card lets a private profile
+      // resolve to its existing restricted profile view, where follow requests
+      // remain subject to the normal social-access rules.
+      return res.json([match]);
+    }
+    // Search by a display name, or by an exact account ID. Never allow ID
+    // prefix scans, which would make internal account identifiers enumerable.
+    const isExactAccountId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
+    const searchCondition = isExactAccountId
+      ? eq(usersTable.id, query)
+      : ilike(usersTable.fullName, `%${query.replace(/[%_\\]/g, "\\$&")}%`);
     const matches = await db.select({
       id: usersTable.id,
       fullName: usersTable.fullName,
@@ -21,7 +50,8 @@ router.get("/users/search", requireAuth, async (req, res) => {
       jnvName: usersTable.jnvName,
       photoURL: usersTable.photoURL,
     }).from(usersTable)
-      .where(and(ilike(usersTable.fullName, `%${query.replace(/[%_\\]/g, "\\$&")}%`), ne(usersTable.id, viewer.id)))
+      .where(and(searchCondition, ne(usersTable.id, viewer.id)))
+      .orderBy(asc(usersTable.fullName))
       .limit(40);
     const visible = await Promise.all(matches.map(async (match) =>
       await canViewProfile(viewer.id, match.id) && !await isBlockedBetween(viewer.id, match.id) ? match : null,
@@ -33,11 +63,25 @@ router.get("/users/search", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/users/:id/report-context", requireAuth, async (req, res) => {
+  const viewer = getUser(req);
+  const targetId = req.params.id as string;
+  if (viewer.role !== "alumni" || !hasValidAlumniSchool(viewer)) return res.status(404).json({ error: "Report target not found." });
+  const [target] = await db.select({ id: usersTable.id, fullName: usersTable.fullName, role: usersTable.role,
+    jnvId: usersTable.jnvId, jnvName: usersTable.jnvName, jnvState: usersTable.jnvState,
+    photoURL: usersTable.photoURL, verificationStatus: usersTable.verificationStatus,
+  }).from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+  if (!target || target.role !== "alumni" || target.jnvId !== viewer.jnvId || await isBlockedBetween(viewer.id, target.id)) {
+    return res.status(404).json({ error: "Report target not found." });
+  }
+  return res.json({ ...target, skills: [], isRestricted: false });
+});
+
 router.get("/users/alumni", requireAuth, async (req, res) => {
   try {
     const viewer = getUser(req);
     const alumni = await db.select().from(usersTable)
-      .where(and(eq(usersTable.role, "alumni"), eq(usersTable.verificationStatus, "verified")));
+      .where(and(eq(usersTable.role, "alumni"), eq(usersTable.verificationStatus, "community_verified"), isNotNull(usersTable.communityVerifiedAt), eq(usersTable.jnvId, viewer.jnvId ?? makeJnvId(viewer.jnvState, viewer.jnvName))));
     const ids = alumni.map((user) => user.id);
     const [follows, blocks] = ids.length ? await Promise.all([
       db.select({ followingId: userFollowsTable.followingId })
@@ -113,8 +157,10 @@ router.get("/users/profile/:id", requireAuth, async (req, res) => {
       profession: usersTable.profession,
       field: usersTable.field,
       company: usersTable.company,
+      resumeUrl: usersTable.resumeUrl,
       skills: usersTable.skills,
       verificationStatus: usersTable.verificationStatus,
+      communityVerifiedAt: usersTable.communityVerifiedAt,
       subject: usersTable.subject,
       designation: usersTable.designation,
       bio: usersTable.bio,
@@ -154,8 +200,17 @@ router.patch("/users/me", requireAuth, async (req, res) => {
       fullName, profession, company, field, subject, designation,
       skills, photoURL, jnvName, jnvState, house,
       passoutYear, enrollYear, class: cls, bio, phone, linkedinUrl, twitterUrl,
+      resumeUrl,
       avatarConfig, avatarThumbnailURL, profileImageType, uploadedPhotoURL,
     } = req.body;
+
+    // A verified teacher's school affiliation determines the scope of academic
+    // and staff access. It cannot be changed through the ordinary profile API.
+    // Transfers need an authorized, auditable school-membership workflow.
+    if ((jnvName !== undefined && jnvName !== user.jnvName)
+      || (jnvState !== undefined && jnvState !== user.jnvState)) {
+      return res.status(403).json({ error: "School affiliation changes require an authorized JNV transfer workflow" });
+    }
 
     const updates: Partial<typeof usersTable.$inferInsert> = {};
     if (fullName !== undefined) updates.fullName = fullName;
@@ -199,16 +254,30 @@ router.patch("/users/me", requireAuth, async (req, res) => {
       }
       updates.profileImageType = profileImageType;
     }
-    if (jnvName !== undefined) updates.jnvName = jnvName;
-    if (jnvState !== undefined) updates.jnvState = jnvState;
-    if (jnvName !== undefined || jnvState !== undefined || !user.jnvId) {
-      updates.jnvId = makeJnvId(jnvState ?? user.jnvState, jnvName ?? user.jnvName);
-    }
+    if (!user.jnvId) updates.jnvId = makeJnvId(user.jnvState, user.jnvName);
     if (house !== undefined) updates.house = house;
     if (bio !== undefined) updates.bio = bio;
     if (phone !== undefined) updates.phone = phone;
     if (linkedinUrl !== undefined) updates.linkedinUrl = linkedinUrl;
     if (twitterUrl !== undefined) updates.twitterUrl = twitterUrl;
+    if (resumeUrl !== undefined) {
+      if (user.role !== "alumni") return res.status(403).json({ error: "Only alumni can add a resume or CV" });
+      if (typeof resumeUrl !== "string" || resumeUrl.length > 2_048) {
+        return res.status(400).json({ error: "Resume link must be 2,048 characters or fewer" });
+      }
+      const trimmedResumeUrl = resumeUrl.trim();
+      if (trimmedResumeUrl) {
+        try {
+          const parsedResumeUrl = new URL(trimmedResumeUrl);
+          if (parsedResumeUrl.protocol !== "https:" || parsedResumeUrl.username || parsedResumeUrl.password) {
+            return res.status(400).json({ error: "Resume link must be a valid HTTPS URL" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Resume link must be a valid HTTPS URL" });
+        }
+      }
+      updates.resumeUrl = trimmedResumeUrl || null;
+    }
     if (profession !== undefined) updates.profession = profession;
     if (company !== undefined) updates.company = company;
     if (field !== undefined) updates.field = field;

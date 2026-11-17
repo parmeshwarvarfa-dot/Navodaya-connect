@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Keyboard,
   Modal,
   Platform,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,7 +17,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listMemories,
   useCreateMemory,
@@ -28,9 +30,11 @@ import {
 } from "@workspace/api-client-react";
 import type { CreateMemoryRequest, SocialMemory } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { api, type ChatContact } from "@/lib/api";
 import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
 import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
+import FadeIn from "@/components/motion/FadeIn";
 
 type ReportReason = "spam" | "harassment" | "inappropriate content";
 type PostFilter = "all" | "text" | "photo" | "video" | "poll" | "achievement" | "event";
@@ -79,6 +83,13 @@ export default function MemoriesScreen() {
     }, { signal }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.hasMore ? page.nextCursor : undefined,
+  });
+
+  const peopleSearch = useQuery({
+    queryKey: ["memory-people-search", debouncedSearch],
+    queryFn: () => api.users.search(debouncedSearch),
+    enabled: debouncedSearch.length >= 2,
+    staleTime: 30_000,
   });
 
   const memories = useMemo(() => feed.data?.pages.flatMap((page) => page.items) ?? [], [feed.data]);
@@ -185,6 +196,48 @@ export default function MemoriesScreen() {
 
   const headerTop = Math.max(insets.top, Platform.OS === "web" ? 12 : 6);
 
+  const renderPeopleResults = (people: ChatContact[]) => (
+    <View style={styles.peopleSection}>
+      <View style={styles.peopleHeading}>
+        <View style={styles.peopleHeadingIcon}><Ionicons name="people-outline" size={15} color="#355BE5" /></View>
+        <Text style={styles.peopleTitle}>Accounts</Text>
+        {!!people.length && <Text style={styles.peopleCount}>{people.length}</Text>}
+      </View>
+      {peopleSearch.isFetching && !peopleSearch.data ? (
+        <View style={styles.peopleState}><ActivityIndicator size="small" color="#355BE5" /><Text style={styles.peopleStateText}>Searching accounts…</Text></View>
+      ) : peopleSearch.isError ? (
+        <TouchableOpacity style={styles.peopleState} onPress={() => void peopleSearch.refetch()} accessibilityRole="button">
+          <Ionicons name="cloud-offline-outline" size={17} color="#66758E" /><Text style={styles.peopleStateText}>Account search failed. Tap to retry.</Text>
+        </TouchableOpacity>
+      ) : people.length === 0 ? (
+        <Text style={styles.peopleEmpty}>No discoverable accounts match this search.</Text>
+      ) : <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.peopleResults}>
+        {people.map((person) => (
+          <TouchableOpacity
+            key={person.id}
+            style={styles.peopleCard}
+            onPress={() => {
+              Keyboard.dismiss();
+              router.push({ pathname: "/(screens)/user-profile", params: { userId: person.id } });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${person.fullName}'s profile`}
+          >
+            {person.photoURL
+              ? <Image source={{ uri: person.photoURL }} style={styles.peopleAvatar} />
+              : <View style={[styles.peopleAvatar, styles.peopleAvatarFallback]}><Text style={styles.peopleInitial}>{person.fullName.slice(0, 1).toUpperCase()}</Text></View>}
+            <View style={styles.peopleInfo}>
+              <Text style={styles.peopleName} numberOfLines={1}>{person.fullName}</Text>
+              <Text style={styles.peopleMeta} numberOfLines={1}>{person.role.charAt(0).toUpperCase() + person.role.slice(1)}</Text>
+              <Text style={styles.peopleJnv} numberOfLines={1}>{person.jnvName || "Navodaya Connect member"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={17} color="#98A2B3" />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>}
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: headerTop + 8 }]}>
@@ -209,7 +262,7 @@ export default function MemoriesScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search memories, people, or JNV"
+            placeholder="Search memories, people, Digital ID, or JNV"
             placeholderTextColor="#98A2B3"
             returnKeyType="search"
             onSubmitEditing={Keyboard.dismiss}
@@ -244,6 +297,8 @@ export default function MemoriesScreen() {
         />
       </View>
 
+      {debouncedSearch.length >= 2 && renderPeopleResults(peopleSearch.data ?? [])}
+
       {feed.isLoading ? (
         <View style={styles.state}>
           <ActivityIndicator size="small" color="#355BE5" />
@@ -262,19 +317,21 @@ export default function MemoriesScreen() {
         <FlatList
           data={memories}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MemoryPostCard
-              memory={item}
-              currentUserId={profile?.uid}
-              actionPending={toggleLike.isPending || toggleBookmark.isPending || voteInPoll.isPending}
-              onLike={handleLike}
-              onBookmark={handleBookmark}
-              onComments={setCommentsPost}
-              onMore={setMenuPost}
-              onVote={handleVote}
-              onOpenProfile={(userId) => router.push({ pathname: "/(screens)/user-profile", params: { userId } })}
-              onMessage={showToast}
-            />
+          renderItem={({ item, index }) => (
+            <FadeIn delay={Math.min(index, 4) * 30}>
+              <MemoryPostCard
+                memory={item}
+                currentUserId={profile?.uid}
+                actionPending={toggleLike.isPending || toggleBookmark.isPending || voteInPoll.isPending}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                onComments={setCommentsPost}
+                onMore={setMenuPost}
+                onVote={handleVote}
+                onOpenProfile={(userId) => router.push({ pathname: "/(screens)/user-profile", params: { userId } })}
+                onMessage={showToast}
+              />
+            </FadeIn>
           )}
           contentContainerStyle={[styles.list, memories.length === 0 && styles.emptyList]}
           refreshControl={<RefreshControl refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => feed.refetch()} tintColor="#355BE5" />}
@@ -307,7 +364,7 @@ export default function MemoriesScreen() {
         />
       )}
 
-      {!!toast && <View style={[styles.toast, { bottom: Math.max(insets.bottom, 18) + 78 }]} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View>}
+      {!!toast && <FadeIn style={[styles.toast, { bottom: Math.max(insets.bottom, 18) + 78 }]}><Text style={styles.toastText}>{toast}</Text></FadeIn>}
 
       <MemoryComposer
         visible={composerVisible}
@@ -401,6 +458,23 @@ const styles = StyleSheet.create({
   searchBox: { height: 42, marginTop: 13, paddingHorizontal: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F4F6FA", borderWidth: 1, borderColor: "#EBEEF4" },
   searchInput: { flex: 1, minWidth: 0, color: "#27334B", fontSize: 12, fontFamily: "Inter_400Regular", paddingVertical: 0 },
   filters: { gap: 8, paddingTop: 11, paddingBottom: 1 },
+  peopleSection: { backgroundColor: "#fff", paddingTop: 9, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "#E8ECF3" },
+  peopleHeading: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 15, marginBottom: 8 },
+  peopleHeadingIcon: { width: 24, height: 24, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2FF" },
+  peopleTitle: { color: "#27334B", fontSize: 12, fontFamily: "Inter_700Bold" },
+  peopleCount: { color: "#66758E", fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  peopleResults: { paddingHorizontal: 14, gap: 8 },
+  peopleCard: { width: 225, minHeight: 66, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 13, backgroundColor: "#F8F9FC", borderWidth: 1, borderColor: "#E8ECF3", flexDirection: "row", alignItems: "center", gap: 9 },
+  peopleAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#E9EEFF" },
+  peopleAvatarFallback: { alignItems: "center", justifyContent: "center" },
+  peopleInitial: { color: "#355BE5", fontSize: 14, fontFamily: "Inter_700Bold" },
+  peopleInfo: { flex: 1, minWidth: 0, gap: 2 },
+  peopleName: { color: "#27334B", fontSize: 11, fontFamily: "Inter_700Bold" },
+  peopleMeta: { color: "#66758E", fontSize: 9, fontFamily: "Inter_500Medium" },
+  peopleJnv: { color: "#8A95A8", fontSize: 9, fontFamily: "Inter_400Regular" },
+  peopleState: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 14 },
+  peopleStateText: { color: "#66758E", fontSize: 11, fontFamily: "Inter_400Regular" },
+  peopleEmpty: { paddingHorizontal: 15, color: "#8792A5", fontSize: 11, fontFamily: "Inter_400Regular" },
   filterChip: { height: 32, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, borderRadius: 17, backgroundColor: "#F3F5F9", borderWidth: 1, borderColor: "#E9EDF4" },
   filterChipActive: { backgroundColor: "#355BE5", borderColor: "#355BE5" },
   filterText: { color: "#68758D", fontSize: 11, fontFamily: "Inter_600SemiBold" },

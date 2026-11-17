@@ -7,13 +7,19 @@
     "dev": "node ./scripts/dev.mjs",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
+    "db:migrate-academic": "node ./scripts/apply-teacher-assignment-migration.mjs",
+    "test:academic-assignments": "node ./scripts/test-academic-assignment-workflows.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1158.0",
+    "@aws-sdk/lib-storage": "^3.1158.0",
+    "@aws-sdk/s3-request-presigner": "^3.1158.0",
     "@google/generative-ai": "^0.24.1",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "chess.js": "^1.4.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
     "drizzle-orm": "catalog:",
@@ -34,4 +40,3 @@
     "thread-stream": "3.1.0"
   }
 }
-

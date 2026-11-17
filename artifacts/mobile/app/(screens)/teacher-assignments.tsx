@@ -7,10 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
-import type { AssignmentWithSubs } from "@/lib/api";
-
-const CLASSES  = ["Class 11 Sci A", "Class 12 Sci B", "Class 10 A", "Class 9 A", "Class 8 B"];
-const SUBJECTS = ["Physics", "Chemistry", "Maths", "English", "Biology"];
+import type { AssignmentWithSubs, TeacherClassAssignment } from "@/lib/api";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Pending"   },
@@ -23,6 +20,7 @@ export default function TeacherAssignmentsScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 0 : insets.top;
   const [assignments, setAssignments] = useState<AssignmentWithSubs[]>([]);
+  const [classAssignments, setClassAssignments] = useState<TeacherClassAssignment[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [expanded,    setExpanded]    = useState<string | null>(null);
   const [showCreate,  setShowCreate]  = useState(false);
@@ -41,8 +39,9 @@ export default function TeacherAssignmentsScreen() {
 
   const fetchAssignments = async () => {
     try {
-      const data = await api.assignments.list();
+      const [data, assignedClasses] = await Promise.all([api.assignments.list(), api.academicClasses.list()]);
       setAssignments(data);
+      setClassAssignments(assignedClasses.filter((item) => item.active));
     } catch {}
     setLoading(false);
   };
@@ -63,6 +62,9 @@ export default function TeacherAssignmentsScreen() {
     }
     setSubmitting(false);
   };
+
+  const availableClasses = [...new Set(classAssignments.map((item) => item.className))];
+  const availableSubjects = [...new Set(classAssignments.filter((item) => item.className === cls).map((item) => item.subject))];
 
   const markReviewed = async () => {
     if (!remarkText.trim() || !remarkTarget) { showToast("Enter a remark first."); return; }
@@ -171,23 +173,24 @@ export default function TeacherAssignmentsScreen() {
               <Text style={styles.fieldLabel}>Assignment Title *</Text>
               <TextInput style={styles.input} placeholder="e.g. Newton's Laws Problems" placeholderTextColor="#9CA3AF" value={title} onChangeText={setTitle} />
 
-              <Text style={styles.fieldLabel}>Subject *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {SUBJECTS.map((s) => (
-                  <TouchableOpacity key={s} style={[styles.pill, subject === s && styles.pillActive]} onPress={() => setSubject(s)}>
-                    <Text style={[styles.pillText, subject === s && styles.pillTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
               <Text style={styles.fieldLabel}>Target Class *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-                {CLASSES.map((c) => (
-                  <TouchableOpacity key={c} style={[styles.pill, cls === c && styles.pillActive]} onPress={() => setCls(c)}>
+                {availableClasses.map((c) => (
+                  <TouchableOpacity key={c} style={[styles.pill, cls === c && styles.pillActive]} onPress={() => { setCls(c); setSubject(""); }}>
                     <Text style={[styles.pillText, cls === c && styles.pillTextActive]}>{c}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
+
+              <Text style={styles.fieldLabel}>Subject *</Text>
+              {cls ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
+                {availableSubjects.map((s) => (
+                  <TouchableOpacity key={s} style={[styles.pill, subject === s && styles.pillActive]} onPress={() => setSubject(s)}>
+                    <Text style={[styles.pillText, subject === s && styles.pillTextActive]}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView> : <Text style={styles.emptyText}>Choose an assigned class to see its subjects.</Text>}
+              {!availableClasses.length ? <Text style={styles.emptyText}>Your JNV official must assign a class and subject before you can publish class assignments.</Text> : null}
 
               <Text style={styles.fieldLabel}>Due Date *</Text>
               <TextInput style={styles.input} placeholder="e.g. 15 May 2026" placeholderTextColor="#9CA3AF" value={dueDate} onChangeText={setDueDate} />

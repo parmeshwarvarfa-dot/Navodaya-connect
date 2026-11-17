@@ -1,4 +1,6 @@
-﻿import { Router } from "express";
+import { Router } from "express";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { requireAuth } from "../lib/auth";
 import { logger } from "../lib/logger";
@@ -15,6 +17,34 @@ type HistoryMessage = {
 
 function getFallbackReply() {
   return "I'm having trouble reaching my AI service right now. Please try again in a moment.";
+}
+
+function resolveGeminiApiKey(): string | undefined {
+  if (process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+
+  // Attempt to reload workspace root .env in case it was updated at runtime
+  const candidatePaths = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "../../.env"),
+    path.resolve(process.cwd(), "../.env"),
+  ];
+
+  for (const envPath of candidatePaths) {
+    if (existsSync(envPath) && typeof process.loadEnvFile === "function") {
+      try {
+        process.loadEnvFile(envPath);
+        if (process.env.GEMINI_API_KEY) {
+          return process.env.GEMINI_API_KEY;
+        }
+      } catch {
+        // ignore errors reading env file
+      }
+    }
+  }
+
+  return process.env.GEMINI_API_KEY;
 }
 
 router.post("/param-ai/chat", requireAuth, async (req, res) => {
@@ -36,18 +66,21 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "Message is required" });
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  const apiKey = resolveGeminiApiKey();
+
+  if (!apiKey) {
     logger.error("Param AI is unavailable because GEMINI_API_KEY is not configured");
-    const reply = "Param AI is not configured yet. Add GEMINI_API_KEY to the API server's .env file and restart the API server.";
-    return res.status(503).json({ error: reply, reply });
+    return res.status(503).json({ reply: getFallbackReply() });
   }
 
   try {
-    const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = gemini.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
-    });
+    const gemini = new GoogleGenerativeAI(apiKey);
+    const candidateModels = [
+      process.env.GEMINI_MODEL,
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+    ].filter(Boolean) as string[];
 
     const chatHistory: Content[] = history
       .map((item: { role: string; text: string }) => ({
@@ -60,16 +93,33 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
       chatHistory.shift();
     }
 
-    const chat = model.startChat({
-      history: chatHistory,
-      generationConfig: {
-        maxOutputTokens: 8192,
-      },
-    });
-    const result = await chat.sendMessage(message);
-    const reply = result.response.text().trim();
+    let reply = "";
+    let lastError: unknown = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = gemini.getGenerativeModel({
+          model: modelName,
+          systemInstruction: SYSTEM_PROMPT,
+        });
+
+        const chat = model.startChat({
+          history: chatHistory,
+          generationConfig: {
+            maxOutputTokens: 8192,
+          },
+        });
+        const result = await chat.sendMessage(message);
+        reply = result.response.text().trim();
+        if (reply) break;
+      } catch (err) {
+        lastError = err;
+        logger.warn({ modelName, err }, "Gemini model attempt failed, trying fallback");
+      }
+    }
 
     if (!reply) {
+      logger.error({ err: lastError }, "All Gemini model candidates failed");
       return res.status(502).json({ reply: getFallbackReply() });
     }
 

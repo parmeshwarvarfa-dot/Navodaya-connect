@@ -20,7 +20,25 @@ export function VerifiedBadge({ status, role, size = "md", showLabel = true }: P
   const isOfficial = role === "official";
   const isTeacher  = role === "teacher";
 
+  if (status === "community_verified" && role === "alumni") {
+    return (
+      <View style={[s.badge, { backgroundColor: "#ECFDF5", paddingHorizontal: padH, paddingVertical: padV, borderColor: "#10B98140", borderWidth: 1 }]}>
+        <Ionicons name="people" size={iconSize} color="#059669" />
+        {showLabel && !sm && <Text style={[s.label, { color: "#059669", fontSize: textSize }]}>Community Verified</Text>}
+      </View>
+    );
+  }
+
+  if (status === "under_review") {
+    return <View style={[s.badge, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, paddingHorizontal: padH, paddingVertical: padV }]}><Ionicons name="time" size={iconSize} color="#D97706" />{showLabel && !sm && <Text style={[s.label, { color: "#D97706", fontSize: textSize }]}>Under Review</Text>}</View>;
+  }
+
+  if (status === "revoked") {
+    return <View style={[s.badge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA", borderWidth: 1, paddingHorizontal: padH, paddingVertical: padV }]}><Ionicons name="close-circle" size={iconSize} color="#EF4444" />{showLabel && !sm && <Text style={[s.label, { color: "#EF4444", fontSize: textSize }]}>Verification Revoked</Text>}</View>;
+  }
+
   if (status === "verified") {
+    if (role === "alumni") return <View style={[s.badge, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A", borderWidth: 1, paddingHorizontal: padH, paddingVertical: padV }]}><Ionicons name="information-circle" size={iconSize} color="#D97706" />{showLabel && !sm && <Text style={[s.label, { color: "#D97706", fontSize: textSize }]}>Peer Confirmation Needed</Text>}</View>;
     const cfg = isOfficial
       ? { color: "#D97706", bg: "#FFFBEB", label: "Coordinator",      icon: "shield-checkmark" as const }
       : isTeacher

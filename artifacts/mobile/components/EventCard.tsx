@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView, Image, Linking } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import type { Event } from "@/lib/api";
+import MotionPressable from "@/components/motion/MotionPressable";
 
 const GRADIENT_SETS: [string, string][] = [
   ["#4B6EF5", "#3151E8"],
@@ -48,6 +49,8 @@ interface EventCardProps {
   registrationSuccess?: boolean;
   onRegister?: () => void;
   onOrganizerPress?: (organizerId: string | undefined, organizerName: string) => boolean | void | Promise<boolean | void>;
+  onEdit?: () => void;
+  onDelete?: () => void;
   showRegisterButton?: boolean;
 }
 
@@ -58,6 +61,8 @@ export default function EventCard({
   registrationSuccess = false,
   onRegister,
   onOrganizerPress,
+  onEdit,
+  onDelete,
   showRegisterButton = true,
 }: EventCardProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -77,6 +82,9 @@ export default function EventCard({
 
   return (
     <View style={styles.card}>
+      {event.mediaUrl && event.mediaType === "image" ? (
+        <Image source={{ uri: event.mediaUrl }} style={styles.eventThumbnail} resizeMode="cover" accessibilityLabel={`${event.title} event thumbnail`} />
+      ) : null}
       <LinearGradient colors={grad} style={styles.strip}>
         <View style={styles.dateBox}>
           <Text style={styles.dateDay}>{day}</Text>
@@ -112,6 +120,14 @@ export default function EventCard({
       </LinearGradient>
 
       <View style={styles.body}>
+        {event.mediaUrl ? (
+          event.mediaType === "video" ? (
+            <TouchableOpacity style={styles.eventMediaVideo} onPress={() => void Linking.openURL(event.mediaUrl!)} activeOpacity={0.85} accessibilityLabel="Play event preview video">
+              <Ionicons name="play-circle" size={54} color="#fff" />
+              <Text style={styles.eventMediaVideoText}>Play event preview</Text>
+            </TouchableOpacity>
+          ) : null
+        ) : null}
         {event.description ? (
           <Text style={styles.desc} numberOfLines={3}>
             {event.description}
@@ -158,11 +174,24 @@ export default function EventCard({
           ) : null}
         </View>
 
-        <TouchableOpacity style={styles.detailsLink} onPress={() => setDetailsOpen(true)} activeOpacity={0.75}>
+        <MotionPressable style={styles.detailsLink} onPress={() => setDetailsOpen(true)}>
           <Ionicons name="information-circle-outline" size={17} color="#3D5AF1" />
           <Text style={styles.detailsLinkText}>Event details</Text>
           <Ionicons name="chevron-forward" size={15} color="#3D5AF1" />
-        </TouchableOpacity>
+        </MotionPressable>
+
+        {(onEdit || onDelete) && (
+          <View style={styles.ownerActions}>
+            {onEdit && <TouchableOpacity style={styles.editEventButton} onPress={onEdit} accessibilityRole="button" accessibilityLabel={`Edit ${event.title}`}>
+              <Ionicons name="create-outline" size={16} color="#3D5AF1" />
+              <Text style={styles.editEventText}>Edit event</Text>
+            </TouchableOpacity>}
+            {onDelete && <TouchableOpacity style={styles.deleteEventButton} onPress={onDelete} accessibilityRole="button" accessibilityLabel={`Delete ${event.title}`}>
+              <Ionicons name="trash-outline" size={16} color="#B42318" />
+              <Text style={styles.deleteEventText}>Delete</Text>
+            </TouchableOpacity>}
+          </View>
+        )}
 
         {showRegisterButton && (
           registrationSuccess ? (
@@ -171,10 +200,10 @@ export default function EventCard({
               <Text style={styles.successBannerText}>You&apos;re registered! See you there.</Text>
             </View>
           ) : (
-            <TouchableOpacity
+            <MotionPressable
               style={[styles.registerBtn, registered && styles.registeredBtn]}
               onPress={registered ? undefined : onRegister}
-              activeOpacity={registered ? 1 : 0.85}
+              disabled={registered || !onRegister}
             >
               <Ionicons
                 name={registered ? "checkmark-circle" : "person-add-outline"}
@@ -184,7 +213,7 @@ export default function EventCard({
               <Text style={styles.registerBtnText}>
                 {registered ? "Registered" : "Register for this Event"}
               </Text>
-            </TouchableOpacity>
+            </MotionPressable>
           )
         )}
       </View>
@@ -250,6 +279,18 @@ export default function EventCard({
               {event.createdAt ? (
                 <Text style={styles.publishedText}>Event posted {formatDateTime(event.createdAt)}</Text>
               ) : null}
+              {(onEdit || onDelete) && (
+                <View style={[styles.ownerActions, styles.detailsOwnerActions]}>
+                  {onEdit && <TouchableOpacity style={styles.editEventButton} onPress={() => { setDetailsOpen(false); onEdit(); }} accessibilityRole="button" accessibilityLabel={`Edit ${event.title}`}>
+                    <Ionicons name="create-outline" size={16} color="#3D5AF1" />
+                    <Text style={styles.editEventText}>Edit event</Text>
+                  </TouchableOpacity>}
+                  {onDelete && <TouchableOpacity style={styles.deleteEventButton} onPress={() => { setDetailsOpen(false); onDelete(); }} accessibilityRole="button" accessibilityLabel={`Delete ${event.title}`}>
+                    <Ionicons name="trash-outline" size={16} color="#B42318" />
+                    <Text style={styles.deleteEventText}>Delete event</Text>
+                  </TouchableOpacity>}
+                </View>
+              )}
             </ScrollView>
             {showRegisterButton && !registered && !registrationSuccess ? (
               <TouchableOpacity
@@ -351,6 +392,9 @@ const styles = StyleSheet.create({
   },
   onlinePillText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#3D5AF1" },
   body: { padding: 16 },
+  eventThumbnail: { width: "100%", height: 210, backgroundColor: "#E5E7EB" },
+  eventMediaVideo: { width: "100%", height: 190, borderRadius: 12, marginBottom: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#1F2937" },
+  eventMediaVideoText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold", marginTop: 4 },
   desc: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
@@ -361,6 +405,12 @@ const styles = StyleSheet.create({
   metaGrid: { gap: 10, marginBottom: 16 },
   detailsLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 5, marginTop: -8, marginBottom: 8 },
   detailsLinkText: { color: "#3D5AF1", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  ownerActions: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  detailsOwnerActions: { marginTop: 8, marginBottom: 18 },
+  editEventButton: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#EEF2FF" },
+  editEventText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  deleteEventButton: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#FEF3F2" },
+  deleteEventText: { color: "#B42318", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 10 },
   metaIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   metaLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },

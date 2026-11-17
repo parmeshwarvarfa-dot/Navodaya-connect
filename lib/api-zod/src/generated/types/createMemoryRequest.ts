@@ -7,12 +7,14 @@
  */
 import type { CreateMemoryRequestPostType } from "./createMemoryRequestPostType";
 import type { CreateMemoryRequestVisibility } from "./createMemoryRequestVisibility";
+import type { MemoryMediaAsset } from "./memoryMediaAsset";
 
 export interface CreateMemoryRequest {
   /** @maxLength 4000 */
   caption: string;
   postType?: CreateMemoryRequestPostType;
-  mediaUrls?: string[];
+  /** @maxItems 10 */
+  mediaAssets?: MemoryMediaAsset[];
   pollOptions?: string[];
   visibility?: CreateMemoryRequestVisibility;
   commentsEnabled?: boolean;

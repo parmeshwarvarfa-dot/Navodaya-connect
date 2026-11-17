@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Modal, KeyboardAvoidingView,
@@ -6,6 +6,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { api, type MentorRequest, type MentorDirectoryEntry } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = ["JEE/IIT", "NEET", "UPSC", "Coding/Tech", "Startup", "Defence", "Law", "Research", "General Career"];
 const CAT_COLOR: Record<string, string> = {
@@ -13,39 +15,75 @@ const CAT_COLOR: Record<string, string> = {
   "Startup": "#F59E0B", "Defence": "#6366F1", "Law": "#EC4899", "Research": "#D97706", "General Career": "#6B7280",
 };
 
-const MENTORS = [
-  { id: "1", name: "Rahul Verma",     role: "SWE at Google",               category: "Coding/Tech",   available: true,  rating: 4.9, sessions: 24, jnv: "JNV Lucknow", year: "2018" },
-  { id: "2", name: "Dr. Meera Iyer",  role: "MBBS, AIIMS Delhi",           category: "NEET",          available: true,  rating: 4.8, sessions: 18, jnv: "JNV Kochi",   year: "2015" },
-  { id: "3", name: "Kavita Singh",    role: "IAS Officer â€“ AIR 47",        category: "UPSC",          available: false, rating: 5.0, sessions: 31, jnv: "JNV Patna",   year: "2012" },
-  { id: "4", name: "Arjun Sharma",    role: "JEE AIR 204, IIT Bombay CSE", category: "JEE/IIT",       available: true,  rating: 4.7, sessions: 15, jnv: "JNV Jaipur",  year: "2020" },
-  { id: "5", name: "Vivek Nair",      role: "Captain, Indian Army",        category: "Defence",       available: false, rating: 4.6, sessions: 9,  jnv: "JNV Thrissur", year: "2014" },
-];
 
-const REQUESTS = [
-  { id: "r1", student: "Ananya S.", class: "Class 12 Sci A", goal: "JEE Preparation",   category: "JEE/IIT",     time: "2h ago",    status: "pending"  },
-  { id: "r2", student: "Dev P.",    class: "Class 11 Sci B", goal: "Career in Tech",    category: "Coding/Tech", time: "5h ago",    status: "pending"  },
-  { id: "r3", student: "Priya M.",  class: "Class 12 Sci A", goal: "NEET Preparation",  category: "NEET",        time: "Yesterday", status: "accepted" },
-];
 
 export default function AlumniMentorshipScreen() {
   const insets   = useSafeAreaInsets();
+  const { profile } = useAuth();
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const [activeTab,  setActiveTab]  = useState<"requests" | "mentors" | "my">("requests");
   const [catFilter,  setCatFilter]  = useState("All");
-  const [requests,   setRequests]   = useState(REQUESTS);
+  const [requests, setRequests] = useState<MentorRequest[]>([]);
+  const [mentors, setMentors] = useState<MentorDirectoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAvail,  setShowAvail]  = useState(false);
   const [toast,      setToast]      = useState("");
   const [showBecome, setShowBecome] = useState(false);
   const [becomeNote, setBecomeNote] = useState("");
   const [becomeCat,  setBecomeCat]  = useState("");
+  const [selectedMentor, setSelectedMentor] = useState<MentorDirectoryEntry | null>(null);
+  const [mentorCategories, setMentorCategories] = useState<string[]>([]);
+  const [mentorBio, setMentorBio] = useState("");
+  const [mentorProfileLoaded, setMentorProfileLoaded] = useState(false);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
+  const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, string>>({});
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>({});
+  const [feedbackRatings, setFeedbackRatings] = useState<Record<string, number>>({});
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2600); };
 
-  const accept  = (id: string) => { setRequests((p) => p.map((r) => r.id === id ? { ...r, status: "accepted"  } : r)); showToast("Request accepted! Student notified."); };
-  const decline = (id: string) => { setRequests((p) => p.map((r) => r.id === id ? { ...r, status: "declined"  } : r)); showToast("Request declined."); };
+  useEffect(() => {
+    let active = true;
+    Promise.all([api.mentorRequests.list(), profile?.role === "student" ? api.mentorRequests.mentors() : Promise.resolve([] as MentorDirectoryEntry[])])
+      .then(([items, directory]) => { if (active) { setRequests(items); setMentors(directory); } })
+      .catch((error) => showToast(error instanceof Error ? error.message : "Could not load mentorship data."))
+      .finally(() => { if (active) setLoading(false); });
+    if (profile?.role === "alumni") api.mentorRequests.availability().then((settings) => { if (active) { setShowAvail(settings.available); setMentorCategories(settings.categories); setMentorBio(settings.bio); setMentorProfileLoaded(true); } }).catch((error) => { if (active) showToast(error instanceof Error ? error.message : "Could not load mentor settings."); });
+    return () => { active = false; };
+  }, [profile?.uid, profile?.role]);
 
-  const filteredMentors = catFilter === "All" ? MENTORS : MENTORS.filter((m) => m.category === catFilter);
-
+  const saveAvailability = async (available: boolean) => {
+    if (available && !mentorCategories.length) { showToast("Choose at least one mentorship topic first."); return; }
+    const categories = mentorCategories;
+    setAvailabilityBusy(true);
+    try {
+      const saved = await api.mentorRequests.updateAvailability({ available, categories, bio: mentorBio });
+      setShowAvail(saved.available); setMentorCategories(saved.categories); showToast(saved.available ? "Students can now find your mentor profile." : "You are hidden from mentor discovery.");
+    } catch (error) { showToast(error instanceof Error ? error.message : "Could not save availability."); }
+    finally { setAvailabilityBusy(false); }
+  };
+  const toggleMentorCategory = (category: string) => setMentorCategories((current) => current.includes(category) ? current.filter((item) => item !== category) : [...current, category]);
+  const respond = async (id: string, status: "accepted" | "declined") => {
+    try { const updated = await api.mentorRequests.respond(id, status); setRequests((rows) => rows.map((row) => row.id === id ? updated : row)); showToast(`Request ${status}.`); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not update request."); }
+  };
+  const scheduleSession = async (request: MentorRequest) => {
+    const raw = (scheduleDrafts[request.id] ?? "").trim();
+    const localValue = raw.includes("T") ? raw : raw.replace(" ", "T");
+    const when = new Date(localValue);
+    if (Number.isNaN(when.getTime())) { showToast("Enter a date and time like 2026-11-05 17:30."); return; }
+    try { const saved = await api.mentorRequests.schedule(request.id, when.toISOString()); setRequests((rows) => rows.map((row) => row.id === saved.id ? saved : row)); showToast("Session time saved."); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not schedule this session."); }
+  };
+  const completeSession = async (request: MentorRequest) => {
+    try { const saved = await api.mentorRequests.complete(request.id); setRequests((rows) => rows.map((row) => row.id === saved.id ? saved : row)); showToast("Session marked complete."); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not complete this session."); }
+  };
+  const submitFeedback = async (request: MentorRequest) => {
+    try { const saved = await api.mentorRequests.feedback(request.id, feedbackRatings[request.id] ?? 5, feedbackDrafts[request.id] ?? ""); setRequests((rows) => rows.map((row) => row.id === saved.id ? saved : row)); showToast("Thank you for reviewing the session."); }
+    catch (error) { showToast(error instanceof Error ? error.message : "Could not save feedback."); }
+  };
+  const filteredMentors = mentors.filter((person) => catFilter === "All" || person.categories.includes(catFilter));
   const statusCfg: Record<string, { color: string; bg: string }> = {
     pending:  { color: "#F59E0B", bg: "#FFFBEB" },
     accepted: { color: "#10B981", bg: "#ECFDF5" },
@@ -59,19 +97,25 @@ export default function AlumniMentorshipScreen() {
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mentorship Program</Text>
-        <TouchableOpacity style={styles.becomeBtn} onPress={() => setShowBecome(true)}>
-          <Text style={styles.becomeBtnText}>Become Mentor</Text>
-        </TouchableOpacity>
+
       </View>
 
       {/* Availability toggle */}
-      <View style={styles.availRow}>
-        <Ionicons name="radio-button-on" size={14} color={showAvail ? "#10B981" : "#9CA3AF"} />
-        <Text style={styles.availLabel}>Available for mentorship</Text>
-        <TouchableOpacity style={[styles.availToggle, showAvail && styles.availToggleOn]} onPress={() => { setShowAvail(!showAvail); showToast(showAvail ? "You're now unavailable." : "You're now available for mentorship!"); }}>
-          <View style={[styles.availDot, showAvail && styles.availDotOn]} />
-        </TouchableOpacity>
-      </View>
+      {profile?.role === "alumni" && <>
+        <View style={styles.availRow}>
+          <Ionicons name="radio-button-on" size={14} color={showAvail ? "#10B981" : "#9CA3AF"} />
+          <Text style={styles.availLabel}>Available for mentorship</Text>
+          <TouchableOpacity style={[styles.availToggle, showAvail && styles.availToggleOn]} onPress={() => void saveAvailability(!showAvail)} disabled={availabilityBusy || !mentorProfileLoaded}>
+            <View style={[styles.availDot, showAvail && styles.availDotOn]} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.mentorSettings}>
+          <Text style={styles.fieldLabel}>Topics you can mentor</Text>
+          <View style={styles.catGrid}>{CATEGORIES.map((category) => <TouchableOpacity key={category} style={[styles.catCard, mentorCategories.includes(category) && styles.mentorCategorySelected]} onPress={() => toggleMentorCategory(category)}><Text style={styles.catCardText}>{category}</Text></TouchableOpacity>)}</View>
+          <TextInput style={styles.input} placeholder="Short bio about your experience and availability" value={mentorBio} onChangeText={setMentorBio} multiline />
+          <TouchableOpacity style={styles.confirmBtn} onPress={() => void saveAvailability(showAvail)} disabled={availabilityBusy || !mentorProfileLoaded}><Text style={styles.confirmBtnText}>{availabilityBusy ? "Saving..." : "Save mentor profile"}</Text></TouchableOpacity>
+        </View>
+      </>}
 
       {/* Tab bar */}
       <View style={styles.tabBar}>
@@ -86,36 +130,53 @@ export default function AlumniMentorshipScreen() {
 
         {activeTab === "requests" && (
           <>
+            {loading && <Text style={styles.emptyText}>Loading mentorship requests…</Text>}
             {requests.map((r) => {
-              const cfg = statusCfg[r.status];
-              const catColor = CAT_COLOR[r.category] || "#6B7280";
+              const cfg = statusCfg[r.status] || statusCfg.pending;
+              const catColor = CAT_COLOR[r.category || ""] || "#6B7280";
               return (
                 <View key={r.id} style={styles.requestCard}>
                   <View style={styles.reqTop}>
-                    <View style={styles.reqAvatar}><Text style={styles.reqAvatarText}>{r.student[0]}</Text></View>
+                    <View style={styles.reqAvatar}><Text style={styles.reqAvatarText}>{(r.studentName || "?")[0]}</Text></View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.reqStudent}>{r.student} Â· {r.class}</Text>
-                      <Text style={styles.reqGoal}>{r.goal}</Text>
+                      <Text style={styles.reqStudent}>{r.studentName || "Student"}</Text>
+                      <Text style={styles.reqGoal}>{r.message || "Mentorship request"}</Text>
                       <View style={styles.reqMeta}>
                         <View style={[styles.catPill, { backgroundColor: catColor + "18" }]}>
-                          <Text style={[styles.catPillText, { color: catColor }]}>{r.category}</Text>
+                          <Text style={[styles.catPillText, { color: catColor }]}>{r.category || "Mentorship"}</Text>
                         </View>
-                        <Text style={styles.reqTime}>{r.time}</Text>
+                        <Text style={styles.reqTime}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}</Text>
                       </View>
                     </View>
                     <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
                       <Text style={[styles.statusText, { color: cfg.color }]}>{r.status.charAt(0).toUpperCase() + r.status.slice(1)}</Text>
                     </View>
                   </View>
-                  {r.status === "pending" && (
+                  {r.status === "pending" && r.mentorId === profile?.uid && (
                     <View style={styles.reqActions}>
-                      <TouchableOpacity style={styles.declineBtn} onPress={() => decline(r.id)}><Text style={styles.declineBtnText}>Decline</Text></TouchableOpacity>
-                      <TouchableOpacity style={styles.acceptBtn} onPress={() => accept(r.id)}><Text style={styles.acceptBtnText}>Accept</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.declineBtn} onPress={() => void respond(r.id, "declined")}><Text style={styles.declineBtnText}>Decline</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.acceptBtn} onPress={() => void respond(r.id, "accepted")}><Text style={styles.acceptBtnText}>Accept</Text></TouchableOpacity>
                     </View>
                   )}
+                  {r.status === "accepted" && <View style={styles.sessionBox}>
+                    <Text style={styles.fieldLabel}>Schedule this mentoring session</Text>
+                    <Text style={styles.sessionHint}>{r.scheduledAt ? `Current time: ${new Date(r.scheduledAt).toLocaleString()}` : "Enter a local date and time (example: 2026-11-05 17:30). Agree on a call method in your chat."}</Text>
+                    <TextInput style={styles.input} placeholder="YYYY-MM-DD HH:mm" value={scheduleDrafts[r.id] ?? (r.scheduledAt ? new Date(r.scheduledAt).toISOString().slice(0, 16).replace("T", " ") : "")} onChangeText={(value) => setScheduleDrafts((items) => ({ ...items, [r.id]: value }))} />
+                    <TouchableOpacity style={styles.sessionButton} onPress={() => void scheduleSession(r)}><Text style={styles.sessionButtonText}>{r.scheduledAt ? "Update session time" : "Save session time"}</Text></TouchableOpacity>
+                    {profile?.role === "alumni" && r.mentorId === profile.uid && r.scheduledAt && <TouchableOpacity style={styles.completeButton} onPress={() => void completeSession(r)}><Text style={styles.completeButtonText}>Mark session complete</Text></TouchableOpacity>}
+                  </View>}
+                  {r.status === "completed" && r.studentId === profile?.uid && <View style={styles.sessionBox}>
+                    {r.feedbackRating ? <Text style={styles.sessionHint}>Your feedback: {r.feedbackRating}/5{r.feedback ? ` · ${r.feedback}` : ""}</Text> : <>
+                      <Text style={styles.fieldLabel}>How was this session?</Text>
+                      <View style={styles.reqActions}>{[1, 2, 3, 4, 5].map((rating) => <TouchableOpacity key={rating} style={[styles.ratingButton, (feedbackRatings[r.id] ?? 5) === rating && styles.ratingButtonSelected]} onPress={() => setFeedbackRatings((items) => ({ ...items, [r.id]: rating }))}><Text style={styles.ratingText}>{rating}</Text></TouchableOpacity>)}</View>
+                      <TextInput style={styles.input} placeholder="Optional feedback for your mentor" value={feedbackDrafts[r.id] ?? ""} onChangeText={(value) => setFeedbackDrafts((items) => ({ ...items, [r.id]: value }))} />
+                      <TouchableOpacity style={styles.sessionButton} onPress={() => void submitFeedback(r)}><Text style={styles.sessionButtonText}>Send feedback</Text></TouchableOpacity>
+                    </>}
+                  </View>}
                 </View>
               );
             })}
+            {!loading && requests.length === 0 && <View style={styles.emptyState}><Text style={styles.emptyTitle}>No mentorship requests</Text><Text style={styles.emptyText}>Requests from your school will appear here.</Text></View>}
           </>
         )}
 
@@ -129,36 +190,28 @@ export default function AlumniMentorshipScreen() {
               ))}
             </ScrollView>
 
-            {filteredMentors.map((m) => {
-              const catColor = CAT_COLOR[m.category] || "#6B7280";
+            {loading ? <View style={styles.emptyState}><Text style={styles.emptyText}>Loading verified alumni…</Text></View> : filteredMentors.length === 0 ? <View style={styles.emptyState}><Ionicons name="people-outline" size={42} color="#9BA6B8" /><Text style={styles.emptyTitle}>No verified alumni mentors listed</Text><Text style={styles.emptyText}>This school has no verified alumni profiles available for mentor discovery yet.</Text></View> : filteredMentors.map((m) => {
               return (
                 <View key={m.id} style={styles.mentorCard}>
                   <View style={styles.mentorTop}>
-                    <View style={styles.mentorAvatar}><Text style={styles.mentorAvatarText}>{m.name[0]}</Text></View>
+                    <View style={styles.mentorAvatar}><Text style={styles.mentorAvatarText}>{m.fullName[0]}</Text></View>
                     <View style={{ flex: 1 }}>
                       <View style={styles.mentorNameRow}>
-                        <Text style={styles.mentorName}>{m.name}</Text>
+                        <Text style={styles.mentorName}>{m.fullName}</Text>
                         <Ionicons name="checkmark-circle" size={14} color="#3D5AF1" />
                       </View>
-                      <Text style={styles.mentorRole}>{m.role}</Text>
-                      <Text style={styles.mentorJnv}>{m.jnv} Â· {m.year} batch</Text>
+                      <Text style={styles.mentorRole}>{m.profession || "Verified alumni"}</Text>
+                      <Text style={styles.mentorJnv}>{m.jnvName || profile?.jnvName}</Text>
+                      {!!m.bio && <Text style={styles.mentorBio}>{m.bio}</Text>}
+                      <Text style={styles.mentorCategories}>{m.categories.join(", ")}</Text>
                     </View>
-                    <View style={[styles.availBadge, { backgroundColor: m.available ? "#ECFDF5" : "#F3F4F6" }]}>
-                      <View style={[styles.availDotSmall, { backgroundColor: m.available ? "#10B981" : "#9CA3AF" }]} />
-                      <Text style={[styles.availText, { color: m.available ? "#10B981" : "#9CA3AF" }]}>{m.available ? "Available" : "Busy"}</Text>
+                    <View style={[styles.availBadge, { backgroundColor: "#EEF2FF" }]}>
+                      <Text style={[styles.availText, { color: "#3D5AF1" }]}>Verified</Text>
                     </View>
                   </View>
                   <View style={styles.mentorStats}>
-                    <View style={[styles.catPill, { backgroundColor: catColor + "18" }]}>
-                      <Text style={[styles.catPillText, { color: catColor }]}>{m.category}</Text>
-                    </View>
-                    <View style={styles.ratingRow}>
-                      <Ionicons name="star" size={12} color="#F59E0B" />
-                      <Text style={styles.ratingText}>{m.rating}</Text>
-                    </View>
-                    <Text style={styles.sessionsText}>{m.sessions} sessions</Text>
-                    <TouchableOpacity style={[styles.requestBtn, !m.available && styles.requestBtnDisabled]} disabled={!m.available}>
-                      <Text style={[styles.requestBtnText, !m.available && { color: "#9CA3AF" }]}>{m.available ? "Request" : "Unavailable"}</Text>
+                    <TouchableOpacity style={styles.requestBtn} onPress={() => { setSelectedMentor(m); setShowBecome(true); }}>
+                      <Text style={styles.requestBtnText}>Request</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -167,13 +220,7 @@ export default function AlumniMentorshipScreen() {
           </>
         )}
 
-        {activeTab === "my" && (
-          <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No Active Mentees</Text>
-            <Text style={styles.emptyText}>Accept mentorship requests to start guiding students.</Text>
-          </View>
-        )}
+        {activeTab === "my" && (profile?.role === "alumni" ? requests.filter((request) => request.mentorId === profile.uid && ["accepted", "completed"].includes(request.status)).length ? requests.filter((request) => request.mentorId === profile.uid && ["accepted", "completed"].includes(request.status)).map((request) => <View key={request.id} style={styles.requestCard}><Text style={styles.reqStudent}>{request.studentName || "Student"}</Text><Text style={styles.reqGoal}>{request.category || "Mentorship"} - {request.status}</Text><Text style={styles.sessionHint}>{request.scheduledAt ? `Session: ${new Date(request.scheduledAt).toLocaleString()}` : "No session time set yet."}</Text>{request.status === "accepted" && request.scheduledAt && <TouchableOpacity style={styles.completeButton} onPress={() => void completeSession(request)}><Text style={styles.completeButtonText}>Mark session complete</Text></TouchableOpacity>}</View>) : <View style={styles.emptyState}><Ionicons name="people-outline" size={48} color="#D1D5DB" /><Text style={styles.emptyTitle}>No Active Mentees</Text><Text style={styles.emptyText}>Accepted mentorship requests will appear here.</Text></View> : <View style={styles.emptyState}><Ionicons name="people-outline" size={48} color="#D1D5DB" /><Text style={styles.emptyTitle}>Alumni mentees</Text><Text style={styles.emptyText}>This view is for alumni who mentor students.</Text></View>)}
       </ScrollView>
 
       {/* Become Mentor Modal */}
@@ -181,11 +228,12 @@ export default function AlumniMentorshipScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Become a Mentor</Text>
+              <Text style={styles.modalTitle}>{selectedMentor ? `Request ${selectedMentor.fullName}` : "Become a Mentor"}</Text>
               <TouchableOpacity onPress={() => setShowBecome(false)}><Ionicons name="close" size={24} color="#111" /></TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-              <Text style={styles.fieldLabel}>Mentorship Category *</Text>
+              {selectedMentor ? <Text style={styles.fieldLabel}>Mentorship Category *</Text> : <Text style={styles.emptyText}>A public mentor registration workflow is not available yet. No profile has been submitted.</Text>}
+              {selectedMentor && <>
               <View style={styles.catGrid}>
                 {CATEGORIES.map((c) => {
                   const cc = CAT_COLOR[c] || "#6B7280";
@@ -198,10 +246,19 @@ export default function AlumniMentorshipScreen() {
               </View>
               <Text style={styles.fieldLabel}>Short Bio / Why Mentor?</Text>
               <TextInput style={[styles.input, { minHeight: 100 }]} placeholder="Share your experience and how you can help JNV juniorsâ€¦" placeholderTextColor="#9CA3AF" value={becomeNote} onChangeText={setBecomeNote} multiline textAlignVertical="top" />
-              <TouchableOpacity style={styles.confirmBtn} onPress={() => { setShowBecome(false); showToast("Mentor request submitted! Admin will verify soon."); }}>
+              <TouchableOpacity style={styles.confirmBtn} onPress={async () => {
+                if (selectedMentor && profile?.role === "student") {
+                  try {
+                    await api.mentorRequests.create({ mentorId: selectedMentor.id, mentorName: selectedMentor.fullName, category: becomeCat || "General Career", message: becomeNote.trim() });
+                    setShowBecome(false); setSelectedMentor(null); showToast("Mentorship request sent.");
+                  } catch (error) { showToast(error instanceof Error ? error.message : "Could not send request."); }
+                } else {
+                  showToast("Mentor profile registration is not available yet.");
+                }
+              }} disabled={!selectedMentor}>
                 <Ionicons name="school-outline" size={18} color="#fff" />
-                <Text style={styles.confirmBtnText}>Submit Mentor Profile</Text>
-              </TouchableOpacity>
+                <Text style={styles.confirmBtnText}>{selectedMentor ? "Send Request" : "Save Mentor Profile"}</Text>
+              </TouchableOpacity></>}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -259,6 +316,18 @@ const styles = StyleSheet.create({
   mentorName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#111827" },
   mentorRole: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginBottom: 2 },
   mentorJnv: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
+  mentorBio: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#475569", marginTop: 5 },
+  mentorCategories: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#5261B8", marginTop: 5 },
+  mentorSettings: { backgroundColor: "#fff", margin: 12, padding: 14, borderRadius: 14 },
+  mentorCategorySelected: { borderColor: "#10B981", backgroundColor: "#ECFDF5" },
+  sessionBox: { marginTop: 12, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 12, gap: 8 },
+  sessionHint: { fontSize: 12, color: "#667085", lineHeight: 18 },
+  sessionButton: { padding: 11, backgroundColor: "#EEF2FF", borderRadius: 10, alignItems: "center" },
+  sessionButtonText: { color: "#3D5AF1", fontFamily: "Inter_600SemiBold" },
+  completeButton: { padding: 10, marginTop: 8, backgroundColor: "#ECFDF5", borderRadius: 10, alignItems: "center" },
+  completeButtonText: { color: "#059669", fontFamily: "Inter_600SemiBold" },
+  ratingButton: { width: 38, height: 36, borderRadius: 10, borderWidth: 1, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
+  ratingButtonSelected: { borderColor: "#3D5AF1", backgroundColor: "#EEF2FF" },
   availBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, height: 26 },
   availDotSmall: { width: 6, height: 6, borderRadius: 3 },
   availText: { fontSize: 11, fontFamily: "Inter_500Medium" },

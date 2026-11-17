@@ -4,6 +4,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   visible: boolean;
@@ -19,9 +20,11 @@ const BENEFITS = [
 ];
 
 export function VerificationGateModal({ visible, onClose, featureName }: Props) {
+  const { profile } = useAuth();
+  const isAlumni = profile?.role === "alumni";
   const handleVerifyNow = () => {
     onClose();
-    router.push("/(screens)/verification-center" as any);
+    router.push((isAlumni ? "/(screens)/alumni-peer-verification" : "/(screens)/verification-center") as any);
   };
 
   return (
@@ -44,12 +47,12 @@ export function VerificationGateModal({ visible, onClose, featureName }: Props) 
             </View>
           </View>
 
-          <Text style={s.title}>Verification Required</Text>
+          <Text style={s.title}>{isAlumni ? "Peer confirmation required" : "Verification Required"}</Text>
           <Text style={s.desc}>
             {featureName
               ? `"${featureName}" is available only to verified Navodaya Connect members.`
               : "This feature is available only to verified users."}
-            {"\n\n"}Complete your verification to unlock the full Navodaya Connect experience.
+            {"\n\n"}{isAlumni ? "One alumnus from your JNV must confirm your alumni status. They may also be unverified." : "Complete your verification to unlock the full Navodaya Connect experience."}
           </Text>
 
           <View style={s.benefitsList}>
@@ -65,7 +68,7 @@ export function VerificationGateModal({ visible, onClose, featureName }: Props) 
 
           <TouchableOpacity style={s.verifyBtn} onPress={handleVerifyNow} activeOpacity={0.88}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
-            <Text style={s.verifyBtnText}>Verify Now</Text>
+            <Text style={s.verifyBtnText}>{isAlumni ? "Find an alumnus" : "Verify Now"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.laterBtn} onPress={onClose} activeOpacity={0.7}>

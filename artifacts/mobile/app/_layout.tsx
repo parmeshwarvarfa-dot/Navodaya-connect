@@ -19,6 +19,7 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { getApiOrigin, getToken } from "@/lib/api";
+import { MotionProvider } from "@/components/motion/MotionProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,13 +57,15 @@ function AuthNavGuard() {
 
 export default function RootLayout() {
   const [interLoaded, interError] = useInterFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    ...(Platform.OS === "web" ? {} : {
+      Inter_400Regular,
+      Inter_500Medium,
+      Inter_600SemiBold,
+      Inter_700Bold,
+    }),
   });
   const [pacificoLoaded, pacificoError] = usePacificoFonts({
-    Pacifico_400Regular,
+    ...(Platform.OS === "web" ? {} : { Pacifico_400Regular }),
   });
 
   const loaded = (interLoaded || !!interError) && (pacificoLoaded || !!pacificoError);
@@ -80,17 +83,19 @@ export default function RootLayout() {
           <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView style={styles.flex}>
-                <AuthProvider>
-                  <AuthNavGuard />
-                  <Stack screenOptions={{ headerShown: false, animation: "fade", animationDuration: 180 }}>
-                    <Stack.Screen name="index" options={{ headerShown: false }} />
-                    <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-                    <Stack.Screen name="+not-found" />
-                  </Stack>
-                </AuthProvider>
+                <MotionProvider>
+                  <AuthProvider>
+                    <AuthNavGuard />
+                    <Stack screenOptions={{ headerShown: false, animation: "fade", animationDuration: 180 }}>
+                      <Stack.Screen name="index" options={{ headerShown: false }} />
+                      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                      <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+                      <Stack.Screen name="+not-found" />
+                    </Stack>
+                  </AuthProvider>
+                </MotionProvider>
               </GestureHandlerRootView>
             </QueryClientProvider>
           </ErrorBoundary>

@@ -10,6 +10,8 @@ export const assignmentsTable = pgTable("assignments", {
   authorId: uuid("author_id"),
   authorName: text("author_name"),
   jnvName: text("jnv_name"),
+  jnvId: text("jnv_id"),
+  jnvState: text("jnv_state"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

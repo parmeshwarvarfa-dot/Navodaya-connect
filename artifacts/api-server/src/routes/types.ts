@@ -22,7 +22,8 @@ export interface UserProfile {
   field?: string;
   company?: string;
   skills?: string[];
-  verificationStatus?: "unverified" | "pending" | "verified";
+  verificationStatus?: "unverified" | "pending" | "verified" | "community_verified" | "under_review" | "rejected" | "suspended" | "revoked";
+  communityVerifiedAt?: string;
   subject?: string;
   designation?: string;
 }

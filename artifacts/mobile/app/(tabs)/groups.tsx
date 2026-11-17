@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -12,17 +12,16 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { api } from "@/lib/api";
 import type { Group } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
+import GroupNameEmojiPicker from "@/components/GroupNameEmojiPicker";
 
 export default function GroupsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -35,15 +34,15 @@ export default function GroupsScreen() {
   const [createError, setCreateError] = useState("");
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await api.groups.list();
       setGroups(data);
     } catch {}
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { fetchGroups(); }, []);
+  useFocusEffect(useCallback(() => { void fetchGroups(); }, [fetchGroups]));
 
   const handleCreateGroup = async () => {
     if (!name.trim() || !subject.trim()) {
@@ -66,9 +65,9 @@ export default function GroupsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <LinearGradient
-        colors={[colors.gradientStart, colors.gradientEnd]}
+        colors={["#4B6EF5", "#3151E8"]}
         style={[styles.header, { paddingTop: topPad + 8 }]}
       >
         <View style={styles.headerRow}>
@@ -89,10 +88,10 @@ export default function GroupsScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <Ionicons name="chatbubbles-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No groups yet</Text>
+              <Ionicons name="chatbubbles-outline" size={48} color="#9AA4B5" />
+              <Text style={[styles.emptyText, { color: "#667085" }]}>No groups yet</Text>
               {profile?.role === "teacher" && (
-                <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>
+                <Text style={[styles.emptySubText, { color: "#667085" }]}>
                   Create a group for your students
                 </Text>
               )}
@@ -106,19 +105,19 @@ export default function GroupsScreen() {
           >
             <PremiumCard style={styles.groupCard}>
               <View style={styles.groupRow}>
-                <View style={[styles.groupIconBg, { backgroundColor: colors.accent }]}>
-                  <Ionicons name="people" size={22} color={colors.primary} />
+                <View style={[styles.groupIconBg, { backgroundColor: "#EEF2FF" }]}>
+                  <Ionicons name="people" size={22} color="#3D5AF1" />
                 </View>
                 <View style={styles.groupInfo}>
-                  <Text style={[styles.groupName, { color: colors.foreground }]}>{item.name}</Text>
-                  <Text style={[styles.groupSub, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.groupName, { color: "#111827" }]}>{item.name}</Text>
+                  <Text style={[styles.groupSub, { color: "#667085" }]}>
                     {item.subject}{item.class ? ` • ${item.class.replace(/^Class\s+/i, "")}` : ""}
                   </Text>
-                  <Text style={[styles.groupMeta, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.groupMeta, { color: "#7B879B" }]}>
                     {item.jnvName} • {item.memberCount ?? 1} members
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+                <Ionicons name="chevron-forward" size={18} color="#9AA4B5" />
               </View>
             </PremiumCard>
           </TouchableOpacity>
@@ -126,15 +125,16 @@ export default function GroupsScreen() {
       />
 
       <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Create Group</Text>
+        <View style={[styles.modalContainer, { backgroundColor: "#F3F5FA" }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: "#E3E7EF", backgroundColor: "#FFFFFF" }]}>
+            <Text style={[styles.modalTitle, { color: "#111827" }]}>Create Group</Text>
             <TouchableOpacity onPress={() => setShowCreate(false)}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+              <Ionicons name="close" size={24} color="#111827" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
             <PremiumInput label="Group Name" value={name} onChangeText={setName} placeholder="e.g. Science Class 10" icon="people-outline" />
+            <GroupNameEmojiPicker onSelect={(emoji) => setName((current) => `${current.trimEnd()}${current.trim() ? " " : ""}${emoji}`)} />
             <PremiumInput label="Subject" value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" icon="book-outline" />
             <PremiumInput label="Class (optional)" value={classStr} onChangeText={setClassStr} placeholder="e.g. 10A" icon="school-outline" />
             {createError ? <Text style={{ color: "#EF4444", fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 4 }}>{createError}</Text> : null}
@@ -147,7 +147,7 @@ export default function GroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#F3F5FA" },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },

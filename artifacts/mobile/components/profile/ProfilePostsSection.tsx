@@ -18,10 +18,10 @@ import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
 import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
 
-type Props = { userId: string; isOwner: boolean; restricted?: boolean };
+type Props = { userId: string; isOwner: boolean; restricted?: boolean; mode?: "preview" | "all" };
 type RelationList = "followers" | "following";
 
-export default function ProfilePostsSection({ userId, isOwner, restricted = false }: Props) {
+export default function ProfilePostsSection({ userId, isOwner, restricted = false, mode = "preview" }: Props) {
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -31,11 +31,11 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
   const [editingPost, setEditingPost] = useState<SocialMemory | null>(null);
   const [commentsPost, setCommentsPost] = useState<SocialMemory | null>(null);
   const [toast, setToast] = useState("");
-  const stats = useQuery({ queryKey: ["profile-stats", userId], queryFn: () => api.users.profileStats(userId), enabled: !!userId });
+  const stats = useQuery({ queryKey: ["profile-stats", userId], queryFn: () => api.users.profileStats(userId), enabled: !!userId && mode === "preview" });
   const posts = useInfiniteQuery({
-    queryKey: ["profile-posts-v2", userId],
+    queryKey: ["profile-posts-v2", userId, mode],
     queryFn: async ({ pageParam }) => {
-      const page = await api.memories.profileList(userId, 12, typeof pageParam === "string" ? pageParam : undefined);
+      const page = await api.memories.profileList(userId, mode === "preview" ? 3 : 12, typeof pageParam === "string" ? pageParam : undefined);
       // Keep the profile grid author-specific even if an older API server ignores authorId.
       return { ...page, items: page.items.filter((post) => post.authorId === userId) };
     },
@@ -57,6 +57,7 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
   const memories = useMemo(() => posts.data?.pages.flatMap((page) => page.items) ?? [], [posts.data]);
   const columns = width >= 900 ? 5 : width >= 600 ? 4 : 3;
   const tileSize = Math.floor((width - 32 - (columns - 1) * 2) / columns);
+  const previewTileSize = Math.min(112, Math.floor((width - 44) / 3));
 
   const message = (value: string) => {
     setToast(value);
@@ -148,7 +149,22 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
       </View>
       {stats.isError ? <TouchableOpacity style={styles.statsRetry} onPress={() => void stats.refetch()}><Text style={styles.retry}>Could not load counts. Retry</Text></TouchableOpacity> : null}
 
-      <Text style={styles.title}>Posts</Text>
+      {mode === "preview" ? (
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Posts</Text>
+          {!restricted && !stats.data?.restricted ? (
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => router.push({ pathname: "/(screens)/profile-posts", params: { userId, isOwner: String(isOwner), restricted: String(restricted) } } as any)}
+              accessibilityRole="button"
+              accessibilityLabel={`View all ${stats.data?.posts ?? ""} posts`}
+            >
+              <Text style={styles.viewAllText}>View all{typeof stats.data?.posts === "number" ? ` · ${stats.data.posts}` : ""}</Text>
+              <Ionicons name="chevron-forward" size={15} color="#3D5AF1" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
       {restricted ? (
         <View style={styles.empty}><Ionicons name="lock-closed-outline" size={24} color="#69758B"/><Text style={styles.emptyTitle}>Posts are private</Text><Text style={styles.emptyText}>Follow this profile to request access.</Text></View>
       ) : posts.isLoading ? (
@@ -158,12 +174,13 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
       ) : memories.length === 0 ? (
         <View style={styles.empty}><Ionicons name="images-outline" size={25} color="#69758B"/><Text style={styles.emptyTitle}>No posts yet</Text><Text style={styles.emptyText}>{isOwner ? "Your published Memories posts will appear here." : "This profile has not shared any posts."}</Text></View>
       ) : (
-        <View style={styles.grid}>
-          {memories.map((post) => {
+        <View style={[styles.grid, mode === "preview" && styles.previewGrid]}>
+          {(mode === "preview" ? memories.slice(0, 3) : memories).map((post) => {
             const media = post.mediaUrls ?? [];
             const preview = media[0];
+            const size = mode === "preview" ? previewTileSize : tileSize;
             return (
-              <TouchableOpacity key={post.id} style={[styles.tile, { width: tileSize, height: tileSize }]} onPress={() => setSelectedPost(post)} activeOpacity={0.8} accessibilityLabel={`Open post: ${post.caption || post.postType}`}>
+              <TouchableOpacity key={post.id} style={[styles.tile, { width: size, height: size }]} onPress={() => setSelectedPost(post)} activeOpacity={0.8} accessibilityLabel={`Open post: ${post.caption || post.postType}`}>
                 {preview && post.postType !== "video" ? <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} resizeMode="cover"/> : (
                   <View style={[styles.textTile, post.postType === "video" && styles.videoTile]}>
                     <Ionicons name={post.postType === "video" ? "play-circle" : post.postType === "poll" ? "stats-chart-outline" : "chatbubble-ellipses-outline"} size={26} color={post.postType === "video" ? "#fff" : "#3D5AF1"}/>
@@ -177,8 +194,8 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
           })}
         </View>
       )}
-      {posts.hasNextPage ? <TouchableOpacity style={styles.loadMore} onPress={() => void posts.fetchNextPage()} disabled={posts.isFetchingNextPage}><Text style={styles.retry}>{posts.isFetchingNextPage ? "Loading…" : "Load more posts"}</Text></TouchableOpacity> : null}
-      {posts.isFetchNextPageError ? <TouchableOpacity style={styles.loadMore} onPress={() => void posts.fetchNextPage()}><Text style={styles.retry}>Could not load more. Retry</Text></TouchableOpacity> : null}
+      {mode === "all" && posts.hasNextPage ? <TouchableOpacity style={styles.loadMore} onPress={() => void posts.fetchNextPage()} disabled={posts.isFetchingNextPage}><Text style={styles.retry}>{posts.isFetchingNextPage ? "Loading…" : "Load more posts"}</Text></TouchableOpacity> : null}
+      {mode === "all" && posts.isFetchNextPageError ? <TouchableOpacity style={styles.loadMore} onPress={() => void posts.fetchNextPage()}><Text style={styles.retry}>Could not load more. Retry</Text></TouchableOpacity> : null}
 
       <Modal visible={!!selectedPost} animationType="slide" onRequestClose={() => setSelectedPost(null)}>
         <View style={styles.detailScreen}>
@@ -230,8 +247,12 @@ const styles = StyleSheet.create({
   statValue: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold" },
   statLabel: { marginTop: 2, color: "#69758B", fontSize: 12, fontFamily: "Inter_500Medium" },
   statsRetry: { alignItems: "center", marginTop: -14, marginBottom: 10 },
-  title: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 10 },
+  titleRow: { minHeight: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  title: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold" },
+  viewAllButton: { minHeight: 32, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 10, borderRadius: 16, backgroundColor: "#EEF2FF" },
+  viewAllText: { color: "#3D5AF1", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
+  previewGrid: { flexWrap: "nowrap", gap: 8, minHeight: 112, overflow: "hidden" },
   tile: { backgroundColor: "#E8EBF2", overflow: "hidden", position: "relative" },
   textTile: { flex: 1, alignItems: "center", justifyContent: "center", padding: 9, backgroundColor: "#EEF2FF" },
   videoTile: { backgroundColor: "#27324B" },

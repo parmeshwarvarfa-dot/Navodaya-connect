@@ -2,6 +2,8 @@ import { Router } from "express";
 import { and, count, desc, eq, inArray, or } from "drizzle-orm";
 import {
   db,
+  connectionsTable,
+  directMessageRequestsTable,
   memoriesTable,
   socialNotificationsTable,
   userBlocksTable,
@@ -275,6 +277,14 @@ router.post("/users/:id/block", requireAuth, async (req, res) => {
       and(eq(userFollowsTable.followerId, user.id), eq(userFollowsTable.followingId, targetId)),
       and(eq(userFollowsTable.followerId, targetId), eq(userFollowsTable.followingId, user.id)),
     ));
+    await db.delete(connectionsTable).where(or(
+      and(eq(connectionsTable.fromId, user.id), eq(connectionsTable.toId, targetId)),
+      and(eq(connectionsTable.fromId, targetId), eq(connectionsTable.toId, user.id)),
+    ));
+    await db.delete(directMessageRequestsTable).where(or(
+      and(eq(directMessageRequestsTable.senderId, user.id), eq(directMessageRequestsTable.recipientId, targetId)),
+      and(eq(directMessageRequestsTable.senderId, targetId), eq(directMessageRequestsTable.recipientId, user.id)),
+    ));
     return res.json({ success: true, status: "blocked" });
   } catch (error) {
     req.log.error(error, "Failed to block user");
@@ -334,7 +344,10 @@ router.get("/social-notifications", requireAuth, async (req, res) => {
       .where(eq(socialNotificationsTable.recipientId, user.id))
       .orderBy(desc(socialNotificationsTable.createdAt))
       .limit(100);
-    return res.json(rows.map((row) => ({
+    const blockedRows = await db.select({ blockerId: userBlocksTable.blockerId, blockedId: userBlocksTable.blockedId })
+      .from(userBlocksTable).where(or(eq(userBlocksTable.blockerId, user.id), eq(userBlocksTable.blockedId, user.id)));
+    const hiddenActorIds = new Set(blockedRows.map((block) => block.blockerId === user.id ? block.blockedId : block.blockerId));
+    return res.json(rows.filter((row) => !hiddenActorIds.has(row.actorId)).map((row) => ({
       ...row,
       createdAt: row.createdAt.toISOString(),
       readAt: row.readAt?.toISOString(),
@@ -342,6 +355,27 @@ router.get("/social-notifications", requireAuth, async (req, res) => {
   } catch (error) {
     req.log.error(error, "Failed to list social notifications");
     return res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+router.patch("/social-notifications/:id/read", requireAuth, async (req, res) => {
+  const notificationId = req.params.id as string;
+  if (!isValidUserId(notificationId)) return res.status(400).json({ error: "Invalid notification ID" });
+  try {
+    const user = getUser(req);
+    const readAt = new Date();
+    const [updated] = await db.update(socialNotificationsTable)
+      .set({ readAt })
+      .where(and(
+        eq(socialNotificationsTable.id, notificationId),
+        eq(socialNotificationsTable.recipientId, user.id),
+      ))
+      .returning({ id: socialNotificationsTable.id, readAt: socialNotificationsTable.readAt });
+    if (!updated) return res.status(404).json({ error: "Notification not found" });
+    return res.json({ id: updated.id, readAt: updated.readAt?.toISOString() ?? readAt.toISOString() });
+  } catch (error) {
+    req.log.error(error, "Failed to mark notification as read");
+    return res.status(500).json({ error: "Failed to update notification" });
   }
 });
 

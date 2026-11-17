@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import type { SocialMemory } from "@workspace/api-client-react";
+import MotionPressable from "@/components/motion/MotionPressable";
 
 type Props = {
   memory: SocialMemory;
@@ -185,18 +186,18 @@ export default function MemoryPostCard({
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.action} onPress={() => onLike(memory)} disabled={actionPending} accessibilityLabel={memory.liked ? "Unlike post" : "Like post"}>
+        <MotionPressable style={styles.action} onPress={() => onLike(memory)} disabled={actionPending} accessibilityLabel={memory.liked ? "Unlike post" : "Like post"}>
           <Ionicons name={memory.liked ? "heart" : "heart-outline"} size={19} color={memory.liked ? "#E55367" : "#65728A"} />
           <Text style={[styles.actionText, memory.liked && styles.actionActive]}>Like</Text>
-        </TouchableOpacity>
+        </MotionPressable>
         <TouchableOpacity style={styles.action} onPress={() => onComments(memory)} disabled={!memory.commentsEnabled}>
           <Ionicons name="chatbubble-outline" size={18} color="#65728A" />
           <Text style={styles.actionText}>Comment</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.action} onPress={() => onBookmark(memory)} disabled={actionPending} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
+        <MotionPressable style={styles.action} onPress={() => onBookmark(memory)} disabled={actionPending} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
           <Ionicons name={memory.bookmarked ? "bookmark" : "bookmark-outline"} size={18} color={memory.bookmarked ? "#355BE5" : "#65728A"} />
           <Text style={[styles.actionText, memory.bookmarked && styles.bookmarkActive]}>Save</Text>
-        </TouchableOpacity>
+        </MotionPressable>
         <TouchableOpacity style={styles.action} onPress={share}>
           <Ionicons name="share-social-outline" size={18} color="#65728A" />
           <Text style={styles.actionText}>Share</Text>

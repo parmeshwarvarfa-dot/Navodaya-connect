@@ -24,12 +24,14 @@ export const usersTable = pgTable("users", {
   company: text("company"),
   skills: text("skills"),
   verificationStatus: text("verification_status").default("unverified"),
+  communityVerifiedAt: timestamp("community_verified_at"),
   subject: text("subject"),
   designation: text("designation"),
   bio: text("bio"),
   phone: text("phone"),
   linkedinUrl: text("linkedin_url"),
   twitterUrl: text("twitter_url"),
+  resumeUrl: text("resume_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

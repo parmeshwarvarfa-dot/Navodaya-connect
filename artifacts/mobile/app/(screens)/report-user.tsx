@@ -11,6 +11,9 @@ import type { PublicUserProfile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const REASONS = [
+  { id: "false_alumni", label: "Suspected false alumni claim", icon: "school-outline" as const, color: "#B42318" },
+  { id: "wrong_jnv", label: "Incorrect JNV association", icon: "location-outline" as const, color: "#B54708" },
+  { id: "verification_abuse", label: "Fraudulent verification behavior", icon: "shield-outline" as const, color: "#7F56D9" },
   { id: "harassment",  label: "Harassment or Bullying",    icon: "hand-left-outline"      as const, color: "#EF4444" },
   { id: "spam",        label: "Spam or Fake Account",      icon: "ban-outline"             as const, color: "#F59E0B" },
   { id: "inappropriate", label: "Inappropriate Content",  icon: "warning-outline"         as const, color: "#8B5CF6" },
@@ -46,7 +49,7 @@ export default function ReportUserScreen() {
       setTargetLoading(false);
       return;
     }
-    api.users.get(targetId)
+    (profile?.role === "alumni" ? api.users.reportContext(targetId) : api.users.get(targetId))
       .then((user) => { if (!cancelled) setTarget(user); })
       .catch(() => { if (!cancelled) setTargetError("Unable to load this user profile."); })
       .finally(() => { if (!cancelled) setTargetLoading(false); });
@@ -78,7 +81,7 @@ export default function ReportUserScreen() {
         <View style={styles.successWrap}>
           <View style={styles.successIcon}><Ionicons name="checkmark-circle" size={64} color="#10B981" /></View>
           <Text style={styles.successTitle}>Report Submitted</Text>
-          <Text style={styles.successText}>Thank you for keeping JNV Connect safe. Our moderators will review this report within 24 hours.</Text>
+          <Text style={styles.successText}>Thank you for keeping JNV Connect safe. An authorized reviewer can now review this report.</Text>
           <View style={styles.successNote}>
             <Ionicons name="shield-checkmark-outline" size={16} color="#3D5AF1" />
             <Text style={styles.successNoteText}>Your report is confidential. The reported user will not be notified.</Text>

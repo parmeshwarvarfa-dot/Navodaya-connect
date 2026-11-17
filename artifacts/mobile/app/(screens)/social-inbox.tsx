@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -30,6 +30,9 @@ import {
   useListFollowRequests,
   useListSocialNotifications,
 } from "@workspace/api-client-react";
+import type { SocialNotification } from "@workspace/api-client-react";
+import { api } from "@/lib/api";
+import { getNotificationRoute } from "@/lib/notification-navigation";
 
 type InboxTab = "messages" | "message_requests" | "follow_requests" | "activity";
 
@@ -53,20 +56,15 @@ function timeLabel(value: string) {
 export default function SocialInboxScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{ conversationId?: string }>();
+  const params = useLocalSearchParams<{ conversationId?: string; tab?: string }>();
   const conversationParam = typeof params.conversationId === "string" ? params.conversationId : "";
-  const [activeTab, setActiveTab] = useState<InboxTab>("messages");
-  const [conversationId, setConversationId] = useState(conversationParam);
+  const requestedTab = typeof params.tab === "string" && TABS.some((tab) => tab.id === params.tab) ? params.tab as InboxTab : "";
+  const [activeTab, setActiveTab] = useState<InboxTab>(requestedTab || "messages");
+  const [conversationId, setConversationId] = useState("");
   const [draft, setDraft] = useState("");
   const [toast, setToast] = useState("");
+  const redirectedConversation = useRef("");
   const topPad = Platform.OS === "web" ? 0 : insets.top;
-
-  useEffect(() => {
-    if (conversationParam) {
-      setConversationId(conversationParam);
-      setActiveTab("messages");
-    }
-  }, [conversationParam]);
 
   const conversations = useListDirectConversations({
     query: { queryKey: getListDirectConversationsQueryKey() },
@@ -78,7 +76,7 @@ export default function SocialInboxScreen() {
     query: { queryKey: getListFollowRequestsQueryKey() },
   });
   const notifications = useListSocialNotifications({
-    query: { queryKey: getListSocialNotificationsQueryKey() },
+    query: { queryKey: getListSocialNotificationsQueryKey(), refetchInterval: 15_000 },
   });
   const messages = useListDirectMessages(conversationId, {
     query: {
@@ -87,6 +85,26 @@ export default function SocialInboxScreen() {
       refetchInterval: 12000,
     },
   });
+
+  useEffect(() => {
+    if (conversationParam) {
+      if (conversations.isLoading || redirectedConversation.current === conversationParam) return;
+      const conversation = conversations.data?.find((item) => item.id === conversationParam);
+      redirectedConversation.current = conversationParam;
+      router.replace({
+        pathname: "/(screens)/direct-chat",
+        params: {
+          id: conversationParam,
+          name: conversation?.peerName || "Conversation",
+          peerId: conversation?.peerId || "",
+          photoURL: conversation?.peerPhotoUrl || "",
+        },
+      } as any);
+      return;
+    }
+    redirectedConversation.current = "";
+    if (requestedTab) setActiveTab(requestedTab);
+  }, [conversationParam, requestedTab, conversations.isLoading, conversations.data]);
 
   const decideMessageRequest = useDecideDirectMessageRequest({
     mutation: {
@@ -155,6 +173,17 @@ export default function SocialInboxScreen() {
     }
   };
 
+  const openActivity = (item: SocialNotification) => {
+    router.push(getNotificationRoute(item) as any);
+    if (!item.readAt) {
+      void api.notifications.markRead(item.id).then(() => {
+        queryClient.invalidateQueries({ queryKey: getListSocialNotificationsQueryKey() });
+      }).catch(() => {
+        queryClient.invalidateQueries({ queryKey: getListSocialNotificationsQueryKey() });
+      });
+    }
+  };
+
   const isLoading = activeTab === "messages"
     ? conversations.isLoading
     : activeTab === "message_requests"
@@ -167,14 +196,14 @@ export default function SocialInboxScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => conversationId ? setConversationId("") : router.back()}>
-          <Ionicons name={conversationId ? "chevron-back" : "arrow-back"} size={22} color="#111827" />
+          <Ionicons name={conversationId ? "chevron-back" : "arrow-back"} size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{conversationId ? currentConversation?.peerName || "Conversation" : "Social inbox"}</Text>
           {conversationId ? <Text style={styles.headerSubtitle}>Direct messages</Text> : null}
         </View>
         <TouchableOpacity style={styles.refreshButton} onPress={refresh}>
-          <Ionicons name="refresh-outline" size={19} color="#3D5AF1" />
+          <Ionicons name="refresh-outline" size={19} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -238,7 +267,15 @@ export default function SocialInboxScreen() {
               conversations.isError ? <Text style={styles.empty}>Conversations couldn’t be loaded. Try refreshing.</Text>
                 : !conversations.data?.length ? <Text style={styles.empty}>No direct conversations yet. Visit a profile to send a message request.</Text>
                   : conversations.data.map((item) => (
-                    <TouchableOpacity key={item.id} style={styles.row} onPress={() => setConversationId(item.id)} activeOpacity={0.75}>
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.row}
+                      onPress={() => router.push({
+                        pathname: "/(screens)/direct-chat",
+                        params: { id: item.id, name: item.peerName, peerId: item.peerId, photoURL: item.peerPhotoUrl || "" },
+                      } as any)}
+                      activeOpacity={0.75}
+                    >
                       {item.peerPhotoUrl ? <Image source={{ uri: item.peerPhotoUrl }} style={styles.avatar} /> : (
                         <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{item.peerName.slice(0, 1).toUpperCase()}</Text></View>
                       )}
@@ -301,14 +338,16 @@ export default function SocialInboxScreen() {
               notifications.isError ? <Text style={styles.empty}>Activity couldn’t be loaded. Try refreshing.</Text>
                 : !notifications.data?.length ? <Text style={styles.empty}>No social activity yet.</Text>
                   : notifications.data.map((item) => (
-                    <View key={item.id} style={styles.activityRow}>
+                    <TouchableOpacity key={item.id} style={[styles.activityRow, !item.readAt && styles.activityUnread]} activeOpacity={0.8} onPress={() => openActivity(item)} accessibilityRole="button" accessibilityLabel={`${item.actorName}. ${item.message}`}>
                       <View style={styles.activityIcon}><Ionicons name="notifications-outline" size={17} color="#3D5AF1" /></View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.rowTitle}>{item.actorName}</Text>
                         <Text style={styles.rowSubtitle}>{item.message}</Text>
                       </View>
                       <Text style={styles.rowDate}>{timeLabel(item.createdAt)}</Text>
-                    </View>
+                      {!item.readAt ? <View style={styles.unreadDot} /> : null}
+                      <Ionicons name="chevron-forward" size={15} color="#A0A8B6" />
+                    </TouchableOpacity>
                   ))
             )}
           </ScrollView>
@@ -321,12 +360,12 @@ export default function SocialInboxScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F6FA" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  backButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6" },
-  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#111827" },
-  headerSubtitle: { color: "#8B93A1", fontSize: 11, marginTop: 2 },
-  refreshButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2FF" },
+  container: { flex: 1, backgroundColor: "#F3F5FA" },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#3D5AF1", borderBottomWidth: 1, borderBottomColor: "#3151E8" },
+  backButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)" },
+  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  headerSubtitle: { color: "rgba(255,255,255,0.78)", fontSize: 11, marginTop: 2 },
+  refreshButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)" },
   tabs: { flexDirection: "row", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#EAECEF", paddingHorizontal: 5 },
   tab: { flex: 1, minHeight: 52, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabText: { fontSize: 10, color: "#8992A1", fontFamily: "Inter_500Medium" },
@@ -353,13 +392,15 @@ const styles = StyleSheet.create({
   smallAccept: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#3D5AF1", alignItems: "center", justifyContent: "center" },
   smallDecline: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   activityRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: "#fff", marginBottom: 8 },
+  activityUnread: { borderWidth: 1, borderColor: "#C7D2FE", backgroundColor: "#F8FAFF" },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#3D5AF1" },
   activityIcon: { width: 36, height: 36, borderRadius: 13, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  messageList: { flexGrow: 1, padding: 15, gap: 8, justifyContent: "flex-end" },
-  messageBubble: { alignSelf: "flex-start", maxWidth: "88%", backgroundColor: "#fff", borderWidth: 1, borderColor: "#E8EBF0", borderRadius: 14, borderBottomLeftRadius: 4, paddingHorizontal: 12, paddingVertical: 9 },
+  messageList: { flexGrow: 1, padding: 15, gap: 8, justifyContent: "flex-end", backgroundColor: "#F3F5FA" },
+  messageBubble: { alignSelf: "flex-start", maxWidth: "88%", backgroundColor: "#fff", borderWidth: 1, borderColor: "#E3E7EF", borderRadius: 20, borderBottomLeftRadius: 5, paddingHorizontal: 15, paddingVertical: 11 },
   messageBody: { color: "#1F2937", fontSize: 14, lineHeight: 20 },
   messageTime: { marginTop: 4, textAlign: "right", color: "#9CA3AF", fontSize: 9 },
-  composerRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E5E7EB" },
-  composerInput: { flex: 1, maxHeight: 100, minHeight: 42, paddingHorizontal: 13, paddingVertical: 10, borderRadius: 18, backgroundColor: "#F3F4F6", fontSize: 14, color: "#111827" },
+  composerRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 9, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E3E7EF" },
+  composerInput: { flex: 1, maxHeight: 100, minHeight: 48, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 26, backgroundColor: "#F0F2F6", fontSize: 15, color: "#111827" },
   sendButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#3D5AF1" },
   toast: { position: "absolute", left: 20, right: 20, padding: 12, borderRadius: 12, backgroundColor: "#1F2937" },
   toastText: { color: "#fff", fontSize: 13, textAlign: "center", fontFamily: "Inter_500Medium" },

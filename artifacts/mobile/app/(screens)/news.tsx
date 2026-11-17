@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { api } from "@/lib/api";
 import type { NewsItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -23,7 +23,7 @@ import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
 
 const NEWS_CATEGORIES    = ["General", "Academic", "Sports", "Cultural", "Achievement"];
-const ANNOUNCE_CATEGORIES = ["Announcement", "Circular", "Notice", "Holiday", "Exam"];
+const ANNOUNCE_CATEGORIES = ["Announcement", "Circular", "Notice", "Holiday", "Exam", "Other"];
 const ALL_CATEGORIES     = [...NEWS_CATEGORIES, ...ANNOUNCE_CATEGORIES];
 
 const ANNOUNCEMENT_KEYS = new Set(ANNOUNCE_CATEGORIES.map((c) => c.toLowerCase()));
@@ -44,6 +44,7 @@ export default function NewsScreen() {
   const { profile } = useAuth();
   const [news, setNews]         = useState<NewsItem[]>([]);
   const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("news");
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle]       = useState("");
@@ -58,15 +59,23 @@ export default function NewsScreen() {
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const canPost  = profile?.role === "teacher" || profile?.role === "official";
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const data = await api.news.list();
       setNews(data);
-    } catch {}
-    setLoading(false);
-  };
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { fetchNews(); }, []);
+  // Load a fresh authenticated feed each time See All is opened or revisited.
+  useFocusEffect(useCallback(() => {
+    void fetchNews();
+  }, [fetchNews]));
 
   const handlePost = async () => {
     if (!title.trim() || !description.trim()) {
@@ -82,7 +91,7 @@ export default function NewsScreen() {
       setDescription("");
       setSourceUrl("");
       setCategory("General");
-      fetchNews();
+      void fetchNews();
     } catch {
       setPostError("Failed to post. Please try again.");
     }
@@ -93,7 +102,7 @@ export default function NewsScreen() {
     setDeleting(true);
     try {
       await api.news.delete(id);
-      fetchNews();
+      void fetchNews();
     } catch {}
     setDeleting(false);
     setDeleteConfirm(null);
@@ -178,13 +187,20 @@ export default function NewsScreen() {
                 color={colors.mutedForeground}
               />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-                {isAnnouncementMode ? "No announcements yet" : "No news yet"}
+                {loadError ? "Couldn't load updates" : isAnnouncementMode ? "No announcements yet" : "No news yet"}
               </Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                {canPost
+                {loadError
+                  ? "Check your connection and try again."
+                  : canPost
                   ? `Tap + to post a ${isAnnouncementMode ? "new announcement" : "news update"}`
                   : `${isAnnouncementMode ? "Announcements" : "News updates"} from teachers & officials will appear here`}
               </Text>
+              {loadError && (
+                <TouchableOpacity onPress={() => void fetchNews()} style={styles.retryButton}>
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : null
         }
@@ -360,6 +376,8 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+  retryButton: { marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: "#3D5AF1" },
+  retryButtonText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   modalContainer: { flex: 1 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },

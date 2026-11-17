@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
+import { api, type TeacherClassAssignment } from "@/lib/api";
 
 const FEATURES = [
   { label: "Study Notes",    icon: "document-text-outline"  as const, color: "#3D5AF1", bg: "#EEF2FF", route: "/(screens)/study-notes"       },
   { label: "Assignments",    icon: "checkbox-outline"        as const, color: "#F59E0B", bg: "#FFFBEB", route: "/(screens)/study-assignments"  },
-  { label: "Announcements",  icon: "megaphone-outline"       as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/news"               },
-  { label: "Ask Queries",    icon: "help-circle-outline"    as const, color: "#8B5CF6", bg: "#F5F3FF", route: "/(screens)/ask-senior"         },
+  { label: "Announcements",  icon: "megaphone-outline"       as const, color: "#EF4444", bg: "#FEF2F2", route: "/(screens)/study-announcements" },
   { label: "Attendance",     icon: "calendar-clear-outline" as const, color: "#10B981", bg: "#ECFDF5", route: "/(screens)/study-attendance"   },
   { label: "Results",        icon: "stats-chart-outline"    as const, color: "#0891B2", bg: "#E0F2FE", route: "/(screens)/study-results"      },
-  { label: "Chats",          icon: "chatbubbles-outline"    as const, color: "#6366F1", bg: "#EEF2FF", route: "/(tabs)/chats"                 },
+  { label: "Teacher Feedback", icon: "star-outline"           as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/teacher-feedback-submit" },
   { label: "Clubs",          icon: "people-circle-outline"  as const, color: "#EC4899", bg: "#FDF2F8", route: "/(screens)/study-clubs"        },
-  { label: "Feedback",       icon: "star-outline"            as const, color: "#D97706", bg: "#FFFBEB", route: "/(screens)/study-feedback"     },
 ];
 
-const TODAY_CLASSES = [
+/* Previously shown schedule/assignment/material examples were not backed by school data. */
+/* const TODAY_CLASSES = [
   { subject: "Physics",  time: "08:00–09:00", teacher: "Mr. Ramesh Kumar",  room: "Lab 1" },
   { subject: "Maths",    time: "09:15–10:15", teacher: "Ms. Asha Sharma",   room: "C-12" },
   { subject: "English",  time: "10:30–11:30", teacher: "Mr. Sunil Tiwari",  room: "C-08" },
@@ -44,10 +44,23 @@ const UPCOMING = [
   { title: "Practical – Chemistry", date: "14 May",  icon: "flask-outline"    as const, color: "#10B981" },
   { title: "Sports Day",            date: "18 May",  icon: "football-outline" as const, color: "#F59E0B" },
 ];
+*/
+const TODAY_CLASSES: { subject: string; time: string; teacher: string; room: string }[] = [];
+const PENDING_ASSIGNMENTS: { title: string; subject: string; due: string; priority: string }[] = [];
+const RECENT_NOTES: { title: string; subject: string; teacher: string; type: string; date: string }[] = [];
+const UPCOMING: { title: string; date: string; icon: React.ComponentProps<typeof Ionicons>["name"]; color: string }[] = [];
 
 export default function StudySectionScreen() {
   const insets   = useSafeAreaInsets();
   const { profile } = useAuth();
+  const [myClasses, setMyClasses] = useState<TeacherClassAssignment[]>([]);
+  const [classesError, setClassesError] = useState("");
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    api.academicClasses.list().then((rows) => { if (active) { setMyClasses(rows); setClassesError(""); } })
+      .catch((error) => { if (active) setClassesError(error instanceof Error ? error.message : "Classes could not be loaded."); });
+    return () => { active = false; };
+  }, []));
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const now      = new Date();
   const hour     = now.getHours();
@@ -81,10 +94,10 @@ export default function StudySectionScreen() {
         {/* Stats row */}
         <View style={styles.statsRow}>
           {[
-            { label: "Attendance",   value: "84%",  icon: "calendar-outline"  as const, color: "#10B981", bg: "#ECFDF5" },
-            { label: "Pending",      value: String(PENDING_ASSIGNMENTS.length), icon: "checkbox-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
-            { label: "Materials",    value: "12",   icon: "document-outline"  as const, color: "#3D5AF1", bg: "#EEF2FF" },
-            { label: "Rank",         value: "#4",   icon: "trophy-outline"    as const, color: "#D97706", bg: "#FEF3C7" },
+            { label: "Attendance",   value: "—",  icon: "calendar-outline"  as const, color: "#10B981", bg: "#ECFDF5" },
+            { label: "Pending",      value: "—", icon: "checkbox-outline" as const, color: "#F59E0B", bg: "#FFFBEB" },
+            { label: "Materials",    value: "—",   icon: "document-outline"  as const, color: "#3D5AF1", bg: "#EEF2FF" },
+            { label: "Rank",         value: "—",   icon: "trophy-outline"    as const, color: "#D97706", bg: "#FEF3C7" },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Ionicons name={s.icon} size={16} color={s.color} />
@@ -92,6 +105,16 @@ export default function StudySectionScreen() {
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>My Classes and Subjects</Text>
+          {myClasses.length ? [...new Map(myClasses.map((item) => [`${item.className}:${item.subject}`, item])).values()].map((item) => (
+            <View key={item.id} style={styles.authorizedClassRow}>
+              <View style={styles.noteIcon}><Ionicons name="school-outline" size={18} color="#3D5AF1" /></View>
+              <View style={{ flex: 1 }}><Text style={styles.classSubject}>{item.className} · {item.subject}</Text><Text style={styles.noteMeta}>{item.jnvName} · {item.teacherName}</Text></View>
+            </View>
+          )) : <Text style={styles.noteMeta}>{classesError || (profile?.class ? `No class subjects have been linked to Class ${profile.class.replace(/^class\s*/i, "") } yet.` : "Your class information is not set on your profile yet.")}</Text>}
         </View>
 
         {/* Today's class / now */}
@@ -110,7 +133,7 @@ export default function StudySectionScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Today's Classes</Text>
-            <TouchableOpacity><Text style={styles.seeAll}>Full Timetable</Text></TouchableOpacity>
+            <Text style={styles.seeAll}>No timetable connected</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
             {TODAY_CLASSES.map((cls, i) => (
@@ -122,6 +145,7 @@ export default function StudySectionScreen() {
               </View>
             ))}
           </ScrollView>
+          {TODAY_CLASSES.length === 0 ? <Text style={styles.noteMeta}>A school timetable has not been connected.</Text> : null}
         </View>
 
         {/* Pending assignments */}
@@ -142,6 +166,7 @@ export default function StudySectionScreen() {
               <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
             </TouchableOpacity>
           ))}
+          {PENDING_ASSIGNMENTS.length === 0 ? <Text style={styles.noteMeta}>Open assignments to see work published for your class.</Text> : null}
         </View>
 
         {/* Upcoming */}
@@ -156,6 +181,7 @@ export default function StudySectionScreen() {
               </View>
             ))}
           </ScrollView>
+          {UPCOMING.length === 0 ? <Text style={styles.noteMeta}>No academic calendar is connected here.</Text> : null}
         </View>
 
         {/* Recent Notes */}
@@ -176,6 +202,7 @@ export default function StudySectionScreen() {
               <View style={styles.noteTypeBadge}><Text style={styles.noteTypeText}>{n.type}</Text></View>
             </TouchableOpacity>
           ))}
+          {RECENT_NOTES.length === 0 ? <Text style={styles.noteMeta}>Open Study Notes to view materials published for your school/class.</Text> : null}
         </View>
 
         {/* Feature Grid */}
@@ -222,6 +249,7 @@ const styles = StyleSheet.create({
   classTime: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#3D5AF1", marginBottom: 2 },
   classSubject: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#111827" },
   classTeacher: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  authorizedClassRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, marginBottom: 7, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#EAECF0" },
   classRoom: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
   classRoomText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
   assignRow: {

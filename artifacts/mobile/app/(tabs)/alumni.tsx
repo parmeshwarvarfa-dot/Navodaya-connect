@@ -17,6 +17,8 @@ import { api } from "@/lib/api";
 import type { AlumniUser } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useAuth } from "@/context/AuthContext";
+import type { Connection } from "@/lib/api";
 
 const FILTERS = ["All", "Verified", "Engineers", "Doctors", "IAS/IPS", "Defence"];
 
@@ -32,13 +34,33 @@ export default function AlumniScreen() {
   const [alumni, setAlumni] = useState<AlumniUser[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [toast, setToast] = useState("");
+  const { profile } = useAuth();
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
-    api.users.alumni().then(setAlumni).catch(() => {});
+    Promise.all([api.users.alumni(), api.connections.list()]).then(([people, links]) => { setAlumni(people); setConnections(links); }).catch(() => setToast("Could not load alumni. Pull to refresh."));
   }, []);
 
+  const connect = async (id: string) => {
+    try {
+      const row = await api.connections.request(id);
+      setConnections((current) => [...current, row]);
+      setToast("Connection request sent");
+      setTimeout(() => setToast(""), 2200);
+    } catch (error) { setToast(error instanceof Error ? error.message : "Could not connect"); setTimeout(() => setToast(""), 2200); }
+  };
+  const message = async (id: string, name: string) => {
+    try {
+      const request = await api.directMessages.sendRequest(id, `Hello ${name}, I found you in the alumni directory and would like to reconnect.`);
+      setToast("Message request sent");
+      setTimeout(() => setToast(""), 2200);
+    } catch (error) { setToast(error instanceof Error ? error.message : "Could not send message request"); setTimeout(() => setToast(""), 2200); }
+  };
+
   const filtered = alumni.filter((a) => {
+    if ((a as any).isRestricted) return false;
     const matchSearch =
       !search ||
       a.fullName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -48,7 +70,7 @@ export default function AlumniScreen() {
 
     const matchFilter =
       activeFilter === "All" ||
-      (activeFilter === "Verified" && a.verificationStatus === "verified") ||
+      (activeFilter === "Verified" && ["verified", "community_verified"].includes(a.verificationStatus ?? "")) ||
       (activeFilter === "Engineers" && a.profession?.toLowerCase().includes("engineer")) ||
       (activeFilter === "Doctors" && a.profession?.toLowerCase().includes("doctor")) ||
       (activeFilter === "IAS/IPS" && (a.profession?.toLowerCase().includes("ias") || a.profession?.toLowerCase().includes("ips") || a.profession?.toLowerCase().includes("officer"))) ||
@@ -68,7 +90,7 @@ export default function AlumniScreen() {
             <Text style={styles.headerTitle}>Alumni Network</Text>
             <Text style={styles.headerSubtitle}>{alumni.length.toLocaleString()} members</Text>
           </View>
-          <TouchableOpacity style={styles.filterIconBtn}>
+            <TouchableOpacity style={styles.filterIconBtn} onPress={() => router.push("/(screens)/alumni-connect" as any)} accessibilityLabel="More alumni search filters">
             <Ionicons name="options-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -135,6 +157,8 @@ export default function AlumniScreen() {
           </View>
         }
         renderItem={({ item, index }) => {
+          if ((item as any).isRestricted) return null;
+          const connection = connections.find((row) => row.fromId === profile?.uid && row.toId === item.id || row.toId === profile?.uid && row.fromId === item.id);
           const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
           const initials = getInitials(item.fullName || "?");
           const openProfile = () => router.push({ pathname: "/(screens)/user-profile", params: { userId: item.id } });
@@ -174,10 +198,10 @@ export default function AlumniScreen() {
               )}
 
               <View style={styles.cardActions}>
-                <TouchableOpacity style={[styles.connectBtn, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.connectText}>Connect</Text>
+                <TouchableOpacity disabled={!!connection} style={[styles.connectBtn, { backgroundColor: connection ? colors.mutedForeground : colors.primary }]} onPress={() => connect(item.id)}>
+                  <Text style={styles.connectText}>{connection?.status === "connected" ? "Connected" : connection ? "Pending" : "Connect"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.msgBtn, { borderColor: colors.primary }]}>
+                <TouchableOpacity style={[styles.msgBtn, { borderColor: colors.primary }]} onPress={() => message(item.id, item.fullName || "alumnus")}>
                   <Ionicons name="chatbubble-outline" size={14} color={colors.primary} />
                   <Text style={[styles.msgText, { color: colors.primary }]}>Message</Text>
                 </TouchableOpacity>
@@ -186,6 +210,7 @@ export default function AlumniScreen() {
           );
         }}
       />
+      {toast ? <View style={styles.toast}><Text style={styles.toastText}>{toast}</Text></View> : null}
     </View>
   );
 }
@@ -228,4 +253,6 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  toast: { position: "absolute", left: 20, right: 20, bottom: 110, backgroundColor: "#1B2943", borderRadius: 12, padding: 12 },
+  toastText: { color: "#fff", textAlign: "center", fontFamily: "Inter_500Medium" },
 });

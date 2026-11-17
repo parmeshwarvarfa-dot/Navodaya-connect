@@ -250,7 +250,7 @@ export default function UserManagementScreen() {
       </View>
 
       {/* Stat chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.statRow} contentContainerStyle={{ paddingHorizontal: 14, gap: 8, paddingVertical: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.statRow} contentContainerStyle={{ paddingHorizontal: 14, gap: 8, paddingVertical: 8, alignItems: "center" }}>
         {[
           { label: "Total",     count: users.length,       color: "#3D5AF1", bg: "#EEF2FF" },
           { label: "Verified",  count: counts.verified || 0, color: "#10B981", bg: "#ECFDF5" },
@@ -273,7 +273,7 @@ export default function UserManagementScreen() {
       </View>
 
       {/* Role tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 6, paddingBottom: 6 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.horizontalRail} contentContainerStyle={{ paddingHorizontal: 12, gap: 6, paddingVertical: 4, alignItems: "center" }}>
         {ROLE_TABS.map((tab) => (
           <TouchableOpacity key={tab} style={[s.tab, roleTab === tab && s.tabActive]} onPress={() => { setRoleTab(tab); setPage(1); }}>
             <Text style={[s.tabText, roleTab === tab && s.tabTextActive]}>{tab}</Text>
@@ -282,7 +282,7 @@ export default function UserManagementScreen() {
       </ScrollView>
 
       {/* Status tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 6, paddingBottom: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.horizontalRail} contentContainerStyle={{ paddingHorizontal: 12, gap: 6, paddingVertical: 4, alignItems: "center" }}>
         {STATUS_TABS.map((tab) => (
           <TouchableOpacity key={tab} style={[s.tab, s.tabSm, statusTab === tab && s.tabActive]} onPress={() => { setStatusTab(tab); setPage(1); }}>
             <Text style={[s.tabText, s.tabTextSm, statusTab === tab && s.tabTextActive]}>{tab}</Text>
@@ -617,12 +617,13 @@ const s = StyleSheet.create({
   headerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
   pendingBadge: { backgroundColor: "#FEF3C7", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   pendingBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#D97706" },
-  statRow: { backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
-  statChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
+  statRow: { flexGrow: 0, flexShrink: 0, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
+  statChip: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
   statChipCount: { fontSize: 16, fontFamily: "Inter_700Bold" },
   statChipLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
   searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fff", margin: 12, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#F0F0F0" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
+  horizontalRail: { flexGrow: 0, flexShrink: 0 },
   tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
   tabSm: { paddingHorizontal: 11, paddingVertical: 5 },
   tabActive: { backgroundColor: "#1A3C6E" },
