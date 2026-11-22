@@ -5,6 +5,7 @@ import {
   AppState,
   Dimensions,
   FlatList,
+  LayoutChangeEvent,
   Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -12,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,10 +22,8 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api, type NewsItem } from "@/lib/api";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_MARGIN = 16;
-// Calculate responsive card width: on mobile it fills width - (2 * CARD_MARGIN), max 560px on tablet/web
-const CARD_WIDTH = Math.min(SCREEN_WIDTH - CARD_MARGIN * 2, 540);
+const HORIZONTAL_MARGIN = 16;
+const MAX_CARD_WIDTH = 560;
 const CARD_HEIGHT = 176;
 
 const AUTO_SLIDE_INTERVAL = 4500; // 4.5 seconds
@@ -40,6 +40,21 @@ const GRADIENT_PALETTES: readonly [string, string][] = [
 interface JnvNewsCarouselProps {
   onSeeAllPress?: () => void;
   style?: any;
+}
+
+// Clean HTML entities, unescaped tokens, and multiple spaces
+function cleanHtmlEntities(text?: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): string {
@@ -70,6 +85,9 @@ function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): strin
 }
 
 export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouselProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState<number>(windowWidth);
+
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [newsByLang, setNewsByLang] = useState<{ en: NewsItem[]; hi: NewsItem[] }>({
     en: [],
@@ -85,6 +103,21 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
   const flatListRef = useRef<FlatList<NewsItem>>(null);
   const autoSlideTimerRef = useRef<any>(null);
   const userInteractionResumeTimerRef = useRef<any>(null);
+
+  // Exact viewport width for paging
+  const viewportWidth = containerWidth > 0 ? containerWidth : windowWidth;
+  // Exact card width within slide viewport
+  const cardWidth = Math.min(
+    Math.max(viewportWidth - HORIZONTAL_MARGIN * 2, 260),
+    MAX_CARD_WIDTH
+  );
+
+  const handleContainerLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && Math.abs(w - containerWidth) > 1) {
+      setContainerWidth(w);
+    }
+  };
 
   // Check reduced motion accessibility
   useEffect(() => {
@@ -154,7 +187,7 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
     if (newLang === lang) return;
     setLang(newLang);
     setActiveIndex(0);
-    if (flatListRef.current && displayItems.length > 0) {
+    if (flatListRef.current) {
       try {
         flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       } catch {}
@@ -178,26 +211,18 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
     autoSlideTimerRef.current = setInterval(() => {
       setActiveIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % displayItems.length;
-        if (flatListRef.current) {
+        if (flatListRef.current && viewportWidth > 0) {
           try {
-            flatListRef.current.scrollToIndex({
-              index: nextIndex,
+            flatListRef.current.scrollToOffset({
+              offset: nextIndex * viewportWidth,
               animated: true,
             });
-          } catch {
-            // fallback scroll to offset
-            try {
-              flatListRef.current.scrollToOffset({
-                offset: nextIndex * (CARD_WIDTH + 12),
-                animated: true,
-              });
-            } catch {}
-          }
+          } catch {}
         }
         return nextIndex;
       });
     }, AUTO_SLIDE_INTERVAL);
-  }, [displayItems.length, isUserInteracting, reduceMotion, stopAutoSlide]);
+  }, [displayItems.length, isUserInteracting, reduceMotion, stopAutoSlide, viewportWidth]);
 
   // Auto-slide effect
   useEffect(() => {
@@ -242,24 +267,23 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
 
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
-    const itemFullWidth = CARD_WIDTH + 12;
-    const computedIndex = Math.round(contentOffset / itemFullWidth);
-    if (computedIndex >= 0 && computedIndex < displayItems.length) {
-      setActiveIndex(computedIndex);
+    if (viewportWidth > 0) {
+      const computedIndex = Math.round(contentOffset / viewportWidth);
+      if (computedIndex >= 0 && computedIndex < displayItems.length) {
+        setActiveIndex(computedIndex);
+      }
     }
   };
 
   const handleDotPress = (index: number) => {
     setActiveIndex(index);
-    if (flatListRef.current) {
+    if (flatListRef.current && viewportWidth > 0) {
       try {
-        flatListRef.current.scrollToIndex({ index, animated: true });
-      } catch {
         flatListRef.current.scrollToOffset({
-          offset: index * (CARD_WIDTH + 12),
+          offset: index * viewportWidth,
           animated: true,
         });
-      }
+      } catch {}
     }
   };
 
@@ -296,7 +320,7 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} onLayout={handleContainerLayout}>
       {/* ── Header: Title, Language Selector & See All ── */}
       <View style={styles.headerRow}>
         <View style={styles.titleWithBadge}>
@@ -374,14 +398,14 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
 
       {/* ── Main Carousel Content ── */}
       {loading && displayItems.length === 0 ? (
-        <View style={[styles.skeletonCard, { width: CARD_WIDTH, height: CARD_HEIGHT }]}>
+        <View style={[styles.skeletonCard, { width: cardWidth, height: CARD_HEIGHT }]}>
           <ActivityIndicator size="small" color="#7C3AED" />
           <Text style={styles.skeletonText}>
             {lang === "hi" ? "ताज़ा समाचार प्राप्त हो रहे हैं..." : "Fetching latest news..."}
           </Text>
         </View>
       ) : displayItems.length === 0 ? (
-        <View style={[styles.emptyCard, { width: CARD_WIDTH, height: CARD_HEIGHT }]}>
+        <View style={[styles.emptyCard, { width: cardWidth, height: CARD_HEIGHT }]}>
           <Ionicons name="newspaper-outline" size={28} color="#94A3B8" />
           <Text style={styles.emptyTitle}>
             {lang === "hi" ? "फ़िलहाल कोई समाचार उपलब्ध नहीं है" : "No news articles right now"}
@@ -396,94 +420,103 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
           </TouchableOpacity>
         </View>
       ) : (
-        <View>
+        <View style={styles.carouselViewport}>
           <FlatList
             ref={flatListRef}
             data={displayItems}
             keyExtractor={(item) => item.id}
             horizontal
+            pagingEnabled={true}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH + 12}
-            snapToAlignment="center"
+            snapToInterval={viewportWidth}
+            snapToAlignment="start"
             decelerationRate="fast"
-            contentContainerStyle={styles.flatListContent}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             onMomentumScrollEnd={handleMomentumScrollEnd}
             getItemLayout={(_data, index) => ({
-              length: CARD_WIDTH + 12,
-              offset: (CARD_WIDTH + 12) * index,
+              length: viewportWidth,
+              offset: viewportWidth * index,
               index,
             })}
             renderItem={({ item, index }) => {
               const palette = GRADIENT_PALETTES[index % GRADIENT_PALETTES.length];
               const relativeDate = formatDateOrRelative(item.publishedAt || item.createdAt, lang);
-              const publisherName = item.sourceName || item.authorName || (lang === "hi" ? "नवोदय समाचार" : "JNV News");
-              const categoryName = item.category || (lang === "hi" ? "समाचार" : "News");
+              const publisherName = cleanHtmlEntities(
+                item.sourceName || item.authorName || (lang === "hi" ? "नवोदय समाचार" : "JNV News")
+              );
+              const categoryName = cleanHtmlEntities(item.category || (lang === "hi" ? "समाचार" : "News"));
+              const cleanTitle = cleanHtmlEntities(item.title);
+              const cleanDesc = cleanHtmlEntities(item.description || item.title);
 
               return (
-                <TouchableOpacity
-                  activeOpacity={0.92}
-                  onPress={() => openArticle(item)}
-                  style={[styles.cardWrapper, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.title}. Published by ${publisherName}`}
-                >
-                  <LinearGradient
-                    colors={palette}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.cardGradient}
+                <View style={[styles.slideContainer, { width: viewportWidth }]}>
+                  <TouchableOpacity
+                    activeOpacity={0.92}
+                    onPress={() => openArticle(item)}
+                    style={[
+                      styles.cardWrapper,
+                      { width: cardWidth, height: CARD_HEIGHT },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${cleanTitle}. Published by ${publisherName}`}
                   >
-                    {/* Top Row: Category Tag & Source/Date */}
-                    <View style={styles.cardTopRow}>
-                      <View style={styles.catBadge}>
-                        <Ionicons name="bookmark" size={10} color="#FFFFFF" />
-                        <Text style={styles.catBadgeText} numberOfLines={1}>
-                          {categoryName}
-                        </Text>
+                    <LinearGradient
+                      colors={palette}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.cardGradient}
+                    >
+                      {/* Top Row: Category Tag & Source/Date */}
+                      <View style={styles.cardTopRow}>
+                        <View style={styles.catBadge}>
+                          <Ionicons name="bookmark" size={10} color="#FFFFFF" />
+                          <Text style={styles.catBadgeText} numberOfLines={1}>
+                            {categoryName}
+                          </Text>
+                        </View>
+
+                        <View style={styles.metaRow}>
+                          <Text style={styles.sourceText} numberOfLines={1}>
+                            {publisherName}
+                          </Text>
+                          {!!relativeDate && (
+                            <>
+                              <Text style={styles.metaDot}>•</Text>
+                              <Text style={styles.dateText}>{relativeDate}</Text>
+                            </>
+                          )}
+                        </View>
                       </View>
 
-                      <View style={styles.metaRow}>
-                        <Text style={styles.sourceText} numberOfLines={1}>
-                          {publisherName}
-                        </Text>
-                        {!!relativeDate && (
-                          <>
-                            <Text style={styles.metaDot}>•</Text>
-                            <Text style={styles.dateText}>{relativeDate}</Text>
-                          </>
-                        )}
+                      {/* Middle: Headline */}
+                      <Text style={styles.headlineText} numberOfLines={2}>
+                        {cleanTitle}
+                      </Text>
+
+                      {/* Short Summary Description */}
+                      <Text style={styles.summaryText} numberOfLines={2}>
+                        {cleanDesc}
+                      </Text>
+
+                      {/* Bottom Row: Read Action & Indicator */}
+                      <View style={styles.cardBottomRow}>
+                        <View style={styles.readPromptRow}>
+                          <Text style={styles.readPromptText}>
+                            {lang === "hi" ? "पूरा पढ़ें" : "Read full article"}
+                          </Text>
+                          <Ionicons name="arrow-forward-circle" size={15} color="#FFFFFF" />
+                        </View>
+
+                        <View style={styles.slideCounterPill}>
+                          <Text style={styles.slideCounterText}>
+                            {index + 1}/{displayItems.length}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-
-                    {/* Middle: Headline */}
-                    <Text style={styles.headlineText} numberOfLines={2}>
-                      {item.title}
-                    </Text>
-
-                    {/* Short Summary Description */}
-                    <Text style={styles.summaryText} numberOfLines={2}>
-                      {item.description || item.title}
-                    </Text>
-
-                    {/* Bottom Row: Read Action & Indicator */}
-                    <View style={styles.cardBottomRow}>
-                      <View style={styles.readPromptRow}>
-                        <Text style={styles.readPromptText}>
-                          {lang === "hi" ? "पूरा पढ़ें" : "Read full article"}
-                        </Text>
-                        <Ionicons name="arrow-forward-circle" size={15} color="#FFFFFF" />
-                      </View>
-
-                      <View style={styles.slideCounterPill}>
-                        <Text style={styles.slideCounterText}>
-                          {index + 1}/{displayItems.length}
-                        </Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
               );
             }}
           />
@@ -519,13 +552,17 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 18,
     marginBottom: 4,
+    width: "100%",
+    maxWidth: "100%",
+    overflow: "hidden",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: CARD_MARGIN,
+    paddingHorizontal: HORIZONTAL_MARGIN,
     marginBottom: 8,
+    width: "100%",
   },
   titleWithBadge: {
     flexDirection: "row",
@@ -573,8 +610,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: CARD_MARGIN,
+    paddingHorizontal: HORIZONTAL_MARGIN,
     marginBottom: 10,
+    width: "100%",
   },
   langPill: {
     paddingVertical: 5,
@@ -617,7 +655,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    marginHorizontal: CARD_MARGIN,
+    marginHorizontal: HORIZONTAL_MARGIN,
     marginBottom: 8,
   },
   toastText: {
@@ -625,13 +663,21 @@ const styles = StyleSheet.create({
     color: "#B91C1C",
     flex: 1,
   },
-  flatListContent: {
-    paddingHorizontal: CARD_MARGIN,
-    gap: 12,
+  carouselViewport: {
+    width: "100%",
+    overflow: "hidden",
+  },
+  slideContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: HORIZONTAL_MARGIN,
+    boxSizing: "border-box" as any,
   },
   cardWrapper: {
     borderRadius: 16,
     overflow: "hidden",
+    maxWidth: "100%",
+    minWidth: 0,
     ...Platform.select({
       ios: {
         shadowColor: "#6D28D9",
@@ -647,11 +693,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     justifyContent: "space-between",
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box" as any,
   },
   cardTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    width: "100%",
+    minWidth: 0,
     gap: 8,
   },
   catBadge: {
@@ -662,6 +713,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 10,
+    flexShrink: 0,
   },
   catBadgeText: {
     fontSize: 10.5,
@@ -675,20 +727,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     flexShrink: 1,
+    minWidth: 0,
+    justifyContent: "flex-end",
   },
   sourceText: {
     fontSize: 11,
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.9)",
     flexShrink: 1,
+    maxWidth: 160,
   },
   metaDot: {
     color: "rgba(255, 255, 255, 0.6)",
     fontSize: 11,
+    flexShrink: 0,
   },
   dateText: {
     fontSize: 11,
     color: "rgba(255, 255, 255, 0.8)",
+    flexShrink: 0,
   },
   headlineText: {
     fontSize: 14.5,
@@ -697,23 +754,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 2,
     letterSpacing: -0.15,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   summaryText: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.82)",
+    color: "rgba(255, 255, 255, 0.85)",
     lineHeight: 16.5,
     marginTop: 2,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   cardBottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 4,
+    width: "100%",
+    minWidth: 0,
   },
   readPromptRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    flexShrink: 0,
   },
   readPromptText: {
     fontSize: 11.5,
@@ -725,6 +795,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 10,
+    flexShrink: 0,
   },
   slideCounterText: {
     fontSize: 10,
@@ -738,6 +809,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 10,
     paddingVertical: 2,
+    width: "100%",
   },
   dotBase: {
     height: 6,
