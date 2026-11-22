@@ -130,6 +130,8 @@ export default function EditProfileScreen() {
 
   const [linkedin, setLinkedin] = useState((profile as any)?.linkedinUrl || "");
   const [twitter, setTwitter] = useState((profile as any)?.twitterUrl || "");
+  const [instagram, setInstagram] = useState((profile as any)?.instagramUrl || "");
+  const [currentLocation, setCurrentLocation] = useState((profile as any)?.currentLocation || "");
   const [resumeUrl, setResumeUrl] = useState(profile?.resumeUrl || "");
 
   const [saving, setSaving] = useState(false);
@@ -227,6 +229,8 @@ export default function EditProfileScreen() {
         updates.skills = skills.split(",").map((s: string) => s.trim()).filter(Boolean);
         updates.linkedinUrl = linkedin.trim();
         updates.twitterUrl = twitter.trim();
+        (updates as any).instagramUrl = instagram.trim();
+        (updates as any).currentLocation = currentLocation.trim();
         updates.resumeUrl = trimmedResumeUrl;
       }
       if (role === "student") {
@@ -340,6 +344,7 @@ export default function EditProfileScreen() {
               <Field label="Passout Batch / Year" value={passoutYear} onChange={setPassoutYear} placeholder="e.g. 2018" icon="calendar-outline" keyboardType="numeric" />
               <Field label="Current Profession / Role" value={profession} onChange={setProfession} placeholder="e.g. Software Engineer" icon="briefcase-outline" />
               <Field label="Company / Institution" value={company} onChange={setCompany} placeholder="e.g. Infosys, IIT Delhi" icon="business-outline" />
+              <Field label="Current Location / City (e.g. NIT Warangal)" value={currentLocation} onChange={setCurrentLocation} placeholder="e.g. NIT Warangal / Bengaluru" icon="location-outline" />
               <Field label="Field / Domain" value={field} onChange={setField} placeholder="e.g. Technology, Medicine, Law" icon="layers-outline" />
               <Field label="Skills (comma-separated)" value={skills} onChange={setSkills} placeholder="Python, Leadership, UI Design..." icon="bulb-outline" />
               <Field label="Resume or CV Link" value={resumeUrl} onChange={setResumeUrl} placeholder="https://..." icon="document-text-outline" keyboardType="url" />
@@ -383,14 +388,24 @@ export default function EditProfileScreen() {
                 keyboardType="url"
               />
               {role === "alumni" && (
-                <Field
-                  label="Twitter / X Profile URL"
-                  value={twitter}
-                  onChange={setTwitter}
-                  placeholder="https://twitter.com/yourhandle"
-                  icon="logo-twitter"
-                  keyboardType="url"
-                />
+                <>
+                  <Field
+                    label="Instagram Profile URL"
+                    value={instagram}
+                    onChange={setInstagram}
+                    placeholder="https://instagram.com/yourhandle"
+                    icon="logo-instagram"
+                    keyboardType="url"
+                  />
+                  <Field
+                    label="Twitter / X Profile URL"
+                    value={twitter}
+                    onChange={setTwitter}
+                    placeholder="https://twitter.com/yourhandle"
+                    icon="logo-twitter"
+                    keyboardType="url"
+                  />
+                </>
               )}
             </Section>
           )}

@@ -20,8 +20,11 @@ import { RoleBadge } from "@/components/RoleBadge";
 import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
 import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
-import { api, type RecognitionProfile } from "@/lib/api";
+import { api, type RecognitionProfile, type AlumniMembershipStatus } from "@/lib/api";
 import type { DigitalCredential } from "@/lib/api";
+import { LinearGradient } from "expo-linear-gradient";
+import PremiumAlumniProfileCard from "@/components/profile/PremiumAlumniProfileCard";
+import AlumniPremiumSubscriptionModal from "@/components/profile/AlumniPremiumSubscriptionModal";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -36,7 +39,10 @@ const ROLE_LABEL: Record<string, string> = {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refreshProfile } = useAuth();
+  const [membershipStatus, setMembershipStatus] = useState<AlumniMembershipStatus | null>(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [previewPremium, setPreviewPremium] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showBioDetails, setShowBioDetails] = useState(false);
@@ -46,6 +52,21 @@ export default function ProfileScreen() {
   const [digitalCredential, setDigitalCredential] = useState<DigitalCredential | null>(null);
   const [digitalIdLoading, setDigitalIdLoading] = useState(false);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
+
+  useEffect(() => {
+    let active = true;
+    if (profile?.role === "alumni") {
+      api.alumniMembership
+        .status()
+        .then((st) => {
+          if (active) setMembershipStatus(st);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, [profile?.role, profile?.uid]);
 
   useEffect(() => {
     let active = true;
@@ -141,6 +162,178 @@ export default function ProfileScreen() {
       : []),
   ];
 
+  const isPremiumAlumni =
+    profile.role === "alumni" &&
+    Boolean(profile.isPremium || membershipStatus?.isPremium || previewPremium);
+
+  if (isPremiumAlumni) {
+    return (
+      <View style={[styles.container]}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        >
+          {previewPremium && (
+            <View style={styles.previewModeBanner}>
+              <View style={styles.previewModeTextWrap}>
+                <Ionicons name="eye-outline" size={16} color="#7C3AED" />
+                <Text style={styles.previewModeBannerText}>
+                  Premium Alumni Profile Preview Mode
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setPreviewPremium(false)}
+                style={styles.previewExitBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.previewExitText}>Exit Preview</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={{ paddingTop: topPad }}>
+            <PremiumAlumniProfileCard
+              profile={profile}
+              onEditPress={() => router.push("/(screens)/edit-profile" as any)}
+              onBenefitsPress={() => setShowSubscriptionModal(true)}
+            />
+          </View>
+
+          <View style={{ paddingHorizontal: 16 }}>
+            <ProfilePostsSection userId={profile.uid} isOwner />
+
+            <View style={styles.recognitionCard}>
+              <View style={styles.recognitionHeader}>
+                <Ionicons name="trophy-outline" size={18} color="#B7791F" />
+                <Text style={styles.cardTitle}>Community Recognition</Text>
+              </View>
+              {recognitionLoading ? (
+                <Text style={styles.badgeSubtitle}>Loading your points and awards…</Text>
+              ) : recognitionError ? (
+                <Text style={styles.badgeSubtitle}>{recognitionError}</Text>
+              ) : (
+                <>
+                  <Text style={styles.recognitionPoints}>
+                    {recognition?.totalPoints ?? 0} points earned
+                  </Text>
+                  <Text style={styles.recognitionAward}>
+                    This month: {recognition?.monthlyRank ? `rank #${recognition.monthlyRank}` : "not ranked yet"} · Annual: {recognition?.annualRank ? `rank #${recognition.annualRank}` : "not ranked yet"}
+                  </Text>
+                  <Text style={styles.recognitionAward}>
+                    {recognition?.awardCount ?? 0} awards earned
+                  </Text>
+                  {recognition?.awards.slice(0, 3).map((award) => (
+                    <Text key={award.id} style={styles.recognitionAward}>
+                      🏅 {award.category.replaceAll("_", " ")} · {award.period}
+                    </Text>
+                  ))}
+                  {!recognition?.awards.length && (
+                    <Text style={styles.badgeSubtitle}>
+                      No finalized awards yet. Earned badges and award history appear here.
+                    </Text>
+                  )}
+                </>
+              )}
+              <View style={styles.recognitionLinks}>
+                {[
+                  { label: "Points History", section: "history" },
+                  { label: "My Awards", section: "awards" },
+                  { label: "Leaderboard", section: "leaderboard" },
+                  { label: "Hall of Fame", section: "hall" },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.section}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(screens)/alumni-contributions",
+                        params: { section: item.section },
+                      } as any)
+                    }
+                  >
+                    <Text style={styles.recognitionLink}>{item.label} ›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.menuCard}>
+              {menuItems.map((item, index) => (
+                <MotionPressable
+                  key={item.label}
+                  style={[styles.menuRow, index < menuItems.length - 1 && styles.menuRowBorder]}
+                  onPress={item.onPress}
+                >
+                  <View style={styles.menuIconWrap}>
+                    <Ionicons name={item.icon} size={18} color="#7C3AED" />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                </MotionPressable>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.signOutBtn}
+              onPress={handleSignOut}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        <AlumniPremiumSubscriptionModal
+          visible={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+          onSubscribed={async () => {
+            await refreshProfile();
+            const st = await api.alumniMembership.status().catch(() => null);
+            if (st) setMembershipStatus(st);
+          }}
+        />
+
+        <Modal
+          visible={showSignOutModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSignOutModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <View style={styles.modalIconWrap}>
+                <Ionicons name="log-out-outline" size={32} color="#EF4444" />
+              </View>
+              <Text style={styles.modalTitle}>Sign Out</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to sign out of Navodaya Connect?
+              </Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancel}
+                  onPress={() => setShowSignOutModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalConfirm}
+                  onPress={confirmSignOut}
+                  activeOpacity={0.8}
+                  disabled={signingOut}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {signingOut ? "Signing out…" : "Sign Out"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container]}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
@@ -160,6 +353,39 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom, paddingHorizontal: 16 }}
       >
+        {profile.role === "alumni" && (
+          <LinearGradient
+            colors={["#581C87", "#7C3AED", "#9333EA"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.alumniUpgradeBanner}
+          >
+            <View style={styles.alumniUpgradeCrown}>
+              <Text style={{ fontSize: 22 }}>👑</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alumniUpgradeTitle}>Upgrade to Premium Alumni</Text>
+              <Text style={styles.alumniUpgradeSub}>
+                Diagonal identity card, reach analytics, golden badge & exclusive offers
+              </Text>
+            </View>
+            <View style={{ gap: 6, marginLeft: 8 }}>
+              <TouchableOpacity
+                style={styles.upgradeBtn}
+                onPress={() => setShowSubscriptionModal(true)}
+              >
+                <Text style={styles.upgradeBtnText}>Upgrade →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.previewBtn}
+                onPress={() => setPreviewPremium(true)}
+              >
+                <Text style={styles.previewBtnText}>Preview</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        )}
+
         <View style={styles.profileCard}>
           <TouchableOpacity
             style={styles.avatarWrap}
@@ -354,6 +580,16 @@ export default function ProfileScreen() {
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <AlumniPremiumSubscriptionModal
+        visible={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSubscribed={async () => {
+          await refreshProfile();
+          const st = await api.alumniMembership.status().catch(() => null);
+          if (st) setMembershipStatus(st);
+        }}
+      />
 
       <Modal
         visible={showSignOutModal}
@@ -672,4 +908,97 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalConfirmText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
+
+  // Alumni Premium Upgrade & Preview Banners
+  alumniUpgradeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  alumniUpgradeCrown: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  alumniUpgradeTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  alumniUpgradeSub: {
+    fontSize: 11,
+    color: "#E9D5FF",
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  upgradeBtn: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  upgradeBtnText: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: "#7C3AED",
+  },
+  previewBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  previewBtnText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+
+  previewModeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F5F3FF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#DDD6FE",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  previewModeTextWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  previewModeBannerText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+  },
+  previewExitBtn: {
+    backgroundColor: "#7C3AED",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  previewExitText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
 });

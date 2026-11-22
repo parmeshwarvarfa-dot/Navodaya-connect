@@ -200,6 +200,7 @@ router.patch("/users/me", requireAuth, async (req, res) => {
       fullName, profession, company, field, subject, designation,
       skills, photoURL, jnvName, jnvState, house,
       passoutYear, enrollYear, class: cls, bio, phone, linkedinUrl, twitterUrl,
+      instagramUrl, currentLocation,
       resumeUrl,
       avatarConfig, avatarThumbnailURL, profileImageType, uploadedPhotoURL,
     } = req.body;
@@ -260,6 +261,8 @@ router.patch("/users/me", requireAuth, async (req, res) => {
     if (phone !== undefined) updates.phone = phone;
     if (linkedinUrl !== undefined) updates.linkedinUrl = linkedinUrl;
     if (twitterUrl !== undefined) updates.twitterUrl = twitterUrl;
+    if (instagramUrl !== undefined) updates.instagramUrl = instagramUrl;
+    if (currentLocation !== undefined) updates.currentLocation = currentLocation;
     if (resumeUrl !== undefined) {
       if (user.role !== "alumni") return res.status(403).json({ error: "Only alumni can add a resume or CV" });
       if (typeof resumeUrl !== "string" || resumeUrl.length > 2_048) {

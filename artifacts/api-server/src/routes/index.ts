@@ -35,6 +35,8 @@ import recognitionRouter from "./recognition";
 import schoolSupportRouter from "./schoolSupport";
 import storeAdminRouter from "./storeAdmin";
 import storeCommerceRouter from "./storeCommerce";
+import alumniMembershipRouter from "./alumniMembership";
+import profileAnalyticsRouter from "./profileAnalytics";
 
 const router: IRouter = Router();
 
@@ -74,5 +76,7 @@ router.use(opportunitiesRouter);
 router.use(schoolSupportRouter);
 router.use(storeAdminRouter);
 router.use(storeCommerceRouter);
+router.use(alumniMembershipRouter);
+router.use(profileAnalyticsRouter);
 
 export default router;

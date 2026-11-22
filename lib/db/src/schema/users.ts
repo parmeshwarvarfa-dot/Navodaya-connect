@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -31,7 +31,11 @@ export const usersTable = pgTable("users", {
   phone: text("phone"),
   linkedinUrl: text("linkedin_url"),
   twitterUrl: text("twitter_url"),
+  instagramUrl: text("instagram_url"),
+  currentLocation: text("current_location"),
   resumeUrl: text("resume_url"),
+  isPremium: boolean("is_premium").default(false),
+  premiumExpiresAt: timestamp("premium_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

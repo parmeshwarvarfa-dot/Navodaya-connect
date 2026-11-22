@@ -203,6 +203,30 @@ export const api = {
     respond: (id: string, decision: "confirmed" | "declined") => request<any>(`/alumni-verification/requests/${encodeURIComponent(id)}/respond`, { method: "POST", body: JSON.stringify({ decision }) }),
     appeal: (reportId: string, reason: string) => request<any>("/alumni-verification/appeals", { method: "POST", body: JSON.stringify({ reportId, reason }) }),
   },
+  alumniMembership: {
+    plans: () => request<{ plans: AlumniMembershipPlan[] }>("/alumni/membership/plans"),
+    status: () => request<AlumniMembershipStatus>("/alumni/membership/status"),
+    subscribe: (planId: string, paymentMethod = "upi", idempotencyKey?: string) =>
+      request<{ success: boolean; message: string; membership: any; payment: any }>("/alumni/membership/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ planId, paymentMethod, idempotencyKey }),
+      }),
+    renew: (planId?: string, paymentMethod = "upi") =>
+      request<{ success: boolean; message: string; membership: any; payment: any }>("/alumni/membership/renew", {
+        method: "POST",
+        body: JSON.stringify({ planId, paymentMethod }),
+      }),
+    history: () => request<{ history: any[] }>("/alumni/membership/history"),
+  },
+  profileAnalytics: {
+    recordVisit: (targetUserId: string, eventType = "profile_visit", entityId?: string) =>
+      request<{ recorded: boolean }>("/analytics/profile-visit", {
+        method: "POST",
+        body: JSON.stringify({ targetUserId, eventType, entityId }),
+      }),
+    insights: (userId?: string, range: "7d" | "30d" | "90d" = "30d") =>
+      request<ProfileInsightsData>(`/alumni/analytics/insights${queryString({ userId, range })}`),
+  },
   yearbook: {
     list: (jnvName?: string, jnvState?: string, cohortYear?: string) => request<YearbookEntry[]>(`/yearbook${queryString({ jnvName, jnvState, cohortYear })}`),
     mine: () => request<YearbookSubmission[]>("/yearbook/my-submissions"),
@@ -557,6 +581,10 @@ export interface UserProfile {
   avatarThumbnailURL?: string;
   profileImageType?: "photo" | "avatar" | "default";
   profileVisibility?: "public" | "private";
+  isPremium?: boolean;
+  premiumExpiresAt?: string;
+  instagramUrl?: string;
+  currentLocation?: string;
 }
 
 export interface SignupData extends Omit<UserProfile, "uid"> {
@@ -1351,4 +1379,50 @@ export interface SocialNotification {
   message: string;
   createdAt: string;
   readAt?: string | null;
+}
+
+export interface AlumniMembershipPlan {
+  id: string;
+  slug: string;
+  name: string;
+  billingCycle: "monthly" | "yearly";
+  durationMonths: number;
+  pricePaise: number;
+  originalPricePaise?: number | null;
+  features: string[];
+  isActive: boolean;
+}
+
+export interface AlumniMembershipStatus {
+  isPremium: boolean;
+  membership: {
+    id: string;
+    userId: string;
+    planId: string;
+    status: "active" | "expired" | "cancelled" | "pending";
+    startsAt: string;
+    expiresAt: string;
+    renewedAt?: string | null;
+  } | null;
+  plan: AlumniMembershipPlan | null;
+  expiresAt: string | null;
+  daysRemaining: number;
+}
+
+export interface ProfileInsightsMetric {
+  value: number;
+  formatted: string;
+  trend: string;
+  label: string;
+}
+
+export interface ProfileInsightsData {
+  range: string;
+  periodLabel: string;
+  stats: {
+    profileVisits: ProfileInsightsMetric;
+    uniqueVisitors: ProfileInsightsMetric;
+    postLikes: ProfileInsightsMetric;
+    shares: ProfileInsightsMetric;
+  };
 }
