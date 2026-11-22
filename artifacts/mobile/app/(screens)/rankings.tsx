@@ -1,37 +1,327 @@
-import React from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
+import { api, type RankingOverviewData } from "@/lib/api";
+
+import RankingOverviewSection from "@/components/ranking/RankingOverviewSection";
+import IndividualRankingSection from "@/components/ranking/IndividualRankingSection";
+import JnvRankingSection from "@/components/ranking/JnvRankingSection";
+import AwardsSection from "@/components/ranking/AwardsSection";
+import MethodologySection from "@/components/ranking/MethodologySection";
+import UserRankingProfileModal from "@/components/ranking/UserRankingProfileModal";
+import AdminRankingModal from "@/components/ranking/AdminRankingModal";
+
+type RankingTab = "overview" | "individual" | "jnv" | "awards" | "methodology";
 
 export default function RankingsScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
+  const [activeTab, setActiveTab] = useState<RankingTab>("overview");
+  const [overviewData, setOverviewData] = useState<RankingOverviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Modals
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [adminModalVisible, setAdminModalVisible] = useState(false);
+
+  const canAccessAdmin = profile?.role === "official" || profile?.role === "teacher";
+
+  const fetchOverview = useCallback(async () => {
+    try {
+      const res = await api.ranking.overview();
+      setOverviewData(res);
+    } catch (err) {
+      console.warn("Failed to load ranking overview", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchOverview();
+  }, [fetchOverview]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    void fetchOverview();
+  }, [fetchOverview]);
+
+  const handleOpenUserProfile = (userId: string) => {
+    setSelectedUserId(userId);
+    setProfileModalVisible(true);
+  };
+
   return (
-    <View style={styles.page}>
+    <View style={styles.container}>
+      {/* Top Header */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Go back">
-          <Ionicons name="arrow-back" size={22} color="#111827" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={22} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.title}>JNV Ranking</Text>
+
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>Ranking</Text>
+          <Text style={styles.headerSubtitle}>Performance & Recognition</Text>
+        </View>
+
+        {canAccessAdmin ? (
+          <TouchableOpacity
+            style={styles.adminBtn}
+            onPress={() => setAdminModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Open Admin Hub"
+          >
+            <Ionicons name="shield-checkmark" size={18} color="#7C3AED" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
-      <View style={styles.content}>
-        <View style={styles.icon}><Ionicons name="trophy-outline" size={28} color="#B7791F" /></View>
-        <Text style={styles.heading}>Verified ranking data is not connected</Text>
-        <Text style={styles.message}>This app does not yet have an official JNV ranking data source. Rankings will appear here when verified school data and ranking rules are available.</Text>
+
+      {/* 5-Section Segment Navigation Bar */}
+      <View style={styles.navBarWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.navScroll}
+        >
+          <TabButton
+            active={activeTab === "overview"}
+            icon="grid-outline"
+            label="Overview"
+            onPress={() => setActiveTab("overview")}
+          />
+          <TabButton
+            active={activeTab === "individual"}
+            icon="person-outline"
+            label="Individual Ranking"
+            onPress={() => setActiveTab("individual")}
+          />
+          <TabButton
+            active={activeTab === "jnv"}
+            icon="business-outline"
+            label="JNV Ranking"
+            onPress={() => setActiveTab("jnv")}
+          />
+          <TabButton
+            active={activeTab === "awards"}
+            icon="trophy-outline"
+            label="Awards"
+            badge="LIVE"
+            onPress={() => setActiveTab("awards")}
+          />
+          <TabButton
+            active={activeTab === "methodology"}
+            icon="document-text-outline"
+            label="Methodology"
+            onPress={() => setActiveTab("methodology")}
+          />
+        </ScrollView>
       </View>
+
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 28 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#7C3AED"]} />}
+      >
+        {activeTab === "overview" && (
+          <RankingOverviewSection
+            data={overviewData}
+            onSelectUser={handleOpenUserProfile}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+          />
+        )}
+
+        {activeTab === "individual" && (
+          <IndividualRankingSection onSelectUser={handleOpenUserProfile} />
+        )}
+
+        {activeTab === "jnv" && <JnvRankingSection />}
+
+        {activeTab === "awards" && (
+          <AwardsSection onSelectUser={handleOpenUserProfile} />
+        )}
+
+        {activeTab === "methodology" && <MethodologySection />}
+      </ScrollView>
+
+      {/* Contributor Profile Modal */}
+      <UserRankingProfileModal
+        userId={selectedUserId}
+        visible={profileModalVisible}
+        onClose={() => {
+          setProfileModalVisible(false);
+          setSelectedUserId(null);
+        }}
+      />
+
+      {/* Admin Ranking Modal */}
+      {canAccessAdmin && (
+        <AdminRankingModal
+          visible={adminModalVisible}
+          onClose={() => setAdminModalVisible(false)}
+          onSuccess={() => {
+            void fetchOverview();
+          }}
+        />
+      )}
     </View>
   );
 }
 
+function TabButton({
+  active,
+  icon,
+  label,
+  badge,
+  onPress,
+}: {
+  active: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  badge?: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.tabBtn, active && styles.tabBtnActive]}
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+    >
+      <Ionicons name={icon} size={15} color={active ? "#7C3AED" : "#64748B"} />
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+      {badge && (
+        <View style={[styles.badgeWrap, active && styles.badgeWrapActive]}>
+          <Text style={[styles.badgeText, active && styles.badgeTextActive]}>{badge}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8F7FF" },
-  header: { minHeight: 60, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#ECEEF2" },
-  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  title: { flex: 1, color: "#111827", fontSize: 19, fontFamily: "Inter_700Bold" },
-  content: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28 },
-  icon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFBEB", marginBottom: 16 },
-  heading: { color: "#111827", fontSize: 18, fontFamily: "Inter_700Bold", textAlign: "center", marginBottom: 8 },
-  message: { maxWidth: 370, color: "#6B7280", fontSize: 14, lineHeight: 21, textAlign: "center", fontFamily: "Inter_400Regular" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F7FF",
+  },
+  header: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+  },
+  headerTitleWrap: {
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#0F172A",
+  },
+  headerSubtitle: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#64748B",
+    marginTop: 1,
+  },
+  adminBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F3FF",
+    borderWidth: 1,
+    borderColor: "#DDD6FE",
+  },
+  headerSpacer: {
+    width: 36,
+  },
+  navBarWrap: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingVertical: 8,
+  },
+  navScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  tabBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 5,
+  },
+  tabBtnActive: {
+    backgroundColor: "#F5F3FF",
+    borderColor: "#7C3AED",
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  tabTextActive: {
+    color: "#7C3AED",
+    fontWeight: "700",
+  },
+  badgeWrap: {
+    backgroundColor: "#E2E8F0",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  badgeWrapActive: {
+    backgroundColor: "#7C3AED",
+  },
+  badgeText: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#475569",
+  },
+  badgeTextActive: {
+    color: "#fff",
+  },
 });

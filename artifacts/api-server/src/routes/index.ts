@@ -38,6 +38,7 @@ import storeCommerceRouter from "./storeCommerce";
 import alumniMembershipRouter from "./alumniMembership";
 import profileAnalyticsRouter from "./profileAnalytics";
 import competitionRouter from "./competition";
+import rankingRouter from "./ranking";
 
 const router: IRouter = Router();
 
@@ -80,5 +81,6 @@ router.use(storeCommerceRouter);
 router.use(alumniMembershipRouter);
 router.use(profileAnalyticsRouter);
 router.use(competitionRouter);
+router.use(rankingRouter);
 
 export default router;

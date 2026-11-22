@@ -256,6 +256,21 @@ export const api = {
         body: JSON.stringify({ targetUserId, house, points, reason }),
       }),
   },
+  ranking: {
+    overview: () => request<RankingOverviewData>("/ranking/overview"),
+    individual: (params: { state?: string; jnv?: string; role?: string; period?: string; search?: string } = {}) =>
+      request<{ leaderboard: IndividualRankingItem[]; count: number }>(`/ranking/individual${queryString(params)}`),
+    jnv: (params: { state?: string; periodType?: string; period?: string } = {}) =>
+      request<{ scores: JnvRankingScoreItem[]; period: string; periodType: string; methodologyNote: string }>(`/ranking/jnv${queryString(params)}`),
+    awards: () => request<{ monthlyAwards: RankingAwardItem[]; annualAwards: RankingAwardItem[]; totalAwards: number }>("/ranking/awards"),
+    methodology: () => request<RankingMethodologyData>("/ranking/methodology"),
+    profile: (id: string) => request<RankingProfileData>(`/ranking/profile/${encodeURIComponent(id)}`),
+    adminScoreAdjust: (targetUserId: string, points: number, reason: string) =>
+      request<{ success: boolean; message: string; entry: any }>("/ranking/admin/score-adjust", {
+        method: "POST",
+        body: JSON.stringify({ targetUserId, points, reason }),
+      }),
+  },
   yearbook: {
     list: (jnvName?: string, jnvState?: string, cohortYear?: string) => request<YearbookEntry[]>(`/yearbook${queryString({ jnvName, jnvState, cohortYear })}`),
     mine: () => request<YearbookSubmission[]>("/yearbook/my-submissions"),
@@ -1555,4 +1570,164 @@ export interface CompetitionActivityItem {
   sourceType: string;
   reason: string;
   createdAt: string;
+}
+
+export interface UserBadgeInfo {
+  badgeKey: string;
+  badgeTitle: string;
+  icon: string;
+  color: string;
+  currentPoints: number;
+  nextTierPoints: number;
+  progressPercent: number;
+}
+
+export interface IndividualRankingItem {
+  rank: number;
+  userId: string;
+  fullName: string;
+  role: string;
+  jnvName: string;
+  jnvState: string;
+  avatarUrl?: string | null;
+  periodPoints: number;
+  activityCount: number;
+  badge: UserBadgeInfo;
+  rankMovement: "up" | "down" | "same" | "new";
+  isCurrentUser: boolean;
+}
+
+export interface JnvRankingScoreItem {
+  id: string;
+  jnvName: string;
+  jnvState: string;
+  region: string;
+  period: string;
+  periodType: string;
+  institutionalScore: number;
+  communityScore: number;
+  totalScore: number;
+  rank: number;
+  dataCoverage: "sufficient" | "insufficient_data";
+  categoryBreakdown: {
+    academic: number;
+    studentDevelopment: number;
+    wellbeing: number;
+    infrastructure: number;
+    alumni: number;
+    communityContribution: number;
+  };
+  activeContributorsCount: number;
+  status: string;
+}
+
+export interface RankingAwardItem {
+  id: string;
+  awardType: "navodaya_of_the_month" | "navodayan_of_the_month" | "navodaya_of_the_year" | "navodayan_of_the_year";
+  period: string;
+  periodType: "month" | "year";
+  targetType: "user" | "jnv";
+  winnerUserId?: string | null;
+  winnerJnvName?: string | null;
+  winnerJnvState?: string | null;
+  winnerName: string;
+  winnerRole?: string | null;
+  winnerAvatarUrl?: string | null;
+  score: number;
+  summary: string;
+  highlights?: string[];
+  scorecard: Record<string, unknown>;
+  status: string;
+  finalizedAt?: string | null;
+}
+
+export interface RankingOverviewData {
+  userStats: {
+    userId: string;
+    fullName: string;
+    jnvName: string;
+    role: string;
+    totalPoints: number;
+    monthPoints: number;
+    rank: number;
+    badge: UserBadgeInfo;
+  };
+  topIndividuals: IndividualRankingItem[];
+  topJnvs: JnvRankingScoreItem[];
+  currentAwards: {
+    navodayaMonth?: RankingAwardItem | null;
+    navodayanMonth?: RankingAwardItem | null;
+    navodayaYear?: RankingAwardItem | null;
+    navodayanYear?: RankingAwardItem | null;
+  };
+  recentActivity: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    jnvName: string;
+    points: number;
+    reason: string;
+    createdAt: string;
+  }>;
+}
+
+export interface RankingMethodologyData {
+  title: string;
+  version: string;
+  individualScoring: {
+    description: string;
+    activities: Array<{ activity: string; points: number; note: string }>;
+    badges: Array<{ badge: string; range: string; color: string }>;
+    tieBreakPolicy: string;
+  };
+  jnvInstitutionalScoring: {
+    institutionalWeight: string;
+    communityWeight: string;
+    categories: Array<{ category: string; weight: string; metrics: string }>;
+    normalizationPolicy: string;
+    dataCoveragePolicy: string;
+    disclaimer: string;
+  };
+}
+
+export interface RankingProfileData {
+  user: {
+    id: string;
+    fullName: string;
+    role: string;
+    jnvName: string;
+    jnvState: string;
+    avatarUrl?: string | null;
+    verificationStatus: string;
+  };
+  stats: {
+    totalPoints: number;
+    monthlyPoints: number;
+    annualPoints: number;
+    rank: number;
+    badge: UserBadgeInfo;
+  };
+  earnedBadges: Array<{
+    id: string;
+    badgeKey: string;
+    badgeTitle: string;
+    badgeType: string;
+    icon: string;
+    color: string;
+    unlockedAt: string;
+  }>;
+  earnedAwards: RankingAwardItem[];
+  activityBreakdown: Array<{
+    activity: string;
+    count: number;
+    totalPoints: number;
+  }>;
+  pointsHistory: Array<{
+    id: string;
+    activity: string;
+    points: number;
+    reason: string;
+    periodMonth: string;
+    createdAt: string;
+  }>;
 }

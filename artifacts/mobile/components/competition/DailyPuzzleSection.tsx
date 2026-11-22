@@ -28,7 +28,7 @@ interface DailyPuzzleSectionProps {
   onPointsEarned: () => void;
 }
 
-export default function DailyPuzzleSection({ onPointsEarned }: DailyPuzzleSectionProps) {
+export default function DailyPuzzleSection({ userHouse, onPointsEarned }: DailyPuzzleSectionProps) {
   const [puzzles, setPuzzles] = useState<DailyPuzzleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePuzzle, setActivePuzzle] = useState<DailyPuzzleItem | null>(null);
@@ -872,3 +872,4 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 });
+

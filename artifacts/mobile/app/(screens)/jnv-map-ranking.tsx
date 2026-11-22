@@ -14,11 +14,11 @@ const OPTIONS = [
     route: "/(screens)/map-prototype",
   },
   {
-    title: "JNV Ranking",
-    description: "Explore JNV rankings and compare schools.",
+    title: "Ranking",
+    description: "Individual contribution & JNV institutional performance rankings.",
     icon: "trophy-outline" as const,
-    color: "#B7791F",
-    background: "#FFFBEB",
+    color: "#7C3AED",
+    background: "#F5F3FF",
     route: "/(screens)/rankings",
   },
 ];

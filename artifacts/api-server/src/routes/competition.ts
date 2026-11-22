@@ -840,3 +840,4 @@ router.post("/competition/admin/score-adjust", requireAuth, async (req, res) => 
 });
 
 export default router;
+
