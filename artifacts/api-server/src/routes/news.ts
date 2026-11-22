@@ -6,7 +6,7 @@ import { isOfficialNavodayaSource, isRelevantNavodayaNews } from "./news-relevan
 
 const router = Router();
 
-const LIVE_FEED_QUERY = [
+const LIVE_FEED_QUERY_EN = [
   '"Jawahar Navodaya Vidyalaya"',
   '"Jawahar Navodaya Vidyalayas"',
   '"Navodaya Vidyalaya Samiti"',
@@ -21,9 +21,18 @@ const LIVE_FEED_QUERY = [
   '"JNV students"',
   "(NVS AND (Navodaya OR Vidyalaya OR JNV))",
 ].join(" OR ");
-const LIVE_FEED_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(LIVE_FEED_QUERY)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
+
+const LIVE_FEED_QUERY_HI = [
+  '"जवाहर नवोदय विद्यालय"',
+  '"नवोदय विद्यालय"',
+  '"नवोदय विद्यालय समिति"',
+  '"नवोदय"',
+  "JNVST",
+  "जेएनवी",
+].join(" OR ");
+
 const LIVE_CACHE_MS = 5 * 60 * 1000;
-let liveCache: { expiresAt: number; items: Array<Record<string, unknown>> } = { expiresAt: 0, items: [] };
+const liveCache: Record<string, { expiresAt: number; items: Array<Record<string, unknown>> }> = {};
 
 function decodeXml(value: string) {
   return value
@@ -61,21 +70,27 @@ async function resolveArticleUrl(url: string) {
   return url;
 }
 
-async function fetchLiveNews() {
-  if (Date.now() < liveCache.expiresAt) return liveCache.items;
+async function fetchLiveNews(lang: "en" | "hi" = "en") {
+  const cached = liveCache[lang];
+  if (cached && Date.now() < cached.expiresAt) return cached.items;
+
+  const query = lang === "hi" ? LIVE_FEED_QUERY_HI : LIVE_FEED_QUERY_EN;
+  const feedUrl = lang === "hi"
+    ? `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN%3Ahi`
+    : `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN%3Aen`;
 
   try {
-    const response = await fetch(LIVE_FEED_URL, {
+    const response = await fetch(feedUrl, {
       headers: { "User-Agent": "NavodayaConnect/1.0" },
       signal: AbortSignal.timeout(8000),
     });
-    if (!response.ok) throw new Error(`Live news feed returned ${response.status}`);
+    if (!response.ok) throw new Error(`Live news feed (${lang}) returned ${response.status}`);
     const xml = await response.text();
     const items = xml.match(/<item>[\s\S]*?<\/item>/gi) ?? [];
     const parsed = items.slice(0, 50).map((item, index) => {
       const source = readSource(item);
       return {
-        id: `live-${index}-${Buffer.from(readTag(item, "title")).toString("base64url").slice(0, 16)}`,
+        id: `live-${lang}-${index}-${Buffer.from(readTag(item, "title")).toString("base64url").slice(0, 16)}`,
         title: readTag(item, "title"),
         description: readTag(item, "description"),
         category: "JNV News",
@@ -86,6 +101,7 @@ async function fetchLiveNews() {
         publishedAt: new Date(readTag(item, "pubDate")).toISOString(),
         createdAt: new Date(readTag(item, "pubDate")).toISOString(),
         isLive: true,
+        language: lang,
       };
     }).filter((item) =>
       item.title &&
@@ -97,26 +113,38 @@ async function fetchLiveNews() {
       parsed.map(async (item) => ({ ...item, sourceUrl: await resolveArticleUrl(item.sourceUrl as string) })),
     );
     const publicItems = resolved.map(({ publisherUrl: _publisherUrl, ...item }) => item);
-    liveCache = { expiresAt: Date.now() + LIVE_CACHE_MS, items: publicItems };
+    liveCache[lang] = { expiresAt: Date.now() + LIVE_CACHE_MS, items: publicItems };
     return publicItems;
-  } catch {
+  } catch (err) {
+    console.warn(`[news] Live feed fetch error for lang=${lang}:`, err);
     return [];
   }
 }
 
 router.get("/news", requireAuth, async (req, res) => {
   try {
+    const lang = (req.query.lang as string) === "hi" ? "hi" : "en";
     const [storedItems, liveItems] = await Promise.all([
       db.select().from(newsTable).where(eq(newsTable.isPublished, true)).orderBy(desc(newsTable.createdAt)).limit(50),
-      fetchLiveNews(),
+      fetchLiveNews(lang),
     ]);
-    const stored = storedItems.map((item) => ({
-      ...item,
-      sourceName: item.sourceName ?? item.authorName ?? undefined,
-      publishedAt: item.publishedAt?.toISOString() ?? item.createdAt?.toISOString(),
-      createdAt: item.createdAt?.toISOString(),
-      isLive: false,
-    }));
+
+    const isHindiText = (text: string) => /[\u0900-\u097F]/.test(text);
+
+    const stored = storedItems
+      .filter((item) => {
+        const itemIsHindi = isHindiText(`${item.title} ${item.description}`);
+        return lang === "hi" ? itemIsHindi : !itemIsHindi;
+      })
+      .map((item) => ({
+        ...item,
+        sourceName: item.sourceName ?? item.authorName ?? undefined,
+        publishedAt: item.publishedAt?.toISOString() ?? item.createdAt?.toISOString(),
+        createdAt: item.createdAt?.toISOString(),
+        isLive: false,
+        language: lang,
+      }));
+
     const items = [...stored, ...liveItems]
       .sort((a, b) =>
         Number(isOfficialNavodayaSource([String(b.sourceUrl ?? "")])) -
@@ -125,6 +153,7 @@ router.get("/news", requireAuth, async (req, res) => {
           new Date(String(a.publishedAt ?? a.createdAt ?? 0)).getTime()
       )
       .slice(0, 50);
+
     res.json(items);
   } catch (e: any) {
     req.log.error(e);

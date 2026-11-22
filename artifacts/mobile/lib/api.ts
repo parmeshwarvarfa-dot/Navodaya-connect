@@ -288,7 +288,8 @@ export const api = {
     saveChess: (sessionId: string, pgn: string) => request<{ result: GameResult }>(`/games/sessions/${encodeURIComponent(sessionId)}/chess`, { method: "POST", body: JSON.stringify({ pgn }) }),
   },
   news: {
-    list: () => request<NewsItem[]>("/news"),
+    list: (params?: { lang?: "en" | "hi" }) =>
+      request<NewsItem[]>(params?.lang ? `/news?lang=${params.lang}` : "/news"),
     create: (data: { title: string; description: string; category: string; sourceName?: string; sourceUrl?: string; imageUrl?: string; publishedAt?: string }) =>
       request<NewsItem>("/news", { method: "POST", body: JSON.stringify(data) }),
     delete: (id: string) => request<{ ok: boolean }>(`/news/${id}`, { method: "DELETE" }),
@@ -662,6 +663,7 @@ export interface NewsItem {
   imageUrl?: string;
   publishedAt?: string;
   isLive?: boolean;
+  language?: "en" | "hi";
 }
 
 export interface Group {

@@ -1,5 +1,5 @@
 const NAVODAYA_NEWS_PATTERN =
-  /\b(?:jawahar\s+navodaya(?:\s+vidyalayas?)?|navodaya\s+vidyalaya(?:\s+samiti)?|navodaya\s+(?:schools?|students?|teachers?|alumni|community|admissions?)|jnvst|jnv)\b/i;
+  /\b(?:jawahar\s+navodaya(?:\s+vidyalayas?)?|navodaya\s+vidyalaya(?:\s+samiti)?|navodaya\s+(?:schools?|students?|teachers?|alumni|community|admissions?)|jnvst|jnv)\b|(?:जवाहर\s*नवोदय|नवोदय\s*विद्यालय|नवोदय\s*समिति|नवोदय|जेएनवी)/i;
 
 const OFFICIAL_NAVODAYA_HOSTS = [
   "navodaya.gov.in",

@@ -23,6 +23,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import AchievementsHighlights from "@/components/AchievementsHighlights";
 import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
+import JnvNewsCarousel from "@/components/JnvNewsCarousel";
 
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/study-section"          },
@@ -203,15 +204,8 @@ export default function HomeScreen() {
   const announcements = allNews.filter((n) =>
     ANNOUNCEMENT_CATEGORIES.includes(n.category?.toLowerCase() || "")
   );
-  const jnvNews = allNews.filter((n) =>
-    !ANNOUNCEMENT_CATEGORIES.includes(n.category?.toLowerCase() || "")
-  );
 
-  const displayNews = jnvNews;
   const displayAnnouncements = announcements;
-
-  const featuredNews = displayNews[0];
-  const moreNews = displayNews.slice(1);
 
   return (
     <View style={styles.container}>
@@ -432,71 +426,8 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* ── JNV NEWS SECTION ── */}
-        <View style={[styles.section, { marginTop: 18 }]}>
-          <View style={styles.sectionRow}>
-            <View style={styles.sectionTitleRow}>
-              <View style={styles.newsBadge}>
-                <Ionicons name="newspaper" size={13} color="#fff" />
-              </View>
-              <Text style={styles.sectionTitle}>JNV News</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push("/(screens)/news" as any)}>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Featured news card */}
-          {featuredNews && (
-          <TouchableOpacity activeOpacity={0.88} onPress={() => openArticle(featuredNews)} style={styles.featuredCard}>
-              <LinearGradient colors={GRADIENT_SETS[0]} style={styles.featuredGradient}>
-                <View style={styles.featuredCatTag}>
-                  <Text style={styles.featuredCatText}>{featuredNews.category || "News"}</Text>
-                </View>
-                <Text style={styles.featuredTitle} numberOfLines={3}>{featuredNews.title}</Text>
-                <Text style={styles.featuredDesc} numberOfLines={2}>{featuredNews.description}</Text>
-                <View style={styles.featuredFooter}>
-                  <View style={styles.featuredAuthorRow}>
-                    <Ionicons name="person-circle-outline" size={15} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.featuredAuthor}>{featuredNews.authorName || "Unknown author"}</Text>
-                  </View>
-                  <Text style={styles.featuredDate}>{formatDate(featuredNews.createdAt)}</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-
-          {/* Horizontal scroll of remaining news */}
-          {moreNews.length > 0 && (
-            <FlatList
-              data={moreNews.slice(0, 6)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ gap: 10, paddingRight: 4 }}
-              style={{ marginTop: 10 }}
-              renderItem={({ item, index }) => {
-                const grad = GRADIENT_SETS[(index + 1) % GRADIENT_SETS.length];
-                const catStyle = getCategoryStyle(item.category);
-                return (
-                  <TouchableOpacity style={styles.newsCard} activeOpacity={0.82} onPress={() => openArticle(item)}>
-                    <LinearGradient colors={grad} style={styles.newsCardHeader}>
-                      <View style={styles.newsCardCatTag}>
-                        <Text style={styles.newsCardCatText}>{item.category || "News"}</Text>
-                      </View>
-                    </LinearGradient>
-                    <View style={styles.newsCardBody}>
-                      <Text style={styles.newsCardTitle} numberOfLines={3}>{item.title}</Text>
-                      <View style={styles.newsCardFooter}>
-                        <Text style={styles.newsCardDate}>{formatDate(item.createdAt)}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          )}
-        </View>
+        {/* ── JNV NEWS SECTION (COMPACT AUTO-SLIDING CAROUSEL) ── */}
+        <JnvNewsCarousel onSeeAllPress={() => router.push("/(screens)/news" as any)} />
 
         {/* Explore More */}
         <View style={[styles.section, { marginTop: 18 }]}>

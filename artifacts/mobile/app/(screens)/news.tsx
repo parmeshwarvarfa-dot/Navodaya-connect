@@ -9,6 +9,7 @@ import {
   Modal,
   ScrollView,
   Linking,
+  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,21 +57,23 @@ export default function NewsScreen() {
   const [deleteConfirm, setDeleteConfirm] = useState<NewsItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [newsLinkError, setNewsLinkError] = useState("");
+  const [newsLang, setNewsLang] = useState<"en" | "hi">("en");
+  const [searchQuery, setSearchQuery] = useState("");
   const topPad   = Platform.OS === "web" ? 0 : insets.top;
   const canPost  = profile?.role === "teacher" || profile?.role === "official";
 
-  const fetchNews = useCallback(async () => {
+  const fetchNews = useCallback(async (targetLang = newsLang) => {
     setLoading(true);
     setLoadError(false);
     try {
-      const data = await api.news.list();
+      const data = await api.news.list({ lang: targetLang });
       setNews(data);
     } catch {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [newsLang]);
 
   // Load a fresh authenticated feed each time See All is opened or revisited.
   useFocusEffect(useCallback(() => {
@@ -126,7 +129,16 @@ export default function NewsScreen() {
 
   const newsItems         = news.filter((n) => !isAnnouncement(n));
   const announcementItems = news.filter((n) =>  isAnnouncement(n));
-  const displayItems      = activeTab === "news" ? newsItems : announcementItems;
+  const rawItems          = activeTab === "news" ? newsItems : announcementItems;
+  const displayItems      = rawItems.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      item.title.toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q) ||
+      (item.sourceName || "").toLowerCase().includes(q)
+    );
+  });
 
   const isAnnouncementMode = activeTab === "announcements";
 
@@ -139,7 +151,7 @@ export default function NewsScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {activeTab === "news" ? "JNV News" : "Announcements"}
+            {activeTab === "news" ? (newsLang === "hi" ? "नवोदय समाचार" : "JNV News") : "Announcements"}
           </Text>
           {canPost && (
             <TouchableOpacity style={styles.addBtn} onPress={() => {
@@ -170,6 +182,54 @@ export default function NewsScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* ── Subfilter: Language & Search (Active in News Tab) ── */}
+        {activeTab === "news" && (
+          <View style={styles.subFilterRow}>
+            <View style={styles.langSwitchContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  setNewsLang("en");
+                  void fetchNews("en");
+                }}
+                style={[styles.langPillBtn, newsLang === "en" && styles.langPillBtnActive]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.langPillBtnText, newsLang === "en" && styles.langPillBtnTextActive]}>
+                  English
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setNewsLang("hi");
+                  void fetchNews("hi");
+                }}
+                style={[styles.langPillBtn, newsLang === "hi" && styles.langPillBtnActive]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.langPillBtnText, newsLang === "hi" && styles.langPillBtnTextActive]}>
+                  हिंदी
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={13} color="rgba(255,255,255,0.7)" />
+              <TextInput
+                placeholder={newsLang === "hi" ? "खोजें..." : "Search news..."}
+                placeholderTextColor="rgba(255,255,255,0.6)"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchTextInput}
+              />
+              {!!searchQuery && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={14} color="rgba(255,255,255,0.8)" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
       </LinearGradient>
 
       {/* ── List ── */}
@@ -362,6 +422,14 @@ const styles = StyleSheet.create({
   tabTextActive: { color: "#fff", fontFamily: "Inter_700Bold" },
   countBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
   countBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff" },
+  subFilterRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
+  langSwitchContainer: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 16, padding: 2 },
+  langPillBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 14 },
+  langPillBtnActive: { backgroundColor: "#fff" },
+  langPillBtnText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.75)" },
+  langPillBtnTextActive: { color: "#7C3AED", fontFamily: "Inter_700Bold" },
+  searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 4 },
+  searchTextInput: { flex: 1, color: "#fff", fontSize: 12, paddingVertical: 2 },
   listContent: { padding: 16 },
   newsCard: { marginBottom: 12 },
   announceCard: { borderLeftWidth: 3, borderLeftColor: "#EF4444", overflow: "hidden" },
