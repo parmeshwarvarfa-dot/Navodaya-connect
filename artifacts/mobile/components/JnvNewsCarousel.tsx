@@ -42,19 +42,60 @@ interface JnvNewsCarouselProps {
   style?: any;
 }
 
-// Clean HTML entities, unescaped tokens, and multiple spaces
+// Clean HTML entities, unescaped tokens, and multi-encoded strings (e.g. &amp;nbsp;)
 function cleanHtmlEntities(text?: string): string {
   if (!text) return "";
-  return text
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  let str = text;
+  // Multi-pass decode to resolve nested entities like &amp;nbsp; -> &nbsp; -> space
+  for (let pass = 0; pass < 3; pass++) {
+    if (!str.includes("&")) break;
+    str = str
+      .replace(/&amp;/gi, "&")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&#(\d+);/g, (_, dec) => {
+        try {
+          return String.fromCharCode(Number(dec));
+        } catch {
+          return "";
+        }
+      })
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch {
+          return "";
+        }
+      });
+  }
+  return str.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Clean redundant publisher suffix from headlines e.g. " - Education Times"
+function cleanHeadline(title?: string, publisher?: string): string {
+  let cleaned = cleanHtmlEntities(title);
+  if (publisher) {
+    const escaped = publisher.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\\s*[-–—|]\\s*${escaped}\\s*$`, "i");
+    cleaned = cleaned.replace(pattern, "").trim();
+  }
+  return cleaned;
+}
+
+// Clean redundant snippet suffix from RSS descriptions e.g. "... details  Education Times"
+function cleanDescription(desc?: string, title?: string, publisher?: string): string {
+  let cleaned = cleanHtmlEntities(desc);
+  if (publisher) {
+    const escaped = publisher.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\\s*[-–—|]?\\s*${escaped}\\s*$`, "i");
+    cleaned = cleaned.replace(pattern, "").trim();
+  }
+  cleaned = cleaned.replace(/\s*details\s*$/i, "").trim();
+  return cleaned || cleanHtmlEntities(title);
 }
 
 function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): string {
@@ -86,7 +127,9 @@ function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): strin
 
 export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouselProps) {
   const { width: windowWidth } = useWindowDimensions();
-  const [containerWidth, setContainerWidth] = useState<number>(windowWidth);
+  // Safe initial container width capped to mobile frame width on web
+  const initialWidth = Platform.OS === "web" ? Math.min(windowWidth, 430) : windowWidth;
+  const [containerWidth, setContainerWidth] = useState<number>(initialWidth);
 
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [newsByLang, setNewsByLang] = useState<{ en: NewsItem[]; hi: NewsItem[] }>({
@@ -104,16 +147,11 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
   const autoSlideTimerRef = useRef<any>(null);
   const userInteractionResumeTimerRef = useRef<any>(null);
 
-  // Exact viewport width for paging
-  const viewportWidth = containerWidth > 0 ? containerWidth : windowWidth;
-  // Exact card width within slide viewport
-  const cardWidth = Math.min(
-    Math.max(viewportWidth - HORIZONTAL_MARGIN * 2, 260),
-    MAX_CARD_WIDTH
-  );
+  // Exact slide width based on container
+  const slideWidth = containerWidth > 0 ? containerWidth : initialWidth;
 
   const handleContainerLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
+    const w = Math.round(e.nativeEvent.layout.width);
     if (w > 0 && Math.abs(w - containerWidth) > 1) {
       setContainerWidth(w);
     }
@@ -182,16 +220,27 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
   const currentNewsList = useMemo(() => newsByLang[lang] || [], [newsByLang, lang]);
   const displayItems = useMemo(() => currentNewsList.slice(0, 8), [currentNewsList]);
 
+  const scrollToIndex = useCallback((index: number, animated = true) => {
+    if (flatListRef.current && slideWidth > 0) {
+      try {
+        flatListRef.current.scrollToOffset({
+          offset: index * slideWidth,
+          animated,
+        });
+      } catch {
+        try {
+          flatListRef.current.scrollToIndex({ index, animated });
+        } catch {}
+      }
+    }
+  }, [slideWidth]);
+
   // Change language handler
   const handleLangChange = (newLang: "en" | "hi") => {
     if (newLang === lang) return;
     setLang(newLang);
     setActiveIndex(0);
-    if (flatListRef.current) {
-      try {
-        flatListRef.current.scrollToOffset({ offset: 0, animated: false });
-      } catch {}
-    }
+    scrollToIndex(0, false);
     AsyncStorage.setItem(STORAGE_LANG_KEY, newLang).catch(() => {});
   };
 
@@ -211,18 +260,11 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
     autoSlideTimerRef.current = setInterval(() => {
       setActiveIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % displayItems.length;
-        if (flatListRef.current && viewportWidth > 0) {
-          try {
-            flatListRef.current.scrollToOffset({
-              offset: nextIndex * viewportWidth,
-              animated: true,
-            });
-          } catch {}
-        }
+        scrollToIndex(nextIndex, true);
         return nextIndex;
       });
     }, AUTO_SLIDE_INTERVAL);
-  }, [displayItems.length, isUserInteracting, reduceMotion, stopAutoSlide, viewportWidth]);
+  }, [displayItems.length, isUserInteracting, reduceMotion, stopAutoSlide, scrollToIndex]);
 
   // Auto-slide effect
   useEffect(() => {
@@ -265,11 +307,11 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
     }, 3000);
   };
 
-  const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
-    if (viewportWidth > 0) {
-      const computedIndex = Math.round(contentOffset / viewportWidth);
-      if (computedIndex >= 0 && computedIndex < displayItems.length) {
+    if (slideWidth > 0 && displayItems.length > 0) {
+      const computedIndex = Math.round(contentOffset / slideWidth);
+      if (computedIndex >= 0 && computedIndex < displayItems.length && computedIndex !== activeIndex) {
         setActiveIndex(computedIndex);
       }
     }
@@ -277,14 +319,7 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
 
   const handleDotPress = (index: number) => {
     setActiveIndex(index);
-    if (flatListRef.current && viewportWidth > 0) {
-      try {
-        flatListRef.current.scrollToOffset({
-          offset: index * viewportWidth,
-          animated: true,
-        });
-      } catch {}
-    }
+    scrollToIndex(index, true);
   };
 
   // Open article link
@@ -398,14 +433,14 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
 
       {/* ── Main Carousel Content ── */}
       {loading && displayItems.length === 0 ? (
-        <View style={[styles.skeletonCard, { width: cardWidth, height: CARD_HEIGHT }]}>
+        <View style={[styles.skeletonCard, { width: Math.max(slideWidth - HORIZONTAL_MARGIN * 2, 280), height: CARD_HEIGHT }]}>
           <ActivityIndicator size="small" color="#7C3AED" />
           <Text style={styles.skeletonText}>
             {lang === "hi" ? "ताज़ा समाचार प्राप्त हो रहे हैं..." : "Fetching latest news..."}
           </Text>
         </View>
       ) : displayItems.length === 0 ? (
-        <View style={[styles.emptyCard, { width: cardWidth, height: CARD_HEIGHT }]}>
+        <View style={[styles.emptyCard, { width: Math.max(slideWidth - HORIZONTAL_MARGIN * 2, 280), height: CARD_HEIGHT }]}>
           <Ionicons name="newspaper-outline" size={28} color="#94A3B8" />
           <Text style={styles.emptyTitle}>
             {lang === "hi" ? "फ़िलहाल कोई समाचार उपलब्ध नहीं है" : "No news articles right now"}
@@ -423,22 +458,17 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
         <View style={styles.carouselViewport}>
           <FlatList
             ref={flatListRef}
+            key={`news-list-${slideWidth}`}
             data={displayItems}
             keyExtractor={(item) => item.id}
             horizontal
             pagingEnabled={true}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={viewportWidth}
-            snapToAlignment="start"
-            decelerationRate="fast"
+            scrollEventThrottle={16}
+            decelerationRate={Platform.OS === "ios" ? "fast" : "normal"}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
-            onMomentumScrollEnd={handleMomentumScrollEnd}
-            getItemLayout={(_data, index) => ({
-              length: viewportWidth,
-              offset: viewportWidth * index,
-              index,
-            })}
+            onScroll={handleScroll}
             renderItem={({ item, index }) => {
               const palette = GRADIENT_PALETTES[index % GRADIENT_PALETTES.length];
               const relativeDate = formatDateOrRelative(item.publishedAt || item.createdAt, lang);
@@ -446,18 +476,15 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
                 item.sourceName || item.authorName || (lang === "hi" ? "नवोदय समाचार" : "JNV News")
               );
               const categoryName = cleanHtmlEntities(item.category || (lang === "hi" ? "समाचार" : "News"));
-              const cleanTitle = cleanHtmlEntities(item.title);
-              const cleanDesc = cleanHtmlEntities(item.description || item.title);
+              const cleanTitle = cleanHeadline(item.title, publisherName);
+              const cleanDesc = cleanDescription(item.description, item.title, publisherName);
 
               return (
-                <View style={[styles.slideContainer, { width: viewportWidth }]}>
+                <View style={[styles.slideContainer, { width: slideWidth }]}>
                   <TouchableOpacity
                     activeOpacity={0.92}
                     onPress={() => openArticle(item)}
-                    style={[
-                      styles.cardWrapper,
-                      { width: cardWidth, height: CARD_HEIGHT },
-                    ]}
+                    style={styles.cardWrapper}
                     accessibilityRole="button"
                     accessibilityLabel={`${cleanTitle}. Published by ${publisherName}`}
                   >
@@ -477,7 +504,7 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
                         </View>
 
                         <View style={styles.metaRow}>
-                          <Text style={styles.sourceText} numberOfLines={1}>
+                          <Text style={styles.sourceText} numberOfLines={1} ellipsizeMode="tail">
                             {publisherName}
                           </Text>
                           {!!relativeDate && (
@@ -490,12 +517,12 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
                       </View>
 
                       {/* Middle: Headline */}
-                      <Text style={styles.headlineText} numberOfLines={2}>
+                      <Text style={styles.headlineText} numberOfLines={2} ellipsizeMode="tail">
                         {cleanTitle}
                       </Text>
 
                       {/* Short Summary Description */}
-                      <Text style={styles.summaryText} numberOfLines={2}>
+                      <Text style={styles.summaryText} numberOfLines={2} ellipsizeMode="tail">
                         {cleanDesc}
                       </Text>
 
@@ -674,6 +701,8 @@ const styles = StyleSheet.create({
     boxSizing: "border-box" as any,
   },
   cardWrapper: {
+    width: "100%",
+    height: CARD_HEIGHT,
     borderRadius: 16,
     overflow: "hidden",
     maxWidth: "100%",
@@ -714,6 +743,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 10,
     flexShrink: 0,
+    maxWidth: "45%",
   },
   catBadgeText: {
     fontSize: 10.5,
@@ -726,6 +756,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    flex: 1,
     flexShrink: 1,
     minWidth: 0,
     justifyContent: "flex-end",
@@ -735,7 +766,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.9)",
     flexShrink: 1,
-    maxWidth: 160,
+    minWidth: 0,
   },
   metaDot: {
     color: "rgba(255, 255, 255, 0.6)",
