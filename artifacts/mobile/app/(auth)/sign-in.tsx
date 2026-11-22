@@ -92,8 +92,22 @@ export default function SignInScreen() {
     }
   };
 
+  /* Detect if the app is served from a tunnel / non-standard preview domain */
+  const isTunnelDomain =
+    typeof window !== "undefined" &&
+    Boolean(window.location?.hostname) &&
+    /\.(trycloudflare\.com|ngrok(-free)?\.(?:app|io)|exp\.direct)$/i.test(
+      window.location.hostname,
+    );
+
   const handleSocial = async (provider: "Google" | "Facebook" | "Apple") => {
     setErrorMsg("");
+    if (isTunnelDomain) {
+      setErrorMsg(
+        `${provider} sign-in is disabled on preview tunnels because the temporary domain is not authorized in Firebase. Please use 1-Tap Preview or email/password login.`
+      );
+      return;
+    }
     setLoading(true);
     try {
       if (provider === "Google") await signInWithGoogle();
@@ -112,7 +126,7 @@ export default function SignInScreen() {
         err?.code === "auth/operation-not-allowed"
           ? `Continue with ${provider} is not enabled in the Firebase project.`
           : err?.code === "auth/unauthorized-domain"
-          ? `Add ${typeof window !== "undefined" ? window.location.hostname : "this app domain"} in Firebase Console → Authentication → Settings → Authorized domains.`
+          ? `${provider} sign-in requires this domain to be authorized in Firebase Console. Please use email/password or 1-Tap Preview login.`
           : err?.code === "auth/popup-blocked"
           ? "Your browser blocked the sign-in window. Allow pop-ups and try again."
           : err?.code === "auth/api-key-not-valid"
@@ -194,7 +208,6 @@ export default function SignInScreen() {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            
             {/* 1-Tap Quick Preview for Testing */}
             <View style={styles.quickSection}>
               <View style={styles.quickHeader}>
@@ -241,55 +254,63 @@ export default function SignInScreen() {
               </View>
             </View>
 
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google sign-in is available in the web build until native OAuth
-                client IDs are configured. */}
-            {Platform.OS === "web" && (
-              <TouchableOpacity
-                style={styles.socialBtn}
-                activeOpacity={0.85}
-                onPress={() => handleSocial("Google")}
-                disabled={loading}
-              >
-                <View style={styles.socialIconWrap}>
-                  <Text style={styles.googleG}>G</Text>
+            {/* Divider & Social Login */}
+            {!isTunnelDomain ? (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or continue with</Text>
+                  <View style={styles.dividerLine} />
                 </View>
-                <Text style={styles.socialBtnText}>Continue with Google</Text>
-              </TouchableOpacity>
-            )}
 
-            {Platform.OS === "web" && (
-              <TouchableOpacity
-                style={styles.socialBtn}
-                activeOpacity={0.85}
-                onPress={() => handleSocial("Facebook")}
-                disabled={loading}
-              >
-                <View style={styles.socialIconWrap}>
-                  <Text style={[styles.googleG, { color: "#1877F2" }]}>f</Text>
-                </View>
-                <Text style={styles.socialBtnText}>Continue with Facebook</Text>
-              </TouchableOpacity>
-            )}
+                {Platform.OS === "web" && (
+                  <TouchableOpacity
+                    style={styles.socialBtn}
+                    activeOpacity={0.85}
+                    onPress={() => handleSocial("Google")}
+                    disabled={loading}
+                  >
+                    <View style={styles.socialIconWrap}>
+                      <Text style={styles.googleG}>G</Text>
+                    </View>
+                    <Text style={styles.socialBtnText}>Continue with Google</Text>
+                  </TouchableOpacity>
+                )}
 
-            {/* Apple */}
-            <TouchableOpacity
-              style={[styles.socialBtn, styles.appleSocialBtn]}
-              activeOpacity={0.85}
-              onPress={() => handleSocial("Apple")}
-              disabled={loading}
-            >
-              <View style={[styles.socialIconWrap, styles.appleIconWrap]}>
-                <Ionicons name="logo-apple" size={20} color="#fff" />
+                {Platform.OS === "web" && (
+                  <TouchableOpacity
+                    style={styles.socialBtn}
+                    activeOpacity={0.85}
+                    onPress={() => handleSocial("Facebook")}
+                    disabled={loading}
+                  >
+                    <View style={styles.socialIconWrap}>
+                      <Text style={[styles.googleG, { color: "#1877F2" }]}>f</Text>
+                    </View>
+                    <Text style={styles.socialBtnText}>Continue with Facebook</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.socialBtn, styles.appleSocialBtn]}
+                  activeOpacity={0.85}
+                  onPress={() => handleSocial("Apple")}
+                  disabled={loading}
+                >
+                  <View style={[styles.socialIconWrap, styles.appleIconWrap]}>
+                    <Ionicons name="logo-apple" size={20} color="#fff" />
+                  </View>
+                  <Text style={[styles.socialBtnText, { color: "#fff" }]}>Continue with Apple</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.tunnelNote}>
+                <Ionicons name="shield-checkmark-outline" size={16} color="#FBBF24" />
+                <Text style={styles.tunnelNoteText}>
+                  Preview Mode: Dynamic tunnel domain detected. Use the 1-Tap Preview buttons above or email & password to sign in.
+                </Text>
               </View>
-              <Text style={[styles.socialBtnText, { color: "#fff" }]}>Continue with Apple</Text>
-            </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.footer}>
@@ -415,4 +436,13 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 8,
   },
   toastText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },
+  tunnelNote: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 14,
+    paddingHorizontal: 14, paddingVertical: 10, marginTop: 4,
+  },
+  tunnelNoteText: {
+    flex: 1, color: "rgba(255,255,255,0.85)", fontFamily: "Inter_400Regular",
+    fontSize: 12, lineHeight: 17,
+  },
 });

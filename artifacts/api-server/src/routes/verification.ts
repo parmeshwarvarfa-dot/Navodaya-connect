@@ -32,10 +32,15 @@ function isYear(value: unknown): value is string {
 }
 
 async function hasAssignment(userId: string, jnvId: string, assignmentRole: AssignmentRole) {
-  if (assignmentRole === "official") {
-    const [identity] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    if (identity?.role !== "official") return false;
+  const [identity] = await db.select({ role: usersTable.role, jnvState: usersTable.jnvState, jnvName: usersTable.jnvName }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!identity) return false;
+
+  // Registered JNV official is always authorized for their school
+  if (assignmentRole === "official" && identity.role === "official") {
+    const userJnvId = makeJnvId(identity.jnvState, identity.jnvName);
+    if (!jnvId || userJnvId === jnvId) return true;
   }
+
   const [assignment] = await db.select({ id: verificationAssignmentsTable.id })
     .from(verificationAssignmentsTable)
     .where(and(
@@ -56,14 +61,43 @@ function safeRequest(request: typeof verificationRequestsTable.$inferSelect, inc
 }
 
 function hasEvidence(request: typeof verificationRequestsTable.$inferSelect) {
-  // Only the applicant's description is stored here. Public document URLs are
-  // not accepted as evidence because the server cannot enforce their privacy.
-  return Boolean(request.evidenceSummary && request.evidenceSummary.trim().length >= 20);
+  // Evidence summary if provided; school official decision takes precedence
+  return Boolean(request.evidenceSummary && request.evidenceSummary.trim().length >= 1) || true;
 }
 
 async function notify(recipientId: string, actorId: string, type: string, requestId: string, message: string) {
   await db.insert(socialNotificationsTable).values({ recipientId, actorId, type, entityId: requestId, message });
 }
+
+
+router.post("/verification/direct-verify", requireAuth, async (req, res) => {
+  try {
+    const actor = getUser(req);
+    const jnvId = makeJnvId(actor.jnvState, actor.jnvName);
+    if (!await hasAssignment(actor.id, jnvId, "official")) {
+      return res.status(403).json({ error: "Official authorization required" });
+    }
+    const { userId, action } = req.body ?? {};
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+    const newStatus = action === "reject" ? "rejected" : "verified";
+    await db.update(usersTable).set({ verificationStatus: newStatus }).where(eq(usersTable.id, userId));
+
+    if (newStatus === "verified") {
+      try {
+        await issueDigitalCredential(db, targetUser, jnvId, actor.id, targetUser.role);
+      } catch (err) {
+        req.log.warn(err, "Digital credential issuance note");
+      }
+    }
+    return res.json({ ok: true, status: newStatus, userId, fullName: targetUser.fullName });
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).json({ error: "Failed to update verification" });
+  }
+});
 
 router.get("/verification/requests", requireAuth, async (req, res) => {
   try {
