@@ -54,13 +54,9 @@ async function canAccessStaffWorkspace(user: ReturnType<typeof getUser>, jnvId: 
 async function syncStaffGroupMembers(groupId: string, jnvId: string) {
   const users = await db.select({ id: usersTable.id, role: usersTable.role, verificationStatus: usersTable.verificationStatus, jnvId: usersTable.jnvId, jnvName: usersTable.jnvName, jnvState: usersTable.jnvState })
     .from(usersTable).where(or(eq(usersTable.role, "teacher"), eq(usersTable.role, "official")));
-  const assignments = await db.select({ userId: verificationAssignmentsTable.userId })
-    .from(verificationAssignmentsTable)
-    .where(and(eq(verificationAssignmentsTable.jnvId, jnvId), eq(verificationAssignmentsTable.assignmentRole, "official"), eq(verificationAssignmentsTable.active, true)));
-  const officialIds = new Set(assignments.map((assignment) => assignment.userId));
   const allowed = users.filter((candidate) => {
     const candidateJnvId = candidate.jnvId || makeJnvId(candidate.jnvState, candidate.jnvName);
-    return candidateJnvId === jnvId && (candidate.role === "teacher" ? candidate.verificationStatus === "verified" : officialIds.has(candidate.id));
+    return !jnvId || candidateJnvId === jnvId;
   });
   const allowedIds = allowed.map((candidate) => candidate.id);
   if (allowedIds.length) {
@@ -80,6 +76,22 @@ async function syncStaffGroupMembers(groupId: string, jnvId: string) {
     await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, groupId), notInArray(groupMembersTable.userId, allowedIds)));
   } else {
     await db.delete(groupMembersTable).where(eq(groupMembersTable.groupId, groupId));
+  }
+  const [memberCount] = await db.select({ total: count() }).from(groupMembersTable)
+    .where(and(eq(groupMembersTable.groupId, groupId), ne(groupMembersTable.role, "left")));
+  await db.update(groupsTable).set({ memberCount: memberCount.total }).where(eq(groupsTable.id, groupId));
+}
+
+async function syncOfficialsGroupMembers(groupId: string, jnvId: string) {
+  const users = await db.select({ id: usersTable.id, role: usersTable.role, verificationStatus: usersTable.verificationStatus, jnvId: usersTable.jnvId, jnvName: usersTable.jnvName, jnvState: usersTable.jnvState })
+    .from(usersTable).where(eq(usersTable.role, "official"));
+  const allowed = users.filter((candidate) => {
+    const candidateJnvId = candidate.jnvId || makeJnvId(candidate.jnvState, candidate.jnvName);
+    return !jnvId || candidateJnvId === jnvId;
+  });
+  const allowedIds = allowed.map((candidate) => candidate.id);
+  if (allowedIds.length) {
+    await db.insert(groupMembersTable).values(allowed.map((candidate) => ({ groupId, userId: candidate.id, role: "admin" }))).onConflictDoNothing();
   }
   const [memberCount] = await db.select({ total: count() }).from(groupMembersTable)
     .where(and(eq(groupMembersTable.groupId, groupId), ne(groupMembersTable.role, "left")));
@@ -120,6 +132,15 @@ async function canAccessGroup(groupId: string, user: ReturnType<typeof getUser>)
       .where(and(eq(groupMembersTable.groupId, group.id), eq(groupMembersTable.userId, user.id))).limit(1);
     return !!membership && membership.role !== "left";
   }
+  if (group.subject === "Officials Group") {
+    if (user.role !== "official") return false;
+    const jnvId = getJnvId(user);
+    if (group.jnvId && group.jnvId !== jnvId) return false;
+    await syncOfficialsGroupMembers(group.id, group.jnvId || jnvId);
+    const [membership] = await db.select({ role: groupMembersTable.role }).from(groupMembersTable)
+      .where(and(eq(groupMembersTable.groupId, group.id), eq(groupMembersTable.userId, user.id))).limit(1);
+    return !!membership && membership.role !== "left";
+  }
   if (group.clubId) {
     const [membership] = await db.select({ id: clubMembersTable.id, role: clubMembersTable.role }).from(clubMembersTable)
       .where(and(eq(clubMembersTable.clubId, group.clubId), eq(clubMembersTable.userId, user.id))).limit(1);
@@ -151,6 +172,64 @@ async function canAccessGroup(groupId: string, user: ReturnType<typeof getUser>)
 router.get("/groups", async (req, res) => {
   try {
     const user = getUser(req);
+    // Auto-ensure Staff Group & Officials Group for authorized staff
+    if (user.role === "teacher" || user.role === "official") {
+      const jnvId = getJnvId(user);
+      if (jnvId) {
+        let [staffGroup] = await db.select().from(groupsTable)
+          .where(and(eq(groupsTable.subject, STAFF_GROUP_SUBJECT), eq(groupsTable.jnvId, jnvId))).limit(1);
+        if (!staffGroup) {
+          try {
+            [staffGroup] = await db.insert(groupsTable).values({
+              name: "Staff Group",
+              subject: STAFF_GROUP_SUBJECT,
+              groupType: "staff_managed",
+              jnvId,
+              jnvName: user.jnvName,
+              jnvState: user.jnvState,
+              teacherId: user.id,
+              teacherName: user.fullName,
+              memberCount: 1,
+            }).onConflictDoNothing().returning();
+          } catch {}
+          if (!staffGroup) {
+            [staffGroup] = await db.select().from(groupsTable)
+              .where(and(eq(groupsTable.subject, STAFF_GROUP_SUBJECT), eq(groupsTable.jnvId, jnvId))).limit(1);
+          }
+        }
+        if (staffGroup) {
+          await addGroupMember(staffGroup.id, user.id, user.role === "official" ? "admin" : "member");
+          await syncStaffGroupMembers(staffGroup.id, jnvId);
+        }
+
+        if (user.role === "official") {
+          let [officialGroup] = await db.select().from(groupsTable)
+            .where(and(eq(groupsTable.subject, "Officials Group"), eq(groupsTable.jnvId, jnvId))).limit(1);
+          if (!officialGroup) {
+            try {
+              [officialGroup] = await db.insert(groupsTable).values({
+                name: "JNV Officials Group",
+                subject: "Officials Group",
+                groupType: "staff_managed",
+                jnvId,
+                jnvName: user.jnvName,
+                jnvState: user.jnvState,
+                createdById: user.id,
+                memberCount: 1,
+              }).onConflictDoNothing().returning();
+            } catch {}
+            if (!officialGroup) {
+              [officialGroup] = await db.select().from(groupsTable)
+                .where(and(eq(groupsTable.subject, "Officials Group"), eq(groupsTable.jnvId, jnvId))).limit(1);
+            }
+          }
+          if (officialGroup) {
+            await addGroupMember(officialGroup.id, user.id, "admin");
+            await syncOfficialsGroupMembers(officialGroup.id, jnvId);
+          }
+        }
+      }
+    }
     const memberships = await db.select({ groupId: groupMembersTable.groupId, role: groupMembersTable.role }).from(groupMembersTable).where(eq(groupMembersTable.userId, user.id));
     const memberGroupIds = memberships.filter((membership) => membership.role !== "left").map((membership) => membership.groupId);
     const memberGroupIdSet = new Set(memberGroupIds);
@@ -175,7 +254,10 @@ router.get("/groups", async (req, res) => {
     const roleVisibleGroups = (await Promise.all(groups.map(async (group) => {
       if (group.clubId) return clubIds.has(group.clubId) ? group : null;
       if (isStaffGroup(group)) {
-        return memberGroupIdSet.has(group.id) && group.jnvId && await canAccessStaffWorkspace(user, group.jnvId) ? group : null;
+        return (user.role === "teacher" || user.role === "official") && (!group.jnvId || group.jnvId === getJnvId(user)) ? group : null;
+      }
+      if (group.subject === "Officials Group") {
+        return user.role === "official" && (!group.jnvId || group.jnvId === getJnvId(user)) ? group : null;
       }
       if (isPrivateGroup(group)) return memberGroupIdSet.has(group.id) ? group : null;
       if (leftGroupIdSet.has(group.id)) return null;
@@ -686,6 +768,12 @@ router.post("/groups/ensure-community", async (req, res) => {
     } else if (kind === "school" && user.jnvName) {
       name = user.jnvName;
       subject = "School community";
+    } else if (kind === "staff" && (user.role === "teacher" || user.role === "official")) {
+      name = "Staff Group";
+      subject = STAFF_GROUP_SUBJECT;
+    } else if (kind === "officials" && user.role === "official") {
+      name = "JNV Officials Group";
+      subject = "Officials Group";
     } else if (kind === "all") {
       name = "All Navodayans";
       subject = "All Navodayans";
@@ -787,6 +875,46 @@ router.post("/groups/ensure-staff", async (req, res) => {
   } catch (error) {
     req.log.error(error, "Failed to ensure Staff Group");
     return res.status(500).json({ error: "Could not open the Staff Group" });
+  }
+});
+
+router.post("/groups/ensure-officials", async (req, res) => {
+  try {
+    const user = getUser(req);
+    if (user.role !== "official") return res.status(403).json({ error: "JNV officials only" });
+    const jnvId = getJnvId(user);
+    let [group] = await db.select().from(groupsTable)
+      .where(and(eq(groupsTable.subject, "Officials Group"), eq(groupsTable.jnvId, jnvId))).limit(1);
+    if (!group) {
+      try {
+        [group] = await db.insert(groupsTable).values({
+          name: "JNV Officials Group",
+          subject: "Officials Group",
+          groupType: "staff_managed",
+          jnvId,
+          jnvName: user.jnvName,
+          jnvState: user.jnvState,
+          createdById: user.id,
+          memberCount: 0,
+        }).onConflictDoNothing().returning();
+      } catch (error) {
+        req.log.error(error, "Officials group creation failed");
+      }
+      if (!group) {
+        [group] = await db.select().from(groupsTable)
+          .where(and(eq(groupsTable.subject, "Officials Group"), eq(groupsTable.jnvId, jnvId))).limit(1);
+      }
+    }
+    if (!group) return res.status(500).json({ error: "Could not create JNV Officials Group" });
+    await syncOfficialsGroupMembers(group.id, jnvId);
+    const [activeMembers] = await db.select({ total: count() }).from(groupMembersTable)
+      .where(and(eq(groupMembersTable.groupId, group.id), ne(groupMembersTable.role, "left")));
+    await db.update(groupsTable).set({ memberCount: activeMembers.total }).where(eq(groupsTable.id, group.id));
+    const [current] = await db.select().from(groupsTable).where(eq(groupsTable.id, group.id)).limit(1);
+    return res.json(current);
+  } catch (error) {
+    req.log.error(error, "Failed to ensure Officials Group");
+    return res.status(500).json({ error: "Could not open JNV Officials Group" });
   }
 });
 

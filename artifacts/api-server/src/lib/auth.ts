@@ -34,6 +34,10 @@ function isAlumniVerificationEssentialRoute(req: Request, user: AuthenticatedUse
 
 export async function isAuthorizedJnvOfficial(user: AuthenticatedUser): Promise<boolean> {
   if (user.role !== "official") return false;
+  // Any registered or verified JNV official is authorized for their school
+  if (isRegisteredJnvOfficial(user) || user.verificationStatus === "verified") {
+    return true;
+  }
   const jnvId = user.jnvId || makeJnvId(user.jnvState, user.jnvName);
   const [assignment] = await db.select({ id: verificationAssignmentsTable.id })
     .from(verificationAssignmentsTable)

@@ -228,6 +228,7 @@ export const api = {
   groups: {
     list: () => request<Group[]>("/groups"),
     ensureStaffWorkspace: (rejoin = false) => request<Group>("/groups/ensure-staff", { method: "POST", body: JSON.stringify({ rejoin }) }),
+    ensureOfficialsWorkspace: () => request<Group>("/groups/ensure-officials", { method: "POST" }),
     create: (data: { name: string; subject?: string; class?: string; memberIds?: string[]; avatarKey?: string | null }) =>
       request<Group>("/groups", { method: "POST", body: JSON.stringify(data) }),
     createInviteLink: (groupId: string) => request<{ token: string; groupName: string; expiresAt: string }>(`/groups/${encodeURIComponent(groupId)}/invite-link`, { method: "POST" }),
@@ -247,7 +248,7 @@ export const api = {
     getTyping: (groupId: string) => request<{ typing: string[] }>(`/groups/${groupId}/typing`),
     setTyping: (groupId: string, typing: boolean) =>
       request<{ ok: boolean }>(`/groups/${groupId}/typing`, { method: "POST", body: JSON.stringify({ typing }) }),
-    ensureCommunity: (data: { kind: "house" | "class" | "batch" | "school" | "all" | "interest"; interestId?: string }) =>
+    ensureCommunity: (data: { kind: "house" | "class" | "batch" | "school" | "all" | "interest" | "staff" | "officials"; interestId?: string }) =>
       request<Group>("/groups/ensure-community", { method: "POST", body: JSON.stringify(data) }),
     members: (groupId: string) => request<GroupMember[]>(`/groups/${encodeURIComponent(groupId)}/members`),
     addMembers: (groupId: string, memberIds: string[]) => request<GroupMember[]>(`/groups/${encodeURIComponent(groupId)}/members`, { method: "POST", body: JSON.stringify({ memberIds }) }),

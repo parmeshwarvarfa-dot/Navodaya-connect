@@ -24,7 +24,7 @@ import MotionPressable from "@/components/motion/MotionPressable";
 import GroupNameEmojiPicker from "@/components/GroupNameEmojiPicker";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
-type CommunityKind = "house" | "class" | "batch" | "school" | "all" | "interest";
+type CommunityKind = "house" | "class" | "batch" | "school" | "all" | "interest" | "staff" | "officials";
 type GroupCard = { id: string; kind?: CommunityKind; interestId?: string; icon: any; name: string; avatarUrl?: string; lastMessage: string; time: string; color: string; iconColor: string; lastMessageAt?: string | null; lastMessageSenderId?: string | null; lastMessageSenderName?: string | null };
 type ChatFilter = "all" | "groups" | "unread" | "favorites" | "archived";
 type ChatPreferences = { favorites: string[]; archived: string[]; muted: string[]; pinned: string[]; markedUnread: string[]; readAt: Record<string, string> };
@@ -172,12 +172,16 @@ export default function ChatsScreen() {
       api.directMessages.requests().then((rows) => { if (active) setMessageRequests(rows); }).catch(() => {});
     };
     if (isVerified && (profile?.role === "teacher" || profile?.role === "official")) {
-      api.groups.ensureStaffWorkspace().then(() => {
+      const promises = [api.groups.ensureStaffWorkspace()];
+      if (profile?.role === "official") {
+        promises.push(api.groups.ensureOfficialsWorkspace());
+      }
+      Promise.all(promises).then(() => {
         if (!active) return;
         setStaffGroupError("");
         refreshInbox();
       }).catch((error) => {
-        if (active) setStaffGroupError(error instanceof Error ? error.message : "Could not open the Staff Group.");
+        if (active) setStaffGroupError(error instanceof Error ? error.message : "Could not sync staff groups.");
         refreshInbox();
       });
     } else {
@@ -252,18 +256,79 @@ export default function ChatsScreen() {
     ? { id: `jnv-${profile.jnvName.toLowerCase().replace(/\s+/g, "-")}`, kind: "school" as const, icon: "chatbubble-outline" as const, name: profile.jnvName, lastMessage: "Tap to start a conversation", time: "", color: "#F0FDF4", iconColor: "#10B981" }
     : null;
 
-  const personalGroups = [batchOrClassGroup, houseGroup, jnvGroup, ALL_NAVODAYANS].filter(Boolean) as GroupCard[];
+  // JNV Officials Group: dedicated chat for JNV Officials
+  const officialsGroupCard: GroupCard | null = profile?.role === "official"
+    ? {
+        id: "officials-group",
+        kind: "officials" as const,
+        icon: "shield-checkmark-outline",
+        name: "JNV Officials Group",
+        lastMessage: "Official administration & verification",
+        time: "",
+        color: "#FEF3C7",
+        iconColor: "#D97706",
+      }
+    : null;
+
+  // Staff Group: collaboration chat for Teachers & Officials
+  const staffGroupCard: GroupCard | null = (profile?.role === "teacher" || profile?.role === "official")
+    ? {
+        id: "staff-group",
+        kind: "staff" as const,
+        icon: "people-circle-outline",
+        name: "Staff Group",
+        lastMessage: "Teacher & staff collaboration",
+        time: "",
+        color: "#EDE9FE",
+        iconColor: "#6D28D9",
+      }
+    : null;
+
+  const personalGroups = [
+    officialsGroupCard,
+    staffGroupCard,
+    batchOrClassGroup,
+    houseGroup,
+    jnvGroup,
+    ALL_NAVODAYANS,
+  ].filter(Boolean) as GroupCard[];
+
   const persistedPersonalGroups = personalGroups.map((personal) => {
-    const saved = schoolGroups.find((group) => normalizeGroupName(group.name) === normalizeGroupName(personal.name));
+    const saved = schoolGroups.find((group) => {
+      if (personal.kind === "staff" && (group.subject === "Staff Group" || normalizeGroupName(group.name) === "staff group")) return true;
+      if (personal.kind === "officials" && (group.subject === "Officials Group" || normalizeGroupName(group.name) === "jnv officials group")) return true;
+      return normalizeGroupName(group.name) === normalizeGroupName(personal.name);
+    });
     return saved
       ? { ...personal, id: saved.id, kind: undefined, avatarUrl: saved.avatarUrl, lastMessage: previewLastMessage(saved.lastMessage), time: formatListTime(saved.lastMessageAt), lastMessageAt: saved.lastMessageAt, lastMessageSenderId: saved.lastMessageSenderId, lastMessageSenderName: saved.lastMessageSenderName }
       : personal;
   });
+
   const YOUR_GROUPS: GroupCard[] = [
     ...persistedPersonalGroups,
     ...schoolGroups
-      .filter((group) => !persistedPersonalGroups.some((personal) => normalizeGroupName(personal.name) === normalizeGroupName(group.name)))
-      .map((group) => ({ id: group.id, icon: group.subject === "Staff Group" ? "people-circle-outline" : "people-outline", name: group.name, avatarUrl: group.avatarUrl, lastMessage: previewLastMessage(group.lastMessage), time: formatListTime(group.lastMessageAt), color: group.subject === "Staff Group" ? "#EAF0FF" : "#F5F3FF", iconColor: "#7C3AED", lastMessageAt: group.lastMessageAt, lastMessageSenderId: group.lastMessageSenderId, lastMessageSenderName: group.lastMessageSenderName })),
+      .filter((group) => !persistedPersonalGroups.some((personal) =>
+        normalizeGroupName(personal.name) === normalizeGroupName(group.name) ||
+        (personal.kind === "staff" && group.subject === "Staff Group") ||
+        (personal.kind === "officials" && group.subject === "Officials Group")
+      ))
+      .map((group) => {
+        const isStaff = group.subject === "Staff Group";
+        const isOfficial = group.subject === "Officials Group";
+        return {
+          id: group.id,
+          icon: isOfficial ? "shield-checkmark-outline" : isStaff ? "people-circle-outline" : "people-outline",
+          name: group.name,
+          avatarUrl: group.avatarUrl,
+          lastMessage: previewLastMessage(group.lastMessage),
+          time: formatListTime(group.lastMessageAt),
+          color: isOfficial ? "#FEF3C7" : isStaff ? "#EDE9FE" : "#F5F3FF",
+          iconColor: isOfficial ? "#D97706" : "#7C3AED",
+          lastMessageAt: group.lastMessageAt,
+          lastMessageSenderId: group.lastMessageSenderId,
+          lastMessageSenderName: group.lastMessageSenderName,
+        };
+      }),
   ];
 
   const unreadIds = useMemo(() => new Set(YOUR_GROUPS.filter((group) => {
@@ -378,11 +443,19 @@ export default function ChatsScreen() {
     if (openingGroup) return;
     setOpeningGroup(true);
     try {
-      const chat = group.kind
-        ? await api.groups.ensureCommunity({ kind: group.kind, interestId: group.interestId })
-        : { id: group.id };
-      setChatPreferences((current) => ({ ...current, readAt: { ...current.readAt, [chat.id]: group.lastMessageAt ?? new Date().toISOString() }, markedUnread: current.markedUnread.filter((id) => id !== chat.id) }));
-      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: chat.id, name: group.name } });
+      let chatId = group.id;
+      if (group.kind === "staff") {
+        const staffGroup = await api.groups.ensureStaffWorkspace();
+        chatId = staffGroup.id;
+      } else if (group.kind === "officials") {
+        const officialGroup = await api.groups.ensureOfficialsWorkspace();
+        chatId = officialGroup.id;
+      } else if (group.kind) {
+        const chat = await api.groups.ensureCommunity({ kind: group.kind, interestId: group.interestId });
+        chatId = chat.id;
+      }
+      setChatPreferences((current) => ({ ...current, readAt: { ...current.readAt, [chatId]: group.lastMessageAt ?? new Date().toISOString() }, markedUnread: current.markedUnread.filter((id) => id !== chatId) }));
+      router.push({ pathname: "/(screens)/group-chat" as any, params: { id: chatId, name: group.name } });
     } catch (error) {
       showToast(chatOpenError(error, "Could not open this group"));
     } finally {
