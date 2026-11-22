@@ -20,7 +20,7 @@ const effectiveStatus = (user: typeof usersTable.$inferSelect) => {
   return "unverified";
 };
 
-router.use(requireAuth);
+router.use("/alumni-verification", requireAuth);
 
 router.get("/alumni-verification/status", async (req, res) => {
   const user = getUser(req);

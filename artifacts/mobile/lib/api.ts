@@ -516,7 +516,8 @@ export const api = {
     saveWishlist: (productId: string) => request<{ saved: boolean }>(`/store/wishlist/${encodeURIComponent(productId)}`, { method: "POST" }),
     removeWishlist: (productId: string) => request<{ saved: boolean }>(`/store/wishlist/${encodeURIComponent(productId)}`, { method: "DELETE" }),
     previewCheckout: (addressId: string) => request<StoreCheckoutPreview>("/store/checkout/preview", { method: "POST", body: JSON.stringify({ addressId }) }),
-    placeOrder: (addressId: string, idempotencyKey: string) => request<StoreOrder>("/store/orders", { method: "POST", body: JSON.stringify({ addressId, idempotencyKey }) }),
+    placeOrder: (addressId: string, idempotencyKey: string, paymentMethod = "upi") => request<StoreOrderDetails>("/store/orders", { method: "POST", body: JSON.stringify({ addressId, idempotencyKey, paymentMethod }) }),
+    cancelOrder: (id: string, reason?: string) => request<StoreOrder>(`/store/orders/${encodeURIComponent(id)}/cancel`, { method: "PATCH", body: JSON.stringify({ reason }) }),
     orders: () => request<{ items: StoreOrder[] }>("/store/orders"),
     order: (id: string) => request<StoreOrderDetails>(`/store/orders/${encodeURIComponent(id)}`),
     reviews: (productId: string) => request<StoreReview[]>(`/store/products/${encodeURIComponent(productId)}/reviews`),
@@ -1176,7 +1177,7 @@ export interface StoreAdminMember { userId: string; name: string; email: string;
 export interface StoreAdminDashboard { products: { total: number; published: number; lowStock: number; outOfStock: number }; sellers: { total: number; pending: number }; availableModules: string[]; integrations: { payments: string; delivery: string } }
 export interface StoreConfig { paymentsEnabled: boolean; deliveryEnabled: boolean; checkoutEnabled: boolean; paymentCredentialsPresent: boolean; deliveryConfigurationPresent: boolean; note?: string }
 export interface StoreCategory { id: string; name: string; description?: string | null; imageUrl?: string | null }
-export interface StoreProduct { id: string; name: string; description: string; images: string[]; pricePaise: number; originalPricePaise?: number | null; discountPercent: number; sku?: string | null; brand?: string | null; variants: Array<{ name: string; options: Array<{ value: string; stock: number }> }>; stock: number; featured: boolean; categoryId: string | null; category: string | null; createdAt: string }
+export interface StoreProduct { id: string; name: string; description: string; specifications?: Record<string, string>; images: string[]; pricePaise: number; originalPricePaise?: number | null; discountPercent: number; sku?: string | null; brand?: string | null; variants: Array<{ name: string; options: Array<{ value: string; stock: number }> }>; stock: number; featured: boolean; categoryId: string | null; category: string | null; createdAt: string }
 export interface StoreProductPage { items: StoreProduct[]; page: number; pageSize: number; total: number; hasMore: boolean }
 export interface StoreCartItem { id: string; productId: string; variantSelection: string; quantity: number; productName: string; pricePaise: number; stock: number; status: string; images: string[]; categoryId: string | null; category: string | null; updatedAt: string }
 export interface StoreAddressInput { recipientName: string; phone: string; type: "home" | "hostel" | "school" | "other"; line1: string; line2?: string; city: string; district: string; state: string; pincode: string; instructions?: string; isDefault?: boolean }
