@@ -227,6 +227,35 @@ export const api = {
     insights: (userId?: string, range: "7d" | "30d" | "90d" = "30d") =>
       request<ProfileInsightsData>(`/alumni/analytics/insights${queryString({ userId, range })}`),
   },
+  competition: {
+    dashboard: () => request<CompetitionDashboardData>("/competition/dashboard"),
+    battles: (status?: string) => request<{ battles: HouseBattleItem[] }>(`/competition/battles${queryString({ status })}`),
+    randomMatch: () => request<{ battle: HouseBattleItem }>("/competition/battles/random-match", { method: "POST" }),
+    joinBattle: (id: string) => request<{ battle: HouseBattleItem; participant: any }>(`/competition/battles/${encodeURIComponent(id)}/join`, { method: "POST" }),
+    submitBattleAnswer: (id: string, questionId: number, answerIndex: number, timeTakenSeconds = 5) =>
+      request<{ correct: boolean; pointsEarned: number; currentScore: number; explanation?: string }>(`/competition/battles/${encodeURIComponent(id)}/answer`, {
+        method: "POST",
+        body: JSON.stringify({ questionId, answerIndex, timeTakenSeconds }),
+      }),
+    finishBattle: (id: string) => request<any>(`/competition/battles/${encodeURIComponent(id)}/finish`, { method: "POST" }),
+    dailyPuzzles: () => request<{ puzzles: DailyPuzzleItem[] }>("/competition/daily-puzzles"),
+    submitDailyPuzzle: (id: string, guess: any, isPractice = false, timeTakenSeconds = 20) =>
+      request<{ success: boolean; isCorrect: boolean; feedback: any; pointsAwarded: number; isPractice: boolean }>(`/competition/daily-puzzles/${encodeURIComponent(id)}/attempt`, {
+        method: "POST",
+        body: JSON.stringify({ guess, isPractice, timeTakenSeconds }),
+      }),
+    playerLeaderboard: (params: { timeRange?: string; house?: string; search?: string } = {}) =>
+      request<{ leaderboard: PlayerLeaderboardEntry[]; filters: any; connectionStatus: string }>(`/competition/leaderboard/players${queryString(params)}`),
+    houseLeaderboard: () =>
+      request<{ standings: HouseChampionshipStanding[]; leadingHouse: string; connectionStatus: string }>("/competition/leaderboard/houses"),
+    activityFeed: () => request<{ activities: CompetitionActivityItem[] }>("/competition/activity-feed"),
+    events: () => request<{ tournaments: any[] }>("/competition/events"),
+    adminScoreAdjust: (targetUserId: string, house: string, points: number, reason: string) =>
+      request<{ success: boolean; message: string; scoreId: string }>("/competition/admin/score-adjust", {
+        method: "POST",
+        body: JSON.stringify({ targetUserId, house, points, reason }),
+      }),
+  },
   yearbook: {
     list: (jnvName?: string, jnvState?: string, cohortYear?: string) => request<YearbookEntry[]>(`/yearbook${queryString({ jnvName, jnvState, cohortYear })}`),
     mine: () => request<YearbookSubmission[]>("/yearbook/my-submissions"),
@@ -1425,4 +1454,105 @@ export interface ProfileInsightsData {
     postLikes: ProfileInsightsMetric;
     shares: ProfileInsightsMetric;
   };
+}
+
+export interface CompetitionDashboardData {
+  user: {
+    id: string;
+    fullName: string;
+    house: string;
+    houseMeta: { name: string; color: string; emoji: string };
+    individualPoints: number;
+    houseRank: number;
+  };
+  houseStandings: Array<{
+    house: string;
+    displayName: string;
+    color: string;
+    emoji: string;
+    points: number;
+    progressPercent: number;
+  }>;
+  liveBattlesCount: number;
+  todayPuzzles: Array<{
+    id: string;
+    puzzleType: string;
+    title: string;
+    maxRewardPoints: number;
+    completed: boolean;
+  }>;
+  connectionStatus: string;
+}
+
+export interface HouseBattleItem {
+  id: string;
+  title: string;
+  format: string;
+  houseA: string;
+  houseB: string;
+  houseAMeta: { name: string; color: string; emoji: string };
+  houseBMeta: { name: string; color: string; emoji: string };
+  status: "scheduled" | "lobby" | "live" | "completed" | "cancelled";
+  scoreA: number;
+  scoreB: number;
+  winnerHouse?: string | null;
+  questions?: Array<{ id: number; prompt: string; options: string[] }>;
+  durationSeconds: number;
+  startsAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface DailyPuzzleItem {
+  id: string;
+  puzzleType: "word_of_day" | "connections" | "number_ninja" | "mini_crossword" | "daily_gk" | "pattern_master";
+  title: string;
+  puzzleDate: string;
+  maxRewardPoints: number;
+  puzzleData: Record<string, any>;
+  hasAttempted: boolean;
+  isCompleted: boolean;
+  scoreAwarded: number;
+  attemptsUsed: number;
+  streakCount: number;
+}
+
+export interface PlayerLeaderboardEntry {
+  rank: number;
+  userId: string;
+  fullName: string;
+  photoURL?: string | null;
+  house: string;
+  houseDisplayName: string;
+  houseColor: string;
+  houseEmoji: string;
+  totalPoints: number;
+  gamesPlayed: number;
+  isCurrentUser: boolean;
+}
+
+export interface HouseChampionshipStanding {
+  rank: number;
+  house: string;
+  displayName: string;
+  color: string;
+  emoji: string;
+  motto: string;
+  totalPoints: number;
+  progressPercent: number;
+  victories: number;
+}
+
+export interface CompetitionActivityItem {
+  id: string;
+  userId: string;
+  userName: string;
+  photoURL?: string | null;
+  house: string;
+  houseDisplayName: string;
+  houseColor: string;
+  houseEmoji: string;
+  points: number;
+  sourceType: string;
+  reason: string;
+  createdAt: string;
 }

@@ -36,3 +36,4 @@ export * from "./recognition";
 export * from "./storeAdmin";
 export * from "./storeCommerce";
 export * from "./alumniMembership";
+export * from "./competition";

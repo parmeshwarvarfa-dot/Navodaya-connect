@@ -37,6 +37,7 @@ import storeAdminRouter from "./storeAdmin";
 import storeCommerceRouter from "./storeCommerce";
 import alumniMembershipRouter from "./alumniMembership";
 import profileAnalyticsRouter from "./profileAnalytics";
+import competitionRouter from "./competition";
 
 const router: IRouter = Router();
 
@@ -78,5 +79,6 @@ router.use(storeAdminRouter);
 router.use(storeCommerceRouter);
 router.use(alumniMembershipRouter);
 router.use(profileAnalyticsRouter);
+router.use(competitionRouter);
 
 export default router;
