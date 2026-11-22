@@ -155,6 +155,8 @@ export default function ProfileScreen() {
     { icon: "book-outline" as const, label: "Digital Yearbook", onPress: () => router.push("/(screens)/yearbook" as any) },
     { icon: "scan-outline" as const, label: "Scan Digital ID", onPress: () => router.push("/(screens)/digital-id-scanner" as any) },
     { icon: "mail-unread-outline" as const, label: "Social Inbox", onPress: () => router.push("/(screens)/social-inbox" as any) },
+    { icon: "compass-outline" as const, label: "Explore Platform Previews", onPress: () => router.push("/(screens)/explore" as any) },
+    { icon: "sparkles-outline" as const, label: "Replay Launch Experience", onPress: () => router.push("/onboarding" as any) },
     { icon: "lock-closed-outline" as const, label: "Privacy & Requests", onPress: () => router.push("/(screens)/privacy-settings" as any) },
     { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
     ...(profile.role === "alumni"

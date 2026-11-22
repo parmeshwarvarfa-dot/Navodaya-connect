@@ -48,6 +48,22 @@ const colors = {
     saffronDark: "#5B21B6",
   },
 
+  // Prototype Version 8 Design System Tokens
+  prototypeV8: {
+    violet: "#6A00E0",
+    violet2: "#7A2CF0",
+    lavender: "#D8C2FF",
+    ink: "#0A0A2A",
+    page: "#F1EAFF",
+    muted: "#6B6790",
+    gold: "#FFC98A",
+    deepPurple: "#12063A",
+    cardBg: "#FFFFFF",
+    sheetBgStart: "#E7DBFF",
+    sheetBgEnd: "#FFFFFF",
+    accentGlow: "rgba(150, 90, 255, 0.7)",
+  },
+
   radius: 16,
   radiusLg: 24,
   radiusXl: 32,

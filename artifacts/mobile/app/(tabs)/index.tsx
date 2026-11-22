@@ -452,6 +452,7 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
           {[
+            { label: "Community Previews & Experience", desc: "First-launch storytelling, campus art & platform previews", icon: "sparkles-outline" as const, iconColor: "#6A00E0", iconBg: "#F5F3FF", route: "/(screens)/explore" },
             { label: "JNV Store", desc: "Books, JNV merchandise & learning essentials", icon: "bag-handle-outline" as const, iconColor: "#7C3AED", iconBg: "#F5F3FF", route: "/(screens)/store" },
             ...(role !== "official" ? [{ label: "Inter House Competition", desc: "Compete in games & earn points for your house", icon: "game-controller-outline" as const, iconColor: "#10B981", iconBg: "#ECFDF5", route: "/(screens)/house-arena" }] : []),
           ].map((item) => (

@@ -8,15 +8,17 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ role?: string; phone?: string }>();
   const { signIn, quickDemoLogin, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -151,12 +153,24 @@ export default function SignInScreen() {
         >
           <View style={styles.iconWrap}>
             <View style={styles.iconCircle}>
-              <Ionicons name="people" size={48} color="#fff" />
+              <Image
+                source={require("@/assets/images/jnv-logo.jpg")}
+                style={{ width: 68, height: 68, borderRadius: 34 }}
+                resizeMode="contain"
+              />
             </View>
           </View>
 
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Login to your JNV Connect account</Text>
+          {params?.role ? (
+            <View style={styles.roleBadge}>
+              <Ionicons name="person-circle-outline" size={14} color="#D8C2FF" />
+              <Text style={styles.roleBadgeText}>
+                Selected Community: {params.role.toUpperCase()}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.form}>
             {/* Email */}
@@ -319,6 +333,26 @@ export default function SignInScreen() {
               <Text style={styles.footerLink}>Create Account →</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.exploreFooter}>
+            <TouchableOpacity
+              onPress={() => router.push("/(screens)/explore" as any)}
+              style={styles.explorePill}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="compass-outline" size={14} color="#D8C2FF" />
+              <Text style={styles.explorePillText}>Explore Navodaya Connect Previews</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.replace("/onboarding")}
+              style={styles.replayLink}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={12} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.replayLinkText}>Replay Launch Experience</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -426,9 +460,61 @@ const styles = StyleSheet.create({
   appleIconWrap: { backgroundColor: "#333" },
   googleG: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#EA4335" },
   socialBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#111827" },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
-  footerText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 15 },
-  footerLink: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 },
+  footer: { flexDirection: "row", justifyContent: "center", marginTop: 24 },
+  footerText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 14 },
+  footerLink: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    alignSelf: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(216, 194, 255, 0.4)",
+  },
+  roleBadgeText: {
+    color: "#D8C2FF",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  exploreFooter: {
+    alignItems: "center",
+    gap: 12,
+    marginTop: 18,
+    paddingBottom: 16,
+  },
+  explorePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(216, 194, 255, 0.4)",
+  },
+  explorePillText: {
+    color: "#EFE6FF",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12.5,
+  },
+  replayLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+  },
+  replayLinkText: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+  },
   toast: {
     position: "absolute", bottom: 36, left: 24, right: 24,
     backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14,
