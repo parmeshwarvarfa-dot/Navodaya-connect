@@ -3,87 +3,183 @@ import { count, eq } from "drizzle-orm";
 
 export async function ensureStoreSeedData() {
   try {
-    const [catCount] = await db.select({ total: count() }).from(storeCategoriesTable);
-    if ((catCount?.total ?? 0) > 0) {
-      return; // Already initialized
-    }
-
-    console.log("[StoreSeed] Initializing official JNV Store categories and products...");
+    let categories = await db.select().from(storeCategoriesTable);
 
     // Find or fallback to first user for createdBy
     let [adminUser] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, "official")).limit(1);
     if (!adminUser) {
       [adminUser] = await db.select({ id: usersTable.id }).from(usersTable).limit(1);
     }
-    if (!adminUser) {
-      console.warn("[StoreSeed] No user available in database yet. Categories will be created without products.");
+
+    if (categories.length === 0) {
+      console.log("[StoreSeed] Initializing official JNV Store categories...");
+      const categoriesData = [
+        {
+          name: "Navodayan Merchandise",
+          description: "Official JNV badges, pins, flags, crests & souvenirs",
+          imageUrl: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Clothing & Apparel",
+          description: "Hoodies, t-shirts, jackets and house uniforms",
+          imageUrl: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Bags & Backpacks",
+          description: "Durable school bags, laptop backpacks & duffels",
+          imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Stationery",
+          description: "Notebooks, diary combos, pens, math sets & exam pads",
+          imageUrl: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Books & Educational Accessories",
+          description: "Competitive exam kits, study guides & book lights",
+          imageUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Water Bottles & Accessories",
+          description: "Stainless steel sippers, thermal flasks & lunch sets",
+          imageUrl: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Gifts & Personalized Products",
+          description: "Engraved pens, customized mugs & memory photo frames",
+          imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Alumni Reunion Merchandise",
+          description: "Batch mementos, silver jubilee kits & reunion polos",
+          imageUrl: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+        {
+          name: "Other Approved Products",
+          description: "Campus accessories, sports gear & dorm essentials",
+          imageUrl: "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=600&q=80",
+          visible: true,
+        },
+      ];
+      categories = await db.insert(storeCategoriesTable).values(categoriesData).returning();
     }
 
-    // 1. Initial 9 Categories
-    const categoriesData = [
-      {
-        name: "Navodayan Merchandise",
-        description: "Official JNV badges, pins, flags, crests & souvenirs",
-        imageUrl: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Clothing & Apparel",
-        description: "Hoodies, t-shirts, jackets and house uniforms",
-        imageUrl: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Bags & Backpacks",
-        description: "Durable school bags, laptop backpacks & duffels",
-        imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Stationery",
-        description: "Notebooks, diary combos, pens, math sets & exam pads",
-        imageUrl: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Books & Educational Accessories",
-        description: "Competitive exam kits, study guides & book lights",
-        imageUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Water Bottles & Accessories",
-        description: "Stainless steel sippers, thermal flasks & lunch sets",
-        imageUrl: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Gifts & Personalized Products",
-        description: "Engraved pens, customized mugs & memory photo frames",
-        imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Alumni Reunion Merchandise",
-        description: "Batch mementos, silver jubilee kits & reunion polos",
-        imageUrl: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-      {
-        name: "Other Approved Products",
-        description: "Campus accessories, sports gear & dorm essentials",
-        imageUrl: "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=600&q=80",
-        visible: true,
-      },
-    ];
-
-    const insertedCategories = await db.insert(storeCategoriesTable).values(categoriesData).returning();
-    const catMap = new Map(insertedCategories.map(c => [c.name, c.id]));
-
+    const catMap = new Map(categories.map(c => [c.name, c.id]));
     if (!adminUser) return;
 
+    // Check if JNV Cap exists
+    const [cap] = await db.select().from(storeProductsTable).where(eq(storeProductsTable.name, "JNV Cap")).limit(1);
+    if (!cap) {
+      console.log("[StoreSeed] Seeding Store Room primary reference products (JNV Cap, JNV Mug, JNV Backpack)...");
+      const referenceProducts = [
+        {
+          name: "JNV Cap",
+          description: "Official Navodaya embroidered baseball cap with UV sun protection visor, breathable eyelets, and adjustable brass buckle. Features the embroidered Navodaya emblem on the front.",
+          brand: "Navodaya Heritage",
+          sku: "NV-CAP-01",
+          categoryId: catMap.get("Clothing & Apparel") || catMap.get("Navodayan Merchandise"),
+          pricePaise: 29900,
+          originalPricePaise: 49900,
+          discountPercent: 40,
+          stock: 240,
+          status: "published",
+          featured: true,
+          createdBy: adminUser.id,
+          updatedBy: adminUser.id,
+          images: [
+            "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80",
+          ],
+          specifications: {
+            "Material": "100% Breathable Cotton Twill",
+            "Closure": "Adjustable Brass Strap",
+            "Embroidery": "High-Definition Navodaya Crest",
+            "Fit": "Free Size Unisex",
+          },
+          variants: [
+            {
+              name: "Color",
+              options: [
+                { value: "Navy Blue", stock: 150 },
+                { value: "Maroon", stock: 90 },
+              ],
+            },
+          ],
+        },
+        {
+          name: "JNV Mug",
+          description: "Glossy white ceramic coffee mug printed with the official Navodaya crest and emblem. Ideal keepsake for tea, coffee, and hostel memories.",
+          brand: "Navodaya Gifts",
+          sku: "NV-MUG-01",
+          categoryId: catMap.get("Gifts & Personalized Products") || catMap.get("Navodayan Merchandise"),
+          pricePaise: 19900,
+          originalPricePaise: 29900,
+          discountPercent: 33,
+          stock: 350,
+          status: "published",
+          featured: true,
+          createdBy: adminUser.id,
+          updatedBy: adminUser.id,
+          images: [
+            "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
+          ],
+          specifications: {
+            "Material": "Grade A Microwave-Safe Ceramic",
+            "Capacity": "325 ml",
+            "Dishwasher Safe": "Yes",
+            "Print Quality": "Permanent Sublimation Print",
+          },
+          variants: [],
+        },
+        {
+          name: "JNV Backpack",
+          description: "Durable school backpack with padded laptop sleeve, book section, heavy-duty zippers, water bottle pocket, and embroidered Navodaya crest.",
+          brand: "Navodaya Gear",
+          sku: "NV-BAG-01",
+          categoryId: catMap.get("Bags & Backpacks"),
+          pricePaise: 99900,
+          originalPricePaise: 149900,
+          discountPercent: 33,
+          stock: 150,
+          status: "published",
+          featured: true,
+          createdBy: adminUser.id,
+          updatedBy: adminUser.id,
+          images: [
+            "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+          ],
+          specifications: {
+            "Capacity": "30 Litres",
+            "Material": "Water-Resistant Ballistic Nylon",
+            "Compartments": "3 Main + 2 Side Mesh Pockets",
+            "Warranty": "1 Year Replacement Warranty",
+          },
+          variants: [
+            {
+              name: "Color",
+              options: [
+                { value: "Navy Blue", stock: 90 },
+                { value: "Midnight Black", stock: 60 },
+              ],
+            },
+          ],
+        },
+      ];
+      await db.insert(storeProductsTable).values(referenceProducts as any);
+      console.log("[StoreSeed] Store Room reference products seeded successfully.");
+    }
+
     // 2. Initial High-Quality Products
-    const productsData = [
+    const [prodCount] = await db.select({ total: count() }).from(storeProductsTable);
+    if ((prodCount?.total ?? 0) < 5) {
+      const productsData = [
       {
         name: "Navodaya Crest Premium Cotton Hoodie",
         description: "Heavyweight 360 GSM fleece hoodie featuring the embossed Navodaya crest on the chest. Designed for winter warmth on campus and alumni reunions. Double-stitched seams and kangaroo pocket.",
@@ -336,8 +432,9 @@ export async function ensureStoreSeedData() {
       },
     ];
 
-    await db.insert(storeProductsTable).values(productsData as any);
-    console.log(`[StoreSeed] Successfully seeded 9 categories and ${productsData.length} published products.`);
+      await db.insert(storeProductsTable).values(productsData as any);
+      console.log(`[StoreSeed] Successfully seeded 9 categories and ${productsData.length} published products.`);
+    }
   } catch (err) {
     console.error("[StoreSeed] Error seeding store data:", err);
   }
