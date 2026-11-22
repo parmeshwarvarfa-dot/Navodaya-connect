@@ -31,6 +31,7 @@ import {
 import type { CreateMemoryRequest, SocialMemory } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { api, type ChatContact } from "@/lib/api";
+import { isPostEditable, formatEditTimeRemaining } from "@/lib/post-editing";
 import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
 import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
@@ -119,6 +120,11 @@ export default function MemoriesScreen() {
 
   const submitPost = async (data: CreateMemoryRequest) => {
     if (editingPost) {
+      if (!isPostEditable(editingPost.createdAt)) {
+        showToast("Posts can only be edited within 24 hours of publishing.");
+        setEditingPost(null);
+        return;
+      }
       await updateMemory.mutateAsync({ id: editingPost.id, data });
       setEditingPost(null);
       showToast("Post updated.");
@@ -184,6 +190,11 @@ export default function MemoriesScreen() {
   };
 
   const startEdit = (memory: SocialMemory) => {
+    if (!isPostEditable(memory.createdAt)) {
+      showToast("Posts can only be edited within 24 hours of publishing.");
+      setMenuPost(null);
+      return;
+    }
     setMenuPost(null);
     setEditingPost(memory);
     setComposerVisible(true);
@@ -390,9 +401,29 @@ export default function MemoriesScreen() {
             <Text style={styles.sheetTitle}>Post options</Text>
             {menuPost?.authorId === profile?.uid ? (
               <>
-                <TouchableOpacity style={styles.sheetOption} onPress={() => menuPost && startEdit(menuPost)}>
-                  <Ionicons name="create-outline" size={19} color="#42516B" /><Text style={styles.sheetOptionText}>Edit post</Text>
-                </TouchableOpacity>
+                {isPostEditable(menuPost?.createdAt) ? (
+                  <TouchableOpacity style={styles.sheetOption} onPress={() => menuPost && startEdit(menuPost)}>
+                    <Ionicons name="create-outline" size={19} color="#42516B" />
+                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <Text style={styles.sheetOptionText}>Edit post</Text>
+                      {formatEditTimeRemaining(menuPost?.createdAt) ? (
+                        <Text style={{ fontSize: 11, color: "#6366F1", marginRight: 8 }}>
+                          {formatEditTimeRemaining(menuPost?.createdAt)}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={[styles.sheetOption, { opacity: 0.65 }]}>
+                    <Ionicons name="time-outline" size={19} color="#7A8BA0" />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={[styles.sheetOptionText, { color: "#7A8BA0", marginLeft: 0 }]}>Edit unavailable</Text>
+                      <Text style={{ fontSize: 11, color: "#9AA5B5", marginTop: 2 }}>
+                        Posts can only be edited within 24 hours of publishing.
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 <TouchableOpacity style={styles.sheetOption} onPress={() => { setDeletePost(menuPost); setMenuPost(null); }}>
                   <Ionicons name="trash-outline" size={19} color="#C74353" /><Text style={[styles.sheetOptionText, styles.dangerText]}>Delete post</Text>
                 </TouchableOpacity>

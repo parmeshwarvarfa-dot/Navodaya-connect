@@ -176,19 +176,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       throw new Error("Please enter a valid email address.");
     }
-    const auth = requireFirebaseAuth();
+    const auth = firebaseAuth;
     manualAuthSync.current = true;
     try {
-      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      await syncFirebaseUser(credential.user);
-    } catch (firebaseError: any) {
-      if (firebaseError?.code === "auth/user-not-found" || firebaseError?.code === "auth/invalid-credential") {
-        const { token, profile: p } = await api.auth.signin(email.trim(), password);
-        await setToken(token);
-        setProfile(p);
-      } else {
-        throw firebaseError;
+      if (auth) {
+        try {
+          const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+          await syncFirebaseUser(credential.user);
+          return;
+        } catch (firebaseError: any) {
+          console.warn("[Auth] Firebase signIn error, falling back to backend auth:", firebaseError?.code || firebaseError?.message);
+        }
       }
+      const { token, profile: p } = await api.auth.signin(email.trim(), password);
+      await setToken(token);
+      setProfile(p);
     } finally {
       manualAuthSync.current = false;
     }

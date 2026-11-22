@@ -14,6 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import type { SocialMemory, UpdateMemoryRequest } from "@workspace/api-client-react";
 import { api, type ProfileConnection } from "@/lib/api";
+import { isPostEditable, formatEditTimeRemaining } from "@/lib/post-editing";
 import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
 import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
@@ -109,6 +110,11 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
 
   const saveEdit = async (data: UpdateMemoryRequest) => {
     if (!editingPost) return;
+    if (!isPostEditable(editingPost.createdAt)) {
+      setEditingPost(null);
+      message("Posts can only be edited within 24 hours of publishing.");
+      return;
+    }
     try {
       const updated = await updateMemory.mutateAsync({ id: editingPost.id, data });
       setEditingPost(null);
@@ -210,7 +216,29 @@ export default function ProfilePostsSection({ userId, isOwner, restricted = fals
         <View style={styles.menuBackdrop}><View style={styles.menuCard}>
           <Text style={styles.menuTitle}>Post options</Text>
           {postMenu?.authorId === userId && isOwner ? <>
-            <TouchableOpacity style={styles.menuOption} onPress={() => { setEditingPost(postMenu); setPostMenu(null); }}><Ionicons name="create-outline" size={19} color="#7C3AED"/><Text style={styles.menuOptionText}>Edit post</Text></TouchableOpacity>
+            {isPostEditable(postMenu?.createdAt) ? (
+              <TouchableOpacity style={styles.menuOption} onPress={() => { setEditingPost(postMenu); setPostMenu(null); }}>
+                <Ionicons name="create-outline" size={19} color="#7C3AED"/>
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={styles.menuOptionText}>Edit post</Text>
+                  {formatEditTimeRemaining(postMenu?.createdAt) ? (
+                    <Text style={{ fontSize: 11, color: "#7C3AED", marginRight: 8 }}>
+                      {formatEditTimeRemaining(postMenu?.createdAt)}
+                    </Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.menuOption, { opacity: 0.65 }]}>
+                <Ionicons name="time-outline" size={19} color="#69758B" />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.menuOptionText, { color: "#69758B" }]}>Edit unavailable</Text>
+                  <Text style={{ fontSize: 11, color: "#98A2B3", marginTop: 2 }}>
+                    Posts can only be edited within 24 hours of publishing.
+                  </Text>
+                </View>
+              </View>
+            )}
             <TouchableOpacity style={styles.menuOption} onPress={confirmDelete}><Ionicons name="trash-outline" size={19} color="#B42318"/><Text style={[styles.menuOptionText, { color: "#B42318" }]}>Delete post</Text></TouchableOpacity>
           </> : <TouchableOpacity style={styles.menuOption} onPress={() => void reportPost()}><Ionicons name="flag-outline" size={19} color="#B42318"/><Text style={[styles.menuOptionText, { color: "#B42318" }]}>Report post</Text></TouchableOpacity>}
           <TouchableOpacity style={styles.menuCancel} onPress={() => setPostMenu(null)}><Text style={styles.menuCancelText}>Cancel</Text></TouchableOpacity>

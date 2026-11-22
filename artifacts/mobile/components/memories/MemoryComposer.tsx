@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import type { CreateMemoryRequest, SocialMemory } from "@workspace/api-client-react";
 import { api, type UploadedMemoryMedia } from "@/lib/api";
+import { isPostEditable, formatEditTimeRemaining } from "@/lib/post-editing";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 type Visibility = "public" | "followers";
@@ -141,6 +142,11 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
       onMessage("A poll needs at least two answer choices.");
       return;
     }
+    if (initial && !isPostEditable(initial.createdAt)) {
+      onMessage("Posts can only be edited within 24 hours of publishing.");
+      onClose();
+      return;
+    }
     setBusy(true);
     const uploadedKeys: string[] = [];
     try {
@@ -186,7 +192,14 @@ export default function MemoryComposer({ visible, onClose, onSubmit, initial, on
           <TouchableOpacity accessibilityLabel="Close composer" onPress={onClose} disabled={busy} style={styles.close}>
             <Ionicons name="close" size={23} color="#192238" />
           </TouchableOpacity>
-          <Text style={styles.title}>{initial ? "Edit post" : "Create a post"}</Text>
+          <View style={{ alignItems: "center" }}>
+            <Text style={styles.title}>{initial ? "Edit post" : "Create a post"}</Text>
+            {initial ? (
+              <Text style={{ fontSize: 11, color: "#7C3AED", fontFamily: "Inter_500Medium" }}>
+                {formatEditTimeRemaining(initial.createdAt) ?? "24h edit window expired"}
+              </Text>
+            ) : null}
+          </View>
           <TouchableOpacity onPress={submit} disabled={busy} style={[styles.shareButton, busy && styles.disabled]}>
             <Text style={styles.shareText}>{busy ? "Sharing…" : initial ? "Save" : "Share"}</Text>
           </TouchableOpacity>

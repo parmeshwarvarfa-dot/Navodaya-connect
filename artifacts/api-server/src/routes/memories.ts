@@ -117,6 +117,10 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
           ? signMemoryMedia(media, row.authorId)
           : Promise.resolve(""),
     ));
+    const publishedTime = row.createdAt ? new Date(row.createdAt).getTime() : 0;
+    const isWithin24Hours = publishedTime > 0 && (Date.now() - publishedTime) <= 24 * 60 * 60 * 1000;
+    const isOwner = Boolean(row.authorId && row.authorId === viewerId);
+    const canEdit = isOwner && isWithin24Hours;
     return {
       ...row,
       createdAt: (row.createdAt ?? new Date(0)).toISOString(),
@@ -133,6 +137,8 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
       liked: likeUsersByMemory.get(row.id)?.has(viewerId) ?? false,
       bookmarked: bookmarkedIds.has(row.id),
       authorPhotoUrl: row.authorId ? authorPhotoById.get(row.authorId) ?? undefined : undefined,
+      canEdit,
+      editDeadline: publishedTime ? new Date(publishedTime + 24 * 60 * 60 * 1000).toISOString() : null,
     };
   }));
 }
@@ -441,6 +447,18 @@ router.patch("/memories/:id", requireAuth, async (req, res) => {
       .where(eq(memoriesTable.id, memoryId)).limit(1);
     if (!memory) return res.status(404).json({ error: "Post not found" });
     if (memory.authorId !== user.id) return res.status(403).json({ error: "Only the author can edit this post." });
+
+    // Strict 24-hour editing window enforcement (calculated using server time and original creation timestamp)
+    const publishedAt = memory.createdAt ? new Date(memory.createdAt).getTime() : 0;
+    const now = Date.now();
+    const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (!publishedAt || (now - publishedAt > EDIT_WINDOW_MS)) {
+      return res.status(403).json({
+        error: "Posts can only be edited within 24 hours of publishing.",
+        code: "EDIT_WINDOW_EXPIRED",
+      });
+    }
+
     const updates: Partial<typeof memoriesTable.$inferInsert> = { updatedAt: new Date() };
     if (req.body.caption !== undefined) {
       if (typeof req.body.caption !== "string" || (!req.body.caption.trim() && memory.postType !== "photo" && memory.postType !== "video") || req.body.caption.length > 4000) {
