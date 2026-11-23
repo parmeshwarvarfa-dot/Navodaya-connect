@@ -22,8 +22,8 @@ interface PrototypeLaunchSequenceProps {
   customPhotos?: any[];
 }
 
-const DUR = 9500;
-const SCENE_TIMES = [0, 1500, 3200, 4800, 6200, 7700];
+const DUR = 10700;
+const SCENE_TIMES = [0, 1500, 3200, 6000, 7400, 8900];
 
 const DEFAULT_PHOTOS = [
   require("@/assets/images/onboarding/photo_1.jpg"),

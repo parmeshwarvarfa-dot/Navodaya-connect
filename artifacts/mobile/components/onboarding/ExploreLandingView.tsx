@@ -88,6 +88,34 @@ const COMMUNITIES: {
   },
 ];
 
+const HOUSES = [
+  { name: "Aravali", color: "#6A00E0" },
+  { name: "Nilgiri", color: "#7A2CF0" },
+  { name: "Shivalik", color: "#9B5CF7" },
+  { name: "Udaygiri", color: "#B98CFF" },
+];
+
+const HOW_IT_WORKS = [
+  { step: 1, title: "Join", desc: "Sign up with your batch and house details." },
+  { step: 2, title: "Verify", desc: "Your JNV reviewers confirm your Navodaya details." },
+  { step: 3, title: "Connect", desc: "Find your batch, house and people." },
+];
+
+const TESTIMONIALS = [
+  {
+    quote: "Finding my batch again felt like coming home.",
+    author: "Alumnus, JNV Wardha",
+  },
+  {
+    quote: "The verification steps made me trust the community completely.",
+    author: "Senior Teacher, JNV Rohru",
+  },
+  {
+    quote: "I found my house group and seniors within a single day.",
+    author: "Student, JNV Gandhinagar",
+  },
+];
+
 export default function ExploreLandingView({
   visible,
   onClose,
@@ -97,6 +125,10 @@ export default function ExploreLandingView({
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const experienceSectionY = useRef(0);
+  const howSectionY = useRef(0);
+  const featuresSectionY = useRef(0);
+  const housesSectionY = useRef(0);
+  const commSectionY = useRef(0);
 
   if (!visible) return null;
 
@@ -111,6 +143,13 @@ export default function ExploreLandingView({
   const scrollToExperience = () => {
     scrollViewRef.current?.scrollTo({
       y: experienceSectionY.current || 320,
+      animated: true,
+    });
+  };
+
+  const scrollToY = (y: number) => {
+    scrollViewRef.current?.scrollTo({
+      y: Math.max(0, y - 80),
       animated: true,
     });
   };
@@ -130,20 +169,60 @@ export default function ExploreLandingView({
         />
       )}
 
-      {/* Sticky Header */}
+      {/* Sticky Header with Navigation Bar */}
       <View style={styles.topHeader}>
-        <View style={styles.brandRow}>
-          <Text style={styles.brandText}>NAVODAYA CONNECT</Text>
+        <View style={styles.topHeaderMainRow}>
+          <View style={styles.brandRow}>
+            <Text style={styles.brandText}>NAVODAYA CONNECT</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={onReplayIntro}
+            style={styles.replayBtn}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh" size={13} color="#6A00E0" />
+            <Text style={styles.replayBtnText}>Replay intro</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={onReplayIntro}
-          style={styles.replayBtn}
-          activeOpacity={0.8}
+        {/* Quick-Jump Section Navigation Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.subnavRow}
         >
-          <Ionicons name="refresh" size={13} color="#6A00E0" />
-          <Text style={styles.replayBtnText}>Replay intro</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.subnavPill}
+            onPress={() => scrollToY(featuresSectionY.current)}
+          >
+            <Text style={styles.subnavPillText}>Features</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.subnavPill}
+            onPress={() => scrollToY(howSectionY.current)}
+          >
+            <Text style={styles.subnavPillText}>How it works</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.subnavPill}
+            onPress={() => scrollToY(housesSectionY.current)}
+          >
+            <Text style={styles.subnavPillText}>Houses</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.subnavPill}
+            onPress={() => scrollToY(commSectionY.current)}
+          >
+            <Text style={styles.subnavPillText}>Communities</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.subnavPill, styles.subnavPillPrimary]}
+            onPress={() => onJoinPress()}
+          >
+            <Text style={[styles.subnavPillText, styles.subnavPillTextPrimary]}>Join</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -190,6 +269,29 @@ export default function ExploreLandingView({
           </View>
         </LinearGradient>
 
+        {/* How It Works Section */}
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            howSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Text style={styles.sectionHeading}>How it works</Text>
+          <View style={styles.stepsList}>
+            {HOW_IT_WORKS.map((s) => (
+              <View key={s.step} style={styles.stepCard}>
+                <View style={styles.stepNumBadge}>
+                  <Text style={styles.stepNumText}>{s.step}</Text>
+                </View>
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>{s.title}</Text>
+                  <Text style={styles.stepDesc}>{s.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* The Navodaya Experience Section */}
         <View
           style={styles.section}
@@ -220,7 +322,12 @@ export default function ExploreLandingView({
         </View>
 
         {/* Platform Features (6 Previews) */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            featuresSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
           <Text style={styles.sectionHeading}>Platform features</Text>
           <View style={styles.featuresGrid}>
             {PLATFORM_FEATURES.map((feat, idx) => (
@@ -249,8 +356,39 @@ export default function ExploreLandingView({
           </Text>
         </View>
 
+        {/* Our Four Houses Section */}
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            housesSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Text style={styles.sectionHeading}>Our four houses</Text>
+          <View style={styles.housesGrid}>
+            {HOUSES.map((h) => (
+              <TouchableOpacity
+                key={h.name}
+                style={[styles.houseCard, { borderLeftColor: h.color }]}
+                activeOpacity={0.85}
+                onPress={() => onJoinPress()}
+              >
+                <Text style={styles.houseName}>{h.name}</Text>
+                <Text style={styles.houseSub}>House</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.sectionNote}>
+            Students and alumni choose their house when they join.
+          </Text>
+        </View>
+
         {/* Four Communities Section */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            commSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
           <Text style={styles.sectionHeading}>Four communities</Text>
           <View style={styles.communitiesList}>
             {COMMUNITIES.map((c, idx) => (
@@ -269,6 +407,34 @@ export default function ExploreLandingView({
                 </View>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* What Navodaya Says (Testimonials) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>What Navodaya says</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.testimonialsStrip}
+          >
+            {TESTIMONIALS.map((t, idx) => (
+              <View key={idx} style={styles.testimonialCard}>
+                <Text style={styles.testimonialQuote}>"{t.quote}"</Text>
+                <Text style={styles.testimonialAuthor}>— {t.author}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Your Privacy Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>Your privacy</Text>
+          <View style={styles.privacyCard}>
+            <Ionicons name="shield-checkmark" size={20} color="#6A00E0" />
+            <Text style={styles.privacyText}>
+              Your details are shared only with your JNV-verified community. No public directory without verification.
+            </Text>
           </View>
         </View>
 
@@ -311,15 +477,162 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F3FC",
   },
   topHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: Platform.OS === "web" ? 36 : 46,
-    paddingBottom: 12,
-    paddingHorizontal: 18,
+    paddingTop: Platform.OS === "web" ? 34 : 44,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
     backgroundColor: "rgba(246, 243, 252, 0.98)",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(217, 204, 255, 0.5)",
+  },
+  topHeaderMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  subnavRow: {
+    flexDirection: "row",
+    gap: 7,
+    paddingVertical: 2,
+  },
+  subnavPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D9CCFF",
+  },
+  subnavPillPrimary: {
+    backgroundColor: "#6A00E0",
+    borderColor: "#6A00E0",
+  },
+  subnavPillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6A00E0",
+  },
+  subnavPillTextPrimary: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  stepsList: {
+    gap: 9,
+  },
+  stepCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: "#4C238C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  stepNumBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#6A00E0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepNumText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: "#0A0A2A",
+  },
+  stepDesc: {
+    fontSize: 11.5,
+    color: "#6B6790",
+    marginTop: 1,
+  },
+  housesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  houseCard: {
+    width: "48%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderLeftWidth: 4,
+    shadowColor: "#4C238C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  houseName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0A0A2A",
+  },
+  houseSub: {
+    fontSize: 11,
+    color: "#6B6790",
+    marginTop: 2,
+  },
+  testimonialsStrip: {
+    flexDirection: "row",
+    gap: 10,
+    paddingBottom: 6,
+  },
+  testimonialCard: {
+    width: 260,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#4C238C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+    justifyContent: "space-between",
+  },
+  testimonialQuote: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: "#0A0A2A",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  testimonialAuthor: {
+    fontSize: 11,
+    color: "#6B6790",
+    fontWeight: "600",
+  },
+  privacyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#4C238C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  privacyText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#0A0A2A",
+    fontWeight: "500",
   },
   brandRow: {
     flexDirection: "row",
