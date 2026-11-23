@@ -42,16 +42,19 @@ interface JnvNewsCarouselProps {
   style?: any;
 }
 
-// Clean HTML entities, unescaped tokens, and multi-encoded strings (e.g. &amp;nbsp;)
+// Clean HTML entities, unescaped tokens, non-breaking spaces, and multi-encoded strings (e.g. &amp;nbsp;)
 function cleanHtmlEntities(text?: string): string {
   if (!text) return "";
   let str = text;
+  // Replace non-breaking spaces, zero-width spaces, and literal nbsp remnants first
+  str = str.replace(/[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, " ");
   // Multi-pass decode to resolve nested entities like &amp;nbsp; -> &nbsp; -> space
   for (let pass = 0; pass < 3; pass++) {
-    if (!str.includes("&")) break;
+    if (!str.includes("&") && !str.includes("nbsp")) break;
     str = str
       .replace(/&amp;/gi, "&")
-      .replace(/&nbsp;/gi, " ")
+      .replace(/&nbsp;?/gi, " ")
+      .replace(/\bnbsp;?/gi, " ")
       .replace(/&quot;/gi, '"')
       .replace(/&#39;/gi, "'")
       .replace(/&apos;/gi, "'")
@@ -94,8 +97,8 @@ function cleanDescription(desc?: string, title?: string, publisher?: string): st
     const pattern = new RegExp(`\\s*[-–—|]?\\s*${escaped}\\s*$`, "i");
     cleaned = cleaned.replace(pattern, "").trim();
   }
-  cleaned = cleaned.replace(/\s*details\s*$/i, "").trim();
-  return cleaned || cleanHtmlEntities(title);
+  cleaned = cleaned.replace(/\s*(?:check\s+)?details\s*$/i, "").trim();
+  return cleaned || cleanHeadline(title, publisher);
 }
 
 function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): string {
@@ -147,8 +150,9 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
   const autoSlideTimerRef = useRef<any>(null);
   const userInteractionResumeTimerRef = useRef<any>(null);
 
-  // Exact slide width based on container
+  // Exact slide width based on container, and explicit card width
   const slideWidth = containerWidth > 0 ? containerWidth : initialWidth;
+  const cardWidth = Math.max(slideWidth - HORIZONTAL_MARGIN * 2, 260);
 
   const handleContainerLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -156,6 +160,14 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
       setContainerWidth(w);
     }
   };
+
+  // Sync container width when viewport dimension changes
+  useEffect(() => {
+    const nextWidth = Platform.OS === "web" ? Math.min(windowWidth, 430) : windowWidth;
+    if (nextWidth > 0 && Math.abs(nextWidth - containerWidth) > 2) {
+      setContainerWidth(nextWidth);
+    }
+  }, [windowWidth, containerWidth]);
 
   // Check reduced motion accessibility
   useEffect(() => {
@@ -462,13 +474,22 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
             data={displayItems}
             keyExtractor={(item) => item.id}
             horizontal
-            pagingEnabled={true}
+            pagingEnabled={Platform.OS !== "web"}
+            snapToInterval={slideWidth}
+            snapToAlignment="start"
+            decelerationRate="fast"
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
-            decelerationRate={Platform.OS === "ios" ? "fast" : "normal"}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             onScroll={handleScroll}
+            style={{ width: slideWidth, maxWidth: "100%" }}
+            contentContainerStyle={{ alignItems: "center" }}
+            getItemLayout={(_, index) => ({
+              length: slideWidth,
+              offset: slideWidth * index,
+              index,
+            })}
             renderItem={({ item, index }) => {
               const palette = GRADIENT_PALETTES[index % GRADIENT_PALETTES.length];
               const relativeDate = formatDateOrRelative(item.publishedAt || item.createdAt, lang);
@@ -480,11 +501,11 @@ export default function JnvNewsCarousel({ onSeeAllPress, style }: JnvNewsCarouse
               const cleanDesc = cleanDescription(item.description, item.title, publisherName);
 
               return (
-                <View style={[styles.slideContainer, { width: slideWidth }]}>
+                <View style={[styles.slideContainer, { width: slideWidth, maxWidth: slideWidth }]}>
                   <TouchableOpacity
                     activeOpacity={0.92}
                     onPress={() => openArticle(item)}
-                    style={styles.cardWrapper}
+                    style={[styles.cardWrapper, { width: cardWidth, maxWidth: cardWidth }]}
                     accessibilityRole="button"
                     accessibilityLabel={`${cleanTitle}. Published by ${publisherName}`}
                   >
@@ -692,13 +713,14 @@ const styles = StyleSheet.create({
   },
   carouselViewport: {
     width: "100%",
+    maxWidth: "100%",
     overflow: "hidden",
   },
   slideContainer: {
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: HORIZONTAL_MARGIN,
-    boxSizing: "border-box" as any,
+    ...(Platform.OS === "web" ? { boxSizing: "border-box" as any } : {}),
   },
   cardWrapper: {
     width: "100%",
@@ -724,7 +746,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     minWidth: 0,
-    boxSizing: "border-box" as any,
+    overflow: "hidden",
+    ...(Platform.OS === "web" ? { boxSizing: "border-box" as any } : {}),
   },
   cardTopRow: {
     flexDirection: "row",
@@ -733,6 +756,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minWidth: 0,
     gap: 8,
+    overflow: "hidden",
   },
   catBadge: {
     flexDirection: "row",
@@ -743,7 +767,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 10,
     flexShrink: 0,
-    maxWidth: "45%",
+    maxWidth: "40%",
+    overflow: "hidden",
   },
   catBadgeText: {
     fontSize: 10.5,
@@ -767,6 +792,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.9)",
     flexShrink: 1,
     minWidth: 0,
+    maxWidth: "60%",
   },
   metaDot: {
     color: "rgba(255, 255, 255, 0.6)",
@@ -790,6 +816,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexShrink: 1,
     flexWrap: "wrap",
+    ...(Platform.OS === "web"
+      ? { overflowWrap: "anywhere" as any, wordBreak: "break-word" as any, whiteSpace: "normal" as any }
+      : {}),
   },
   summaryText: {
     fontSize: 12,
@@ -801,6 +830,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexShrink: 1,
     flexWrap: "wrap",
+    ...(Platform.OS === "web"
+      ? { overflowWrap: "anywhere" as any, wordBreak: "break-word" as any, whiteSpace: "normal" as any }
+      : {}),
   },
   cardBottomRow: {
     flexDirection: "row",
@@ -809,6 +841,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     width: "100%",
     minWidth: 0,
+    overflow: "hidden",
   },
   readPromptRow: {
     flexDirection: "row",
