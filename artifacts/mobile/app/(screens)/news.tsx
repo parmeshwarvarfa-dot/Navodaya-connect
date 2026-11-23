@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { api } from "@/lib/api";
 import type { NewsItem } from "@/lib/api";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
@@ -294,7 +295,7 @@ export default function NewsScreen() {
               <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>{item.sourceName || item.authorName || "JNV News"}</Text>
               {(item.publishedAt || item.createdAt) && (
                 <Text style={[styles.newsAuthor, { color: colors.mutedForeground }]}>
-                  {new Date(item.publishedAt || item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  {formatPublishDateTime(item.publishedAt || item.createdAt)}
                 </Text>
               )}
             </View>

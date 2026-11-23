@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import type { SocialMemory } from "@workspace/api-client-react";
 import MotionPressable from "@/components/motion/MotionPressable";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 
 type Props = {
   memory: SocialMemory;
@@ -97,8 +98,8 @@ export default function MemoryPostCard({
           <TouchableOpacity onPress={() => memory.authorId && onOpenProfile(memory.authorId)} disabled={!memory.authorId}>
             <Text style={styles.authorName} numberOfLines={1}>{memory.authorName || "JNV member"}</Text>
           </TouchableOpacity>
-          <Text style={styles.meta} numberOfLines={1}>
-            {[memory.jnvName, formatDate(memory.createdAt)].filter(Boolean).join(" · ")}
+          <Text style={styles.meta} numberOfLines={2}>
+            {[memory.jnvName, formatPublishDateTime(memory.createdAt)].filter(Boolean).join(" · ")}
           </Text>
         </View>
         {TYPE_LABEL[memory.postType] ? (

@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "@/components/motion/MotionProvider";
+import ParamAiFloatingButton from "@/components/param/ParamAiFloatingButton";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
@@ -27,34 +28,9 @@ const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
 function DostAiFab() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const bottom = (isWeb ? 86 : 94 + insets.bottom);
+  const bottom = (isWeb ? 84 : 92 + insets.bottom);
 
-  return (
-    <TouchableOpacity
-      style={[styles.fab, { bottom }]}
-      onPress={() => router.push("/(screens)/param-ai" as any)}
-      activeOpacity={0.88}
-      accessibilityRole="button"
-      accessibilityLabel="Ask Param AI"
-    >
-      <LinearGradient
-        colors={["#8B5CF6", "#6D28D9"]}
-        style={styles.fabGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.roboWrap}>
-          <Ionicons name="hardware-chip" size={26} color="#fff" />
-        </View>
-      </LinearGradient>
-
-      <View style={styles.fabRing} />
-
-      <View style={styles.fabLabel}>
-        <Text style={styles.fabLabelText}>PA₹AM AI</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  return <ParamAiFloatingButton bottom={bottom} />;
 }
 
 function FloatingTabBar({ state, navigation }: TabBarProps) {

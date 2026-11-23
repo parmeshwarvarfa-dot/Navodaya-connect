@@ -1,3 +1,5 @@
+export { formatPublishDateTime, formatTimeAgo } from "./date-formatting";
+
 export const POST_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**

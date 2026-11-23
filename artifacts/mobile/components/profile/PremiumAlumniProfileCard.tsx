@@ -19,7 +19,7 @@ import type { UserProfile } from "@/context/AuthContext";
 import { api, type ProfileInsightsData } from "@/lib/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 420);
+const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
 
 // Default professional portrait matching reference image aesthetic if user has not set a photo
 const DEFAULT_PORTRAIT =
@@ -149,13 +149,13 @@ export default function PremiumAlumniProfileCard({
           <View style={styles.svgDiagonalWrap}>
             <Svg
               width={CARD_WIDTH}
-              height={70}
-              viewBox={`0 0 ${CARD_WIDTH} 70`}
+              height={50}
+              viewBox={`0 0 ${CARD_WIDTH} 50`}
               style={StyleSheet.absoluteFill}
             >
-              {/* Path sloping down from y=0 on left to y=45 on right */}
+              {/* Path sloping down from y=15 on left to y=42 on right */}
               <Path
-                d={`M 0 20 L ${CARD_WIDTH} 55 L ${CARD_WIDTH} 70 L 0 70 Z`}
+                d={`M 0 15 L ${CARD_WIDTH} 42 L ${CARD_WIDTH} 50 L 0 50 Z`}
                 fill="#4C1D95"
               />
             </Svg>
@@ -171,7 +171,7 @@ export default function PremiumAlumniProfileCard({
             {/* Golden Badge on the right */}
             <View style={styles.badgeRow}>
               <View style={styles.premiumGoldBadge}>
-                <Ionicons name="sparkles" size={13} color="#FBBF24" style={{ marginRight: 4 }} />
+                <Ionicons name="sparkles" size={11} color="#FBBF24" style={{ marginRight: 4 }} />
                 <Text style={styles.premiumGoldBadgeText}>✦ NAVODAYA PREMIUM</Text>
               </View>
             </View>
@@ -194,21 +194,21 @@ export default function PremiumAlumniProfileCard({
                   <Text style={styles.contactText} numberOfLines={1}>
                     {email}
                   </Text>
-                  <Ionicons name="mail" size={15} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="mail" size={13} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
 
                 <View style={styles.contactItemRow}>
                   <Text style={styles.contactText} numberOfLines={1}>
                     {phone}
                   </Text>
-                  <Ionicons name="call" size={15} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="call" size={13} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
 
                 <View style={styles.contactItemRow}>
                   <Text style={styles.contactText} numberOfLines={1}>
                     {location}
                   </Text>
-                  <Ionicons name="location-sharp" size={15} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="location-sharp" size={13} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
               </View>
             </View>
@@ -220,7 +220,7 @@ export default function PremiumAlumniProfileCard({
                 style={styles.socialBtn}
                 activeOpacity={0.7}
               >
-                <Ionicons name="logo-instagram" size={24} color="#1E1B4B" />
+                <Ionicons name="logo-instagram" size={20} color="#1E1B4B" />
               </TouchableOpacity>
 
               <View style={styles.socialDivider} />
@@ -230,7 +230,7 @@ export default function PremiumAlumniProfileCard({
                 style={styles.socialBtn}
                 activeOpacity={0.7}
               >
-                <Ionicons name="logo-linkedin" size={24} color="#0A66C2" />
+                <Ionicons name="logo-linkedin" size={20} color="#0A66C2" />
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -241,7 +241,7 @@ export default function PremiumAlumniProfileCard({
       <View style={styles.insightsSection}>
         <View style={styles.insightsHeader}>
           <View style={styles.insightsHeaderLeft}>
-            <Ionicons name="stats-chart" size={20} color="#7C3AED" style={{ marginRight: 8 }} />
+            <Ionicons name="stats-chart" size={18} color="#7C3AED" style={{ marginRight: 8 }} />
             <Text style={styles.insightsTitle}>Profile Insights</Text>
           </View>
 
@@ -255,7 +255,7 @@ export default function PremiumAlumniProfileCard({
               <Text style={styles.dropdownText}>
                 {range === "7d" ? "Last 7 Days" : range === "90d" ? "Last 90 Days" : "Last 30 Days"}
               </Text>
-              <Ionicons name="chevron-down" size={14} color="#6D28D9" style={{ marginLeft: 4 }} />
+              <Ionicons name="chevron-down" size={13} color="#6D28D9" style={{ marginLeft: 4 }} />
             </TouchableOpacity>
 
             {showRangeDropdown && (
@@ -609,19 +609,20 @@ const styles = StyleSheet.create({
   },
   headerTitles: {
     paddingHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: 10,
+    marginBottom: 14,
   },
   journeySubtitle: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: "600",
     color: "#7C3AED",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   mainTitle: {
-    fontSize: 26,
-    fontWeight: "800",
+    fontSize: 21,
+    fontWeight: "700",
     color: "#1E1B4B",
+    letterSpacing: -0.3,
   },
 
   // Main Profile Card
@@ -631,21 +632,21 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     width: "100%",
-    maxWidth: 420,
+    maxWidth: 400,
     backgroundColor: "#FFFFFF",
-    borderRadius: 36,
+    borderRadius: 28,
     overflow: "hidden",
     shadowColor: "#4C1D95",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
     borderWidth: 1,
     borderColor: "#EDE9FE",
   },
   portraitContainer: {
     width: "100%",
-    height: 290,
+    height: 220,
     backgroundColor: "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
@@ -655,21 +656,21 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   svgDiagonalWrap: {
-    height: 30,
-    marginTop: -30,
+    height: 25,
+    marginTop: -25,
     width: "100%",
     zIndex: 2,
   },
   purpleInfoPanel: {
     width: "100%",
-    paddingTop: 12,
-    paddingBottom: 28,
-    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 22,
+    paddingHorizontal: 16,
     position: "relative",
   },
   badgeRow: {
     alignItems: "flex-end",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   premiumGoldBadge: {
     flexDirection: "row",
@@ -677,43 +678,45 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(180, 83, 9, 0.35)",
     borderWidth: 1,
     borderColor: "#FBBF24",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   premiumGoldBadgeText: {
-    fontSize: 11,
-    fontWeight: "800",
+    fontSize: 10.5,
+    fontWeight: "700",
     color: "#FDE68A",
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   rightInfoBlock: {
     alignItems: "flex-end",
-    paddingLeft: 70, // Leaves space for the floating social pill on left
+    paddingLeft: 64, // Leaves space for the floating social pill on left
   },
   profileName: {
-    fontSize: 23,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "right",
-    marginBottom: 3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   profileDesignation: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "500",
     color: "#E9D5FF",
     textAlign: "right",
     marginBottom: 2,
   },
   profileSchoolBatch: {
-    fontSize: 13,
-    color: "#DDD6FE",
+    fontSize: 12,
+    fontWeight: "400",
+    color: "#C4B5FD",
     textAlign: "right",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   contactDetailsColumn: {
     alignItems: "flex-end",
-    gap: 7,
+    gap: 5,
   },
   contactItemRow: {
     flexDirection: "row",
@@ -721,76 +724,80 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   contactText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#F3E8FF",
-    marginRight: 8,
-    fontWeight: "500",
+    marginRight: 6,
+    fontWeight: "400",
   },
   contactIcon: {
-    width: 18,
+    width: 16,
     textAlign: "center",
   },
   floatingSocialCapsule: {
     position: "absolute",
-    left: 20,
-    bottom: 24,
+    left: 16,
+    bottom: 18,
     backgroundColor: "#FFFFFF",
-    borderRadius: 26,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 7,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
     zIndex: 10,
   },
   socialBtn: {
-    padding: 6,
+    padding: 4,
   },
   socialDivider: {
-    width: 20,
+    width: 16,
     height: 1,
     backgroundColor: "#E5E7EB",
-    marginVertical: 4,
+    marginVertical: 3,
   },
 
   // Profile Insights
   insightsSection: {
-    marginTop: 24,
+    marginTop: 20,
     paddingHorizontal: 16,
+    zIndex: 100,
   },
   insightsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 12,
+    zIndex: 1000,
+    ...(Platform.OS === "android" ? { elevation: 12 } : {}),
   },
   insightsHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
   insightsTitle: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#1E1B4B",
   },
   dropdownWrap: {
     position: "relative",
-    zIndex: 50,
+    zIndex: 2000,
+    ...(Platform.OS === "android" ? { elevation: 14 } : {}),
   },
   dropdownBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#EDE9FE",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   dropdownText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11.5,
+    fontWeight: "600",
     color: "#6D28D9",
   },
   dropdownMenu: {
@@ -799,80 +806,84 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 6,
+    padding: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
     shadowRadius: 10,
-    elevation: 8,
-    minWidth: 120,
-    zIndex: 99,
+    elevation: 25,
+    minWidth: 124,
+    zIndex: 9999,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   dropdownItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
     borderRadius: 8,
   },
   dropdownItemActive: {
     backgroundColor: "#F3E8FF",
   },
   dropdownItemText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#4B5563",
-    fontWeight: "600",
+    fontWeight: "500",
   },
   dropdownItemTextActive: {
     color: "#7C3AED",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   insightsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
+    zIndex: 1,
   },
   insightCard: {
     width: "48%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 13,
     borderWidth: 1,
     borderColor: "#F3E8FF",
     shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
+    zIndex: 1,
   },
   metricRowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   trendBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ECFDF5",
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   trendText: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10.5,
+    fontWeight: "600",
     color: "#059669",
     marginLeft: 2,
   },
   metricValue: {
-    fontSize: 22,
-    fontWeight: "800",
+    fontSize: 19,
+    fontWeight: "700",
     color: "#1E1B4B",
     marginBottom: 2,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "400",
   },
 
   // Premium Strip
@@ -880,20 +891,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
-    marginTop: 20,
-    borderRadius: 22,
-    paddingVertical: 14,
+    marginTop: 16,
+    borderRadius: 18,
+    paddingVertical: 11,
     paddingHorizontal: 14,
     shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   crownCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
@@ -903,8 +914,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bannerTitle: {
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 13.5,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   bannerSubtext: {
@@ -916,25 +927,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.25)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   viewBenefitsText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#FFFFFF",
   },
 
   // Accordion Sections
   accordionContainer: {
-    marginTop: 16,
+    marginTop: 14,
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 8,
   },
   accordionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#EDE9FE",
     overflow: "hidden",
@@ -943,68 +954,71 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   accordionHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
   accordionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
     color: "#1E1B4B",
   },
   accordionContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
-    paddingTop: 12,
+    paddingTop: 10,
   },
   accordionBodyText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: "#4B5563",
-    lineHeight: 20,
+    lineHeight: 18,
+    fontWeight: "400",
   },
   skillsTagRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    marginTop: 10,
+    marginTop: 8,
   },
   skillPill: {
     backgroundColor: "#EDE9FE",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   skillPillText: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#6D28D9",
-    fontWeight: "600",
+    fontWeight: "500",
   },
   timelineItem: {
     position: "relative",
-    paddingLeft: 18,
+    paddingLeft: 16,
   },
   timelineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: "#7C3AED",
     position: "absolute",
     left: 0,
     top: 5,
   },
   timelineTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12.5,
+    fontWeight: "600",
     color: "#1E1B4B",
   },
   timelineSubtitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#6B7280",
     marginTop: 1,
+    fontWeight: "400",
   },
   resumeBtn: {
     flexDirection: "row",

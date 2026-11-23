@@ -23,6 +23,8 @@ import type { Job } from "@/lib/api";
 
 const CATEGORIES = ["All", "Tech", "Govt", "Medical", "Finance", "Other"];
 
+import { formatPublishDateTime } from "@/lib/date-formatting";
+
 const CATEGORY_COLORS: Record<string, string> = {
   Tech: "#3B82F6",
   Govt: "#FF7A00",
@@ -32,11 +34,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const d = Math.floor(diff / 86400000);
-  if (d === 0) return "Today";
-  if (d === 1) return "Yesterday";
-  return `${d} days ago`;
+  return formatPublishDateTime(dateStr);
 }
 
 export default function JobsScreen({ embedded = false }: { embedded?: boolean } = {}) {

@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api, type NewsItem } from "@/lib/api";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 
 const HORIZONTAL_MARGIN = 16;
 const MAX_CARD_WIDTH = 560;
@@ -104,25 +105,28 @@ function cleanDescription(desc?: string, title?: string, publisher?: string): st
 function formatDateOrRelative(dateStr?: string, lang: "en" | "hi" = "en"): string {
   if (!dateStr) return "";
   try {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
     if (lang === "hi") {
-      if (diffHours < 1) return "अभी";
-      if (diffHours < 24) return `${diffHours} घंटे पहले`;
-      if (diffDays === 1) return "कल";
-      if (diffDays < 7) return `${diffDays} दिन पहले`;
-      return d.toLocaleDateString("hi-IN", { day: "numeric", month: "short" });
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      let hours = d.getHours();
+      const minutes = d.getMinutes();
+      const ampm = hours >= 12 ? "अपराह्न" : "पूर्वाह्न";
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const timeStr = minutes === 0 ? `${hours} ${ampm}` : `${hours}:${String(minutes).padStart(2, "0")} ${ampm}`;
+      
+      const diffMs = Math.max(0, Date.now() - d.getTime());
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      let ago = "अभी";
+      if (diffHours >= 1 && diffHours < 24) ago = `${diffHours} घंटे पहले`;
+      else if (diffDays === 1) ago = "कल";
+      else if (diffDays > 1) ago = `${diffDays} दिन पहले`;
+      return `${day}-${month}-${year} ${timeStr} (${ago})`;
     }
-
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    return formatPublishDateTime(dateStr);
   } catch {
     return "";
   }

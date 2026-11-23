@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { Achievement } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 
 const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award", "Career", "Other"];
 const CAT_COLOR: Record<string, string> = {
@@ -205,7 +206,7 @@ export default function AlumniAchievementsScreen() {
                     <View style={styles.achNameRow}>
                       <Text style={styles.achName}>{a.authorName || "Alumni"}</Text>
                     </View>
-                    <Text style={styles.achMeta}>{a.jnvName || "JNV"}{a.batch ? ` · ${a.batch} batch` : ""} · {new Date(a.createdAt).toLocaleDateString()}</Text>
+                    <Text style={styles.achMeta}>{a.jnvName || "JNV"}{a.batch ? ` · ${a.batch} batch` : ""} · {formatPublishDateTime(a.createdAt)}</Text>
                   </View>
                   <View style={[styles.catPill, { backgroundColor: cc + "18" }]}>
                     <Text style={[styles.catText, { color: cc }]}>{a.category}</Text>

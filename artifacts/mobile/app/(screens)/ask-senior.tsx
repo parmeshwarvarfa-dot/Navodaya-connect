@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { QaQuestion, QaAnswer } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 
 const CATEGORIES = ["All", "JEE/NEET", "College Life", "Career", "Hostel Life", "Coding & Tech", "UPSC/Civics", "Other"];
 
@@ -119,7 +120,7 @@ export default function AskSeniorScreen() {
             <TouchableOpacity key={item.id} style={styles.qaCard} activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : item.id)}>
               <View style={styles.qaTop}>
                 <View style={styles.catPill}><Text style={styles.catPillText}>{item.category}</Text></View>
-                <Text style={styles.askedAt}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                <Text style={styles.askedAt}>{formatPublishDateTime(item.createdAt)}</Text>
               </View>
               <Text style={styles.questionText}>{item.question}</Text>
               <Text style={styles.askedBy}>{item.askedByName || "Student"}{item.askedByClass ? ` · ${item.askedByClass}` : ""}</Text>
@@ -145,7 +146,7 @@ export default function AskSeniorScreen() {
                             {ans.answeredByRole === "teacher" ? `${ans.subject || ""} Teacher` : ans.batch ? `Alumni · Batch ${ans.batch}` : "Alumni"}
                           </Text>
                         </View>
-                        <Text style={styles.answerTime}>{new Date(ans.createdAt).toLocaleDateString()}</Text>
+                        <Text style={styles.answerTime}>{formatPublishDateTime(ans.createdAt)}</Text>
                       </View>
                       <Text style={styles.answerText}>{ans.answer}</Text>
                     </View>

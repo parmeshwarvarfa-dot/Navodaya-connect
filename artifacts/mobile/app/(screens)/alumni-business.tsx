@@ -9,6 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type Business, type BusinessDetails, type BusinessReview } from "@/lib/api";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 import { STATES } from "@/data/jnvData";
 import { useAuth } from "@/context/AuthContext";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
@@ -405,7 +406,7 @@ function OwnerFact({ icon, label, value }: { icon: IconName; label: string; valu
 }
 
 function ReviewCard({ review }: { review: BusinessReview }) {
-  return <View style={styles.reviewCard}><View style={styles.reviewTop}><View style={styles.reviewerAvatar}><Text style={styles.reviewerInitial}>{(review.reviewerName || "A").slice(0, 1).toUpperCase()}</Text></View><View style={{ flex: 1 }}><Text numberOfLines={1} style={styles.reviewerName}>{review.reviewerName || "Navodaya alumnus"}</Text><Text style={styles.reviewDate}>{new Date(review.createdAt).toLocaleDateString()}</Text></View><View style={styles.reviewStars}>{Array.from({ length: 5 }, (_, index) => <Ionicons key={index} name={index < review.rating ? "star" : "star-outline"} size={13} color="#D9A333"/>)}</View></View>{review.review ? <Text style={styles.reviewBody}>{review.review}</Text> : null}</View>;
+  return <View style={styles.reviewCard}><View style={styles.reviewTop}><View style={styles.reviewerAvatar}><Text style={styles.reviewerInitial}>{(review.reviewerName || "A").slice(0, 1).toUpperCase()}</Text></View><View style={{ flex: 1 }}><Text numberOfLines={1} style={styles.reviewerName}>{review.reviewerName || "Navodaya alumnus"}</Text><Text style={styles.reviewDate}>{formatPublishDateTime(review.createdAt)}</Text></View><View style={styles.reviewStars}>{Array.from({ length: 5 }, (_, index) => <Ionicons key={index} name={index < review.rating ? "star" : "star-outline"} size={13} color="#D9A333"/>)}</View></View>{review.review ? <Text style={styles.reviewBody}>{review.review}</Text> : null}</View>;
 }
 
 function SocialLinks({ business }: { business: BusinessDetails }) {

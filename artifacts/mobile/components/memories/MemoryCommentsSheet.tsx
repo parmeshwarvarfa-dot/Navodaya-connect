@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { SocialMemory } from "@workspace/api-client-react";
+import { formatPublishDateTime } from "@/lib/date-formatting";
 
 type Props = {
   visible: boolean;
@@ -109,7 +110,7 @@ export default function MemoryCommentsSheet({ visible, memory, onClose, onMessag
                         <Text style={styles.commentText}>{item.content}</Text>
                       </View>
                       <View style={styles.commentMeta}>
-                        <Text style={styles.time}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                        <Text style={styles.time}>{formatPublishDateTime(item.createdAt)}</Text>
                         {!item.parentId && (
                           <TouchableOpacity onPress={() => setReplyTo({ id: item.id, name: item.authorName })}>
                             <Text style={styles.replyAction}>Reply</Text>
