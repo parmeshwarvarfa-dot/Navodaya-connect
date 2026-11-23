@@ -20,8 +20,13 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ role?: string; phone?: string }>();
   const { signIn, quickDemoLogin, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
+
+  const initialRole = ((params?.role?.toLowerCase() as any) || "alumni") as "student" | "alumni" | "teacher" | "official";
+  const [currentRole, setCurrentRole] = useState<"student" | "alumni" | "teacher" | "official">(
+    ["student", "alumni", "teacher", "official"].includes(initialRole) ? initialRole : "alumni"
+  );
+  const [email,    setEmail]    = useState(`${initialRole}@test.com`);
+  const [password, setPassword] = useState("password123");
   const [showPass, setShowPass] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -32,6 +37,25 @@ export default function SignInScreen() {
   useEffect(() => {
     if (pendingProfile) router.replace("/(auth)/sign-up?completeProfile=1" as any);
   }, [pendingProfile]);
+
+  useEffect(() => {
+    if (params?.role) {
+      const r = params.role.toLowerCase() as "student" | "alumni" | "teacher" | "official";
+      if (["student", "alumni", "teacher", "official"].includes(r)) {
+        setCurrentRole(r);
+        setEmail(`${r}@test.com`);
+        setPassword("password123");
+        setErrorMsg("");
+      }
+    }
+  }, [params?.role]);
+
+  const handleRoleSelect = (role: "student" | "alumni" | "teacher" | "official") => {
+    setCurrentRole(role);
+    setEmail(`${role}@test.com`);
+    setPassword("password123");
+    setErrorMsg("");
+  };
 
   const handleDemoLogin = async (role: "student" | "alumni" | "teacher" | "official") => {
     setErrorMsg("");
@@ -52,13 +76,27 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     setErrorMsg("");
-    if (!email.trim() || !password) {
-      setErrorMsg("Please enter your email and password.");
+    const targetEmail = email.trim();
+    const targetPassword = password;
+
+    // If inputs are left empty or untouched, automatically sign in with current role
+    if (!targetEmail || !targetPassword) {
+      await handleDemoLogin(currentRole);
       return;
     }
+
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
+      // If user is logging in with a demo account, use instant quick demo login
+      if (
+        targetEmail.endsWith("@test.com") &&
+        ["student", "alumni", "teacher", "official"].includes(targetEmail.replace("@test.com", ""))
+      ) {
+        const role = targetEmail.replace("@test.com", "") as "student" | "alumni" | "teacher" | "official";
+        await handleDemoLogin(role);
+        return;
+      }
+      await signIn(targetEmail, targetPassword);
       router.replace("/(tabs)");
     } catch (err: any) {
       const msg: string = err?.message ?? "";
@@ -163,14 +201,12 @@ export default function SignInScreen() {
 
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Login to your JNV Connect account</Text>
-          {params?.role ? (
-            <View style={styles.roleBadge}>
-              <Ionicons name="person-circle-outline" size={14} color="#D8C2FF" />
-              <Text style={styles.roleBadgeText}>
-                Selected Community: {params.role.toUpperCase()}
-              </Text>
-            </View>
-          ) : null}
+          <View style={styles.roleBadge}>
+            <Ionicons name="person-circle-outline" size={14} color="#D8C2FF" />
+            <Text style={styles.roleBadgeText}>
+              Selected Community: {currentRole.toUpperCase()}
+            </Text>
+          </View>
 
           <View style={styles.form}>
             {/* Email */}
@@ -218,6 +254,10 @@ export default function SignInScreen() {
               <Text style={styles.loginBtnText}>{loading ? "Logging in..." : "Login"}</Text>
             </TouchableOpacity>
 
+            <Text style={styles.helperTip}>
+              ✨ Tap Login to enter as {currentRole.toUpperCase()}, or choose a role below.
+            </Text>
+
             <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword} disabled={loading}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
@@ -230,8 +270,11 @@ export default function SignInScreen() {
               </View>
               <View style={styles.quickRow}>
                 <TouchableOpacity
-                  style={styles.quickBtn}
-                  onPress={() => handleDemoLogin("student")}
+                  style={[styles.quickBtn, currentRole === "student" && styles.quickBtnActive]}
+                  onPress={() => {
+                    handleRoleSelect("student");
+                    handleDemoLogin("student");
+                  }}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
@@ -239,8 +282,11 @@ export default function SignInScreen() {
                   <Text style={styles.quickText}>Student</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.quickBtn}
-                  onPress={() => handleDemoLogin("alumni")}
+                  style={[styles.quickBtn, currentRole === "alumni" && styles.quickBtnActive]}
+                  onPress={() => {
+                    handleRoleSelect("alumni");
+                    handleDemoLogin("alumni");
+                  }}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
@@ -248,8 +294,11 @@ export default function SignInScreen() {
                   <Text style={styles.quickText}>Alumni</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.quickBtn}
-                  onPress={() => handleDemoLogin("teacher")}
+                  style={[styles.quickBtn, currentRole === "teacher" && styles.quickBtnActive]}
+                  onPress={() => {
+                    handleRoleSelect("teacher");
+                    handleDemoLogin("teacher");
+                  }}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
@@ -257,8 +306,11 @@ export default function SignInScreen() {
                   <Text style={styles.quickText}>Teacher</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.quickBtn}
-                  onPress={() => handleDemoLogin("official")}
+                  style={[styles.quickBtn, currentRole === "official" && styles.quickBtnActive]}
+                  onPress={() => {
+                    handleRoleSelect("official");
+                    handleDemoLogin("official");
+                  }}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
@@ -420,6 +472,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  quickBtnActive: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#7C3AED",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  helperTip: {
+    color: "#E9D5FF",
+    fontFamily: "Inter_500Medium",
+    fontSize: 11.5,
+    textAlign: "center",
+    marginVertical: 4,
+    lineHeight: 16,
   },
   quickEmoji: {
     fontSize: 18,
