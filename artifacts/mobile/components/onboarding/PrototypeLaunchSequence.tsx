@@ -25,13 +25,6 @@ interface PrototypeLaunchSequenceProps {
 const DUR = 10700;
 const SCENE_TIMES = [0, 1500, 3200, 6000, 7400, 8900];
 
-const DEFAULT_PHOTOS = [
-  require("@/assets/images/onboarding/photo_1.jpg"),
-  require("@/assets/images/onboarding/photo_2.jpg"),
-  require("@/assets/images/onboarding/photo_3.jpg"),
-  require("@/assets/images/onboarding/photo_4.jpg"),
-];
-
 export default function PrototypeLaunchSequence({
   onContinueAuth,
   customPhotos,
@@ -43,8 +36,6 @@ export default function PrototypeLaunchSequence({
   const [selectedRole, setSelectedRole] = useState<"Student" | "Alumni" | "Teacher" | "JNV Official">("Alumni");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isExploreOpen, setIsExploreOpen] = useState(false);
-
-  const photos = customPhotos && customPhotos.length > 0 ? customPhotos : DEFAULT_PHOTOS;
 
   // Animated values for transitions
   const animTime = useRef(new Animated.Value(0)).current;
@@ -259,34 +250,29 @@ export default function PrototypeLaunchSequence({
 
   return (
     <View style={styles.container}>
-      {/* ── Background Photos with Crossfading & Gradient Vignette ── */}
+      {/* ── Background: Clean Campus SVG Art (Exact Prototype V8 matching index.html) ── */}
       <View style={styles.bgContainer}>
-        {/* Photo 1: Campus Entrance */}
-        <Animated.Image
-          source={photos[0]}
-          style={[styles.bgImage, { opacity: bgOpacity1 }]}
-          resizeMode="cover"
-        />
-        {/* Photo 2: Students in Uniform */}
-        <Animated.Image
-          source={photos[1]}
-          style={[styles.bgImage, { opacity: bgOpacity2 }]}
-          resizeMode="cover"
-        />
-        {/* Photo 3: Assembly Stage */}
-        <Animated.Image
-          source={photos[2]}
-          style={[styles.bgImage, { opacity: bgOpacity3 }]}
-          resizeMode="cover"
-        />
-        {/* Photo 4: Assembly Hall Prayer Lines */}
-        <Animated.Image
-          source={photos[3]}
-          style={[styles.bgImage, { opacity: bgOpacity4 }]}
-          resizeMode="cover"
-        />
+        {customPhotos && customPhotos.length > 0 ? (
+          /* Render custom user photos if provided */
+          customPhotos.map((photo, i) => (
+            <Animated.Image
+              key={`custom-photo-${i}`}
+              source={photo}
+              style={[
+                styles.bgImage,
+                { opacity: i === 0 ? bgOpacity1 : i === 1 ? bgOpacity2 : i === 2 ? bgOpacity3 : bgOpacity4 },
+              ]}
+              resizeMode="cover"
+            />
+          ))
+        ) : (
+          /* Clean Campus SVG Art — single, crisp backdrop with no overlapping text */
+          <View style={StyleSheet.absoluteFillObject}>
+            <CampusSvgArt progress={currentScene / 6} width="100%" height="100%" />
+          </View>
+        )}
 
-        {/* Deep Violet Gradient Overlay (Exact Prototype V8 Vignette) */}
+        {/* Deep Violet Gradient Overlay (Exact Prototype Vignette) */}
         <LinearGradient
           colors={[
             "rgba(24, 6, 70, 0.78)",
@@ -300,14 +286,8 @@ export default function PrototypeLaunchSequence({
         />
       </View>
 
-      {/* ── Status Bar Space / Top Bar ── */}
-      <View style={styles.topStatusRow}>
-        <Text style={styles.clockText}>9:41</Text>
-        <View style={styles.statusIcons}>
-          <Text style={styles.fiveGText}>5G</Text>
-          <Ionicons name="battery-full" size={16} color="#FFFFFF" />
-        </View>
-      </View>
+      {/* Top Spacer (Clean layout without fake clock or battery icons) */}
+      <View style={{ height: Platform.OS === "web" ? 18 : 28 }} />
 
       {/* ── Top Centered Watermark (Scenes 1 to 5) ── */}
       {!isDocked && (
@@ -554,29 +534,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
-  },
-  topStatusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Platform.OS === "web" ? 14 : 18,
-    paddingHorizontal: 24,
-    zIndex: 30,
-  },
-  clockText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  statusIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  fiveGText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
   },
   topCenteredWatermark: {
     position: "absolute",
