@@ -19,13 +19,22 @@ import ExploreLandingView from "./ExploreLandingView";
 interface PrototypeLaunchSequenceProps {
   onContinueAuth: (role: "student" | "alumni" | "teacher" | "official", phoneOrEmail?: string) => void;
   onExploreOpen?: () => void;
+  customPhotos?: any[];
 }
 
 const DUR = 9500;
 const SCENE_TIMES = [0, 1500, 3200, 4800, 6200, 7700];
 
+const DEFAULT_PHOTOS = [
+  require("@/assets/images/onboarding/photo_1.jpg"),
+  require("@/assets/images/onboarding/photo_2.jpg"),
+  require("@/assets/images/onboarding/photo_3.jpg"),
+  require("@/assets/images/onboarding/photo_4.jpg"),
+];
+
 export default function PrototypeLaunchSequence({
   onContinueAuth,
+  customPhotos,
 }: PrototypeLaunchSequenceProps) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [currentTime, setCurrentTime] = useState(0);
@@ -35,12 +44,20 @@ export default function PrototypeLaunchSequence({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isExploreOpen, setIsExploreOpen] = useState(false);
 
+  const photos = customPhotos && customPhotos.length > 0 ? customPhotos : DEFAULT_PHOTOS;
+
   // Animated values for transitions
   const animTime = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.7)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const sheetTranslateY = useRef(new Animated.Value(380)).current;
-  const sceneOpacity = useRef(new Animated.Value(1)).current;
+  const breatheScale = useRef(new Animated.Value(1.0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(450)).current;
+
+  // Background crossfade opacities
+  const bgOpacity1 = useRef(new Animated.Value(1)).current;
+  const bgOpacity2 = useRef(new Animated.Value(0)).current;
+  const bgOpacity3 = useRef(new Animated.Value(0)).current;
+  const bgOpacity4 = useRef(new Animated.Value(0)).current;
 
   const timerRef = useRef<any>(null);
   const lastTickRef = useRef<number>(Date.now());
@@ -54,6 +71,19 @@ export default function PrototypeLaunchSequence({
     return s;
   }, []);
 
+  // Crossfade background photos
+  const crossfadeTo = useCallback((photoIndex: number) => {
+    const opacities = [bgOpacity1, bgOpacity2, bgOpacity3, bgOpacity4];
+    opacities.forEach((op, idx) => {
+      Animated.timing(op, {
+        toValue: idx === photoIndex ? 1 : 0,
+        duration: 900,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [bgOpacity1, bgOpacity2, bgOpacity3, bgOpacity4]);
+
   // Jump to specific scene
   const jumpToScene = useCallback((sceneNum: number) => {
     const targetTime = SCENE_TIMES[sceneNum - 1] || 0;
@@ -61,20 +91,36 @@ export default function PrototypeLaunchSequence({
     setCurrentScene(sceneNum);
     animTime.setValue(targetTime);
 
+    // Update background photo corresponding to scene
+    const photoIdx =
+      sceneNum === 1
+        ? 0
+        : sceneNum === 2
+        ? 1
+        : sceneNum === 3
+        ? 2
+        : sceneNum === 4
+        ? 3
+        : sceneNum === 5
+        ? 0
+        : 1;
+    crossfadeTo(photoIdx);
+
     if (sceneNum >= 6) {
       Animated.spring(sheetTranslateY, {
         toValue: 0,
         useNativeDriver: true,
-        bounciness: 4,
+        bounciness: 3,
+        speed: 10,
       }).start();
     } else {
       Animated.timing(sheetTranslateY, {
-        toValue: 380,
+        toValue: 450,
         duration: 250,
         useNativeDriver: true,
       }).start();
     }
-  }, [animTime, sheetTranslateY]);
+  }, [animTime, crossfadeTo, sheetTranslateY]);
 
   // Main playback loop
   useEffect(() => {
@@ -95,10 +141,12 @@ export default function PrototypeLaunchSequence({
           clearInterval(timerRef.current);
           setIsPlaying(false);
           setCurrentScene(6);
+          crossfadeTo(1);
           Animated.spring(sheetTranslateY, {
             toValue: 0,
             useNativeDriver: true,
-            bounciness: 4,
+            bounciness: 3,
+            speed: 10,
           }).start();
           return DUR;
         }
@@ -106,11 +154,26 @@ export default function PrototypeLaunchSequence({
         const s = getSceneForTime(next);
         if (s !== currentScene) {
           setCurrentScene(s);
+          const pIdx =
+            s === 1
+              ? 0
+              : s === 2
+              ? 1
+              : s === 3
+              ? 2
+              : s === 4
+              ? 3
+              : s === 5
+              ? 0
+              : 1;
+          crossfadeTo(pIdx);
+
           if (s >= 6) {
             Animated.spring(sheetTranslateY, {
               toValue: 0,
               useNativeDriver: true,
-              bounciness: 4,
+              bounciness: 3,
+              speed: 10,
             }).start();
           }
         }
@@ -121,26 +184,48 @@ export default function PrototypeLaunchSequence({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, currentScene, getSceneForTime, sheetTranslateY]);
+  }, [isPlaying, currentScene, getSceneForTime, crossfadeTo, sheetTranslateY]);
 
-  // Initial logo entrance animation
+  // Initial logo entrance & breathing animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(logoOpacity, {
         toValue: 1,
         duration: 900,
-        delay: 350,
+        delay: 300,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
       Animated.spring(logoScale, {
         toValue: 1,
-        delay: 350,
+        delay: 300,
         friction: 6,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [logoOpacity, logoScale]);
+
+    const breatheAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breatheScale, {
+          toValue: 1.05,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breatheScale, {
+          toValue: 1.0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    breatheAnim.start();
+
+    return () => {
+      breatheAnim.stop();
+    };
+  }, [logoOpacity, logoScale, breatheScale]);
 
   const handleSkip = () => {
     jumpToScene(6);
@@ -170,20 +255,43 @@ export default function PrototypeLaunchSequence({
     onContinueAuth(roleKey, phoneNumber);
   };
 
-  const progress = Math.min(Math.max(currentTime, 0) / DUR, 1);
   const isDocked = currentScene >= 6;
 
   return (
     <View style={styles.container}>
-      {/* ── Background SVG Campus Artwork with Parallax ── */}
-      <View style={styles.bgWrapper}>
-        <CampusSvgArt progress={progress} width="100%" height="100%" />
-        {/* Soft violet evening dusk overlay */}
+      {/* ── Background Photos with Crossfading & Gradient Vignette ── */}
+      <View style={styles.bgContainer}>
+        {/* Photo 1: Campus Entrance */}
+        <Animated.Image
+          source={photos[0]}
+          style={[styles.bgImage, { opacity: bgOpacity1 }]}
+          resizeMode="cover"
+        />
+        {/* Photo 2: Students in Uniform */}
+        <Animated.Image
+          source={photos[1]}
+          style={[styles.bgImage, { opacity: bgOpacity2 }]}
+          resizeMode="cover"
+        />
+        {/* Photo 3: Assembly Stage */}
+        <Animated.Image
+          source={photos[2]}
+          style={[styles.bgImage, { opacity: bgOpacity3 }]}
+          resizeMode="cover"
+        />
+        {/* Photo 4: Assembly Hall Prayer Lines */}
+        <Animated.Image
+          source={photos[3]}
+          style={[styles.bgImage, { opacity: bgOpacity4 }]}
+          resizeMode="cover"
+        />
+
+        {/* Deep Violet Gradient Overlay (Exact Prototype V8 Vignette) */}
         <LinearGradient
           colors={[
             "rgba(24, 6, 70, 0.78)",
             "rgba(52, 14, 128, 0.32)",
-            "rgba(30, 8, 86, 0.6)",
+            "rgba(30, 8, 86, 0.60)",
             "rgba(14, 4, 44, 0.95)",
           ]}
           style={StyleSheet.absoluteFillObject}
@@ -201,28 +309,39 @@ export default function PrototypeLaunchSequence({
         </View>
       </View>
 
-      {/* ── Official JNV Emblem / Logo & Watermark ── */}
+      {/* ── Top Centered Watermark (Scenes 1 to 5) ── */}
+      {!isDocked && (
+        <View style={styles.topCenteredWatermark}>
+          <Text style={styles.watermarkTitle}>NAVODAYA</Text>
+          <Text style={styles.watermarkSub}>CONNECT</Text>
+        </View>
+      )}
+
+      {/* ── Official JNV Emblem with Breathing Glow ── */}
       <Animated.View
         style={[
           styles.logoContainer,
           isDocked ? styles.logoDocked : styles.logoCentered,
           {
             opacity: logoOpacity,
-            transform: [{ scale: isDocked ? 0.65 : logoScale }],
+            transform: [{ scale: isDocked ? 0.6 : Animated.multiply(logoScale, breatheScale) }],
           },
         ]}
       >
-        <Image
-          source={require("@/assets/images/jnv-logo.jpg")}
-          style={styles.logoImage}
-          resizeMode="contain"
-        />
+        <View style={styles.logoRingGlow}>
+          <Image
+            source={require("@/assets/images/jnv-logo.jpg")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
       </Animated.View>
 
+      {/* ── Docked Watermark (Scene 6) ── */}
       {isDocked && (
-        <View style={styles.watermarkContainer}>
-          <Text style={styles.watermarkTitle}>NAVODAYA</Text>
-          <Text style={styles.watermarkSub}>CONNECT</Text>
+        <View style={styles.watermarkContainerDocked}>
+          <Text style={styles.watermarkTitleDocked}>NAVODAYA</Text>
+          <Text style={styles.watermarkSubDocked}>CONNECT</Text>
         </View>
       )}
 
@@ -239,9 +358,7 @@ export default function PrototypeLaunchSequence({
 
       {/* ── Scene 1: Arrival (0.0s – 1.5s) ── */}
       {currentScene === 1 && (
-        <View style={styles.sceneWrap}>
-          <Text style={styles.scene1Kicker}>Welcome to the community</Text>
-        </View>
+        <View style={styles.sceneWrap} />
       )}
 
       {/* ── Scene 2: Identity (1.5s – 3.2s) ── */}
@@ -253,7 +370,7 @@ export default function PrototypeLaunchSequence({
       )}
 
       {/* ── Scene 3: Hindi Identity (3.2s – 4.8s) ── */}
-      {/* THE EMOTIONAL CENTERPIECE — EXACT PHRASE PRESERVED */}
+      {/* EXACT MATCH TO VIDEO: "हमी नवोदय हों !!" + "शिक्षार्थ आइए, सेवार्थ जाइए।" */}
       {currentScene === 3 && (
         <View style={styles.sceneWrap}>
           <Text style={styles.hindiCenterpiece}>हमी नवोदय हों !!</Text>
@@ -263,10 +380,13 @@ export default function PrototypeLaunchSequence({
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           />
+          <Text style={styles.hindiMotto}>शिक्षार्थ आइए, सेवार्थ जाइए।</Text>
+          <Text style={styles.mottoEnglish}>Come to learn, go to serve. 🙏</Text>
         </View>
       )}
 
       {/* ── Scene 4: Community (4.8s – 6.2s) ── */}
+      {/* EXACT MATCH TO VIDEO: Three stacked pills + English motto + ONE FAMILY */}
       {currentScene === 4 && (
         <View style={styles.sceneWrap}>
           <View style={styles.glassPillsCol}>
@@ -281,6 +401,9 @@ export default function PrototypeLaunchSequence({
                 एक नवोदय।
               </Text>
             </View>
+            <Text style={styles.mottoEnglishInline}>
+              Come to learn, go to serve. 🙏
+            </Text>
             <Text style={styles.communitySubEnglish}>
               ONE FAMILY · ONE IDENTITY · ONE NAVODAYA
             </Text>
@@ -303,6 +426,7 @@ export default function PrototypeLaunchSequence({
       )}
 
       {/* ── Scene 6: Welcome Sheet (7.7s – 9.5s+) ── */}
+      {/* EXACT MATCH TO VIDEO AT 00:09-00:13 */}
       <Animated.View
         style={[
           styles.welcomeSheet,
@@ -311,7 +435,6 @@ export default function PrototypeLaunchSequence({
           },
         ]}
       >
-        <Text style={styles.sheetKicker}>Ready to reconnect?</Text>
         <Text style={styles.sheetHeading}>Welcome home.</Text>
         <Text style={styles.sheetSub}>
           Find your batch. Find your people. Find your Navodaya.
@@ -392,6 +515,11 @@ export default function PrototypeLaunchSequence({
         <Text style={styles.footerTag}>
           OUR LEGACY • OUR COMMUNITY • OUR FUTURE
         </Text>
+
+        {/* Prototype Reference Note */}
+        <Text style={styles.sheetNote}>
+          [ YOUR EXISTING AUTH / ONBOARDING SCREEN REPLACES THIS ]
+        </Text>
       </Animated.View>
 
       {/* ── Dedicated Explore / Landing Overlay View ── */}
@@ -418,9 +546,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#12063A",
     overflow: "hidden",
   },
-  bgWrapper: {
+  bgContainer: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
+  },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   topStatusRow: {
     flexDirection: "row",
@@ -445,21 +578,36 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
   },
+  topCenteredWatermark: {
+    position: "absolute",
+    top: 56,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 25,
+  },
+  watermarkTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 3,
+    color: "#FFFFFF",
+  },
+  watermarkSub: {
+    fontSize: 8,
+    fontWeight: "600",
+    letterSpacing: 4.5,
+    color: "#D8C2FF",
+    marginTop: 1,
+  },
   logoContainer: {
     position: "absolute",
     zIndex: 26,
     borderRadius: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#14003C",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 22,
-    elevation: 8,
   },
   logoCentered: {
-    top: 92,
+    top: 96,
     left: "50%",
     marginLeft: -49,
     width: 98,
@@ -471,24 +619,37 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
   },
+  logoRingGlow: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 50,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "rgba(150, 90, 255, 0.8)",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 28,
+    elevation: 8,
+  },
   logoImage: {
     width: "82%",
     height: "82%",
     borderRadius: 40,
   },
-  watermarkContainer: {
+  watermarkContainerDocked: {
     position: "absolute",
     top: 54,
-    left: 80,
+    left: 78,
     zIndex: 26,
   },
-  watermarkTitle: {
+  watermarkTitleDocked: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
     letterSpacing: 2.8,
     color: "#FFFFFF",
   },
-  watermarkSub: {
+  watermarkSubDocked: {
     fontSize: 8,
     fontWeight: "600",
     letterSpacing: 3.8,
@@ -514,18 +675,12 @@ const styles = StyleSheet.create({
   },
   sceneWrap: {
     position: "absolute",
-    top: "38%",
+    top: "40%",
     left: 20,
     right: 20,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 20,
-  },
-  scene1Kicker: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#EFE6FF",
-    letterSpacing: 1,
   },
   sloganLine1: {
     fontSize: 26,
@@ -544,20 +699,36 @@ const styles = StyleSheet.create({
     textShadowRadius: 16,
   },
   hindiCenterpiece: {
-    fontSize: 48,
+    fontSize: 50,
     fontWeight: "800",
     color: "#FFFFFF",
     textAlign: "center",
-    lineHeight: 56,
-    textShadowColor: "rgba(130, 60, 255, 0.9)",
+    lineHeight: 58,
+    textShadowColor: "rgba(130, 60, 255, 0.95)",
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 28,
+    textShadowRadius: 32,
   },
   hindiGradientLine: {
     width: 100,
     height: 3,
     borderRadius: 3,
-    marginTop: 14,
+    marginVertical: 14,
+  },
+  hindiMotto: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 4,
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  mottoEnglish: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#D8C2FF",
+    textAlign: "center",
   },
   glassPillsCol: {
     alignItems: "center",
@@ -590,15 +761,21 @@ const styles = StyleSheet.create({
   glassPillTextViolet: {
     color: "#FFFFFF",
   },
+  mottoEnglishInline: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#D8C2FF",
+    marginTop: 6,
+  },
   communitySubEnglish: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: "600",
     letterSpacing: 2.2,
-    color: "#D8C2FF",
-    marginTop: 8,
+    color: "rgba(216, 194, 255, 0.8)",
+    marginTop: 2,
   },
   brandTitle: {
-    fontSize: 38,
+    fontSize: 40,
     fontWeight: "800",
     letterSpacing: 3,
     color: "#FFFFFF",
@@ -622,37 +799,31 @@ const styles = StyleSheet.create({
     right: 0,
     height: "64%",
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 24,
+    paddingTop: 30,
+    paddingBottom: 20,
     zIndex: 35,
     justifyContent: "space-between",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.22,
     shadowRadius: 24,
     elevation: 12,
   },
-  sheetKicker: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#6A00E0",
-  },
   sheetHeading: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: "800",
     color: "#0A0A2A",
-    lineHeight: 38,
+    lineHeight: 40,
     letterSpacing: -0.5,
-    marginTop: 2,
   },
   sheetSub: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: "#6B6790",
     marginTop: 4,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   rolesRow: {
     flexDirection: "row",
@@ -661,8 +832,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rolePill: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
     borderRadius: 999,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
@@ -683,7 +854,7 @@ const styles = StyleSheet.create({
   fieldWrap: {
     flexDirection: "row",
     alignItems: "center",
-    height: 50,
+    height: 52,
     borderRadius: 999,
     borderWidth: 1.5,
     borderColor: "#D9CCFF",
@@ -707,7 +878,7 @@ const styles = StyleSheet.create({
   },
   continueBtn: {
     width: "100%",
-    height: 52,
+    height: 54,
     borderRadius: 999,
     overflow: "hidden",
     shadowColor: "#6A00E0",
@@ -750,5 +921,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6A00E0",
     marginTop: 10,
+  },
+  sheetNote: {
+    fontSize: 7.5,
+    letterSpacing: 0.8,
+    textAlign: "center",
+    color: "#A79FC9",
+    marginTop: 2,
   },
 });
