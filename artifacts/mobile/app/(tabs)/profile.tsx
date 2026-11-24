@@ -173,7 +173,7 @@ export default function ProfileScreen() {
       <View style={[styles.container]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+          contentContainerStyle={{ paddingBottom: 150 + insets.bottom }}
         >
           {previewPremium && (
             <View style={styles.previewModeBanner}>
@@ -353,7 +353,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 + insets.bottom, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingBottom: 150 + insets.bottom, paddingHorizontal: 16 }}
       >
         {profile.role === "alumni" && (
           <LinearGradient

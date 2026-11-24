@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, uuid, integer, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, boolean, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { usersTable } from "./users";
 
 export const memoryCommentsTable = pgTable("memory_comments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -110,3 +111,21 @@ export const contentReportsTable = pgTable("content_reports", {
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const notificationPreferencesTable = pgTable("notification_preferences", {
+  userId: uuid("user_id").primaryKey().references(() => usersTable.id, { onDelete: "cascade" }),
+  likesComments: boolean("likes_comments").notNull().default(true),
+  followsConnections: boolean("follows_connections").notNull().default(true),
+  messages: boolean("messages").notNull().default(true),
+  alumniVerification: boolean("alumni_verification").notNull().default(true),
+  opportunities: boolean("opportunities").notNull().default(true),
+  mentorship: boolean("mentorship").notNull().default(true),
+  events: boolean("events").notNull().default(true),
+  systemAnnouncements: boolean("system_announcements").notNull().default(true),
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  pushNotifications: boolean("push_notifications").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type NotificationPreferences = typeof notificationPreferencesTable.$inferSelect;
+export type InsertNotificationPreferences = typeof notificationPreferencesTable.$inferInsert;

@@ -469,6 +469,10 @@ export const api = {
       request<Connection>("/connections/request", { method: "POST", body: JSON.stringify({ toId }) }),
     accept: (id: string) =>
       request<Connection>(`/connections/${id}/accept`, { method: "PATCH" }),
+    decline: (id: string) =>
+      request<Connection>(`/connections/${id}/decline`, { method: "PATCH" }),
+    remove: (id: string) =>
+      request<{ success: boolean; id: string }>(`/connections/${id}`, { method: "DELETE" }),
   },
   memories: {
     list: () => request<Memory[]>("/memories"),
@@ -545,8 +549,15 @@ export const api = {
     respondToRequest: (requestId: string, decision: "accept" | "decline") => request<{ success: boolean; status: string }>(`/direct-message-requests/${encodeURIComponent(requestId)}`, { method: "PATCH", body: JSON.stringify({ decision }) }),
   },
   notifications: {
-    list: () => request<SocialNotification[]>("/social-notifications"),
+    list: (params?: { filter?: string; limit?: number }) => request<SocialNotification[]>(`/social-notifications${queryString(params ?? {})}`),
+    unreadCount: () => request<NotificationCounts>("/social-notifications/unread-count"),
     markRead: (id: string) => request<{ id: string; readAt: string }>(`/social-notifications/${encodeURIComponent(id)}/read`, { method: "PATCH" }),
+    markUnread: (id: string) => request<{ id: string; readAt: null }>(`/social-notifications/${encodeURIComponent(id)}/unread`, { method: "PATCH" }),
+    markAllRead: () => request<{ success: boolean; readAt: string }>("/social-notifications/read-all", { method: "PATCH" }),
+    delete: (id: string) => request<{ success: boolean; id: string }>(`/social-notifications/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    clearAll: () => request<{ success: boolean }>("/social-notifications/clear-all", { method: "DELETE" }),
+    getPreferences: () => request<NotificationPreferences>("/social-notifications/preferences"),
+    updatePreferences: (updates: Partial<NotificationPreferences>) => request<NotificationPreferences>("/social-notifications/preferences", { method: "PATCH", body: JSON.stringify(updates) }),
   },
   storeAdmin: {
     login: (email: string, password: string) => adminRequest<StoreAdminLoginResponse>("/store-admin/login", { method: "POST", body: JSON.stringify({ email, password }) }),
@@ -1421,10 +1432,33 @@ export interface SocialNotification {
   type: string;
   actorId: string;
   actorName: string;
+  actorPhotoURL?: string | null;
+  actorRole?: string | null;
+  actorJnvName?: string | null;
   entityId?: string | null;
   message: string;
   createdAt: string;
   readAt?: string | null;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  likesComments: boolean;
+  followsConnections: boolean;
+  messages: boolean;
+  alumniVerification: boolean;
+  opportunities: boolean;
+  mentorship: boolean;
+  events: boolean;
+  systemAnnouncements: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  updatedAt: string;
+}
+
+export interface NotificationCounts {
+  unreadCount: number;
+  counts: Record<string, number>;
 }
 
 export interface AlumniMembershipPlan {

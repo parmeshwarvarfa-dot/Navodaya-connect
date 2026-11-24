@@ -57,15 +57,13 @@ function AuthNavGuard() {
 
 export default function RootLayout() {
   const [interLoaded, interError] = useInterFonts({
-    ...(Platform.OS === "web" ? {} : {
-      Inter_400Regular,
-      Inter_500Medium,
-      Inter_600SemiBold,
-      Inter_700Bold,
-    }),
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
   const [pacificoLoaded, pacificoError] = usePacificoFonts({
-    ...(Platform.OS === "web" ? {} : { Pacifico_400Regular }),
+    Pacifico_400Regular,
   });
 
   const loaded = (interLoaded || !!interError) && (pacificoLoaded || !!pacificoError);
@@ -75,6 +73,38 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Ensure high-fidelity Inter typography on Web (prevents chunky system/serif fallbacks)
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      if (!document.getElementById("navodaya-google-fonts")) {
+        const link = document.createElement("link");
+        link.id = "navodaya-google-fonts";
+        link.rel = "stylesheet";
+        link.href =
+          "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";
+        document.head.appendChild(link);
+
+        const style = document.createElement("style");
+        style.id = "navodaya-typography-engine";
+        style.textContent = `
+          * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          body, html, #root, [data-testid="root"] {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          /* Professional font-weight moderation - prevent chunky faux bold */
+          h1, h2, h3, h4, [style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"], [style*="fontWeight: '700'"], [style*="fontWeight: '800'"], [style*="fontWeight: '900'"] {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            letter-spacing: -0.015em;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
 
   return (
     <View style={[styles.webCanvas, Platform.OS !== "web" && styles.nativeCanvas]}>

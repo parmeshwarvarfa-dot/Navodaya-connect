@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { and, count, desc, eq, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or, isNull, isNotNull } from "drizzle-orm";
 import {
   db,
   connectionsTable,
   directMessageRequestsTable,
   memoriesTable,
+  notificationPreferencesTable,
   socialNotificationsTable,
   userBlocksTable,
   userFollowsTable,
@@ -330,11 +331,17 @@ router.get("/blocked-users", requireAuth, async (req, res) => {
 router.get("/social-notifications", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
+    const filter = typeof req.query.filter === "string" ? req.query.filter.trim().toLowerCase() : "all";
+    const limit = Math.min(Math.max(1, parseInt(typeof req.query.limit === "string" ? req.query.limit : "100", 10) || 100), 200);
+
     const rows = await db.select({
       id: socialNotificationsTable.id,
       type: socialNotificationsTable.type,
       actorId: socialNotificationsTable.actorId,
       actorName: usersTable.fullName,
+      actorPhotoURL: usersTable.photoURL,
+      actorRole: usersTable.role,
+      actorJnvName: usersTable.jnvName,
       entityId: socialNotificationsTable.entityId,
       message: socialNotificationsTable.message,
       createdAt: socialNotificationsTable.createdAt,
@@ -343,18 +350,106 @@ router.get("/social-notifications", requireAuth, async (req, res) => {
       .innerJoin(usersTable, eq(socialNotificationsTable.actorId, usersTable.id))
       .where(eq(socialNotificationsTable.recipientId, user.id))
       .orderBy(desc(socialNotificationsTable.createdAt))
-      .limit(100);
+      .limit(limit);
+
     const blockedRows = await db.select({ blockerId: userBlocksTable.blockerId, blockedId: userBlocksTable.blockedId })
       .from(userBlocksTable).where(or(eq(userBlocksTable.blockerId, user.id), eq(userBlocksTable.blockedId, user.id)));
     const hiddenActorIds = new Set(blockedRows.map((block) => block.blockerId === user.id ? block.blockedId : block.blockerId));
-    return res.json(rows.filter((row) => !hiddenActorIds.has(row.actorId)).map((row) => ({
+
+    const allVisible = rows.filter((row) => !hiddenActorIds.has(row.actorId)).map((row) => ({
       ...row,
       createdAt: row.createdAt.toISOString(),
-      readAt: row.readAt?.toISOString(),
-    })));
+      readAt: row.readAt ? row.readAt.toISOString() : undefined,
+    }));
+
+    // Filter categories mapping
+    const filtered = allVisible.filter((item) => {
+      if (filter === "all") return true;
+      if (filter === "unread") return !item.readAt;
+      if (filter === "mentions") {
+        return ["group_mention", "memory_mention", "comment_mention"].includes(item.type);
+      }
+      if (filter === "social") {
+        return ["memory_like", "memory_comment", "memory_reply", "yearbook_review", "follow", "follow_accepted"].includes(item.type);
+      }
+      if (filter === "messages") {
+        return ["direct_message", "direct_message_accepted", "direct_message_request", "group_message", "group_reply"].includes(item.type);
+      }
+      if (filter === "requests") {
+        return ["connection_request", "follow_request", "direct_message_request", "mentor_request", "alumni_peer_request", "verification_decision_needed"].includes(item.type);
+      }
+      if (filter === "opportunities") {
+        return ["opportunity", "job_opportunity", "internship_opportunity", "scholarship_opportunity", "competition_opportunity"].includes(item.type);
+      }
+      if (filter === "system") {
+        return [
+          "verification_approved", "verification_reviewed", "verification_decision",
+          "verification_admin_appointed", "verification_admin_removed", "credential_suspended",
+          "credential_reactivated", "alumni_batch_transition", "academic_assignment",
+          "announcement", "news", "problem_update", "report_update", "event",
+          "event_reminder", "event_invitation", "event_updated", "event_cancelled",
+        ].includes(item.type);
+      }
+      return true;
+    });
+
+    return res.json(filtered);
   } catch (error) {
     req.log.error(error, "Failed to list social notifications");
     return res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+router.get("/social-notifications/unread-count", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const unreadRows = await db.select({
+      id: socialNotificationsTable.id,
+      type: socialNotificationsTable.type,
+      actorId: socialNotificationsTable.actorId,
+    }).from(socialNotificationsTable)
+      .where(and(
+        eq(socialNotificationsTable.recipientId, user.id),
+        isNull(socialNotificationsTable.readAt),
+      ));
+
+    const blockedRows = await db.select({ blockerId: userBlocksTable.blockerId, blockedId: userBlocksTable.blockedId })
+      .from(userBlocksTable).where(or(eq(userBlocksTable.blockerId, user.id), eq(userBlocksTable.blockedId, user.id)));
+    const hiddenActorIds = new Set(blockedRows.map((block) => block.blockerId === user.id ? block.blockedId : block.blockerId));
+
+    const visibleUnread = unreadRows.filter((row) => !hiddenActorIds.has(row.actorId));
+
+    const counts: Record<string, number> = {
+      all: visibleUnread.length,
+      unread: visibleUnread.length,
+      mentions: 0,
+      social: 0,
+      messages: 0,
+      requests: 0,
+      opportunities: 0,
+      system: 0,
+    };
+
+    for (const item of visibleUnread) {
+      if (["group_mention", "memory_mention", "comment_mention"].includes(item.type)) {
+        counts.mentions++;
+      } else if (["memory_like", "memory_comment", "memory_reply", "yearbook_review", "follow", "follow_accepted"].includes(item.type)) {
+        counts.social++;
+      } else if (["direct_message", "direct_message_accepted", "direct_message_request", "group_message", "group_reply"].includes(item.type)) {
+        counts.messages++;
+      } else if (["connection_request", "follow_request", "direct_message_request", "mentor_request", "alumni_peer_request", "verification_decision_needed"].includes(item.type)) {
+        counts.requests++;
+      } else if (["opportunity", "job_opportunity", "internship_opportunity", "scholarship_opportunity", "competition_opportunity"].includes(item.type)) {
+        counts.opportunities++;
+      } else {
+        counts.system++;
+      }
+    }
+
+    return res.json({ unreadCount: visibleUnread.length, counts });
+  } catch (error) {
+    req.log.error(error, "Failed to count unread notifications");
+    return res.status(500).json({ error: "Failed to count notifications" });
   }
 });
 
@@ -376,6 +471,174 @@ router.patch("/social-notifications/:id/read", requireAuth, async (req, res) => 
   } catch (error) {
     req.log.error(error, "Failed to mark notification as read");
     return res.status(500).json({ error: "Failed to update notification" });
+  }
+});
+
+router.patch("/social-notifications/:id/unread", requireAuth, async (req, res) => {
+  const notificationId = req.params.id as string;
+  if (!isValidUserId(notificationId)) return res.status(400).json({ error: "Invalid notification ID" });
+  try {
+    const user = getUser(req);
+    const [updated] = await db.update(socialNotificationsTable)
+      .set({ readAt: null })
+      .where(and(
+        eq(socialNotificationsTable.id, notificationId),
+        eq(socialNotificationsTable.recipientId, user.id),
+      ))
+      .returning({ id: socialNotificationsTable.id });
+    if (!updated) return res.status(404).json({ error: "Notification not found" });
+    return res.json({ id: updated.id, readAt: null });
+  } catch (error) {
+    req.log.error(error, "Failed to mark notification as unread");
+    return res.status(500).json({ error: "Failed to update notification" });
+  }
+});
+
+router.patch("/social-notifications/read-all", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const now = new Date();
+    await db.update(socialNotificationsTable)
+      .set({ readAt: now })
+      .where(and(
+        eq(socialNotificationsTable.recipientId, user.id),
+        isNull(socialNotificationsTable.readAt),
+      ));
+    return res.json({ success: true, readAt: now.toISOString() });
+  } catch (error) {
+    req.log.error(error, "Failed to mark all notifications as read");
+    return res.status(500).json({ error: "Failed to mark all as read" });
+  }
+});
+
+router.delete("/social-notifications/:id", requireAuth, async (req, res) => {
+  const notificationId = req.params.id as string;
+  if (!isValidUserId(notificationId)) return res.status(400).json({ error: "Invalid notification ID" });
+  try {
+    const user = getUser(req);
+    const [deleted] = await db.delete(socialNotificationsTable)
+      .where(and(
+        eq(socialNotificationsTable.id, notificationId),
+        eq(socialNotificationsTable.recipientId, user.id),
+      ))
+      .returning({ id: socialNotificationsTable.id });
+    if (!deleted) return res.status(404).json({ error: "Notification not found" });
+    return res.json({ success: true, id: deleted.id });
+  } catch (error) {
+    req.log.error(error, "Failed to delete notification");
+    return res.status(500).json({ error: "Failed to delete notification" });
+  }
+});
+
+router.delete("/social-notifications/clear-all", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    await db.delete(socialNotificationsTable)
+      .where(and(
+        eq(socialNotificationsTable.recipientId, user.id),
+        isNotNull(socialNotificationsTable.readAt),
+      ));
+    return res.json({ success: true });
+  } catch (error) {
+    req.log.error(error, "Failed to clear notifications");
+    return res.status(500).json({ error: "Failed to clear notifications" });
+  }
+});
+
+router.get("/social-notifications/preferences", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const [existing] = await db.select().from(notificationPreferencesTable)
+      .where(eq(notificationPreferencesTable.userId, user.id))
+      .limit(1);
+
+    if (existing) {
+      return res.json(existing);
+    }
+
+    const defaultPrefs = {
+      userId: user.id,
+      likesComments: true,
+      followsConnections: true,
+      messages: true,
+      alumniVerification: true,
+      opportunities: true,
+      mentorship: true,
+      events: true,
+      systemAnnouncements: true,
+      emailNotifications: true,
+      pushNotifications: true,
+      updatedAt: new Date(),
+    };
+
+    const [created] = await db.insert(notificationPreferencesTable)
+      .values(defaultPrefs)
+      .onConflictDoNothing()
+      .returning();
+
+    return res.json(created ?? defaultPrefs);
+  } catch (error) {
+    req.log.error(error, "Failed to get notification preferences");
+    return res.status(500).json({ error: "Failed to load notification settings" });
+  }
+});
+
+router.patch("/social-notifications/preferences", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const {
+      likesComments,
+      followsConnections,
+      messages,
+      alumniVerification,
+      opportunities,
+      mentorship,
+      events,
+      systemAnnouncements,
+      emailNotifications,
+      pushNotifications,
+    } = req.body ?? {};
+
+    const updates: Partial<typeof notificationPreferencesTable.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (typeof likesComments === "boolean") updates.likesComments = likesComments;
+    if (typeof followsConnections === "boolean") updates.followsConnections = followsConnections;
+    if (typeof messages === "boolean") updates.messages = messages;
+    if (typeof alumniVerification === "boolean") updates.alumniVerification = alumniVerification;
+    if (typeof opportunities === "boolean") updates.opportunities = opportunities;
+    if (typeof mentorship === "boolean") updates.mentorship = mentorship;
+    if (typeof events === "boolean") updates.events = events;
+    if (typeof systemAnnouncements === "boolean") updates.systemAnnouncements = systemAnnouncements;
+    if (typeof emailNotifications === "boolean") updates.emailNotifications = emailNotifications;
+    if (typeof pushNotifications === "boolean") updates.pushNotifications = pushNotifications;
+
+    const [upserted] = await db.insert(notificationPreferencesTable)
+      .values({
+        userId: user.id,
+        likesComments: updates.likesComments ?? true,
+        followsConnections: updates.followsConnections ?? true,
+        messages: updates.messages ?? true,
+        alumniVerification: updates.alumniVerification ?? true,
+        opportunities: updates.opportunities ?? true,
+        mentorship: updates.mentorship ?? true,
+        events: updates.events ?? true,
+        systemAnnouncements: updates.systemAnnouncements ?? true,
+        emailNotifications: updates.emailNotifications ?? true,
+        pushNotifications: updates.pushNotifications ?? true,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: notificationPreferencesTable.userId,
+        set: updates,
+      })
+      .returning();
+
+    return res.json(upserted);
+  } catch (error) {
+    req.log.error(error, "Failed to update notification preferences");
+    return res.status(500).json({ error: "Failed to update settings" });
   }
 });
 

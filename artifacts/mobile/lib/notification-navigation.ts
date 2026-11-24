@@ -35,6 +35,22 @@ export function getNotificationRoute(notification: NotificationLink): Notificati
     }
     case "direct_message_request":
       return inbox("message_requests");
+    case "connection_request":
+    case "connection_accepted":
+    case "connection_declined":
+      return notification.actorId
+        ? { pathname: "/(screens)/user-profile", params: { userId: notification.actorId } }
+        : { pathname: "/(screens)/alumni-connect" };
+    case "mentor_request":
+    case "mentorship_accepted":
+    case "mentorship_declined":
+      return { pathname: "/(screens)/alumni-mentorship" };
+    case "opportunity":
+    case "job_opportunity":
+    case "internship_opportunity":
+    case "scholarship_opportunity":
+    case "competition_opportunity":
+      return { pathname: "/(screens)/alumni-opportunities" };
     case "follow_request":
       return inbox("follow_requests");
     case "follow":
@@ -44,6 +60,9 @@ export function getNotificationRoute(notification: NotificationLink): Notificati
         : inbox("activity");
     case "memory_like":
     case "memory_comment":
+    case "memory_reply":
+    case "memory_mention":
+    case "comment_mention":
       return { pathname: "/(tabs)/memories" };
     case "group_message":
     case "group_mention":

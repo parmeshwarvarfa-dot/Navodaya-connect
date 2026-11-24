@@ -24,7 +24,7 @@ function isAlumniVerificationEssentialRoute(req: Request, user: AuthenticatedUse
   if (selfProfile && selfProfile[1] === user.id) return true;
   if (path === "/reports" && ["GET", "POST"].includes(req.method)) return true;
   if (/^\/users\/[^/]+\/block$/.test(path) && ["POST", "DELETE"].includes(req.method)) return true;
-  if (path === "/social-notifications" || /^\/social-notifications\/[^/]+\/read$/.test(path)) return true;
+  if (path.startsWith("/social-notifications")) return true;
   if (path === "/verification/my-status" || path === "/verification/requests" && req.method === "POST") return true;
   // Profile photo upload is needed to complete the account before verification;
   // publishing any memory remains behind the community access check.

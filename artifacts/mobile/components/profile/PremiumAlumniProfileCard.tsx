@@ -21,9 +21,8 @@ import { api, type ProfileInsightsData } from "@/lib/api";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(SCREEN_WIDTH - 48, 350);
 
-// Default professional portrait matching reference image aesthetic if user has not set a photo
-const DEFAULT_PORTRAIT =
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
+// Default realistic professional photographic portrait (formal blazer, white shirt, clean background)
+const DEFAULT_PORTRAIT = require("@/assets/images/default-professional-portrait.jpg");
 
 interface PremiumAlumniProfileCardProps {
   profile: UserProfile;
@@ -36,19 +35,20 @@ export default function PremiumAlumniProfileCard({
   onEditPress,
   onBenefitsPress,
 }: PremiumAlumniProfileCardProps) {
-  const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [range, setRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [showRangeDropdown, setShowRangeDropdown] = useState(false);
   const [insights, setInsights] = useState<ProfileInsightsData | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("about");
   const [showBenefitsModal, setShowBenefitsModal] = useState(false);
 
-  // Fetch real analytics insights
+  // Fetch real analytics insights from backend
   useEffect(() => {
     let active = true;
     setLoadingInsights(true);
+    const apiRange = range === "all" ? "90d" : range;
     api.profileAnalytics
-      .insights(profile.uid, range)
+      .insights(profile.uid, apiRange)
       .then((data) => {
         if (active) setInsights(data);
       })
@@ -63,18 +63,31 @@ export default function PremiumAlumniProfileCard({
     };
   }, [profile.uid, range]);
 
+  const hasPremium = Boolean(profile.isPremium || (profile as any).membershipStatus?.isPremium);
+
+  // Determine profile image: use uploaded real photograph if available; otherwise use professional default portrait
+  const isRealPhoto = Boolean(
+    profile.uploadedPhotoURL ||
+    (profile.profileImageType === "photo" &&
+      profile.photoURL &&
+      !profile.photoURL.startsWith("data:image/svg") &&
+      !profile.photoURL.includes("avatar"))
+  );
+  const photoUri = isRealPhoto
+    ? (profile.uploadedPhotoURL || profile.photoURL)
+    : null;
+
   const fullName = profile.fullName || "Parmeshwar Varfa";
-  const designation = profile.profession || "B.Tech Student";
-  const schoolBatch = `${profile.jnvName || "JNV Warangal"} • ${profile.passoutYear ? `${profile.passoutYear} Batch` : "2022 Batch"}`;
-  const email = profile.email || "parmeshwar.varfa@gmail.com";
+  const designation = profile.profession || "college student";
+  const schoolBatch = `${profile.jnvName || "JNV Ratlam-1"} • ${profile.passoutYear ? `${profile.passoutYear} Batch` : "2025 Batch"}`;
+  const email = profile.email || "pv25edi0016@student.nitw.ac.in";
   const phone = profile.phone || "+91 98765 43210";
   const location =
     (profile as any).currentLocation ||
     profile.jnvState ||
-    "NIT Warangal";
+    "Madhya Pradesh";
   const instagramUrl = (profile as any).instagramUrl || "https://instagram.com";
   const linkedinUrl = (profile as any).linkedinUrl || "https://linkedin.com";
-  const photoUrl = profile.photoURL || DEFAULT_PORTRAIT;
 
   const openSocial = async (url: string, name: string) => {
     try {
@@ -93,9 +106,16 @@ export default function PremiumAlumniProfileCard({
     setExpandedSection((curr) => (curr === key ? null : key));
   };
 
+  const rangeLabels: Record<string, string> = {
+    "7d": "Last 7 Days",
+    "30d": "Last 30 Days",
+    "90d": "Last 90 Days",
+    all: "All Time",
+  };
+
   return (
     <View style={styles.container}>
-      {/* 1. TOP HEADER BANNER (Strict match to reference screenshot) */}
+      {/* 1. TOP HEADER (Logo, Brand Title, Action Shortcuts) */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <View style={styles.navodayaLogoBox}>
@@ -112,13 +132,15 @@ export default function PremiumAlumniProfileCard({
             accessibilityRole="button"
             accessibilityLabel="Navodaya Store Room"
           >
-            <Ionicons name="bag-handle" size={20} color="#FFFFFF" />
+            <Ionicons name="bag-handle" size={19} color="#FFFFFF" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.avatarHeaderBtn}
             onPress={onEditPress || (() => router.push("/(screens)/edit-profile" as any))}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Edit Profile"
           >
             <Text style={styles.avatarLetter}>
               {fullName.charAt(0).toUpperCase()}
@@ -136,21 +158,32 @@ export default function PremiumAlumniProfileCard({
       {/* 2. THE MAIN PREMIUM ALUMNI PROFILE CARD */}
       <View style={styles.cardWrapper}>
         <View style={styles.profileCard}>
-          {/* Top Portrait Photo with seamless bottom diagonal cut */}
+          {/* Upper Portrait Photo Section */}
           <View style={styles.portraitContainer}>
-            <Image
-              source={{ uri: photoUrl }}
-              style={styles.portraitImage}
-              resizeMode="cover"
-            />
+            {photoUri ? (
+              <Image
+                source={{ uri: photoUri }}
+                style={styles.portraitImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Image
+                source={DEFAULT_PORTRAIT}
+                style={styles.portraitImage}
+                resizeMode="cover"
+              />
+            )}
+
+            {/* Seamless diagonal cut matching Image 2 */}
             <Svg
-              width={CARD_WIDTH}
+              width="100%"
               height={22}
-              viewBox={`0 0 ${CARD_WIDTH} 22`}
+              viewBox="0 0 100 22"
+              preserveAspectRatio="none"
               style={styles.diagonalSvg}
             >
               <Path
-                d={`M 0 0 L ${CARD_WIDTH} 16 L ${CARD_WIDTH} 22 L 0 22 Z`}
+                d="M 0 0 L 100 18 L 100 22 L 0 22 Z"
                 fill="#4C1D95"
               />
             </Svg>
@@ -163,12 +196,19 @@ export default function PremiumAlumniProfileCard({
             end={{ x: 1, y: 1 }}
             style={styles.purpleInfoPanel}
           >
-            {/* Golden Badge on the right */}
+            {/* Top Right: Gold Navodaya Premium Badge */}
             <View style={styles.badgeRow}>
-              <View style={styles.premiumGoldBadge}>
-                <Ionicons name="sparkles" size={10} color="#FBBF24" style={{ marginRight: 3 }} />
-                <Text style={styles.premiumGoldBadgeText}>✦ NAVODAYA PREMIUM</Text>
-              </View>
+              {hasPremium ? (
+                <View style={styles.premiumGoldBadge}>
+                  <Text style={styles.sparkleIcon}>✦✦</Text>
+                  <Text style={styles.premiumGoldBadgeText}>NAVODAYA PREMIUM</Text>
+                </View>
+              ) : (
+                <View style={styles.verifiedAlumniBadge}>
+                  <Ionicons name="shield-checkmark" size={11} color="#A7F3D0" style={{ marginRight: 4 }} />
+                  <Text style={styles.verifiedAlumniBadgeText}>VERIFIED ALUMNI</Text>
+                </View>
+              )}
             </View>
 
             {/* Right-Aligned Profile Info */}
@@ -185,37 +225,44 @@ export default function PremiumAlumniProfileCard({
 
               {/* Contact rows with right-aligned icons */}
               <View style={styles.contactDetailsColumn}>
-                <View style={styles.contactItemRow}>
-                  <Text style={styles.contactText} numberOfLines={1}>
-                    {email}
-                  </Text>
-                  <Ionicons name="mail" size={12} color="#DDD6FE" style={styles.contactIcon} />
-                </View>
+                {email ? (
+                  <View style={styles.contactItemRow}>
+                    <Text style={styles.contactText} numberOfLines={1}>
+                      {email}
+                    </Text>
+                    <Ionicons name="mail" size={12} color="#DDD6FE" style={styles.contactIcon} />
+                  </View>
+                ) : null}
 
-                <View style={styles.contactItemRow}>
-                  <Text style={styles.contactText} numberOfLines={1}>
-                    {phone}
-                  </Text>
-                  <Ionicons name="call" size={12} color="#DDD6FE" style={styles.contactIcon} />
-                </View>
+                {phone ? (
+                  <View style={styles.contactItemRow}>
+                    <Text style={styles.contactText} numberOfLines={1}>
+                      {phone}
+                    </Text>
+                    <Ionicons name="call" size={12} color="#DDD6FE" style={styles.contactIcon} />
+                  </View>
+                ) : null}
 
-                <View style={styles.contactItemRow}>
-                  <Text style={styles.contactText} numberOfLines={1}>
-                    {location}
-                  </Text>
-                  <Ionicons name="location-sharp" size={12} color="#DDD6FE" style={styles.contactIcon} />
-                </View>
+                {location ? (
+                  <View style={styles.contactItemRow}>
+                    <Text style={styles.contactText} numberOfLines={1}>
+                      {location}
+                    </Text>
+                    <Ionicons name="location-sharp" size={12} color="#DDD6FE" style={styles.contactIcon} />
+                  </View>
+                ) : null}
               </View>
             </View>
 
-            {/* Floating Left Vertical Social Media Capsule */}
+            {/* Left Vertical White Social Media Capsule */}
             <View style={styles.floatingSocialCapsule}>
               <TouchableOpacity
                 onPress={() => openSocial(instagramUrl, "Instagram")}
                 style={styles.socialBtn}
                 activeOpacity={0.7}
+                accessibilityLabel="Open Instagram"
               >
-                <Ionicons name="logo-instagram" size={16} color="#1E1B4B" />
+                <Ionicons name="logo-instagram" size={17} color="#1E1B4B" />
               </TouchableOpacity>
 
               <View style={styles.socialDivider} />
@@ -224,23 +271,24 @@ export default function PremiumAlumniProfileCard({
                 onPress={() => openSocial(linkedinUrl, "LinkedIn")}
                 style={styles.socialBtn}
                 activeOpacity={0.7}
+                accessibilityLabel="Open LinkedIn"
               >
-                <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
+                <Ionicons name="logo-linkedin" size={17} color="#0A66C2" />
               </TouchableOpacity>
             </View>
           </LinearGradient>
         </View>
       </View>
 
-      {/* 3. PROFILE INSIGHTS (Exact match to reference Section E) */}
+      {/* 3. PROFILE INSIGHTS SECTION */}
       <View style={styles.insightsSection}>
         <View style={styles.insightsHeader}>
           <View style={styles.insightsHeaderLeft}>
-            <Ionicons name="stats-chart" size={18} color="#7C3AED" style={{ marginRight: 8 }} />
+            <Ionicons name="bar-chart" size={19} color="#7C3AED" style={{ marginRight: 8 }} />
             <Text style={styles.insightsTitle}>Profile Insights</Text>
           </View>
 
-          {/* Dropdown for period */}
+          {/* Date-Range Selector Dropdown */}
           <View style={styles.dropdownWrap}>
             <TouchableOpacity
               style={styles.dropdownBtn}
@@ -248,134 +296,182 @@ export default function PremiumAlumniProfileCard({
               activeOpacity={0.8}
             >
               <Text style={styles.dropdownText}>
-                {range === "7d" ? "Last 7 Days" : range === "90d" ? "Last 90 Days" : "Last 30 Days"}
+                {rangeLabels[range] || "Last 30 Days"}
               </Text>
-              <Ionicons name="chevron-down" size={13} color="#6D28D9" style={{ marginLeft: 4 }} />
+              <Ionicons
+                name={showRangeDropdown ? "chevron-up" : "chevron-down"}
+                size={13}
+                color="#6D28D9"
+                style={{ marginLeft: 4 }}
+              />
             </TouchableOpacity>
 
+            {/* Dropdown Menu floating unequivocally above Unique Visitors and all cards */}
             {showRangeDropdown && (
-              <View style={styles.dropdownMenu}>
-                {(["7d", "30d", "90d"] as const).map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[styles.dropdownItem, range === r && styles.dropdownItemActive]}
-                    onPress={() => {
-                      setRange(r);
-                      setShowRangeDropdown(false);
-                    }}
-                  >
-                    <Text style={[styles.dropdownItemText, range === r && styles.dropdownItemTextActive]}>
-                      {r === "7d" ? "Last 7 Days" : r === "90d" ? "Last 90 Days" : "Last 30 Days"}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <>
+                <TouchableOpacity
+                  style={styles.dropdownBackdrop}
+                  activeOpacity={1}
+                  onPress={() => setShowRangeDropdown(false)}
+                />
+                <View style={styles.dropdownMenu}>
+                  {(["7d", "30d", "90d", "all"] as const).map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[styles.dropdownItem, range === r && styles.dropdownItemActive]}
+                      onPress={() => {
+                        setRange(r);
+                        setShowRangeDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.dropdownItemText, range === r && styles.dropdownItemTextActive]}>
+                        {rangeLabels[r]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
             )}
           </View>
         </View>
 
         {/* 2x2 Metric Grid */}
         <View style={styles.insightsGrid}>
-          {/* Box 1: Profile Visits */}
+          {/* Metric 1: Profile Visits */}
           <View style={styles.insightCard}>
             <View style={styles.metricRowTop}>
-              <Ionicons name="eye" size={20} color="#6D28D9" />
+              <View style={styles.metricIconWrap}>
+                <Ionicons name="eye" size={18} color="#6D28D9" />
+              </View>
               <View style={styles.trendBadge}>
-                <Ionicons name="arrow-up" size={11} color="#059669" />
+                <Ionicons name="arrow-up" size={10} color="#059669" />
                 <Text style={styles.trendText}>
-                  {insights?.stats.profileVisits.trend || "12%"}
+                  {insights?.stats.profileVisits.trend || "+12%"}
                 </Text>
               </View>
             </View>
             <Text style={styles.metricValue}>
-              {insights?.stats.profileVisits.formatted || "2.4K"}
+              {loadingInsights ? "..." : (insights?.stats.profileVisits.formatted || "2.4K")}
             </Text>
             <Text style={styles.metricLabel}>Profile Visits</Text>
           </View>
 
-          {/* Box 2: Unique Visitors */}
+          {/* Metric 2: Unique Visitors */}
           <View style={styles.insightCard}>
             <View style={styles.metricRowTop}>
-              <Ionicons name="people" size={20} color="#6D28D9" />
+              <View style={styles.metricIconWrap}>
+                <Ionicons name="people" size={18} color="#6D28D9" />
+              </View>
               <View style={styles.trendBadge}>
-                <Ionicons name="arrow-up" size={11} color="#059669" />
+                <Ionicons name="arrow-up" size={10} color="#059669" />
                 <Text style={styles.trendText}>
-                  {insights?.stats.uniqueVisitors.trend || "15%"}
+                  {insights?.stats.uniqueVisitors.trend || "+15%"}
                 </Text>
               </View>
             </View>
             <Text style={styles.metricValue}>
-              {insights?.stats.uniqueVisitors.formatted || "1.8K"}
+              {loadingInsights ? "..." : (insights?.stats.uniqueVisitors.formatted || "1.8K")}
             </Text>
             <Text style={styles.metricLabel}>Unique Visitors</Text>
           </View>
 
-          {/* Box 3: Post Likes */}
+          {/* Metric 3: Post Likes */}
           <View style={styles.insightCard}>
             <View style={styles.metricRowTop}>
-              <Ionicons name="heart" size={20} color="#6D28D9" />
+              <View style={styles.metricIconWrap}>
+                <Ionicons name="heart" size={18} color="#6D28D9" />
+              </View>
               <View style={styles.trendBadge}>
-                <Ionicons name="arrow-up" size={11} color="#059669" />
+                <Ionicons name="arrow-up" size={10} color="#059669" />
                 <Text style={styles.trendText}>
-                  {insights?.stats.postLikes.trend || "18%"}
+                  {insights?.stats.postLikes.trend || "+18%"}
                 </Text>
               </View>
             </View>
             <Text style={styles.metricValue}>
-              {insights?.stats.postLikes.formatted || "920"}
+              {loadingInsights ? "..." : (insights?.stats.postLikes.formatted || "920")}
             </Text>
             <Text style={styles.metricLabel}>Post Likes</Text>
           </View>
 
-          {/* Box 4: Shares */}
+          {/* Metric 4: Shares */}
           <View style={styles.insightCard}>
             <View style={styles.metricRowTop}>
-              <Ionicons name="share-social" size={20} color="#6D28D9" />
+              <View style={styles.metricIconWrap}>
+                <Ionicons name="share-social" size={18} color="#6D28D9" />
+              </View>
               <View style={styles.trendBadge}>
-                <Ionicons name="arrow-up" size={11} color="#059669" />
+                <Ionicons name="arrow-up" size={10} color="#059669" />
                 <Text style={styles.trendText}>
-                  {insights?.stats.shares.trend || "14%"}
+                  {insights?.stats.shares.trend || "+14%"}
                 </Text>
               </View>
             </View>
             <Text style={styles.metricValue}>
-              {insights?.stats.shares.formatted || "730"}
+              {loadingInsights ? "..." : (insights?.stats.shares.formatted || "730")}
             </Text>
-            <Text style={styles.metricLabel}>Shares</Text>
+            <Text style={styles.metricLabel}>Post Shares</Text>
           </View>
         </View>
       </View>
 
-      {/* 4. PREMIUM BANNER STRIP */}
-      <LinearGradient
-        colors={["#581C87", "#7C3AED", "#9333EA"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.premiumBannerStrip}
-      >
-        <View style={styles.crownCircle}>
-          <Text style={{ fontSize: 22 }}>👑</Text>
-        </View>
-
-        <View style={styles.bannerTextCol}>
-          <Text style={styles.bannerTitle}>You're a Premium Member!</Text>
-          <Text style={styles.bannerSubtext}>
-            Enjoy exclusive features & benefits
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.viewBenefitsBtn}
-          onPress={onBenefitsPress || (() => setShowBenefitsModal(true))}
-          activeOpacity={0.8}
+      {/* 4. PREMIUM MEMBERSHIP BANNER */}
+      {hasPremium ? (
+        <LinearGradient
+          colors={["#581C87", "#7C3AED", "#9333EA"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.premiumBannerStrip}
         >
-          <Text style={styles.viewBenefitsText}>View Benefits →</Text>
-        </TouchableOpacity>
-      </LinearGradient>
+          <View style={styles.crownCircle}>
+            <Text style={{ fontSize: 20 }}>👑</Text>
+          </View>
 
-      {/* 5. COLLAPSIBLE ACCORDION SECTIONS */}
+          <View style={styles.bannerTextCol}>
+            <Text style={styles.bannerTitle}>You're a Premium Member!</Text>
+            <Text style={styles.bannerSubtext}>
+              Enjoy exclusive features & VIP benefits
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.viewBenefitsBtn}
+            onPress={onBenefitsPress || (() => setShowBenefitsModal(true))}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewBenefitsText}>View Benefits →</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+      ) : (
+        <LinearGradient
+          colors={["#4C1D95", "#6D28D9"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.premiumBannerStrip}
+        >
+          <View style={styles.crownCircle}>
+            <Text style={{ fontSize: 20 }}>✦</Text>
+          </View>
+
+          <View style={styles.bannerTextCol}>
+            <Text style={styles.bannerTitle}>Unlock Navodaya Premium</Text>
+            <Text style={styles.bannerSubtext}>
+              Get digital identity badge, analytics & perks
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.viewBenefitsBtn}
+            onPress={onBenefitsPress || (() => setShowBenefitsModal(true))}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewBenefitsText}>Explore →</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+      )}
+
+      {/* 5. ABOUT ME SECTION (Expandable Accordion) */}
       <View style={styles.accordionContainer}>
-        {/* Section A: About Me */}
         <View style={styles.accordionCard}>
           <TouchableOpacity
             style={styles.accordionHeader}
@@ -383,20 +479,20 @@ export default function PremiumAlumniProfileCard({
             activeOpacity={0.8}
           >
             <View style={styles.accordionHeaderLeft}>
-              <Ionicons name="star" size={18} color="#7C3AED" style={{ marginRight: 10 }} />
+              <Ionicons name="star" size={17} color="#7C3AED" style={{ marginRight: 8 }} />
               <Text style={styles.accordionTitle}>About Me</Text>
             </View>
             <Ionicons
               name={expandedSection === "about" ? "chevron-up" : "chevron-forward"}
-              size={18}
-              color="#6B7280"
+              size={17}
+              color="#64748B"
             />
           </TouchableOpacity>
           {expandedSection === "about" && (
             <View style={styles.accordionContent}>
               <Text style={styles.accordionBodyText}>
                 {(profile as any).bio ||
-                  `Proud Navodayan graduate from ${profile.jnvName || "JNV"}. Enthusiastic technologist, builder, and mentor actively connecting with fellow JNV alumni nationwide.`}
+                  `Proud Navodayan graduate from ${profile.jnvName || "JNV Ratlam-1"}. Passionate engineer, mentor, and builder actively collaborating with fellow Navodaya alumni across industries.`}
               </Text>
               {profile.skills && profile.skills.length > 0 && (
                 <View style={styles.skillsTagRow}>
@@ -419,23 +515,23 @@ export default function PremiumAlumniProfileCard({
             activeOpacity={0.8}
           >
             <View style={styles.accordionHeaderLeft}>
-              <Ionicons name="school-outline" size={18} color="#7C3AED" style={{ marginRight: 10 }} />
+              <Ionicons name="school-outline" size={17} color="#7C3AED" style={{ marginRight: 8 }} />
               <Text style={styles.accordionTitle}>Education & JNV Roots</Text>
             </View>
             <Ionicons
               name={expandedSection === "education" ? "chevron-up" : "chevron-forward"}
-              size={18}
-              color="#6B7280"
+              size={17}
+              color="#64748B"
             />
           </TouchableOpacity>
           {expandedSection === "education" && (
             <View style={styles.accordionContent}>
               <View style={styles.timelineItem}>
                 <View style={styles.timelineDot} />
-                <Text style={styles.timelineTitle}>{profile.jnvName || "JNV Warangal"}</Text>
+                <Text style={styles.timelineTitle}>{profile.jnvName || "JNV Ratlam-1"}</Text>
                 <Text style={styles.timelineSubtitle}>
                   {profile.house ? `${profile.house} House • ` : ""}
-                  Class of {profile.passoutYear || "2022"}
+                  Class of {profile.passoutYear || "2025"}
                 </Text>
               </View>
               <View style={[styles.timelineItem, { marginTop: 12 }]}>
@@ -443,43 +539,6 @@ export default function PremiumAlumniProfileCard({
                 <Text style={styles.timelineTitle}>{designation}</Text>
                 <Text style={styles.timelineSubtitle}>{location}</Text>
               </View>
-            </View>
-          )}
-        </View>
-
-        {/* Section C: Professional Experience */}
-        <View style={styles.accordionCard}>
-          <TouchableOpacity
-            style={styles.accordionHeader}
-            onPress={() => toggleSection("experience")}
-            activeOpacity={0.8}
-          >
-            <View style={styles.accordionHeaderLeft}>
-              <Ionicons name="briefcase-outline" size={18} color="#7C3AED" style={{ marginRight: 10 }} />
-              <Text style={styles.accordionTitle}>Professional Experience</Text>
-            </View>
-            <Ionicons
-              name={expandedSection === "experience" ? "chevron-up" : "chevron-forward"}
-              size={18}
-              color="#6B7280"
-            />
-          </TouchableOpacity>
-          {expandedSection === "experience" && (
-            <View style={styles.accordionContent}>
-              <Text style={styles.accordionBodyText}>
-                {profile.profession
-                  ? `${profile.profession} at ${location}`
-                  : "Actively contributing to open-source software, startup initiatives, and engineering projects."}
-              </Text>
-              {profile.resumeUrl ? (
-                <TouchableOpacity
-                  style={styles.resumeBtn}
-                  onPress={() => Linking.openURL(profile.resumeUrl!)}
-                >
-                  <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
-                  <Text style={styles.resumeBtnText}>View Verified Resume</Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
           )}
         </View>
@@ -498,7 +557,7 @@ export default function PremiumAlumniProfileCard({
               <View style={styles.crownCircle}>
                 <Text style={{ fontSize: 20 }}>👑</Text>
               </View>
-              <Text style={styles.modalTitle}>Your Premium Alumni Benefits</Text>
+              <Text style={styles.modalTitle}>Navodaya Premium Benefits</Text>
               <TouchableOpacity
                 onPress={() => setShowBenefitsModal(false)}
                 style={styles.closeBtn}
@@ -566,13 +625,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
     shadowColor: "#6D28D9",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 4,
   },
   brandTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#1E1B4B",
     lineHeight: 18,
   },
@@ -605,19 +664,19 @@ const styles = StyleSheet.create({
   headerTitles: {
     paddingHorizontal: 20,
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   journeySubtitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: "600",
     color: "#7C3AED",
     marginBottom: 2,
   },
   mainTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
     color: "#1E1B4B",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 
   // Main Profile Card
@@ -629,20 +688,20 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 350,
     backgroundColor: "#FFFFFF",
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: "hidden",
     shadowColor: "#4C1D95",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
     elevation: 6,
     borderWidth: 1,
     borderColor: "#EDE9FE",
   },
   portraitContainer: {
     width: "100%",
-    height: 165,
-    backgroundColor: "#F9FAFB",
+    height: 185,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -662,62 +721,84 @@ const styles = StyleSheet.create({
   },
   purpleInfoPanel: {
     width: "100%",
-    paddingTop: 8,
-    paddingBottom: 14,
-    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
     position: "relative",
   },
   badgeRow: {
     alignItems: "flex-end",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   premiumGoldBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(180, 83, 9, 0.35)",
-    borderWidth: 1,
-    borderColor: "#FBBF24",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    backgroundColor: "rgba(30, 27, 75, 0.45)",
+    borderWidth: 1.5,
+    borderColor: "#F59E0B",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    gap: 4,
+  },
+  sparkleIcon: {
+    fontSize: 10,
+    color: "#FBBF24",
+    fontWeight: "700",
   },
   premiumGoldBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: "700",
     color: "#FDE68A",
     letterSpacing: 0.5,
   },
+  verifiedAlumniBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderWidth: 1,
+    borderColor: "#10B981",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  verifiedAlumniBadgeText: {
+    fontSize: 9.5,
+    fontWeight: "700",
+    color: "#A7F3D0",
+    letterSpacing: 0.5,
+  },
   rightInfoBlock: {
     alignItems: "flex-end",
-    paddingLeft: 54, // Leaves space for the floating social pill on left
-    paddingRight: 4,
+    paddingLeft: 56, // Leaves space for the left social pill
+    paddingRight: 2,
   },
   profileName: {
-    fontSize: 15.5,
+    fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "right",
-    marginBottom: 1,
-    letterSpacing: 0.15,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   profileDesignation: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
     color: "#E9D5FF",
     textAlign: "right",
-    marginBottom: 1,
+    marginBottom: 2,
   },
   profileSchoolBatch: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "400",
     color: "#C4B5FD",
     textAlign: "right",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   contactDetailsColumn: {
     alignItems: "flex-end",
-    gap: 3.5,
-    paddingRight: 4,
+    gap: 4,
+    paddingRight: 2,
   },
   contactItemRow: {
     flexDirection: "row",
@@ -725,9 +806,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   contactText: {
-    fontSize: 10.5,
+    fontSize: 11,
     color: "#F3E8FF",
-    marginRight: 5,
+    marginRight: 6,
     fontWeight: "400",
   },
   contactIcon: {
@@ -736,213 +817,229 @@ const styles = StyleSheet.create({
   },
   floatingSocialCapsule: {
     position: "absolute",
-    left: 12,
-    bottom: 12,
+    left: 14,
+    bottom: 16,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 5,
-    paddingHorizontal: 5,
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 7,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
     elevation: 4,
-    zIndex: 10,
   },
   socialBtn: {
-    padding: 2.5,
+    padding: 3,
   },
   socialDivider: {
-    width: 14,
+    width: 16,
     height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 2.5,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 4,
   },
 
-  // Profile Insights
+  // 3. Profile Insights Section
   insightsSection: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-    zIndex: 100,
+    marginHorizontal: 16,
+    marginTop: 22,
+    marginBottom: 14,
+    position: "relative",
+    zIndex: 1000,
   },
   insightsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
-    zIndex: 1000,
-    ...(Platform.OS === "android" ? { elevation: 12 } : {}),
+    position: "relative",
+    zIndex: 1001,
   },
   insightsHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
   insightsTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "600",
     color: "#1E1B4B",
+    letterSpacing: -0.2,
   },
   dropdownWrap: {
     position: "relative",
-    zIndex: 2000,
-    ...(Platform.OS === "android" ? { elevation: 14 } : {}),
+    zIndex: 1002,
   },
   dropdownBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#EDE9FE",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   dropdownText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: "600",
     color: "#6D28D9",
   },
+  dropdownBackdrop: {
+    position: Platform.OS === "web" ? ("fixed" as any) : "absolute",
+    top: -2000,
+    left: -2000,
+    right: -2000,
+    bottom: -2000,
+    backgroundColor: "transparent",
+    zIndex: 9998,
+  },
   dropdownMenu: {
     position: "absolute",
-    top: 34,
+    top: 36,
     right: 0,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: 14,
+    paddingVertical: 6,
+    width: 136,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
     elevation: 25,
-    minWidth: 124,
-    zIndex: 9999,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    zIndex: 99999,
   },
   dropdownItem: {
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   dropdownItemActive: {
-    backgroundColor: "#F3E8FF",
+    backgroundColor: "#F5F3FF",
   },
   dropdownItemText: {
-    fontSize: 11.5,
-    color: "#4B5563",
+    fontSize: 12,
     fontWeight: "500",
+    color: "#475569",
   },
   dropdownItemTextActive: {
-    color: "#7C3AED",
     fontWeight: "600",
+    color: "#7C3AED",
   },
   insightsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+    position: "relative",
     zIndex: 1,
   },
   insightCard: {
     width: "48%",
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 13,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#F3E8FF",
+    borderColor: "#EDE9FE",
     shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
-    elevation: 2,
-    zIndex: 1,
+    elevation: 1,
   },
   metricRowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  metricIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#F5F3FF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   trendBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 5,
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 10,
+    gap: 2,
   },
   trendText: {
     fontSize: 10.5,
     fontWeight: "600",
     color: "#059669",
-    marginLeft: 2,
   },
   metricValue: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: "700",
     color: "#1E1B4B",
     marginBottom: 2,
   },
   metricLabel: {
     fontSize: 11.5,
-    color: "#6B7280",
-    fontWeight: "400",
+    fontWeight: "500",
+    color: "#64748B",
   },
 
-  // Premium Strip
+  // 4. Premium Membership Banner
   premiumBannerStrip: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 16,
+    borderRadius: 18,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 18,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
     shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
   },
   crownCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 12,
   },
   bannerTextCol: {
     flex: 1,
   },
   bannerTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: "700",
     color: "#FFFFFF",
+    marginBottom: 1,
   },
   bannerSubtext: {
     fontSize: 11,
-    color: "#E9D5FF",
-    marginTop: 1,
+    fontWeight: "400",
+    color: "#DDD6FE",
   },
   viewBenefitsBtn: {
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
   },
   viewBenefitsText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#7C3AED",
   },
 
-  // Accordion Sections
+  // 5. Accordion Sections
   accordionContainer: {
-    marginTop: 14,
-    paddingHorizontal: 16,
-    gap: 8,
+    marginHorizontal: 16,
+    gap: 10,
+    marginBottom: 10,
   },
   accordionCard: {
     backgroundColor: "#FFFFFF",
@@ -955,8 +1052,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    padding: 14,
   },
   accordionHeaderLeft: {
     flexDirection: "row",
@@ -970,107 +1066,92 @@ const styles = StyleSheet.create({
   accordionContent: {
     paddingHorizontal: 14,
     paddingBottom: 14,
+    paddingTop: 2,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-    paddingTop: 10,
+    borderTopColor: "#F1F5F9",
   },
   accordionBodyText: {
-    fontSize: 12.5,
-    color: "#4B5563",
-    lineHeight: 18,
+    fontSize: 13,
     fontWeight: "400",
+    color: "#475569",
+    lineHeight: 19,
+    marginTop: 8,
   },
   skillsTagRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    marginTop: 8,
+    marginTop: 10,
   },
   skillPill: {
-    backgroundColor: "#EDE9FE",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    backgroundColor: "#F5F3FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#EDE9FE",
   },
   skillPillText: {
-    fontSize: 10.5,
-    color: "#6D28D9",
+    fontSize: 11.5,
     fontWeight: "500",
+    color: "#7C3AED",
   },
   timelineItem: {
     position: "relative",
     paddingLeft: 16,
+    marginTop: 6,
   },
   timelineDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: "#7C3AED",
     position: "absolute",
     left: 0,
     top: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#7C3AED",
   },
   timelineTitle: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: "600",
     color: "#1E1B4B",
   },
   timelineSubtitle: {
     fontSize: 11.5,
-    color: "#6B7280",
-    marginTop: 1,
     fontWeight: "400",
-  },
-  resumeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F3FF",
-    borderColor: "#DDD6FE",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 10,
-    alignSelf: "flex-start",
-  },
-  resumeBtnText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#7C3AED",
-    marginLeft: 6,
+    color: "#64748B",
+    marginTop: 1,
   },
 
-  // Modal
+  // 6. Benefits Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
-    maxHeight: "85%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    gap: 16,
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "space-between",
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#1E1B4B",
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
   },
   closeBtn: {
     padding: 4,
   },
   benefitsList: {
     gap: 12,
-    marginBottom: 24,
   },
   benefitItemRow: {
     flexDirection: "row",
@@ -1078,20 +1159,20 @@ const styles = StyleSheet.create({
   },
   benefitItemText: {
     fontSize: 13,
-    color: "#374151",
     fontWeight: "500",
+    color: "#334155",
     flex: 1,
-    lineHeight: 18,
   },
   doneBtn: {
-    backgroundColor: "#6D28D9",
-    paddingVertical: 14,
-    borderRadius: 16,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    borderRadius: 14,
     alignItems: "center",
+    marginTop: 6,
   },
   doneBtnText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

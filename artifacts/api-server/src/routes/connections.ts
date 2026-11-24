@@ -69,4 +69,39 @@ router.patch("/connections/:id/accept", requireAuth, async (req, res) => {
   }
 });
 
+router.patch("/connections/:id/decline", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const [existing] = await db.select().from(connectionsTable)
+      .where(and(eq(connectionsTable.id, req.params.id as string), eq(connectionsTable.toId, user.id)))
+      .limit(1);
+    if (!existing || existing.status !== "pending") return res.status(404).json({ error: "Pending connection request not found" });
+    const [row] = await db.update(connectionsTable)
+      .set({ status: "declined" })
+      .where(and(eq(connectionsTable.id, existing.id), eq(connectionsTable.toId, user.id), eq(connectionsTable.status, "pending")))
+      .returning();
+    if (!row) return res.status(409).json({ error: "Connection request was already handled" });
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to decline connection" });
+  }
+});
+
+router.delete("/connections/:id", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const [existing] = await db.select().from(connectionsTable)
+      .where(and(
+        eq(connectionsTable.id, req.params.id as string),
+        or(eq(connectionsTable.fromId, user.id), eq(connectionsTable.toId, user.id)),
+      ))
+      .limit(1);
+    if (!existing) return res.status(404).json({ error: "Connection not found" });
+    await db.delete(connectionsTable).where(eq(connectionsTable.id, existing.id));
+    res.json({ success: true, id: existing.id });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to remove connection" });
+  }
+});
+
 export default router;
