@@ -19,7 +19,7 @@ import type { UserProfile } from "@/context/AuthContext";
 import { api, type ProfileInsightsData } from "@/lib/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
+const CARD_WIDTH = Math.min(SCREEN_WIDTH - 48, 350);
 
 // Default professional portrait matching reference image aesthetic if user has not set a photo
 const DEFAULT_PORTRAIT =
@@ -136,26 +136,21 @@ export default function PremiumAlumniProfileCard({
       {/* 2. THE MAIN PREMIUM ALUMNI PROFILE CARD */}
       <View style={styles.cardWrapper}>
         <View style={styles.profileCard}>
-          {/* Top Portrait Photo */}
+          {/* Top Portrait Photo with seamless bottom diagonal cut */}
           <View style={styles.portraitContainer}>
             <Image
               source={{ uri: photoUrl }}
               style={styles.portraitImage}
               resizeMode="cover"
             />
-          </View>
-
-          {/* Diagonal SVG Transition from White to Deep Purple */}
-          <View style={styles.svgDiagonalWrap}>
             <Svg
               width={CARD_WIDTH}
-              height={50}
-              viewBox={`0 0 ${CARD_WIDTH} 50`}
-              style={StyleSheet.absoluteFill}
+              height={22}
+              viewBox={`0 0 ${CARD_WIDTH} 22`}
+              style={styles.diagonalSvg}
             >
-              {/* Path sloping down from y=15 on left to y=42 on right */}
               <Path
-                d={`M 0 15 L ${CARD_WIDTH} 42 L ${CARD_WIDTH} 50 L 0 50 Z`}
+                d={`M 0 0 L ${CARD_WIDTH} 16 L ${CARD_WIDTH} 22 L 0 22 Z`}
                 fill="#4C1D95"
               />
             </Svg>
@@ -171,7 +166,7 @@ export default function PremiumAlumniProfileCard({
             {/* Golden Badge on the right */}
             <View style={styles.badgeRow}>
               <View style={styles.premiumGoldBadge}>
-                <Ionicons name="sparkles" size={11} color="#FBBF24" style={{ marginRight: 4 }} />
+                <Ionicons name="sparkles" size={10} color="#FBBF24" style={{ marginRight: 3 }} />
                 <Text style={styles.premiumGoldBadgeText}>✦ NAVODAYA PREMIUM</Text>
               </View>
             </View>
@@ -194,21 +189,21 @@ export default function PremiumAlumniProfileCard({
                   <Text style={styles.contactText} numberOfLines={1}>
                     {email}
                   </Text>
-                  <Ionicons name="mail" size={13} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="mail" size={12} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
 
                 <View style={styles.contactItemRow}>
                   <Text style={styles.contactText} numberOfLines={1}>
                     {phone}
                   </Text>
-                  <Ionicons name="call" size={13} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="call" size={12} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
 
                 <View style={styles.contactItemRow}>
                   <Text style={styles.contactText} numberOfLines={1}>
                     {location}
                   </Text>
-                  <Ionicons name="location-sharp" size={13} color="#DDD6FE" style={styles.contactIcon} />
+                  <Ionicons name="location-sharp" size={12} color="#DDD6FE" style={styles.contactIcon} />
                 </View>
               </View>
             </View>
@@ -220,7 +215,7 @@ export default function PremiumAlumniProfileCard({
                 style={styles.socialBtn}
                 activeOpacity={0.7}
               >
-                <Ionicons name="logo-instagram" size={20} color="#1E1B4B" />
+                <Ionicons name="logo-instagram" size={16} color="#1E1B4B" />
               </TouchableOpacity>
 
               <View style={styles.socialDivider} />
@@ -230,7 +225,7 @@ export default function PremiumAlumniProfileCard({
                 style={styles.socialBtn}
                 activeOpacity={0.7}
               >
-                <Ionicons name="logo-linkedin" size={20} color="#0A66C2" />
+                <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -609,20 +604,20 @@ const styles = StyleSheet.create({
   },
   headerTitles: {
     paddingHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 14,
+    marginTop: 4,
+    marginBottom: 8,
   },
   journeySubtitle: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontWeight: "600",
     color: "#7C3AED",
-    marginBottom: 3,
+    marginBottom: 2,
   },
   mainTitle: {
-    fontSize: 21,
+    fontSize: 18,
     fontWeight: "700",
     color: "#1E1B4B",
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
 
   // Main Profile Card
@@ -632,45 +627,49 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 350,
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
+    borderRadius: 22,
     overflow: "hidden",
     shadowColor: "#4C1D95",
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
-    shadowRadius: 20,
+    shadowRadius: 16,
     elevation: 6,
     borderWidth: 1,
     borderColor: "#EDE9FE",
   },
   portraitContainer: {
     width: "100%",
-    height: 220,
+    height: 165,
     backgroundColor: "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
   },
   portraitImage: {
     width: "100%",
     height: "100%",
   },
-  svgDiagonalWrap: {
-    height: 25,
-    marginTop: -25,
+  diagonalSvg: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 22,
     width: "100%",
-    zIndex: 2,
   },
   purpleInfoPanel: {
     width: "100%",
-    paddingTop: 10,
-    paddingBottom: 22,
-    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 14,
+    paddingHorizontal: 14,
     position: "relative",
   },
   badgeRow: {
     alignItems: "flex-end",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   premiumGoldBadge: {
     flexDirection: "row",
@@ -678,45 +677,47 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(180, 83, 9, 0.35)",
     borderWidth: 1,
     borderColor: "#FBBF24",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
   premiumGoldBadgeText: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: "700",
     color: "#FDE68A",
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   rightInfoBlock: {
     alignItems: "flex-end",
-    paddingLeft: 64, // Leaves space for the floating social pill on left
+    paddingLeft: 54, // Leaves space for the floating social pill on left
+    paddingRight: 4,
   },
   profileName: {
-    fontSize: 18,
+    fontSize: 15.5,
     fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "right",
-    marginBottom: 2,
-    letterSpacing: 0.2,
+    marginBottom: 1,
+    letterSpacing: 0.15,
   },
   profileDesignation: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: "#E9D5FF",
     textAlign: "right",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   profileSchoolBatch: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "400",
     color: "#C4B5FD",
     textAlign: "right",
-    marginBottom: 10,
+    marginBottom: 6,
   },
   contactDetailsColumn: {
     alignItems: "flex-end",
-    gap: 5,
+    gap: 3.5,
+    paddingRight: 4,
   },
   contactItemRow: {
     flexDirection: "row",
@@ -724,39 +725,39 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   contactText: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: "#F3E8FF",
-    marginRight: 6,
+    marginRight: 5,
     fontWeight: "400",
   },
   contactIcon: {
-    width: 16,
+    width: 14,
     textAlign: "center",
   },
   floatingSocialCapsule: {
     position: "absolute",
-    left: 16,
-    bottom: 18,
+    left: 12,
+    bottom: 12,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 7,
+    borderRadius: 16,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowRadius: 5,
+    elevation: 4,
     zIndex: 10,
   },
   socialBtn: {
-    padding: 4,
+    padding: 2.5,
   },
   socialDivider: {
-    width: 16,
+    width: 14,
     height: 1,
     backgroundColor: "#E5E7EB",
-    marginVertical: 3,
+    marginVertical: 2.5,
   },
 
   // Profile Insights
