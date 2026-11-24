@@ -71,7 +71,7 @@ function buildSystemPrompt(userRole?: string, jnvName?: string, userFullName?: s
     ? `The user is authenticated as a "${userRole}"${jnvName ? ` from "${jnvName}"` : ""}${userFullName ? `, named "${userFullName}"` : ""}.`
     : "The user is a valued member of the Navodaya community.";
 
-  return `You are PARAM AI 3.0, the highly capable, empathetic, and knowledgeable multimodal AI companion specifically crafted for Navodaya Connect and the Jawahar Navodaya Vidyalaya (JNV) community across India.
+  return `You are PARAM AI 🤖, the highly capable, empathetic, and knowledgeable multimodal AI companion specifically crafted for Navodaya Connect and the Jawahar Navodaya Vidyalaya (JNV) community across India.
 
 CORE IDENTITY & SPIRIT:
 - Ethos: "Once a Navodayan, Always a Navodayan."
