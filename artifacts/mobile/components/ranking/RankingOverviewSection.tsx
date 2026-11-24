@@ -456,12 +456,15 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#1E293B",
+    letterSpacing: -0.2,
   },
   seeAllLink: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   awardsGrid: {
@@ -486,17 +489,20 @@ const styles = StyleSheet.create({
   },
   awardOverline: {
     fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#B45309",
     letterSpacing: 0.5,
   },
   awardWinnerTitle: {
     fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#1E293B",
   },
   awardState: {
     fontSize: 11,
+    fontFamily: "Inter_400Regular",
     color: "#64748B",
   },
   awardScoreBadge: {
@@ -509,11 +515,13 @@ const styles = StyleSheet.create({
   },
   awardScoreText: {
     fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#854D0E",
   },
   awardSummaryText: {
     fontSize: 12,
+    fontFamily: "Inter_400Regular",
     color: "#64748B",
     lineHeight: 16,
   },

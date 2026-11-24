@@ -88,6 +88,35 @@ export default function RootLayout() {
         const style = document.createElement("style");
         style.id = "navodaya-typography-engine";
         style.textContent = `
+          @font-face {
+            font-family: 'Inter_400Regular';
+            font-style: normal;
+            font-weight: 400;
+            src: local('Inter Regular'), local('Inter'),
+                 url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter_500Medium';
+            font-style: normal;
+            font-weight: 500;
+            src: local('Inter Medium'), local('Inter'),
+                 url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiA.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter_600SemiBold';
+            font-style: normal;
+            font-weight: 600;
+            src: local('Inter SemiBold'), local('Inter'),
+                 url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter_700Bold';
+            font-style: normal;
+            font-weight: 600;
+            src: local('Inter SemiBold'), local('Inter Bold'), local('Inter'),
+                 url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiA.woff2') format('woff2');
+          }
+
           * {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -96,8 +125,9 @@ export default function RootLayout() {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
           }
           /* Professional font-weight moderation - prevent chunky faux bold */
-          h1, h2, h3, h4, [style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"], [style*="fontWeight: '700'"], [style*="fontWeight: '800'"], [style*="fontWeight: '900'"] {
+          h1, h2, h3, h4, [style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"], [style*="fontWeight: '700'"], [style*="fontWeight: '800'"], [style*="fontWeight: '900'"], [style*="font-weight: bold"], b, strong {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-weight: 600 !important;
             letter-spacing: -0.015em;
           }
         `;

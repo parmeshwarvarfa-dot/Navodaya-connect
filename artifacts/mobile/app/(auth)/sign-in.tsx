@@ -9,6 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,23 +17,68 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 
+type RoleType = "student" | "alumni" | "teacher" | "official";
+
+const ROLES: {
+  id: RoleType;
+  title: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    id: "student",
+    title: "Student",
+    subtitle: "Current Scholar",
+    icon: "school-outline",
+  },
+  {
+    id: "alumni",
+    title: "Alumni",
+    subtitle: "Graduate & Pro",
+    icon: "ribbon-outline",
+  },
+  {
+    id: "teacher",
+    title: "Teacher",
+    subtitle: "Faculty & Mentor",
+    icon: "book-outline",
+  },
+  {
+    id: "official",
+    title: "JNV Official",
+    subtitle: "Administration",
+    icon: "shield-checkmark-outline",
+  },
+];
+
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ role?: string; phone?: string }>();
-  const { signIn, quickDemoLogin, signInWithGoogle, signInWithFacebook, signInWithApple, forgotPassword, pendingProfile } = useAuth();
+  const {
+    signIn,
+    quickDemoLogin,
+    signInWithGoogle,
+    signInWithFacebook,
+    signInWithApple,
+    forgotPassword,
+    pendingProfile,
+  } = useAuth();
 
-  const initialRole = ((params?.role?.toLowerCase() as any) || "alumni") as "student" | "alumni" | "teacher" | "official";
-  const [currentRole, setCurrentRole] = useState<"student" | "alumni" | "teacher" | "official">(
-    ["student", "alumni", "teacher", "official"].includes(initialRole) ? initialRole : "alumni"
-  );
-  const [email,    setEmail]    = useState(`${initialRole}@test.com`);
-  const [password, setPassword] = useState("password123");
+  const initialRole: RoleType =
+    params?.role && ["student", "alumni", "teacher", "official"].includes(params.role.toLowerCase())
+      ? (params.role.toLowerCase() as RoleType)
+      : "alumni";
+
+  const [currentRole, setCurrentRole] = useState<RoleType>(initialRole);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [loading,  setLoading]  = useState(false);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [socialToast, setSocialToast] = useState("");
-  const topPad    = Platform.OS === "web" ? 60 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 24 : insets.bottom;
+  const [toastMsg, setToastMsg] = useState("");
+
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 24 : Math.max(insets.bottom, 20);
 
   useEffect(() => {
     if (pendingProfile) router.replace("/(auth)/sign-up?completeProfile=1" as any);
@@ -40,35 +86,36 @@ export default function SignInScreen() {
 
   useEffect(() => {
     if (params?.role) {
-      const r = params.role.toLowerCase() as "student" | "alumni" | "teacher" | "official";
+      const r = params.role.toLowerCase() as RoleType;
       if (["student", "alumni", "teacher", "official"].includes(r)) {
         setCurrentRole(r);
-        setEmail(`${r}@test.com`);
-        setPassword("password123");
         setErrorMsg("");
       }
     }
   }, [params?.role]);
 
-  const handleRoleSelect = (role: "student" | "alumni" | "teacher" | "official") => {
+  const handleRoleSelect = (role: RoleType) => {
     setCurrentRole(role);
-    setEmail(`${role}@test.com`);
-    setPassword("password123");
     setErrorMsg("");
   };
 
-  const handleDemoLogin = async (role: "student" | "alumni" | "teacher" | "official") => {
+  const handleDemoLogin = async (role: RoleType) => {
     setErrorMsg("");
     setLoading(true);
     try {
       if (quickDemoLogin) {
         await quickDemoLogin(role);
       } else {
-        await signIn(role + "@test.com", "password123");
+        await signIn(`${role}@test.com`, "password123");
       }
       router.replace("/(tabs)");
     } catch (err: any) {
-      setErrorMsg(err?.message || "Demo login failed");
+      const msg = err?.message || "";
+      if (msg.includes("530") || msg.toLowerCase().includes("unreachable")) {
+        setErrorMsg("Server temporarily unreachable. Please check your connection and try again.");
+      } else {
+        setErrorMsg(msg || "Demo login failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,36 +126,45 @@ export default function SignInScreen() {
     const targetEmail = email.trim();
     const targetPassword = password;
 
-    // If inputs are left empty or untouched, automatically sign in with current role
-    if (!targetEmail || !targetPassword) {
-      await handleDemoLogin(currentRole);
+    if (!targetEmail) {
+      setErrorMsg("Please enter your email address.");
+      return;
+    }
+    if (!targetPassword) {
+      setErrorMsg("Please enter your password.");
       return;
     }
 
     setLoading(true);
     try {
-      // If user is logging in with a demo account, use instant quick demo login
       if (
         targetEmail.endsWith("@test.com") &&
         ["student", "alumni", "teacher", "official"].includes(targetEmail.replace("@test.com", ""))
       ) {
-        const role = targetEmail.replace("@test.com", "") as "student" | "alumni" | "teacher" | "official";
+        const role = targetEmail.replace("@test.com", "") as RoleType;
         await handleDemoLogin(role);
         return;
       }
+
       await signIn(targetEmail, targetPassword);
       router.replace("/(tabs)");
     } catch (err: any) {
       const msg: string = err?.message ?? "";
-      setErrorMsg(
-        msg.includes("auth/api-key-not-valid")
-          ? "Firebase sign-in is not configured correctly. Please reload the app and try again."
-          : msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials") || msg.includes("auth/invalid")
-          ? "Invalid email or password. Please try again."
-          : msg.toLowerCase().includes("network")
-          ? "Network error. Check your connection."
-          : msg || "Login failed. Please try again."
-      );
+      if (msg.includes("530") || msg.toLowerCase().includes("unreachable")) {
+        setErrorMsg("Server temporarily unreachable. Please check your network or try again in a moment.");
+      } else if (msg.includes("auth/api-key-not-valid")) {
+        setErrorMsg("Authentication service is temporarily unavailable. Please reload the app.");
+      } else if (
+        msg.toLowerCase().includes("invalid") ||
+        msg.toLowerCase().includes("credentials") ||
+        msg.includes("auth/invalid")
+      ) {
+        setErrorMsg("Invalid email or password. Please verify and try again.");
+      } else if (msg.toLowerCase().includes("network")) {
+        setErrorMsg("Network error. Please check your internet connection.");
+      } else {
+        setErrorMsg(msg || "Sign in failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -117,22 +173,21 @@ export default function SignInScreen() {
   const handleForgotPassword = async () => {
     setErrorMsg("");
     if (!email.trim()) {
-      setErrorMsg("Enter your email address first.");
+      setErrorMsg("Please enter your email address above to receive a reset link.");
       return;
     }
     setLoading(true);
     try {
       await forgotPassword(email.trim());
-      setSocialToast("Password reset email sent. Check your inbox.");
-      setTimeout(() => setSocialToast(""), 3500);
+      setToastMsg("Password reset link sent to your email.");
+      setTimeout(() => setToastMsg(""), 4000);
     } catch (err: any) {
-      setErrorMsg(err?.message || "Unable to send the password reset email.");
+      setErrorMsg(err?.message || "Unable to send password reset email.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* Detect if the app is served from a tunnel / non-standard preview domain */
   const isTunnelDomain =
     typeof window !== "undefined" &&
     Boolean(window.location?.hostname) &&
@@ -144,7 +199,7 @@ export default function SignInScreen() {
     setErrorMsg("");
     if (isTunnelDomain) {
       setErrorMsg(
-        `${provider} sign-in is disabled on preview tunnels because the temporary domain is not authorized in Firebase. Please use 1-Tap Preview or email/password login.`
+        `${provider} sign-in is disabled on preview tunnels. Please use email/password or 1-Tap Demo login.`
       );
       return;
     }
@@ -162,60 +217,134 @@ export default function SignInScreen() {
       if (err?.code === "auth/popup-closed-by-user" || err?.code === "ERR_REQUEST_CANCELED") {
         return;
       }
-      const providerError =
-        err?.code === "auth/operation-not-allowed"
-          ? `Continue with ${provider} is not enabled in the Firebase project.`
-          : err?.code === "auth/unauthorized-domain"
-          ? `${provider} sign-in requires this domain to be authorized in Firebase Console. Please use email/password or 1-Tap Preview login.`
-          : err?.code === "auth/popup-blocked"
-          ? "Your browser blocked the sign-in window. Allow pop-ups and try again."
-          : err?.code === "auth/api-key-not-valid"
-          ? "Firebase configuration was not accepted. Reload the app and try again."
-          : err?.message || `${provider} sign-in couldn't be completed. Please try again.`;
-      setErrorMsg(providerError);
+      setErrorMsg(err?.message || `${provider} sign-in could not be completed.`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <LinearGradient colors={["#2E1065", "#4C1D95", "#6D28D9"]} style={styles.gradient}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <KeyboardAvoidingView
+      style={styles.mainContainer}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPad, paddingBottom: bottomPad + 30 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingTop: topPad + 20, paddingBottom: bottomPad + 24 }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        {/* ── 1. Top Brand Hero Header ── */}
+        <LinearGradient
+          colors={["#3B0764", "#4C1D95", "#6D28D9"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroHeader}
         >
-          <View style={styles.iconWrap}>
-            <View style={styles.iconCircle}>
+          {/* Subtle Ambient Light Decoration */}
+          <View style={styles.ambientGlowLight} />
+
+          {/* Logo & Emblem */}
+          <View style={styles.logoRow}>
+            <View style={styles.logoBadgeContainer}>
               <Image
                 source={require("@/assets/images/jnv-logo.jpg")}
-                style={{ width: 68, height: 68, borderRadius: 34 }}
+                style={styles.logoImage}
                 resizeMode="contain"
               />
             </View>
+            <View>
+              <Text style={styles.brandTitle}>Navodaya Connect</Text>
+              <View style={styles.taglinePill}>
+                <Text style={styles.taglinePillText}>ONE NAVODAYA • ONE COMMUNITY</Text>
+              </View>
+            </View>
           </View>
 
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Login to your JNV Connect account</Text>
-          <View style={styles.roleBadge}>
-            <Ionicons name="person-circle-outline" size={14} color="#D8C2FF" />
-            <Text style={styles.roleBadgeText}>
-              Selected Community: {currentRole.toUpperCase()}
-            </Text>
-          </View>
+          {/* Welcome Message */}
+          <Text style={styles.heroWelcomeHeading}>
+            Welcome to Your Navodaya Family
+          </Text>
+          <Text style={styles.heroSubText}>
+            Connecting students, alumni, and teachers across 661+ Jawahar Navodaya Vidyalayas nationwide.
+          </Text>
+        </LinearGradient>
 
-          <View style={styles.form}>
-            {/* Email */}
-            <View style={styles.inputWrap}>
-              <Ionicons name="mail-outline" size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
+        {/* ── 2. Role Selector (4 Communities) ── */}
+        <View style={styles.roleSection}>
+          <Text style={styles.sectionHeaderLabel}>SELECT YOUR NAVODAYA IDENTITY</Text>
+          <View style={styles.roleGrid}>
+            {ROLES.map((r) => {
+              const isSelected = currentRole === r.id;
+              return (
+                <TouchableOpacity
+                  key={r.id}
+                  style={[styles.roleCard, isSelected && styles.roleCardActive]}
+                  onPress={() => handleRoleSelect(r.id)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${r.title} identity`}
+                >
+                  <View
+                    style={[
+                      styles.roleIconWrap,
+                      isSelected && styles.roleIconWrapActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name={r.icon}
+                      size={20}
+                      color={isSelected ? "#7C3AED" : "#64748B"}
+                    />
+                  </View>
+                  <View style={styles.roleTextWrap}>
+                    <Text
+                      style={[
+                        styles.roleCardTitle,
+                        isSelected && styles.roleCardTitleActive,
+                      ]}
+                    >
+                      {r.title}
+                    </Text>
+                    <Text style={styles.roleCardSub}>{r.subtitle}</Text>
+                  </View>
+                  {isSelected && (
+                    <View style={styles.checkBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color="#7C3AED" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── 3. Clean White Login Form Card ── */}
+        <View style={styles.formCard}>
+          <Text style={styles.formCardTitle}>Sign In</Text>
+          <Text style={styles.formCardSub}>
+            Enter your credentials to access your community feed
+          </Text>
+
+          {/* Error Message Alert */}
+          {errorMsg ? (
+            <View style={styles.errorAlert}>
+              <Ionicons name="alert-circle" size={18} color="#EF4444" style={{ marginTop: 1 }} />
+              <Text style={styles.errorAlertText}>{errorMsg}</Text>
+            </View>
+          ) : null}
+
+          {/* Email Address Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <View style={styles.inputFieldContainer}>
+              <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.fieldIcon} />
               <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="rgba(255,255,255,0.65)"
+                style={styles.textInput}
+                placeholder="e.g. rahul.alumni@jnv.ac.in"
+                placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -223,382 +352,601 @@ export default function SignInScreen() {
                 autoCorrect={false}
               />
             </View>
+          </View>
 
-            {/* Password */}
-            <View style={styles.inputWrap}>
-              <Ionicons name="lock-closed-outline" size={18} color="rgba(255,255,255,0.75)" style={styles.inputIcon} />
+          {/* Password Field */}
+          <View style={styles.inputGroup}>
+            <View style={styles.passwordLabelRow}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
+                <Text style={styles.forgotPasswordLink}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.inputFieldContainer}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color="#64748B"
+                style={styles.fieldIcon}
+              />
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Password"
-                placeholderTextColor="rgba(255,255,255,0.65)"
+                style={[styles.textInput, { flex: 1 }]}
+                placeholder="Enter your password"
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPass}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-                <Ionicons name={showPass ? "eye-off-outline" : "eye-outline"} size={18} color="rgba(255,255,255,0.75)" />
+              <TouchableOpacity
+                onPress={() => setShowPass(!showPass)}
+                style={styles.eyeToggleBtn}
+                accessibilityLabel={showPass ? "Hide password" : "Show password"}
+              >
+                <Ionicons
+                  name={showPass ? "eye-off-outline" : "eye-outline"}
+                  size={18}
+                  color="#64748B"
+                />
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Inline error */}
-            {errorMsg ? (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle-outline" size={16} color="#fff" />
-                <Text style={styles.errorText}>{errorMsg}</Text>
-              </View>
-            ) : null}
-
-            <TouchableOpacity style={styles.loginBtn} onPress={handleSignIn} disabled={loading} activeOpacity={0.85}>
-              <Text style={styles.loginBtnText}>{loading ? "Logging in..." : "Login"}</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.helperTip}>
-              ✨ Tap Login to enter as {currentRole.toUpperCase()}, or choose a role below.
-            </Text>
-
-            <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword} disabled={loading}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
-            </TouchableOpacity>
-
-            {/* 1-Tap Quick Preview for Testing */}
-            <View style={styles.quickSection}>
-              <View style={styles.quickHeader}>
-                <Ionicons name="flash" size={14} color="#FBBF24" />
-                <Text style={styles.quickTitle}>1-TAP PREVIEW (INSTANT LOGIN)</Text>
-              </View>
-              <View style={styles.quickRow}>
-                <TouchableOpacity
-                  style={[styles.quickBtn, currentRole === "student" && styles.quickBtnActive]}
-                  onPress={() => {
-                    handleRoleSelect("student");
-                    handleDemoLogin("student");
-                  }}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.quickEmoji}>🎓</Text>
-                  <Text style={styles.quickText}>Student</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.quickBtn, currentRole === "alumni" && styles.quickBtnActive]}
-                  onPress={() => {
-                    handleRoleSelect("alumni");
-                    handleDemoLogin("alumni");
-                  }}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.quickEmoji}>🏛️</Text>
-                  <Text style={styles.quickText}>Alumni</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.quickBtn, currentRole === "teacher" && styles.quickBtnActive]}
-                  onPress={() => {
-                    handleRoleSelect("teacher");
-                    handleDemoLogin("teacher");
-                  }}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.quickEmoji}>📚</Text>
-                  <Text style={styles.quickText}>Teacher</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.quickBtn, currentRole === "official" && styles.quickBtnActive]}
-                  onPress={() => {
-                    handleRoleSelect("official");
-                    handleDemoLogin("official");
-                  }}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.quickEmoji}>👔</Text>
-                  <Text style={styles.quickText}>Official</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Divider & Social Login */}
-            {!isTunnelDomain ? (
-              <>
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>or continue with</Text>
-                  <View style={styles.dividerLine} />
+          {/* Primary Sign In Button */}
+          <TouchableOpacity
+            style={styles.primaryLoginBtn}
+            onPress={handleSignIn}
+            disabled={loading}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel="Sign In"
+          >
+            <LinearGradient
+              colors={["#7C3AED", "#6D28D9"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.loginBtnGradient}
+            >
+              {loading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.loginBtnText}>Signing In...</Text>
                 </View>
+              ) : (
+                <Text style={styles.loginBtnText}>Sign In to Navodaya Connect</Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
 
-                {Platform.OS === "web" && (
-                  <TouchableOpacity
-                    style={styles.socialBtn}
-                    activeOpacity={0.85}
-                    onPress={() => handleSocial("Google")}
-                    disabled={loading}
+          {/* 1-Tap Demo Access (For review and development) */}
+          <View style={styles.demoSection}>
+            <View style={styles.demoHeader}>
+              <Ionicons name="flash" size={13} color="#D97706" />
+              <Text style={styles.demoHeaderText}>QUICK DEMO & PROTOTYPE ACCESS</Text>
+            </View>
+            <View style={styles.demoPillsRow}>
+              {(["student", "alumni", "teacher", "official"] as const).map((r) => (
+                <TouchableOpacity
+                  key={`demo-${r}`}
+                  style={[
+                    styles.demoPill,
+                    currentRole === r && styles.demoPillActive,
+                  ]}
+                  onPress={() => {
+                    handleRoleSelect(r);
+                    handleDemoLogin(r);
+                  }}
+                  disabled={loading}
+                >
+                  <Text
+                    style={[
+                      styles.demoPillText,
+                      currentRole === r && styles.demoPillTextActive,
+                    ]}
                   >
-                    <View style={styles.socialIconWrap}>
-                      <Text style={styles.googleG}>G</Text>
-                    </View>
-                    <Text style={styles.socialBtnText}>Continue with Google</Text>
-                  </TouchableOpacity>
-                )}
+                    {r.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-                {Platform.OS === "web" && (
-                  <TouchableOpacity
-                    style={styles.socialBtn}
-                    activeOpacity={0.85}
-                    onPress={() => handleSocial("Facebook")}
-                    disabled={loading}
-                  >
-                    <View style={styles.socialIconWrap}>
-                      <Text style={[styles.googleG, { color: "#1877F2" }]}>f</Text>
-                    </View>
-                    <Text style={styles.socialBtnText}>Continue with Facebook</Text>
-                  </TouchableOpacity>
-                )}
+          {/* Social Sign-In (When not in preview tunnel) */}
+          {!isTunnelDomain && (
+            <>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialRow}>
+                <TouchableOpacity
+                  style={styles.socialBtn}
+                  onPress={() => handleSocial("Google")}
+                  disabled={loading}
+                >
+                  <Text style={styles.googleIconText}>G</Text>
+                  <Text style={styles.socialBtnText}>Google</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.socialBtn, styles.appleSocialBtn]}
-                  activeOpacity={0.85}
+                  style={styles.socialBtn}
                   onPress={() => handleSocial("Apple")}
                   disabled={loading}
                 >
-                  <View style={[styles.socialIconWrap, styles.appleIconWrap]}>
-                    <Ionicons name="logo-apple" size={20} color="#fff" />
-                  </View>
-                  <Text style={[styles.socialBtnText, { color: "#fff" }]}>Continue with Apple</Text>
+                  <Ionicons name="logo-apple" size={17} color="#0F172A" />
+                  <Text style={styles.socialBtnText}>Apple</Text>
                 </TouchableOpacity>
-              </>
-            ) : (
-              <View style={styles.tunnelNote}>
-                <Ionicons name="shield-checkmark-outline" size={16} color="#FBBF24" />
-                <Text style={styles.tunnelNoteText}>
-                  Preview Mode: Dynamic tunnel domain detected. Use the 1-Tap Preview buttons above or email & password to sign in.
-                </Text>
               </View>
-            )}
-          </View>
+            </>
+          )}
+        </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+        {/* ── 4. Create Account & Secondary Actions ── */}
+        <View style={styles.bottomActionsArea}>
+          <View style={styles.createAccountRow}>
+            <Text style={styles.createAccountText}>New to Navodaya Connect? </Text>
             <TouchableOpacity onPress={() => router.replace("/(auth)/sign-up")}>
-              <Text style={styles.footerLink}>Create Account →</Text>
+              <Text style={styles.createAccountLink}>Create Account →</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.exploreFooter}>
-            <TouchableOpacity
-              onPress={() => router.push("/(screens)/explore" as any)}
-              style={styles.explorePill}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="compass-outline" size={14} color="#D8C2FF" />
-              <Text style={styles.explorePillText}>Explore Navodaya Connect Previews</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.exploreLinkBtn}
+            onPress={() => router.push("/(screens)/explore" as any)}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="compass-outline" size={15} color="#7C3AED" />
+            <Text style={styles.exploreLinkText}>Explore Navodaya Connect Previews</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
-            <TouchableOpacity
-              onPress={() => router.replace("/onboarding")}
-              style={styles.replayLink}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="refresh" size={12} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.replayLinkText}>Replay Launch Experience</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Social toast */}
-      {socialToast ? (
-        <View style={styles.toast} pointerEvents="none">
-          <Ionicons name="time-outline" size={15} color="#fff" />
-          <Text style={styles.toastText}>{socialToast}</Text>
+      {/* Floating Success Toast */}
+      {toastMsg ? (
+        <View style={styles.toastCard} pointerEvents="none">
+          <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+          <Text style={styles.toastCardText}>{toastMsg}</Text>
         </View>
       ) : null}
-    </LinearGradient>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  scroll: { paddingHorizontal: 28, alignItems: "stretch" },
-  iconWrap: { alignItems: "center", marginBottom: 24 },
-  iconCircle: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center", justifyContent: "center",
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#F8F7FF",
   },
-  title: { fontFamily: "Pacifico_400Regular", fontSize: 30, color: "#fff", textAlign: "center", marginBottom: 8 },
-  subtitle: { fontFamily: "Inter_400Regular", fontSize: 14, color: "rgba(255,255,255,0.75)", textAlign: "center", marginBottom: 32 },
-  form: { gap: 14 },
-  inputWrap: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderRadius: 28, paddingHorizontal: 18, height: 54,
+  scrollContent: {
+    alignItems: "stretch",
   },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: "#fff", fontFamily: "Inter_400Regular", fontSize: 15 },
-  eyeBtn: { padding: 4 },
-  quickSection: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    marginVertical: 4,
+
+  // 1. Hero Header
+  heroHeader: {
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    position: "relative",
+    overflow: "hidden",
   },
-  quickHeader: {
+  ambientGlowLight: {
+    position: "absolute",
+    top: -50,
+    right: -50,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "#8B5CF6",
+    opacity: 0.25,
+    ...Platform.select({
+      web: { filter: "blur(40px)" } as any,
+    }),
+  },
+  logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-    justifyContent: "center",
+    gap: 12,
+    marginBottom: 16,
   },
-  quickTitle: {
-    color: "#FDE68A",
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.6,
-  },
-  quickRow: {
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "space-between",
-  },
-  quickBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 12,
-    paddingVertical: 8,
+  logoBadgeContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "transparent",
-  },
-  quickBtnActive: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#7C3AED",
+    borderColor: "#FDE68A",
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logoImage: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  brandTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+  },
+  taglinePill: {
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 8,
+    marginTop: 2,
+    alignSelf: "flex-start",
+  },
+  taglinePillText: {
+    fontSize: 9.5,
+    fontWeight: "600",
+    color: "#F3E8FF",
+    letterSpacing: 0.6,
+  },
+  heroWelcomeHeading: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+    marginBottom: 6,
+  },
+  heroSubText: {
+    fontSize: 12.5,
+    color: "#E9D5FF",
+    lineHeight: 18,
+    maxWidth: 380,
+  },
+
+  // 2. Role Selector
+  roleSection: {
+    paddingHorizontal: 18,
+    marginTop: 18,
+    marginBottom: 14,
+  },
+  sectionHeaderLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6D28D9",
+    letterSpacing: 0.6,
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+  roleGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  roleCard: {
+    width: "48.5%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
     shadowRadius: 4,
+    elevation: 1,
+  },
+  roleCardActive: {
+    backgroundColor: "#F5F3FF",
+    borderColor: "#7C3AED",
+    shadowColor: "#7C3AED",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 3,
   },
-  helperTip: {
-    color: "#E9D5FF",
-    fontFamily: "Inter_500Medium",
-    fontSize: 11.5,
-    textAlign: "center",
-    marginVertical: 4,
-    lineHeight: 16,
-  },
-  quickEmoji: {
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  quickText: {
-    color: "#4C1D95",
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-  },
-  errorBox: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "rgba(239,68,68,0.85)", borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 10,
-  },
-  errorText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 18 },
-  loginBtn: {
-    backgroundColor: "#fff", borderRadius: 28, height: 54,
-    alignItems: "center", justifyContent: "center", marginTop: 4,
-  },
-  loginBtnText: { color: "#5B21B6", fontFamily: "Inter_700Bold", fontSize: 16 },
-  forgotBtn: { alignItems: "center", paddingVertical: 2 },
-  forgotText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 14 },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 4 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.25)" },
-  dividerText: { color: "rgba(255,255,255,0.65)", fontFamily: "Inter_400Regular", fontSize: 13 },
-  socialBtn: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#fff", borderRadius: 28, height: 54,
-    paddingHorizontal: 20,
-  },
-  appleSocialBtn: { backgroundColor: "#111" },
-  socialIconWrap: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center", justifyContent: "center",
-  },
-  appleIconWrap: { backgroundColor: "#333" },
-  googleG: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#EA4335" },
-  socialBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#111827" },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: 24 },
-  footerText: { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular", fontSize: 14 },
-  footerLink: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
-  roleBadge: {
-    flexDirection: "row",
+  roleIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F8FAFC",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    alignSelf: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(216, 194, 255, 0.4)",
+    justifyContent: "center",
+    marginRight: 8,
   },
-  roleBadgeText: {
-    color: "#D8C2FF",
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    letterSpacing: 0.5,
+  roleIconWrapActive: {
+    backgroundColor: "#EDE9FE",
   },
-  exploreFooter: {
-    alignItems: "center",
-    gap: 12,
-    marginTop: 18,
-    paddingBottom: 16,
+  roleTextWrap: {
+    flex: 1,
   },
-  explorePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.14)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(216, 194, 255, 0.4)",
-  },
-  explorePillText: {
-    color: "#EFE6FF",
-    fontFamily: "Inter_600SemiBold",
+  roleCardTitle: {
     fontSize: 12.5,
+    fontWeight: "600",
+    color: "#1E293B",
   },
-  replayLink: {
+  roleCardTitleActive: {
+    color: "#6D28D9",
+    fontWeight: "700",
+  },
+  roleCardSub: {
+    fontSize: 9.5,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  checkBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+  },
+
+  // 3. Form Card
+  formCard: {
+    marginHorizontal: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(233, 213, 255, 0.7)",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  formCardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  formCardSub: {
+    fontSize: 12,
+    color: "#64748B",
+    marginBottom: 16,
+  },
+  errorAlert: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 14,
+  },
+  errorAlertText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#B91C1C",
+    lineHeight: 16,
+    fontWeight: "500",
+  },
+  inputGroup: {
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#334155",
+    marginBottom: 6,
+  },
+  passwordLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  forgotPasswordLink: {
+    fontSize: 11.5,
+    fontWeight: "600",
+    color: "#7C3AED",
+  },
+  inputFieldContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  fieldIcon: {
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#0F172A",
     paddingVertical: 4,
   },
-  replayLinkText: {
-    color: "rgba(255, 255, 255, 0.75)",
-    fontFamily: "Inter_500Medium",
+  eyeToggleBtn: {
+    padding: 6,
+  },
+  primaryLoginBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 6,
+    marginBottom: 14,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  loginBtnGradient: {
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  loginBtnText: {
+    fontSize: 14.5,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+
+  // Demo Section
+  demoSection: {
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    borderRadius: 14,
+    padding: 10,
+    marginTop: 4,
+  },
+  demoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 8,
+  },
+  demoHeaderText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#B45309",
+    letterSpacing: 0.5,
+  },
+  demoPillsRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  demoPill: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#FCD34D",
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  demoPillActive: {
+    backgroundColor: "#7C3AED",
+    borderColor: "#6D28D9",
+  },
+  demoPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#92400E",
+  },
+  demoPillTextActive: {
+    color: "#FFFFFF",
+  },
+
+  // Social Login
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginVertical: 14,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#F1F5F9",
+  },
+  dividerText: {
+    fontSize: 11.5,
+    color: "#94A3B8",
+    fontWeight: "500",
+  },
+  socialRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  socialBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    height: 42,
+  },
+  googleIconText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#EA4335",
+  },
+  socialBtnText: {
+    fontSize: 12.5,
+    fontWeight: "600",
+    color: "#334155",
+  },
+
+  // 4. Bottom Area
+  bottomActionsArea: {
+    alignItems: "center",
+    marginTop: 18,
+    gap: 12,
+  },
+  createAccountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  createAccountText: {
+    fontSize: 13,
+    color: "#64748B",
+  },
+  createAccountLink: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#7C3AED",
+  },
+  exploreLinkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#EDE9FE",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  exploreLinkText: {
     fontSize: 12,
+    fontWeight: "600",
+    color: "#6D28D9",
   },
-  toast: {
-    position: "absolute", bottom: 36, left: 24, right: 24,
-    backgroundColor: "rgba(30,27,75,0.92)", borderRadius: 14,
-    paddingVertical: 12, paddingHorizontal: 16,
-    flexDirection: "row", alignItems: "center", gap: 8,
+
+  // Toast
+  toastCard: {
+    position: "absolute",
+    bottom: 24,
+    left: 20,
+    right: 20,
+    backgroundColor: "#1E1B4B",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  toastText: { flex: 1, color: "#fff", fontFamily: "Inter_500Medium", fontSize: 13 },
-  tunnelNote: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 10, marginTop: 4,
-  },
-  tunnelNoteText: {
-    flex: 1, color: "rgba(255,255,255,0.85)", fontFamily: "Inter_400Regular",
-    fontSize: 12, lineHeight: 17,
+  toastCardText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

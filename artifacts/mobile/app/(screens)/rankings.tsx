@@ -251,12 +251,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#0F172A",
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    fontWeight: "500",
     color: "#64748B",
     marginTop: 1,
   },
@@ -300,12 +303,14 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: "Inter_500Medium",
+    fontWeight: "500",
     color: "#64748B",
   },
   tabTextActive: {
     color: "#7C3AED",
-    fontWeight: "700",
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
   },
   badgeWrap: {
     backgroundColor: "#E2E8F0",
@@ -317,7 +322,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#7C3AED",
   },
   badgeText: {
-    fontSize: 8,
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#475569",
   },

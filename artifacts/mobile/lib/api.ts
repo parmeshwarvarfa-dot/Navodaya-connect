@@ -73,8 +73,16 @@ async function request<T>(path: string, options: RequestInit = {}, timeoutMs = 1
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    const error = new Error(body.error || `Request failed: ${res.status}`) as Error & {
+    const body = await res.json().catch(() => ({}));
+    let errorMessage = body.error;
+    if (!errorMessage) {
+      if (res.status === 530 || res.status === 502 || res.status === 503 || res.status === 504) {
+        errorMessage = "Server temporarily unreachable. Please check your network or try again in a moment.";
+      } else {
+        errorMessage = `Request failed (${res.status})`;
+      }
+    }
+    const error = new Error(errorMessage) as Error & {
       code?: string;
       status?: number;
     };
