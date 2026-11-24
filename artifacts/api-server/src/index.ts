@@ -28,16 +28,16 @@ dns.lookup = function (hostname: any, options: any, callback: any) {
             cb(null, addrs[0], 4);
           }
         } else {
-          originalLookup.call(dns, hostname, options, callback);
+          (originalLookup as any).call(dns, hostname, options, callback);
         }
       })
       .catch(() => {
-        originalLookup.call(dns, hostname, options, callback);
+        (originalLookup as any).call(dns, hostname, options, callback);
       });
     return;
   }
 
-  return originalLookup.call(dns, hostname, options, callback);
+  return (originalLookup as any).call(dns, hostname, options, callback);
 };
 
 import { existsSync } from "node:fs";

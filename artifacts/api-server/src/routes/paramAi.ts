@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Content, type Part } from "@google/generative-ai";
+import mammoth from "mammoth";
+import * as XLSX from "xlsx";
 import { getUser, requireAuth } from "../lib/auth";
 import { logger } from "../lib/logger";
 
@@ -66,10 +68,20 @@ const VERIFIED_OFFICIAL_LINKS = [
   },
 ];
 
-function buildSystemPrompt(userRole?: string, jnvName?: string, userFullName?: string): string {
+function buildSystemPrompt(userRole?: string, jnvName?: string, userFullName?: string, hasAttachments?: boolean): string {
   const roleContext = userRole
     ? `The user is authenticated as a "${userRole}"${jnvName ? ` from "${jnvName}"` : ""}${userFullName ? `, named "${userFullName}"` : ""}.`
     : "The user is a valued member of the Navodaya community.";
+
+  const groundingInstructions = hasAttachments
+    ? `\n\nCRITICAL FILE-GROUNDED ANALYSIS RULES:
+- The user has provided one or more uploaded documents/files (PDFs, Word docs, spreadsheets, images, notes, or code).
+- GROUND YOUR ANSWER STRICTLY IN THE UPLOADED FILE(S). Do NOT hallucinate facts, numbers, dates, or formulas that are absent from the material.
+- If the document provides specific page numbers, headings, tables, or sections, reference them clearly (e.g. "According to Section 3.2...", "On page 4...", "In the Chemistry chapter...").
+- When asked to summarize, create notes, explain diagrams, or formulate practice questions, derive them directly from the uploaded material using authentic terminology.
+- If the user's question asks for something NOT covered in the uploaded material, state explicitly: "This specific information is not mentioned in the uploaded file(s)", and only then provide general AI guidance clearly demarcated as "[General Knowledge]".
+- For mathematics or science problems uploaded as images or notes, provide step-by-step conceptual working.`
+    : "";
 
   return `You are PARAM AI 🤖, the highly capable, empathetic, and knowledgeable multimodal AI companion specifically crafted for Navodaya Connect and the Jawahar Navodaya Vidyalaya (JNV) community across India.
 
@@ -95,7 +107,120 @@ LANGUAGE & SCRIPT:
 MULTIMODAL & EDUCATIONAL GUIDANCE:
 - For complex scientific, mathematical, or academic queries, structure your explanation with clear bullet points, conceptual steps, and equations or diagrams where helpful.
 - For competitive exams or government portals, recommend verified official sources (NTA, UPSC, CBSE, NVS).
-- Keep responses engaging, accurate, and concise without unnecessary waffle.`;
+- Keep responses engaging, accurate, and concise without unnecessary waffle.${groundingInstructions}`;
+}
+
+interface FileAttachmentInput {
+  name: string;
+  mimeType: string;
+  size: number;
+  base64: string;
+}
+
+async function prepareGeminiAttachmentParts(attachments: FileAttachmentInput[]): Promise<any[]> {
+  const parts: any[] = [];
+
+  for (const att of attachments) {
+    if (!att.base64 || typeof att.base64 !== "string") continue;
+    const cleanBase64 = att.base64.replace(/^data:[^;]+;base64,/, "").trim();
+    const buffer = Buffer.from(cleanBase64, "base64");
+    const mime = (att.mimeType || "").toLowerCase();
+    const ext = path.extname(att.name || "").toLowerCase();
+
+    // 1. PDF documents
+    if (mime === "application/pdf" || ext === ".pdf") {
+      parts.push({
+        inlineData: {
+          data: cleanBase64,
+          mimeType: "application/pdf",
+        },
+      });
+      continue;
+    }
+
+    // 2. Images
+    if (mime.startsWith("image/") || [".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+      const imgMime = mime.startsWith("image/")
+        ? mime
+        : ext === ".png"
+        ? "image/png"
+        : ext === ".webp"
+        ? "image/webp"
+        : "image/jpeg";
+      parts.push({
+        inlineData: {
+          data: cleanBase64,
+          mimeType: imgMime,
+        },
+      });
+      continue;
+    }
+
+    // 3. Audio files
+    if (mime.startsWith("audio/") || [".mp3", ".wav", ".webm", ".m4a", ".ogg"].includes(ext)) {
+      parts.push({
+        inlineData: {
+          data: cleanBase64,
+          mimeType: mime || "audio/webm",
+        },
+      });
+      continue;
+    }
+
+    // 4. Word Documents (.docx, .doc)
+    if (ext === ".docx" || mime.includes("wordprocessingml") || ext === ".doc") {
+      try {
+        const result = await mammoth.extractRawText({ buffer });
+        const text = result.value.trim();
+        parts.push({
+          text: `[DOCUMENT: "${att.name}" (Word Document)]\n${text || "(Document appears empty or contains non-extractable elements)"}\n[END DOCUMENT]`,
+        });
+        continue;
+      } catch (err) {
+        logger.warn({ err, fileName: att.name }, "DOCX extraction error, sending filename note");
+      }
+    }
+
+    // 5. Spreadsheets (.xlsx, .xls, .csv)
+    if (ext === ".xlsx" || ext === ".xls" || mime.includes("spreadsheetml") || mime.includes("ms-excel")) {
+      try {
+        const workbook = XLSX.read(buffer, { type: "buffer" });
+        const sheetSummaries: string[] = [];
+        for (const sheetName of workbook.SheetNames.slice(0, 5)) {
+          const sheet = workbook.Sheets[sheetName];
+          if (sheet) {
+            const csv = XLSX.utils.sheet_to_csv(sheet);
+            sheetSummaries.push(`--- Sheet: ${sheetName} ---\n${csv.slice(0, 10000)}`);
+          }
+        }
+        parts.push({
+          text: `[SPREADSHEET: "${att.name}"]\n${sheetSummaries.join("\n\n")}\n[END SPREADSHEET]`,
+        });
+        continue;
+      } catch (err) {
+        logger.warn({ err, fileName: att.name }, "Spreadsheet extraction error, sending filename note");
+      }
+    }
+
+    // 6. Plain text, Markdown, CSV, Code files
+    if (
+      mime.startsWith("text/") ||
+      [".txt", ".md", ".csv", ".json", ".py", ".js", ".ts", ".c", ".cpp", ".java", ".xml", ".html"].includes(ext)
+    ) {
+      const text = buffer.toString("utf-8");
+      parts.push({
+        text: `[FILE: "${att.name}"]\n\`\`\`\n${text.slice(0, 30000)}\n\`\`\`\n[END FILE]`,
+      });
+      continue;
+    }
+
+    // Generic fallback
+    parts.push({
+      text: `[ATTACHED FILE: "${att.name}" (${att.mimeType || "unknown"}) - Size: ${Math.round(att.size / 1024)} KB]`,
+    });
+  }
+
+  return parts;
 }
 
 type HistoryMessage = {
@@ -166,6 +291,23 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
   const mimeType = typeof req.body?.mimeType === "string" ? req.body.mimeType.trim() : "audio/webm";
   const language = req.body?.language === "hi" ? "hi" : "en";
   const rawHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+  const rawAttachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+
+  const attachments: FileAttachmentInput[] = rawAttachments
+    .filter(
+      (att: unknown): att is FileAttachmentInput =>
+        !!att &&
+        typeof att === "object" &&
+        typeof (att as FileAttachmentInput).base64 === "string" &&
+        (att as FileAttachmentInput).base64.length > 0
+    )
+    .map((att: FileAttachmentInput) => ({
+      name: typeof att.name === "string" ? att.name.trim() : "attachment",
+      mimeType: typeof att.mimeType === "string" ? att.mimeType.trim() : "application/octet-stream",
+      size: typeof att.size === "number" ? att.size : 0,
+      base64: att.base64,
+    }))
+    .slice(0, 5);
 
   const history: HistoryMessage[] = rawHistory
     .filter(
@@ -179,8 +321,8 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
     .filter((item: { role: string; text: string }) => item.text.length > 0)
     .slice(-10);
 
-  if (!message && !audioBase64) {
-    return res.status(400).json({ error: "Message or audio input is required" });
+  if (!message && !audioBase64 && attachments.length === 0) {
+    return res.status(400).json({ error: "Message, audio input, or file attachment is required" });
   }
 
   const apiKey = resolveGeminiApiKey();
@@ -198,7 +340,8 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
       "gemini-1.5-flash",
     ].filter(Boolean) as string[];
 
-    const systemInstruction = buildSystemPrompt(user?.role, user?.jnvName, user?.fullName);
+    const hasAttachments = attachments.length > 0;
+    const systemInstruction = buildSystemPrompt(user?.role, user?.jnvName, user?.fullName, hasAttachments);
 
     const chatHistory: Content[] = history
       .map((item: { role: string; text: string }) => ({
@@ -215,6 +358,16 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
     let userTranscript = message;
     let lastError: unknown = null;
 
+    const attachmentParts = hasAttachments ? await prepareGeminiAttachmentParts(attachments) : [];
+
+    const defaultQueryText = hasAttachments
+      ? attachments.length === 1
+        ? `Please inspect this uploaded file "${attachments[0].name}". Provide a structured, accurate summary and explain the core concepts step-by-step for a Navodaya student.`
+        : `Please inspect these ${attachments.length} uploaded files (${attachments.map((a) => a.name).join(", ")}). Provide a comprehensive, source-grounded breakdown and highlight key information.`
+      : "";
+
+    const userQueryText = message || defaultQueryText;
+
     for (const modelName of candidateModels) {
       try {
         const model = gemini.getGenerativeModel({
@@ -222,7 +375,7 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
           systemInstruction,
         });
 
-        // If audio message was provided
+        // 1. Audio message handling
         if (audioBase64) {
           const promptParts: any[] = [
             {
@@ -231,6 +384,7 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
                 mimeType: mimeType || "audio/webm",
               },
             },
+            ...attachmentParts,
             {
               text: message
                 ? `The user spoke this audio and added note: "${message}". Please respond helpfully in accordance with your Navodaya personality.`
@@ -243,15 +397,27 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
           if (!userTranscript) {
             userTranscript = "🎙️ Voice message";
           }
-        } else {
-          // Normal text chat
+        } else if (attachmentParts.length > 0) {
+          // 2. Multimodal attachment analysis
           const chat = model.startChat({
             history: chatHistory,
             generationConfig: {
               maxOutputTokens: 8192,
             },
           });
-          const result = await chat.sendMessage(message);
+
+          const sendParts = [...attachmentParts, { text: userQueryText }];
+          const result = await chat.sendMessage(sendParts as any);
+          reply = result.response.text().trim();
+        } else {
+          // 3. Normal text chat
+          const chat = model.startChat({
+            history: chatHistory,
+            generationConfig: {
+              maxOutputTokens: 8192,
+            },
+          });
+          const result = await chat.sendMessage(userQueryText);
           reply = result.response.text().trim();
         }
 
@@ -275,10 +441,11 @@ router.post("/param-ai/chat", requireAuth, async (req, res) => {
 
     return res.json({
       reply,
-      userTranscript: userTranscript || message,
+      userTranscript: userTranscript || (hasAttachments ? `📎 Attached ${attachments.length} file(s)` : message),
       verifiedLinks,
       detectedLanguage: isHindiResponse ? "hi" : "en",
       timestamp: new Date().toISOString(),
+      attachments: attachments.map((a) => ({ name: a.name, mimeType: a.mimeType, size: a.size })),
     });
   } catch (error) {
     logger.error({ err: error }, "Param AI request failed");

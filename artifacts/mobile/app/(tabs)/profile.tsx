@@ -10,8 +10,10 @@ import {
   Modal,
   Image,
   Linking,
+  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +53,8 @@ export default function ProfileScreen() {
   const [recognitionError, setRecognitionError] = useState("");
   const [digitalCredential, setDigitalCredential] = useState<DigitalCredential | null>(null);
   const [digitalIdLoading, setDigitalIdLoading] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [openMenuSections, setOpenMenuSections] = useState<string[]>(["My Account"]);
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
@@ -164,6 +168,211 @@ export default function ProfileScreen() {
       : []),
   ];
 
+  const toggleMenuSection = (title: string) => {
+    setOpenMenuSections((current) =>
+      current.includes(title)
+        ? current.filter((item) => item !== title)
+        : [...current, title],
+    );
+  };
+
+  const profileMenuSections = [
+    {
+      title: "My Account",
+      icon: "person-circle-outline" as const,
+      items: [
+        { label: "Edit Profile", icon: "create-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
+        { label: "Personal Information", icon: "information-circle-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
+        { label: "Profile Photo Management", icon: "camera-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
+        { label: "Digital ID Card", icon: "card-outline" as const, onPress: () => router.push("/(screens)/digital-id" as any) },
+        { label: "Account Verification", icon: "shield-checkmark-outline" as const, onPress: () => router.push((profile.role === "alumni" ? "/(screens)/alumni-peer-verification" : "/(screens)/verification-center") as any) },
+        {
+          label: "Share My Profile",
+          icon: "share-social-outline" as const,
+          onPress: () => void Share.share({
+            title: `${profile.fullName}'s Navodaya Connect profile`,
+            message: `View ${profile.fullName}'s profile on Navodaya Connect\nhttps://navodayaconnect.com/profile/${profile.uid}`,
+          }).catch(() => undefined),
+        },
+        {
+          label: "Copy Profile Link",
+          icon: "link-outline" as const,
+          onPress: () => void Clipboard.setStringAsync(`https://navodayaconnect.com/profile/${profile.uid}`),
+        },
+      ],
+    },
+    {
+      title: "Social Connections",
+      icon: "people-outline" as const,
+      items: [
+        { label: "Find Navodayans", icon: "compass-outline" as const, onPress: () => router.push("/(screens)/explore" as any) },
+        { label: "Alumni Network", icon: "school-outline" as const, onPress: () => router.push("/(screens)/alumni-connect" as any) },
+        { label: "Social Inbox", icon: "mail-unread-outline" as const, onPress: () => router.push("/(screens)/social-inbox" as any) },
+        { label: "Privacy & Requests", icon: "lock-closed-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
+      ],
+    },
+    {
+      title: "Content & Memories",
+      icon: "grid-outline" as const,
+      items: [
+        { label: "My Posts", icon: "albums-outline" as const, onPress: () => router.push("/(screens)/profile-posts" as any) },
+        { label: "Memories", icon: "images-outline" as const, onPress: () => router.push("/(tabs)/memories" as any) },
+        { label: "Digital Yearbook", icon: "book-outline" as const, onPress: () => router.push("/(screens)/yearbook" as any) },
+      ],
+    },
+    {
+      title: "Community",
+      icon: "planet-outline" as const,
+      items: [
+        { label: "My JNV", icon: "location-outline" as const, onPress: () => router.push("/(screens)/school-directory" as any) },
+        { label: "Communities", icon: "people-circle-outline" as const, onPress: () => router.push("/(screens)/community" as any) },
+        { label: "Groups", icon: "chatbubbles-outline" as const, onPress: () => router.push("/(tabs)/groups" as any) },
+        { label: "Events", icon: "calendar-outline" as const, onPress: () => router.push("/(screens)/events" as any) },
+        { label: "Achievements", icon: "trophy-outline" as const, onPress: () => router.push("/(screens)/alumni-contributions" as any) },
+      ],
+    },
+    {
+      title: "Career & Learning",
+      icon: "briefcase-outline" as const,
+      items: [
+        { label: "Opportunities", icon: "briefcase-outline" as const, onPress: () => router.push("/(tabs)/jobs" as any) },
+        { label: "Mentorship", icon: "accessibility-outline" as const, onPress: () => router.push("/(tabs)/mentorship" as any) },
+        { label: "Study Resources", icon: "library-outline" as const, onPress: () => router.push("/(screens)/study" as any) },
+        ...(profile.role === "alumni"
+          ? [{ label: "Alumni Opportunities", icon: "rocket-outline" as const, onPress: () => router.push("/(screens)/alumni-opportunities" as any) }]
+          : []),
+      ],
+    },
+    {
+      title: "Activity & Analytics",
+      icon: "analytics-outline" as const,
+      items: [
+        { label: "Notifications", icon: "notifications-outline" as const, onPress: () => router.push("/(screens)/notifications" as any) },
+        { label: "Notification Settings", icon: "options-outline" as const, onPress: () => router.push("/(screens)/notification-settings" as any) },
+        { label: "Rankings", icon: "stats-chart-outline" as const, onPress: () => router.push("/(screens)/rankings" as any) },
+        ...(profile.role === "alumni"
+          ? [{ label: "Community Recognition", icon: "ribbon-outline" as const, onPress: () => router.push("/(screens)/alumni-contributions" as any) }]
+          : []),
+      ],
+    },
+    {
+      title: "Privacy, Security & Support",
+      icon: "settings-outline" as const,
+      items: [
+        { label: "Privacy Settings", icon: "lock-closed-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
+        { label: "Help & Support", icon: "help-circle-outline" as const, onPress: () => router.push("/(screens)/alumni-support" as any) },
+        { label: "Report a Problem", icon: "alert-circle-outline" as const, onPress: () => router.push("/(screens)/report-problem" as any) },
+        { label: "Explore Platform", icon: "compass-outline" as const, onPress: () => router.push("/(screens)/explore" as any) },
+      ],
+    },
+    ...(profile.role === "alumni"
+      ? [{
+          title: "Alumni Premium",
+          icon: "diamond-outline" as const,
+          items: [
+            { label: "Membership & Benefits", icon: "sparkles-outline" as const, onPress: () => setShowSubscriptionModal(true) },
+          ],
+        }]
+      : []),
+  ];
+
+  const renderProfileMenu = () => (
+    <Modal
+      visible={showProfileMenu}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowProfileMenu(false)}
+    >
+      <View style={styles.profileMenuOverlay}>
+        <TouchableOpacity
+          style={styles.profileMenuDismiss}
+          onPress={() => setShowProfileMenu(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close profile menu"
+        />
+        <View style={[styles.profileMenuDrawer, { paddingTop: topPad + 10 }]}>
+          <View style={styles.profileMenuHeader}>
+            <View style={styles.profileMenuIdentity}>
+              {profile.photoURL ? (
+                <Image source={{ uri: profile.photoURL }} style={styles.profileMenuAvatar} />
+              ) : (
+                <View style={styles.profileMenuAvatarFallback}>
+                  <Text style={styles.profileMenuAvatarText}>{initials}</Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileMenuName} numberOfLines={1}>{profile.fullName}</Text>
+                <Text style={styles.profileMenuRole}>{roleLabel}{profile.jnvName ? ` · ${profile.jnvName}` : ""}</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.profileMenuClose}
+              onPress={() => setShowProfileMenu(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close profile menu"
+            >
+              <Ionicons name="close" size={22} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+            {profileMenuSections.map((section) => {
+              const isOpen = openMenuSections.includes(section.title);
+              return (
+                <View key={section.title} style={styles.profileMenuSection}>
+                  <TouchableOpacity
+                    style={styles.profileMenuSectionHeader}
+                    onPress={() => toggleMenuSection(section.title)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.profileMenuSectionIcon}>
+                      <Ionicons name={section.icon} size={17} color="#7C3AED" />
+                    </View>
+                    <Text style={styles.profileMenuSectionTitle}>{section.title}</Text>
+                    <Ionicons name={isOpen ? "chevron-up" : "chevron-forward"} size={17} color="#9CA3AF" />
+                  </TouchableOpacity>
+                  {isOpen ? (
+                    <View style={styles.profileMenuItems}>
+                      {section.items.map((item) => (
+                        <TouchableOpacity
+                          key={item.label}
+                          style={styles.profileMenuItem}
+                          onPress={() => {
+                            setShowProfileMenu(false);
+                            item.onPress();
+                          }}
+                          activeOpacity={0.72}
+                        >
+                          <View style={styles.profileMenuItemIcon}>
+                            <Ionicons name={item.icon} size={17} color="#6D28D9" />
+                          </View>
+                          <Text style={styles.profileMenuItemText}>{item.label}</Text>
+                          <Ionicons name="chevron-forward" size={15} color="#C4B5FD" />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+
+            <TouchableOpacity
+              style={styles.profileMenuSignOut}
+              onPress={() => {
+                setShowProfileMenu(false);
+                handleSignOut();
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#DC2626" />
+              <Text style={styles.profileMenuSignOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const isPremiumAlumni =
     profile.role === "alumni" &&
     Boolean(profile.isPremium || membershipStatus?.isPremium || previewPremium);
@@ -171,6 +380,14 @@ export default function ProfileScreen() {
   if (isPremiumAlumni) {
     return (
       <View style={[styles.container]}>
+        <TouchableOpacity
+          style={[styles.premiumMenuFloating, { top: topPad + 8 }]}
+          onPress={() => setShowProfileMenu(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile menu"
+        >
+          <Ionicons name="menu" size={22} color="#7C3AED" />
+        </TouchableOpacity>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 150 + insets.bottom }}
@@ -285,6 +502,8 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
 
+        {renderProfileMenu()}
+
         <AlumniPremiumSubscriptionModal
           visible={showSubscriptionModal}
           onClose={() => setShowSubscriptionModal(false)}
@@ -340,15 +559,25 @@ export default function ProfileScreen() {
     <View style={[styles.container]}>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          style={styles.headerEditButton}
-          onPress={() => router.push("/(screens)/edit-profile" as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Edit profile"
-        >
-          <Ionicons name="create-outline" size={16} color="#7C3AED" />
-          <Text style={styles.headerEditText}>Edit</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerEditButton}
+            onPress={() => router.push("/(screens)/edit-profile" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile"
+          >
+            <Ionicons name="create-outline" size={16} color="#7C3AED" />
+            <Text style={styles.headerEditText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerMenuButton}
+            onPress={() => setShowProfileMenu(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile menu"
+          >
+            <Ionicons name="menu" size={22} color="#7C3AED" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -583,6 +812,8 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {renderProfileMenu()}
+
       <AlumniPremiumSubscriptionModal
         visible={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
@@ -654,6 +885,35 @@ const styles = StyleSheet.create({
   },
   headerEditText: { color: "#7C3AED", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#111827" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerMenuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F5F3FF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E9D5FF",
+  },
+  premiumMenuFloating: {
+    position: "absolute",
+    right: 16,
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E9D5FF",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   profileCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -800,6 +1060,111 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   aboutText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#1E1B4B", lineHeight: 22 },
+  profileMenuOverlay: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(17, 24, 39, 0.42)",
+  },
+  profileMenuDismiss: { flex: 1 },
+  profileMenuDrawer: {
+    width: "86%",
+    maxWidth: 390,
+    height: "100%",
+    backgroundColor: "#FAF9FF",
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
+    paddingHorizontal: 14,
+    shadowColor: "#111827",
+    shadowOffset: { width: -6, height: 0 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  profileMenuHeader: {
+    minHeight: 74,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    paddingBottom: 12,
+  },
+  profileMenuIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+  profileMenuAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: "#7C3AED" },
+  profileMenuAvatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#EDE9FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileMenuAvatarText: { color: "#7C3AED", fontFamily: "Inter_700Bold", fontSize: 16 },
+  profileMenuName: { color: "#1F2937", fontFamily: "Inter_700Bold", fontSize: 15 },
+  profileMenuRole: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 3 },
+  profileMenuClose: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  profileMenuSection: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#F0EAFE",
+    overflow: "hidden",
+  },
+  profileMenuSectionHeader: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  profileMenuSectionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F5F3FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileMenuSectionTitle: { flex: 1, color: "#1F2937", fontFamily: "Inter_700Bold", fontSize: 13 },
+  profileMenuItems: { borderTopWidth: 1, borderTopColor: "#F3F4F6", paddingVertical: 4 },
+  profileMenuItem: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  profileMenuItemIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#FAF5FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileMenuItemText: { flex: 1, color: "#374151", fontFamily: "Inter_500Medium", fontSize: 12 },
+  profileMenuSignOut: {
+    minHeight: 50,
+    marginTop: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    backgroundColor: "#FFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  profileMenuSignOutText: { color: "#DC2626", fontFamily: "Inter_700Bold", fontSize: 13 },
   menuCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
