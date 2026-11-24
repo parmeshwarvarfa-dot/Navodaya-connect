@@ -1,6 +1,26 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+
+if (!process.env.DATABASE_URL) {
+  const envPaths = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "../../.env"),
+    path.resolve(process.cwd(), "../.env"),
+  ];
+  for (const p of envPaths) {
+    if (existsSync(p) && typeof process.loadEnvFile === "function") {
+      try {
+        process.loadEnvFile(p);
+        if (process.env.DATABASE_URL) break;
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
 
 const { Pool } = pg;
 

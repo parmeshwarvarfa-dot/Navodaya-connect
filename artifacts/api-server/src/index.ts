@@ -1,3 +1,45 @@
+import dns from "node:dns";
+
+// Ensure IPv4 is preferred
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  // ignore
+}
+
+// Resilient public DNS resolver for Neon and external cloud databases
+const publicDnsResolver = new dns.promises.Resolver();
+publicDnsResolver.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+
+const originalLookup = dns.lookup;
+// @ts-ignore
+dns.lookup = function (hostname: any, options: any, callback: any) {
+  const cb = typeof options === "function" ? options : callback;
+  const opts = typeof options === "object" && options !== null ? options : {};
+
+  if (typeof hostname === "string" && hostname.includes("neon.tech")) {
+    publicDnsResolver
+      .resolve4(hostname)
+      .then((addrs) => {
+        if (addrs && addrs.length > 0) {
+          if (opts.all) {
+            cb(null, addrs.map((a) => ({ address: a, family: 4 })));
+          } else {
+            cb(null, addrs[0], 4);
+          }
+        } else {
+          originalLookup.call(dns, hostname, options, callback);
+        }
+      })
+      .catch(() => {
+        originalLookup.call(dns, hostname, options, callback);
+      });
+    return;
+  }
+
+  return originalLookup.call(dns, hostname, options, callback);
+};
+
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
