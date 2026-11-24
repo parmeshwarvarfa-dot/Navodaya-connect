@@ -16,12 +16,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiOrigin, getToken } from "@/lib/api";
 import { voiceService } from "@/lib/voiceService";
 import ParamVoiceModal from "@/components/param/ParamVoiceModal";
-import ParamAiOrb from "@/components/param/ParamAiOrb";
 
 interface VerifiedLink {
   title: string;
@@ -41,67 +39,12 @@ interface Message {
   detectedLanguage?: "en" | "hi";
 }
 
-// 7 Quick Action categories
-const QUICK_ACTIONS = [
-  { id: "all", label: "All Topics", icon: "sparkles" as const, color: "#A855F7" },
-  { id: "jee-neet", label: "JEE / NEET", icon: "school" as const, color: "#3B82F6" },
-  { id: "competitive", label: "UPSC / Exams", icon: "trophy" as const, color: "#F59E0B" },
-  { id: "career", label: "Career Guide", icon: "compass" as const, color: "#10B981" },
-  { id: "navodaya", label: "Navodaya Life", icon: "home" as const, color: "#EC4899" },
-  { id: "scholarships", label: "Scholarships", icon: "ribbon" as const, color: "#8B5CF6" },
-  { id: "study", label: "Study Assistance", icon: "book" as const, color: "#06B6D4" },
-];
-
-// Rich Suggested Prompts across categories
-const DISCOVERY_PROMPTS = [
-  {
-    category: "jee-neet",
-    tag: "JEE Main & Advanced",
-    icon: "calculator-outline",
-    prompt: "Create a 6-month JEE preparation strategy with daily routine for a Navodayan student.",
-  },
-  {
-    category: "jee-neet",
-    tag: "NEET UG",
-    icon: "medkit-outline",
-    prompt: "What is the best NCERT-focused biology and physics revision roadmap for NEET?",
-  },
-  {
-    category: "competitive",
-    tag: "Civil Services",
-    icon: "shield-checkmark-outline",
-    prompt: "How can JNV alumni prepare for UPSC Civil Services alongside college or job?",
-  },
-  {
-    category: "career",
-    tag: "Career Pathways",
-    icon: "briefcase-outline",
-    prompt: "Help me explore top engineering and non-engineering career options after Class 12.",
-  },
-  {
-    category: "scholarships",
-    tag: "National Scholarships",
-    icon: "cash-outline",
-    prompt: "List all government and private scholarship opportunities available for Navodaya students.",
-  },
-  {
-    category: "navodaya",
-    tag: "JNV Culture",
-    icon: "heart-outline",
-    prompt: "नवोदय विद्यालय की अनूठी परंपराओं, हाउस व्यवस्था और माइग्रेशन एक्सचेंज के बारे में बताएं।",
-  },
-  {
-    category: "study",
-    tag: "Concept Clarification",
-    icon: "bulb-outline",
-    prompt: "Explain Quantum Entanglement simply with everyday examples and thought experiments.",
-  },
-  {
-    category: "navodaya",
-    tag: "Hostel Life",
-    icon: "time-outline",
-    prompt: "How to balance morning PT, sports, academics, and hostel life effectively in JNV?",
-  },
+const SUGGESTED_PROMPTS = [
+  { icon: "school-outline", label: "Help me with JEE / NEET preparation", prompt: "Create a focused preparation and revision strategy for JEE and NEET for Navodaya students." },
+  { icon: "compass-outline", label: "Explore career opportunities after Class 12", prompt: "Help me explore top career opportunities, competitive exams, and college options after Class 12." },
+  { icon: "ribbon-outline", label: "Find scholarship opportunities", prompt: "List national and state scholarship schemes available for Navodaya students and alumni." },
+  { icon: "people-outline", label: "Navodaya culture & migration exchange", prompt: "Tell me about the Class 9 migration exchange program, JNV traditions, and hostel life." },
+  { icon: "bulb-outline", label: "Study roadmap & revision guidance", prompt: "How can I build an effective daily study roadmap for tough science and math concepts?" },
 ];
 
 const PREF_VOICE_AUTOPLAY = "@param_voice_autoplay";
@@ -119,25 +62,25 @@ export default function ParamAIScreen() {
   const [loading, setLoading] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showMenuModal, setShowMenuModal] = useState(false);
 
-  // Voice recording state in composer
-  const [isRecordingVoiceMsg, setIsRecordingVoiceMsg] = useState(false);
+  // Voice recording state
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordingTimerRef = useRef<any>(null);
 
   // Settings
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [voiceSpeed, setVoiceSpeed] = useState(1.0);
   const [voiceLang, setVoiceLang] = useState<"en" | "hi">("en");
 
   const scrollRef = useRef<ScrollView>(null);
-  const typingPulse = useRef(new Animated.Value(0.4)).current;
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const typingPulse = useRef(new Animated.Value(0.3)).current;
 
   const topPad = Platform.OS === "web" ? 0 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 16 : insets.bottom;
+  const bottomPad = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 12);
 
   // Restore preferences
   useEffect(() => {
@@ -152,28 +95,28 @@ export default function ParamAIScreen() {
     });
   }, []);
 
-  // Typing pulse animation
+  // Subtle typing animation
   useEffect(() => {
     if (!loading) {
-      typingPulse.setValue(0.4);
+      typingPulse.setValue(0.3);
       return;
     }
 
-    const animation = Animated.loop(
+    const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(typingPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(typingPulse, { toValue: 0.3, duration: 600, useNativeDriver: true }),
+        Animated.timing(typingPulse, { toValue: 1, duration: 550, useNativeDriver: true }),
+        Animated.timing(typingPulse, { toValue: 0.3, duration: 550, useNativeDriver: true }),
       ])
     );
-    animation.start();
-    return () => animation.stop();
+    anim.start();
+    return () => anim.stop();
   }, [loading, typingPulse]);
 
   const scrollToBottom = () => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  // Speak message aloud
+  // Text-to-speech
   const handleToggleSpeakMessage = (msgId: string, text: string, lang = "en") => {
     if (speakingMsgId === msgId) {
       voiceService.cancelSpeech();
@@ -187,17 +130,13 @@ export default function ParamAIScreen() {
     voiceService.speak(text, {
       lang: lang === "hi" ? "hi-IN" : "en-IN",
       rate: voiceSpeed,
-      onEnd: () => {
-        setSpeakingMsgId(null);
-      },
-      onError: () => {
-        setSpeakingMsgId(null);
-      },
+      onEnd: () => setSpeakingMsgId(null),
+      onError: () => setSpeakingMsgId(null),
     });
   };
 
-  // Copy message text
-  const handleCopyMessage = async (msgId: string, text: string) => {
+  // Copy response
+  const handleCopy = async (msgId: string, text: string) => {
     try {
       if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(text);
@@ -209,7 +148,16 @@ export default function ParamAIScreen() {
     }
   };
 
-  // Send text message
+  // Stop Generation
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setLoading(false);
+  };
+
+  // Send message
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
@@ -234,10 +182,14 @@ export default function ParamAIScreen() {
     setLoading(true);
     scrollToBottom();
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const token = await getToken();
       const response = await fetch(`${getApiOrigin()}/api/param-ai/chat`, {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -270,11 +222,13 @@ export default function ParamAIScreen() {
 
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // Auto-play audio response if user enabled it in settings
       if (autoPlayAudio) {
         handleToggleSpeakMessage(assistantMsgId, replyText, detectedLang);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -283,23 +237,23 @@ export default function ParamAIScreen() {
           text:
             error instanceof Error
               ? error.message
-              : "I am having trouble connecting right now. Please try again in a moment.",
+              : "Unable to reach PARAM AI service right now. Please try again.",
           timestamp: new Date(),
         },
       ]);
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
       scrollToBottom();
     }
   };
 
   // Regenerate last response
-  const handleRegenerate = async () => {
+  const handleRegenerate = () => {
     if (loading || messages.length === 0) return;
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (!lastUserMsg) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
 
-    // Remove last assistant message
     setMessages((prev) => {
       const copy = [...prev];
       if (copy[copy.length - 1]?.role === "assistant") {
@@ -308,43 +262,37 @@ export default function ParamAIScreen() {
       return copy;
     });
 
-    await sendMessage(lastUserMsg.text);
+    sendMessage(lastUser.text);
   };
 
-  // Start recording voice message
-  const handleStartVoiceRecording = async () => {
+  // Voice recording handlers
+  const handleStartRecording = async () => {
     voiceService.cancelSpeech();
     setSpeakingMsgId(null);
 
     const started = await voiceService.startRecordingVoiceMessage();
     if (!started) {
-      Alert.alert(
-        "Microphone Required",
-        "Please allow microphone access to record voice messages."
-      );
+      Alert.alert("Microphone Access", "Please allow microphone access to record voice queries.");
       return;
     }
 
-    setIsRecordingVoiceMsg(true);
+    setIsRecordingVoice(true);
     setRecordingSeconds(0);
-
     recordingTimerRef.current = setInterval(() => {
       setRecordingSeconds((prev) => prev + 1);
     }, 1000);
   };
 
-  // Cancel voice recording
-  const handleCancelVoiceRecording = () => {
+  const handleCancelRecording = () => {
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
     voiceService.cancelRecordingVoiceMessage();
-    setIsRecordingVoiceMsg(false);
+    setIsRecordingVoice(false);
     setRecordingSeconds(0);
   };
 
-  // Finish and send voice message
   const handleSendVoiceRecording = async () => {
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
@@ -352,7 +300,7 @@ export default function ParamAIScreen() {
     }
 
     const duration = recordingSeconds;
-    setIsRecordingVoiceMsg(false);
+    setIsRecordingVoice(false);
     setRecordingSeconds(0);
     setLoading(true);
 
@@ -365,7 +313,7 @@ export default function ParamAIScreen() {
       const userMsg: Message = {
         id: `${Date.now()}-user-voice`,
         role: "user",
-        text: "🎙️ Spoken voice message",
+        text: "🎙️ Spoken voice query",
         isVoiceMessage: true,
         audioDurationSeconds: duration || 1,
         timestamp: new Date(),
@@ -408,8 +356,6 @@ export default function ParamAIScreen() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-
-      // Automatically speak answer to voice message
       handleToggleSpeakMessage(assistantMsgId, assistantMsg.text, assistantMsg.detectedLanguage);
     } catch {
       setMessages((prev) => [
@@ -427,34 +373,29 @@ export default function ParamAIScreen() {
     }
   };
 
-  // Handle messages from Voice Modal
-  const handleVoiceMessageFromModal = useCallback(
-    (userText: string, assistantReply: string) => {
-      const now = new Date();
-      setMessages((prev) => [
-        ...prev,
+  // Clear conversation
+  const handleClearChat = () => {
+    Alert.alert(
+      "Clear Conversation",
+      "Are you sure you want to start a fresh chat with PARAM AI?",
+      [
+        { text: "Cancel", style: "cancel" },
         {
-          id: `${Date.now()}-user-voice-live`,
-          role: "user",
-          text: userText,
-          isVoiceMessage: true,
-          timestamp: now,
+          text: "Clear",
+          style: "destructive",
+          onPress: () => {
+            voiceService.cancelSpeech();
+            setSpeakingMsgId(null);
+            setMessages([]);
+            setShowMenuModal(false);
+          },
         },
-        {
-          id: `${Date.now()}-assistant-voice-live`,
-          role: "assistant",
-          text: assistantReply,
-          timestamp: new Date(now.getTime() + 100),
-          detectedLanguage: /[\u0900-\u097F]/.test(assistantReply) ? "hi" : "en",
-        },
-      ]);
-      scrollToBottom();
-    },
-    []
-  );
+      ]
+    );
+  };
 
-  // Open verified link safely
-  const handleOpenVerifiedLink = async (url: string) => {
+  // Open verified link
+  const handleOpenLink = async (url: string) => {
     try {
       const validUrl = new URL(url);
       if (["http:", "https:"].includes(validUrl.protocol)) {
@@ -465,278 +406,240 @@ export default function ParamAIScreen() {
     }
   };
 
-  // Clear chat with confirm
-  const handleClearChat = () => {
-    Alert.alert(
-      "Reset Conversation",
-      "Do you want to clear your current conversation with PARAM AI?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear",
-          style: "destructive",
-          onPress: () => {
-            voiceService.cancelSpeech();
-            setSpeakingMsgId(null);
-            setMessages([]);
-          },
-        },
-      ]
-    );
+  // Simple Markdown / Formatted Text Renderer
+  const renderFormattedText = (text: string) => {
+    const lines = text.split("\n");
+    return lines.map((line, index) => {
+      const trimmed = line.trim();
+
+      // Heading 3: ### Heading
+      if (trimmed.startsWith("### ")) {
+        return (
+          <Text key={`line-${index}`} style={styles.mdHeading}>
+            {trimmed.replace(/^###\s+/, "")}
+          </Text>
+        );
+      }
+
+      // Heading 2 / 1: ## or #
+      if (trimmed.startsWith("## ") || trimmed.startsWith("# ")) {
+        return (
+          <Text key={`line-${index}`} style={styles.mdHeadingLarge}>
+            {trimmed.replace(/^#+\s+/, "")}
+          </Text>
+        );
+      }
+
+      // Bullet list item
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
+        const itemText = trimmed.replace(/^[-*•]\s+/, "");
+        return (
+          <View key={`line-${index}`} style={styles.mdBulletRow}>
+            <Text style={styles.mdBulletDot}>•</Text>
+            <Text style={styles.mdBulletText}>{renderInlineFormatting(itemText)}</Text>
+          </View>
+        );
+      }
+
+      // Numbered list item
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+      if (numMatch) {
+        return (
+          <View key={`line-${index}`} style={styles.mdBulletRow}>
+            <Text style={styles.mdNumberLabel}>{numMatch[1]}.</Text>
+            <Text style={styles.mdBulletText}>{renderInlineFormatting(numMatch[2])}</Text>
+          </View>
+        );
+      }
+
+      // Empty line / paragraph break
+      if (!trimmed) {
+        return <View key={`line-${index}`} style={{ height: 8 }} />;
+      }
+
+      // Normal paragraph
+      return (
+        <Text key={`line-${index}`} style={styles.mdParagraph}>
+          {renderInlineFormatting(line)}
+        </Text>
+      );
+    });
+  };
+
+  // Helper for inline bold **text**
+  const renderInlineFormatting = (str: string) => {
+    const parts = str.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <Text key={`part-${i}`} style={styles.mdBold}>
+            {part.slice(2, -2)}
+          </Text>
+        );
+      }
+      return part;
+    });
   };
 
   const hasMessages = messages.length > 0;
-  const filteredPrompts =
-    selectedCategory === "all"
-      ? DISCOVERY_PROMPTS
-      : DISCOVERY_PROMPTS.filter((p) => p.category === selectedCategory);
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* Background Ambient Violet Lighting */}
-      <View style={styles.ambientTopGlow} />
-
-      {/* ── 1. Compact Premium Header ── */}
-      <LinearGradient
-        colors={["#0D0722", "#160A38", "#1F0F4E"]}
-        style={[styles.header, { paddingTop: topPad + 8 }]}
-      >
+      {/* ── 1. Minimal Header ── */}
+      <View style={[styles.header, { paddingTop: topPad + 6 }]}>
         <TouchableOpacity
           onPress={() => {
             voiceService.cancelSpeech();
             router.back();
           }}
-          style={styles.backBtn}
+          style={styles.headerBackBtn}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={20} color="#E2E8F0" />
+          <Ionicons name="arrow-back" size={20} color="#1E293B" />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
           <View style={styles.headerTitleRow}>
-            <View style={styles.statusPulseDot} />
-            <Text style={styles.headerTitle}>PARAM AI 🤖</Text>
+            <View style={styles.headerAvatarBadge}>
+              <Text style={{ fontSize: 13 }}>🤖</Text>
+            </View>
+            <Text style={styles.headerTitleText}>PARAM AI</Text>
+            <View style={styles.onlineDot} />
           </View>
-          <Text style={styles.headerStatusSub}>Neural Engine • Active</Text>
         </View>
 
-        <View style={styles.headerRightActions}>
-          {/* Live Voice Mode Launch Button */}
-          <TouchableOpacity
-            style={styles.liveVoiceBtn}
-            onPress={() => {
-              voiceService.cancelSpeech();
-              setSpeakingMsgId(null);
-              setShowVoiceModal(true);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Launch Live Voice Mode"
-          >
-            <Ionicons name="mic" size={15} color="#FFFFFF" />
-            <Text style={styles.liveVoiceBtnText}>Live Voice</Text>
-          </TouchableOpacity>
+        {/* Clean Menu Action */}
+        <TouchableOpacity
+          style={styles.headerMenuBtn}
+          onPress={() => setShowMenuModal(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Options"
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#475569" />
+        </TouchableOpacity>
+      </View>
 
-          {/* Settings Button */}
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => setShowSettingsModal(true)}
-            accessibilityRole="button"
-            accessibilityLabel="PARAM AI Settings"
-          >
-            <Ionicons name="settings-outline" size={18} color="#C4B5FD" />
-          </TouchableOpacity>
-
-          {/* Clear Chat Button */}
-          {hasMessages && (
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={handleClearChat}
-              accessibilityRole="button"
-              accessibilityLabel="Reset conversation"
-            >
-              <Ionicons name="refresh" size={18} color="#C4B5FD" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient>
-
-      {/* ── 2. Scrollable Body (AI Identity, Prompts & Chat) ── */}
+      {/* ── 2. Chat Conversation Body ── */}
       <ScrollView
         ref={scrollRef}
-        style={styles.body}
+        style={styles.scrollArea}
         contentContainerStyle={[
-          styles.bodyContent,
-          { paddingBottom: bottomPad + 96 },
+          styles.scrollContent,
+          { paddingBottom: bottomPad + 84 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {!hasMessages ? (
-          <View style={styles.welcomeSection}>
-            {/* Animated 3D AI Orb Section */}
-            <View style={styles.orbWrapper}>
-              <ParamAiOrb
-                size={104}
-                state={loading ? "thinking" : isRecordingVoiceMsg ? "listening" : "idle"}
-              />
+          /* ── Minimal, Elegant Welcome State ── */
+          <View style={styles.welcomeContainer}>
+            <View style={styles.welcomeIconCircle}>
+              <Text style={{ fontSize: 26 }}>🤖</Text>
             </View>
-
-            {/* Intro Heading & Description */}
-            <Text style={styles.welcomeHeading}>Intelligent Companion for Navodayans</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Empowering students and alumni across India with instant guidance on competitive exams, career roadmaps, and JNV traditions.
+            <Text style={styles.welcomeGreeting}>What can I help you with today?</Text>
+            <Text style={styles.welcomeSub}>
+              Ask questions on JEE/NEET, career paths, scholarships, or Navodaya life.
             </Text>
 
-            {/* Capabilities Badge Row */}
-            <View style={styles.capabilityPillRow}>
-              <View style={styles.capabilityPill}>
-                <Ionicons name="flash" size={11} color="#F59E0B" />
-                <Text style={styles.capabilityPillText}>Gemini AI</Text>
-              </View>
-              <View style={styles.capabilityPill}>
-                <Ionicons name="mic" size={11} color="#10B981" />
-                <Text style={styles.capabilityPillText}>Dual Voice Mode</Text>
-              </View>
-              <View style={styles.capabilityPill}>
-                <Ionicons name="language" size={11} color="#3B82F6" />
-                <Text style={styles.capabilityPillText}>English & हिंदी</Text>
-              </View>
-            </View>
-
-            {/* Live Voice Mode Banner */}
-            <TouchableOpacity
-              style={styles.voiceHeroCard}
-              onPress={() => setShowVoiceModal(true)}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["rgba(124, 58, 237, 0.35)", "rgba(99, 102, 241, 0.2)"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.voiceHeroGradient}
-              >
-                <View style={styles.voiceHeroIconWrap}>
-                  <Ionicons name="mic-circle" size={28} color="#A78BFA" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.voiceHeroTitle}>Experience Live Two-Way Voice</Text>
-                  <Text style={styles.voiceHeroDesc}>
-                    Talk naturally in Hindi or English with real-time audio visualization.
-                  </Text>
-                </View>
-                <View style={styles.voiceHeroStartPill}>
-                  <Text style={styles.voiceHeroStartText}>Start 🎙️</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Quick Action Category Filter Tabs */}
-            <Text style={styles.sectionLabel}>QUICK SHORTCUTS</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
-            >
-              {QUICK_ACTIONS.map((cat) => {
-                const isActive = selectedCategory === cat.id;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                    onPress={() => setSelectedCategory(cat.id)}
-                    activeOpacity={0.75}
-                  >
-                    <Ionicons
-                      name={cat.icon}
-                      size={13}
-                      color={isActive ? "#FFFFFF" : cat.color}
-                      style={{ marginRight: 5 }}
-                    />
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        isActive && styles.categoryChipTextActive,
-                      ]}
-                    >
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Discovery Prompt Cards */}
-            <Text style={styles.sectionLabel}>SUGGESTED EXPLORATIONS</Text>
-            <View style={styles.promptCardsGrid}>
-              {filteredPrompts.map((item, idx) => (
+            {/* Clean Suggested Prompt Chips */}
+            <View style={styles.promptList}>
+              {SUGGESTED_PROMPTS.map((item, idx) => (
                 <TouchableOpacity
                   key={`prompt-${idx}`}
-                  style={styles.promptCard}
+                  style={styles.promptChip}
                   onPress={() => sendMessage(item.prompt)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                   disabled={loading}
                 >
-                  <View style={styles.promptCardTop}>
-                    <View style={styles.promptTagPill}>
-                      <Ionicons
-                        name={item.icon as any}
-                        size={12}
-                        color="#C4B5FD"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={styles.promptTagText}>{item.tag}</Text>
-                    </View>
-                    <Ionicons name="arrow-forward" size={13} color="#A78BFA" />
-                  </View>
-                  <Text style={styles.promptText}>{item.prompt}</Text>
+                  <Ionicons name={item.icon as any} size={15} color="#7C3AED" style={{ marginRight: 8 }} />
+                  <Text style={styles.promptChipText}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" style={{ marginLeft: "auto" }} />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         ) : (
-          /* ── Conversation Messages ── */
-          <View style={styles.messagesList}>
-            {messages.map((msg) => {
+          /* ── Natural Conversation Messages ── */
+          <View style={styles.messagesContainer}>
+            {messages.map((msg, index) => {
               const isUser = msg.role === "user";
               const isSpeaking = speakingMsgId === msg.id;
 
               return (
                 <View
                   key={msg.id}
-                  style={[styles.messageRow, isUser ? styles.userRow : styles.aiRow]}
+                  style={[
+                    styles.messageRow,
+                    isUser ? styles.userMessageRow : styles.assistantMessageRow,
+                  ]}
                 >
-                  {/* AI Avatar */}
+                  {/* Assistant Avatar */}
                   {!isUser && (
-                    <View style={styles.aiOrbAvatar}>
-                      <Text style={{ fontSize: 13 }}>🤖</Text>
+                    <View style={styles.assistantAvatar}>
+                      <Text style={{ fontSize: 12 }}>🤖</Text>
                     </View>
                   )}
 
-                  {/* Message Bubble */}
-                  <View
-                    style={[
-                      styles.bubble,
-                      isUser ? styles.bubbleUser : styles.bubbleAI,
-                    ]}
-                  >
-                    {/* Assistant Message Header Actions */}
-                    {!isUser && (
-                      <View style={styles.aiMessageHeader}>
-                        <View style={styles.aiLabelRow}>
-                          <Text style={styles.aiLabelText}>PARAM AI 🤖</Text>
-                          {msg.detectedLanguage === "hi" && (
-                            <View style={styles.langPill}>
-                              <Text style={styles.langPillText}>हिंदी</Text>
-                            </View>
-                          )}
-                        </View>
+                  <View style={[styles.messageContentWrap, isUser && styles.userContentWrap]}>
+                    {/* Message Bubble or Plain Text */}
+                    {isUser ? (
+                      <View style={styles.userBubble}>
+                        <Text style={styles.userText}>{msg.text}</Text>
+                        <Text style={styles.userTimestamp}>
+                          {formatTime(new Date(msg.timestamp))}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.assistantDirectTextWrap}>
+                        {/* Formatted Markdown Content directly on clean background */}
+                        {renderFormattedText(msg.text)}
 
-                        {/* Top Action Icons: Listen, Copy */}
-                        <View style={styles.aiActionsRow}>
+                        {/* Compact Verified Sources Section */}
+                        {msg.verifiedLinks && msg.verifiedLinks.length > 0 && (
+                          <View style={styles.sourcesContainer}>
+                            <Text style={styles.sourcesHeading}>Official sources</Text>
+                            <View style={styles.sourcesRow}>
+                              {msg.verifiedLinks.map((link) => (
+                                <TouchableOpacity
+                                  key={link.url}
+                                  style={styles.sourcePill}
+                                  onPress={() => handleOpenLink(link.url)}
+                                  activeOpacity={0.75}
+                                >
+                                  <Ionicons name="link-outline" size={12} color="#7C3AED" />
+                                  <Text style={styles.sourcePillText} numberOfLines={1}>
+                                    {link.title}
+                                  </Text>
+                                  <Ionicons name="open-outline" size={11} color="#64748B" />
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Unobtrusive Assistant Actions */}
+                        <View style={styles.assistantActionsBar}>
+                          {/* Copy */}
+                          <TouchableOpacity
+                            onPress={() => handleCopy(msg.id, msg.text)}
+                            style={styles.subtleActionBtn}
+                            accessibilityLabel="Copy response"
+                          >
+                            <Ionicons
+                              name={copiedId === msg.id ? "checkmark" : "copy-outline"}
+                              size={15}
+                              color={copiedId === msg.id ? "#10B981" : "#64748B"}
+                            />
+                            {copiedId === msg.id && (
+                              <Text style={styles.copiedHint}>Copied</Text>
+                            )}
+                          </TouchableOpacity>
+
+                          {/* Read Aloud */}
                           <TouchableOpacity
                             onPress={() =>
                               handleToggleSpeakMessage(
@@ -745,335 +648,225 @@ export default function ParamAIScreen() {
                                 msg.detectedLanguage
                               )
                             }
-                            style={[
-                              styles.bubbleActionBtn,
-                              isSpeaking && styles.bubbleActionBtnActive,
-                            ]}
-                            accessibilityLabel={isSpeaking ? "Stop speaking" : "Listen aloud"}
+                            style={styles.subtleActionBtn}
+                            accessibilityLabel={isSpeaking ? "Stop speaking" : "Read aloud"}
                           >
                             <Ionicons
-                              name={isSpeaking ? "volume-mute" : "volume-medium"}
-                              size={14}
-                              color={isSpeaking ? "#EC4899" : "#C4B5FD"}
+                              name={isSpeaking ? "volume-mute-outline" : "volume-medium-outline"}
+                              size={16}
+                              color={isSpeaking ? "#7C3AED" : "#64748B"}
                             />
                           </TouchableOpacity>
 
-                          <TouchableOpacity
-                            onPress={() => handleCopyMessage(msg.id, msg.text)}
-                            style={styles.bubbleActionBtn}
-                            accessibilityLabel="Copy response"
-                          >
-                            <Ionicons
-                              name={copiedId === msg.id ? "checkmark" : "copy-outline"}
-                              size={13}
-                              color={copiedId === msg.id ? "#10B981" : "#C4B5FD"}
-                            />
-                          </TouchableOpacity>
+                          {/* Regenerate (if last message) */}
+                          {index === messages.length - 1 && !loading && (
+                            <TouchableOpacity
+                              onPress={handleRegenerate}
+                              style={styles.subtleActionBtn}
+                              accessibilityLabel="Regenerate"
+                            >
+                              <Ionicons name="refresh-outline" size={15} color="#64748B" />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
                     )}
-
-                    {/* Message Body Content */}
-                    <Text
-                      style={[
-                        styles.messageText,
-                        isUser ? styles.userMessageText : styles.aiMessageText,
-                      ]}
-                      selectable
-                    >
-                      {msg.text}
-                    </Text>
-
-                    {/* Verified Official Links */}
-                    {msg.verifiedLinks && msg.verifiedLinks.length > 0 && (
-                      <View style={styles.verifiedLinksSection}>
-                        <Text style={styles.verifiedLinksHeading}>
-                          VERIFIED OFFICIAL PORTALS
-                        </Text>
-                        {msg.verifiedLinks.map((link) => (
-                          <TouchableOpacity
-                            key={link.url}
-                            style={styles.verifiedLinkItem}
-                            onPress={() => handleOpenVerifiedLink(link.url)}
-                            activeOpacity={0.8}
-                          >
-                            <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-                            <View style={{ flex: 1, marginLeft: 6 }}>
-                              <Text style={styles.verifiedLinkTitle} numberOfLines={1}>
-                                {link.title}
-                              </Text>
-                              <Text style={styles.verifiedLinkCategory}>
-                                {link.badge || link.category}
-                              </Text>
-                            </View>
-                            <Ionicons name="open-outline" size={13} color="#C4B5FD" />
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-
-                    {/* Message Footer: Timestamp */}
-                    <View style={styles.messageFooter}>
-                      <Text style={styles.messageTimestamp}>
-                        {formatTime(new Date(msg.timestamp))}
-                      </Text>
-                    </View>
                   </View>
                 </View>
               );
             })}
 
-            {/* Thinking / Neural Indicator */}
+            {/* Subtle Typing / Thinking Indicator */}
             {loading && (
-              <View style={[styles.messageRow, styles.aiRow]}>
-                <View style={styles.aiOrbAvatar}>
-                  <Text style={{ fontSize: 13 }}>🤖</Text>
+              <View style={[styles.messageRow, styles.assistantMessageRow]}>
+                <View style={styles.assistantAvatar}>
+                  <Text style={{ fontSize: 12 }}>🤖</Text>
                 </View>
-                <Animated.View
-                  style={[
-                    styles.thinkingBubble,
-                    { opacity: typingPulse },
-                  ]}
-                >
-                  <View style={styles.thinkingDot} />
-                  <View style={[styles.thinkingDot, { animationDelay: "150ms" } as any]} />
-                  <View style={[styles.thinkingDot, { animationDelay: "300ms" } as any]} />
-                  <Text style={styles.thinkingText}>PARAM AI is formulating your response...</Text>
+                <Animated.View style={[styles.typingWrap, { opacity: typingPulse }]}>
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
                 </Animated.View>
               </View>
-            )}
-
-            {/* Regenerate Action Button at bottom of chat */}
-            {hasMessages && !loading && (
-              <TouchableOpacity
-                style={styles.regenerateBtn}
-                onPress={handleRegenerate}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="sync-outline" size={13} color="#A78BFA" />
-                <Text style={styles.regenerateBtnText}>Regenerate Response</Text>
-              </TouchableOpacity>
             )}
           </View>
         )}
       </ScrollView>
 
-      {/* ── 3. Futuristic Glassmorphic Message Composer ── */}
-      <View
-        style={[
-          styles.composerContainer,
-          { paddingBottom: Math.max(bottomPad, 12) },
-        ]}
-      >
-        {isRecordingVoiceMsg ? (
-          /* Active Voice Recording UI */
+      {/* ── 3. Clean Message Composer ── */}
+      <View style={[styles.composerWrap, { paddingBottom: bottomPad }]}>
+        {isRecordingVoice ? (
+          /* Voice Recording Active Bar */
           <View style={styles.recordingBar}>
-            <View style={styles.recordingPulseDot} />
-            <Text style={styles.recordingTimerText}>
-              Recording Voice... {recordingSeconds}s
-            </Text>
-            <TouchableOpacity
-              onPress={handleCancelVoiceRecording}
-              style={styles.cancelRecBtn}
-            >
-              <Ionicons name="trash-outline" size={17} color="#EF4444" />
+            <View style={styles.recordingRedDot} />
+            <Text style={styles.recordingTimerText}>Listening... {recordingSeconds}s</Text>
+            <TouchableOpacity onPress={handleCancelRecording} style={styles.recordingIconBtn}>
+              <Ionicons name="close" size={18} color="#64748B" />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSendVoiceRecording}
-              style={styles.sendRecBtn}
-            >
-              <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
+            <TouchableOpacity onPress={handleSendVoiceRecording} style={styles.recordingSendBtn}>
+              <Ionicons name="arrow-up" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         ) : (
-          /* Normal Message Input Box */
-          <View style={styles.inputInnerRow}>
-            {/* Quick Live Voice Mode Trigger */}
-            <TouchableOpacity
-              style={styles.composerMicBtn}
-              onPress={() => setShowVoiceModal(true)}
-              accessibilityLabel="Open Live Voice Mode"
-            >
-              <Ionicons name="mic-outline" size={20} color="#A78BFA" />
-            </TouchableOpacity>
-
+          /* Modern Floating Input Field */
+          <View style={styles.composerBar}>
             <TextInput
-              style={styles.inputField}
-              placeholder="Ask PARAM AI about JEE/NEET, career, JNV life..."
+              style={styles.composerInput}
+              placeholder="Ask PARAM AI anything..."
               placeholderTextColor="#94A3B8"
               value={input}
               onChangeText={setInput}
               multiline
-              maxLength={2000}
+              maxLength={2500}
               editable={!loading}
             />
 
-            {/* Quick Voice Message Recorder */}
+            {/* Microphone Button (Tap to record or hold) */}
             {!input.trim() && (
               <TouchableOpacity
-                style={styles.composerRecordBtn}
-                onPress={handleStartVoiceRecording}
-                accessibilityLabel="Record voice message"
+                onPress={handleStartRecording}
+                onLongPress={() => setShowVoiceModal(true)}
+                style={styles.composerMicBtn}
+                accessibilityLabel="Speak"
               >
-                <Ionicons name="radio-outline" size={18} color="#C4B5FD" />
+                <Ionicons name="mic-outline" size={20} color="#64748B" />
               </TouchableOpacity>
             )}
 
-            {/* Send Button */}
-            <TouchableOpacity
-              style={[
-                styles.sendBtn,
-                input.trim() ? styles.sendBtnActive : styles.sendBtnDisabled,
-              ]}
-              onPress={() => sendMessage(input)}
-              disabled={!input.trim() || loading}
-              accessibilityLabel="Send message"
-            >
-              <LinearGradient
-                colors={
-                  input.trim()
-                    ? ["#8B5CF6", "#6D28D9"]
-                    : ["rgba(255,255,255,0.06)", "rgba(255,255,255,0.03)"]
-                }
-                style={styles.sendGradient}
+            {/* Send or Stop Generation Button */}
+            {loading ? (
+              <TouchableOpacity
+                onPress={handleStopGeneration}
+                style={styles.composerStopBtn}
+                accessibilityLabel="Stop generation"
+              >
+                <View style={styles.stopSquare} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => sendMessage(input)}
+                disabled={!input.trim()}
+                style={[
+                  styles.composerSendBtn,
+                  input.trim() ? styles.composerSendBtnActive : styles.composerSendBtnDisabled,
+                ]}
+                accessibilityLabel="Send"
               >
                 <Ionicons
                   name="arrow-up"
-                  size={18}
-                  color={input.trim() ? "#FFFFFF" : "#64748B"}
+                  size={16}
+                  color={input.trim() ? "#FFFFFF" : "#CBD5E1"}
                 />
-              </LinearGradient>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
 
-      {/* ── 4. Immersive Two-Way Voice Modal ── */}
+      {/* ── 4. Full Voice Mode (Modal) ── */}
       <ParamVoiceModal
         visible={showVoiceModal}
         onClose={() => setShowVoiceModal(false)}
-        onSendMessageFromVoice={handleVoiceMessageFromModal}
+        onSendMessageFromVoice={(u, a) => {
+          const now = new Date();
+          setMessages((prev) => [
+            ...prev,
+            { id: `${Date.now()}-u`, role: "user", text: u, timestamp: now },
+            { id: `${Date.now()}-a`, role: "assistant", text: a, timestamp: new Date(now.getTime() + 100) },
+          ]);
+          scrollToBottom();
+        }}
         conversationHistory={messages.map((m) => ({ role: m.role, text: m.text }))}
         initialLanguage={voiceLang}
       />
 
-      {/* ── 5. Settings Modal ── */}
+      {/* ── 5. Clean Settings & Menu Modal ── */}
       <Modal
-        visible={showSettingsModal}
+        visible={showMenuModal}
         animationType="fade"
         transparent
-        onRequestClose={() => setShowSettingsModal(false)}
+        onRequestClose={() => setShowMenuModal(false)}
       >
-        <View style={styles.settingsModalOverlay}>
-          <View style={styles.settingsModalCard}>
-            <View style={styles.settingsModalHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontSize: 18 }}>🤖</Text>
-                <Text style={styles.settingsModalTitle}>PARAM AI Settings</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowSettingsModal(false)}
-                style={styles.settingsCloseBtn}
-              >
-                <Ionicons name="close" size={20} color="#E2E8F0" />
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenuModal(false)}
+        >
+          <View style={styles.menuCard}>
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>PARAM AI Options</Text>
+              <TouchableOpacity onPress={() => setShowMenuModal(false)}>
+                <Ionicons name="close" size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
+            {/* Launch Full Screen Voice Mode */}
+            <TouchableOpacity
+              style={styles.menuItemRow}
+              onPress={() => {
+                setShowMenuModal(false);
+                setShowVoiceModal(true);
+              }}
+            >
+              <Ionicons name="mic-circle-outline" size={20} color="#7C3AED" />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.menuItemTitle}>Live Two-Way Voice Mode</Text>
+                <Text style={styles.menuItemSub}>Hands-free continuous conversation</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+            </TouchableOpacity>
+
             {/* Language Selection */}
-            <Text style={styles.settingSectionLabel}>Preferred Language</Text>
-            <View style={styles.settingToggleRow}>
+            <View style={styles.menuDivider} />
+            <Text style={styles.menuSectionHeading}>Language</Text>
+            <View style={styles.langSelectionRow}>
               {(["en", "hi"] as const).map((l) => (
                 <TouchableOpacity
                   key={l}
-                  style={[
-                    styles.settingChoiceBtn,
-                    voiceLang === l && styles.settingChoiceBtnActive,
-                  ]}
+                  style={[styles.langBtn, voiceLang === l && styles.langBtnActive]}
                   onPress={() => {
                     setVoiceLang(l);
                     AsyncStorage.setItem(PREF_VOICE_LANG, l);
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.settingChoiceText,
-                      voiceLang === l && styles.settingChoiceTextActive,
-                    ]}
-                  >
-                    {l === "en" ? "English" : "हिंदी (Hindi)"}
+                  <Text style={[styles.langBtnText, voiceLang === l && styles.langBtnTextActive]}>
+                    {l === "en" ? "English" : "हिंदी"}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Speech Speed */}
-            <Text style={styles.settingSectionLabel}>Voice Speech Speed</Text>
-            <View style={styles.settingToggleRow}>
-              {[0.85, 1.0, 1.25].map((spd) => (
-                <TouchableOpacity
-                  key={`spd-${spd}`}
-                  style={[
-                    styles.settingChoiceBtn,
-                    voiceSpeed === spd && styles.settingChoiceBtnActive,
-                  ]}
-                  onPress={() => {
-                    setVoiceSpeed(spd);
-                    AsyncStorage.setItem(PREF_VOICE_SPEED, String(spd));
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.settingChoiceText,
-                      voiceSpeed === spd && styles.settingChoiceTextActive,
-                    ]}
-                  >
-                    {spd}x
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Auto Read Answers Aloud */}
-            <View style={styles.settingSwitchRow}>
+            {/* Auto Read Aloud Toggle */}
+            <View style={styles.menuDivider} />
+            <View style={styles.menuToggleRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingSwitchTitle}>Read Answers Aloud</Text>
-                <Text style={styles.settingSwitchSubtitle}>
-                  Automatically speak assistant responses
-                </Text>
+                <Text style={styles.menuItemTitle}>Read responses aloud</Text>
+                <Text style={styles.menuItemSub}>Automatically speak answers</Text>
               </View>
               <TouchableOpacity
-                style={[
-                  styles.toggleTrack,
-                  autoPlayAudio && styles.toggleTrackActive,
-                ]}
+                style={[styles.togglePill, autoPlayAudio && styles.togglePillActive]}
                 onPress={() => {
                   const next = !autoPlayAudio;
                   setAutoPlayAudio(next);
                   AsyncStorage.setItem(PREF_VOICE_AUTOPLAY, String(next));
                 }}
               >
-                <View
-                  style={[
-                    styles.toggleThumb,
-                    autoPlayAudio && styles.toggleThumbActive,
-                  ]}
-                />
+                <View style={[styles.toggleThumb, autoPlayAudio && styles.toggleThumbActive]} />
               </TouchableOpacity>
             </View>
 
-            {/* Clear History Button */}
-            <TouchableOpacity
-              style={styles.clearHistoryModalBtn}
-              onPress={() => {
-                setShowSettingsModal(false);
-                handleClearChat();
-              }}
-            >
-              <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 6 }} />
-              <Text style={styles.clearHistoryModalBtnText}>Clear Conversation History</Text>
-            </TouchableOpacity>
+            {/* Clear Conversation */}
+            {hasMessages && (
+              <>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity style={styles.clearChatRow} onPress={handleClearChat}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={styles.clearChatText}>Clear Conversation History</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -1082,42 +875,26 @@ export default function ParamAIScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#080417",
-    position: "relative",
-  },
-  ambientTopGlow: {
-    position: "absolute",
-    top: -40,
-    left: "15%",
-    width: "70%",
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#6D28D9",
-    opacity: 0.18,
-    ...Platform.select({
-      web: { filter: "blur(50px)" } as any,
-    }),
+    backgroundColor: "#FFFFFF",
   },
 
-  // Header
+  // 1. Header
   header: {
-    minHeight: 60,
+    minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(167, 139, 250, 0.15)",
+    borderBottomColor: "#F1F5F9",
     zIndex: 10,
   },
-  backBtn: {
+  headerBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1129,500 +906,356 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  statusPulseDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: "#10B981",
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.4,
-  },
-  headerStatusSub: {
-    fontSize: 10,
-    color: "#C4B5FD",
-    marginTop: 1,
-  },
-  headerRightActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  liveVoiceBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(124, 58, 237, 0.4)",
-    borderWidth: 1,
-    borderColor: "#A78BFA",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    gap: 4,
-  },
-  liveVoiceBtnText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+  headerAvatarBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#F5F3FF",
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // Body
-  body: {
-    flex: 1,
-  },
-  bodyContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-
-  // Welcome / AI Identity Section
-  welcomeSection: {
-    alignItems: "center",
-  },
-  orbWrapper: {
-    marginVertical: 10,
-  },
-  welcomeHeading: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    textAlign: "center",
+  headerTitleText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0F172A",
     letterSpacing: -0.2,
-    marginTop: 6,
-    marginBottom: 4,
   },
-  welcomeSubtitle: {
-    fontSize: 12,
-    color: "#CBD5E1",
-    textAlign: "center",
-    lineHeight: 18,
-    maxWidth: 340,
-    marginBottom: 12,
-  },
-  capabilityPillRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  capabilityPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  capabilityPillText: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: "#E2E8F0",
-  },
-
-  // Voice Hero Card
-  voiceHeroCard: {
-    width: "100%",
-    borderRadius: 18,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.35)",
-    marginBottom: 18,
-  },
-  voiceHeroGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    gap: 10,
-  },
-  voiceHeroIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(124, 58, 237, 0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  voiceHeroTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  voiceHeroDesc: {
-    fontSize: 11,
-    color: "#CBD5E1",
-    marginTop: 2,
-  },
-  voiceHeroStartPill: {
-    backgroundColor: "#7C3AED",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  voiceHeroStartText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-
-  // Section Labels
-  sectionLabel: {
-    alignSelf: "flex-start",
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#A78BFA",
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-
-  // Category Shortcuts
-  categoryScroll: {
-    gap: 8,
-    paddingBottom: 14,
-  },
-  categoryChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  categoryChipActive: {
-    backgroundColor: "#7C3AED",
-    borderColor: "#A78BFA",
-  },
-  categoryChipText: {
-    fontSize: 11.5,
-    fontWeight: "500",
-    color: "#CBD5E1",
-  },
-  categoryChipTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-
-  // Discovery Prompt Cards
-  promptCardsGrid: {
-    width: "100%",
-    gap: 10,
-  },
-  promptCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.18)",
-    borderRadius: 16,
-    padding: 12,
-  },
-  promptCardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  promptTagPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(124, 58, 237, 0.25)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  promptTagText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#DDD6FE",
-  },
-  promptText: {
-    fontSize: 12.5,
-    color: "#F1F5F9",
-    lineHeight: 18,
-    fontWeight: "400",
-  },
-
-  // Chat Messages
-  messagesList: {
-    gap: 14,
-  },
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  userRow: {
-    justifyContent: "flex-end",
-  },
-  aiRow: {
-    justifyContent: "flex-start",
-  },
-  aiOrbAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(124, 58, 237, 0.4)",
-    borderWidth: 1,
-    borderColor: "#A78BFA",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 2,
-  },
-  bubble: {
-    maxWidth: "84%",
-    borderRadius: 18,
-    padding: 12,
-  },
-  bubbleUser: {
-    backgroundColor: "#6D28D9",
-    borderBottomRightRadius: 4,
-    ...Platform.select({
-      web: { boxShadow: "0 4px 12px rgba(109, 40, 217, 0.3)" } as any,
-    }),
-  },
-  bubbleAI: {
-    backgroundColor: "rgba(19, 9, 43, 0.85)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.25)",
-    borderBottomLeftRadius: 4,
-    ...Platform.select({
-      web: { boxShadow: "0 4px 14px rgba(0, 0, 0, 0.25)" } as any,
-    }),
-  },
-  aiMessageHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(167, 139, 250, 0.15)",
-  },
-  aiLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  aiLabelText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#DDD6FE",
-    letterSpacing: 0.3,
-  },
-  langPill: {
-    backgroundColor: "rgba(124, 58, 237, 0.3)",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  langPillText: {
-    fontSize: 9,
-    color: "#C4B5FD",
-    fontWeight: "600",
-  },
-  aiActionsRow: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  bubbleActionBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bubbleActionBtnActive: {
-    backgroundColor: "rgba(236, 72, 153, 0.2)",
-  },
-  messageText: {
-    fontSize: 13.5,
-    lineHeight: 20,
-  },
-  userMessageText: {
-    color: "#FFFFFF",
-    fontWeight: "400",
-  },
-  aiMessageText: {
-    color: "#F8FAFC",
-    fontWeight: "400",
-  },
-  verifiedLinksSection: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(167, 139, 250, 0.15)",
-    gap: 6,
-  },
-  verifiedLinksHeading: {
-    fontSize: 9.5,
-    fontWeight: "700",
-    color: "#10B981",
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  verifiedLinkItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.2)",
-    padding: 8,
-    borderRadius: 10,
-  },
-  verifiedLinkTitle: {
-    fontSize: 11.5,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  verifiedLinkCategory: {
-    fontSize: 10,
-    color: "#A78BFA",
-  },
-  messageFooter: {
-    alignSelf: "flex-end",
-    marginTop: 4,
-  },
-  messageTimestamp: {
-    fontSize: 9.5,
-    color: "rgba(255, 255, 255, 0.45)",
-  },
-
-  // Thinking Bubble
-  thinkingBubble: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(19, 9, 43, 0.8)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.2)",
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 5,
-  },
-  thinkingDot: {
+  onlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#A855F7",
+    backgroundColor: "#10B981",
   },
-  thinkingText: {
-    fontSize: 11.5,
-    color: "#C4B5FD",
-    marginLeft: 4,
+  headerMenuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  // Regenerate Button
-  regenerateBtn: {
-    flexDirection: "row",
+  // 2. Scroll Area
+  scrollArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+
+  // Welcome State
+  welcomeContainer: {
     alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.25)",
+    paddingTop: 40,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-    marginVertical: 4,
   },
-  regenerateBtnText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#C4B5FD",
+  welcomeIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F5F3FF",
+    borderWidth: 1,
+    borderColor: "#EDE9FE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
-
-  // Message Composer
-  composerContainer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(11, 6, 26, 0.95)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(167, 139, 250, 0.18)",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    ...Platform.select({
-      web: { backdropFilter: "blur(16px)" } as any,
-    }),
+  welcomeGreeting: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#0F172A",
+    textAlign: "center",
+    letterSpacing: -0.3,
+    marginBottom: 6,
   },
-  inputInnerRow: {
+  welcomeSub: {
+    fontSize: 13.5,
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 20,
+    maxWidth: 320,
+    marginBottom: 28,
+  },
+  promptList: {
+    width: "100%",
+    maxWidth: 420,
+    gap: 10,
+  },
+  promptChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "#FAFAFA",
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.25)",
+    borderColor: "#F1F5F9",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  promptChipText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#1E293B",
+  },
+
+  // Messages
+  messagesContainer: {
+    gap: 20,
+  },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  userMessageRow: {
+    justifyContent: "flex-end",
+  },
+  assistantMessageRow: {
+    justifyContent: "flex-start",
+  },
+  assistantAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#F5F3FF",
+    borderWidth: 1,
+    borderColor: "#DDD6FE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  messageContentWrap: {
+    flex: 1,
+  },
+  userContentWrap: {
+    flex: 0,
+    maxWidth: "80%",
+    alignSelf: "flex-end",
+  },
+
+  // User Bubble
+  userBubble: {
+    backgroundColor: "#7C3AED",
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  userText: {
+    fontSize: 14.5,
+    color: "#FFFFFF",
+    lineHeight: 21,
+  },
+  userTimestamp: {
+    fontSize: 10,
+    color: "rgba(255, 255, 255, 0.65)",
+    alignSelf: "flex-end",
+    marginTop: 4,
+  },
+
+  // Assistant Direct Text (No heavy card background!)
+  assistantDirectTextWrap: {
+    paddingRight: 6,
+  },
+
+  // Markdown Typography
+  mdHeadingLarge: {
+    fontSize: 16.5,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginTop: 10,
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  mdHeading: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  mdParagraph: {
+    fontSize: 14.5,
+    color: "#334155",
+    lineHeight: 22.5,
+  },
+  mdBold: {
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+  mdBulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginVertical: 2.5,
+    paddingLeft: 4,
+  },
+  mdBulletDot: {
+    fontSize: 14,
+    color: "#7C3AED",
+    marginRight: 8,
+    lineHeight: 22,
+  },
+  mdNumberLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#7C3AED",
+    marginRight: 6,
+    lineHeight: 22,
+  },
+  mdBulletText: {
+    flex: 1,
+    fontSize: 14.5,
+    color: "#334155",
+    lineHeight: 22,
+  },
+
+  // Sources
+  sourcesContainer: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  sourcesHeading: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#64748B",
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  sourcesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  sourcePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    maxWidth: 220,
+  },
+  sourcePillText: {
+    fontSize: 11.5,
+    color: "#334155",
+    fontWeight: "500",
+  },
+
+  // Assistant Action Bar
+  assistantActionsBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 10,
+  },
+  subtleActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+    gap: 4,
+  },
+  copiedHint: {
+    fontSize: 11,
+    color: "#10B981",
+    fontWeight: "500",
+  },
+
+  // Typing
+  typingWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#7C3AED",
+  },
+
+  // 3. Composer
+  composerWrap: {
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  composerBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     borderRadius: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    minHeight: 46,
+  },
+  composerInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: "#0F172A",
+    maxHeight: 120,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   composerMicBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
-  inputField: {
-    flex: 1,
-    color: "#FFFFFF",
-    fontSize: 13,
-    maxHeight: 90,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  composerRecordBtn: {
+  composerSendBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    marginLeft: 4,
   },
-  sendBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    overflow: "hidden",
+  composerSendBtnActive: {
+    backgroundColor: "#7C3AED",
   },
-  sendBtnActive: {},
-  sendBtnDisabled: {
-    opacity: 0.45,
+  composerSendBtnDisabled: {
+    backgroundColor: "#F1F5F9",
   },
-  sendGradient: {
-    width: "100%",
-    height: "100%",
+  composerStopBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#1E293B",
     alignItems: "center",
     justifyContent: "center",
+  },
+  stopSquare: {
+    width: 10,
+    height: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 2,
   },
 
   // Recording Bar
   recordingBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#EF4444",
+    borderColor: "#FECACA",
     borderRadius: 22,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    gap: 8,
   },
-  recordingPulseDot: {
+  recordingRedDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -1630,123 +1263,115 @@ const styles = StyleSheet.create({
   },
   recordingTimerText: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FCA5A5",
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#B91C1C",
   },
-  cancelRecBtn: {
+  recordingIconBtn: {
     padding: 4,
   },
-  sendRecBtn: {
-    backgroundColor: "#10B981",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  recordingSendBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#7C3AED",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  // Settings Modal
-  settingsModalOverlay: {
+  // 5. Menu Modal
+  menuOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  menuCard: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     padding: 20,
+    paddingBottom: 32,
   },
-  settingsModalCard: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: "#13092E",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.3)",
-    borderRadius: 22,
-    padding: 18,
-  },
-  settingsModalHeader: {
+  menuHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(167, 139, 250, 0.15)",
   },
-  settingsModalTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0F172A",
   },
-  settingsCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  menuItemRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 10,
   },
-  settingSectionLabel: {
+  menuItemTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#0F172A",
+  },
+  menuItemSub: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 10,
+  },
+  menuSectionHeading: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#C4B5FD",
+    color: "#64748B",
+    textTransform: "uppercase",
     marginBottom: 8,
-    marginTop: 8,
+    letterSpacing: 0.5,
   },
-  settingToggleRow: {
+  langSelectionRow: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 12,
   },
-  settingChoiceBtn: {
+  langBtn: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.2)",
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 10,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     alignItems: "center",
   },
-  settingChoiceBtnActive: {
-    backgroundColor: "#7C3AED",
-    borderColor: "#A78BFA",
+  langBtnActive: {
+    backgroundColor: "#F5F3FF",
+    borderColor: "#7C3AED",
   },
-  settingChoiceText: {
-    fontSize: 12,
-    color: "#CBD5E1",
+  langBtnText: {
+    fontSize: 13,
+    color: "#475569",
     fontWeight: "500",
   },
-  settingChoiceTextActive: {
-    color: "#FFFFFF",
+  langBtnTextActive: {
+    color: "#7C3AED",
     fontWeight: "600",
   },
-  settingSwitchRow: {
+  menuToggleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(167, 139, 250, 0.15)",
-    marginVertical: 4,
+    paddingVertical: 4,
   },
-  settingSwitchTitle: {
-    fontSize: 12.5,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  settingSwitchSubtitle: {
-    fontSize: 10.5,
-    color: "#94A3B8",
-    marginTop: 2,
-  },
-  toggleTrack: {
+  togglePill: {
     width: 44,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: "#E2E8F0",
     padding: 2,
     justifyContent: "center",
   },
-  toggleTrackActive: {
+  togglePillActive: {
     backgroundColor: "#7C3AED",
   },
   toggleThumb: {
@@ -1758,20 +1383,15 @@ const styles = StyleSheet.create({
   toggleThumbActive: {
     alignSelf: "flex-end",
   },
-  clearHistoryModalBtn: {
+  clearChatRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.4)",
+    gap: 8,
     paddingVertical: 10,
-    borderRadius: 14,
-    marginTop: 14,
   },
-  clearHistoryModalBtnText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FCA5A5",
+  clearChatText: {
+    fontSize: 13.5,
+    fontWeight: "500",
+    color: "#EF4444",
   },
 });

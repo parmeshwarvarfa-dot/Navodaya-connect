@@ -92,7 +92,7 @@ export default function RootLayout() {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
           }
-          body, html, #root, [data-testid="root"] {
+          body, html, #root, [data-testid="root"], div, span, p, div[dir="auto"], input, button, textarea {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
           }
           /* Professional font-weight moderation - prevent chunky faux bold */

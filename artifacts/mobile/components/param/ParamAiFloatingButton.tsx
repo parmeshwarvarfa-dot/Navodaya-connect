@@ -2,22 +2,18 @@ import React, { useEffect, useRef } from "react";
 import {
   Platform,
   StyleSheet,
-  TouchableOpacity,
+  Text,
   View,
   Animated,
   PanResponder,
 } from "react-native";
 import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, {
-  Circle,
   Path,
-  Line,
   Rect,
-  G,
-  Defs,
-  LinearGradient,
-  Stop,
-  Text as SvgText,
+  Circle,
+  Line,
 } from "react-native-svg";
 
 interface ParamAiFloatingButtonProps {
@@ -54,11 +50,11 @@ export default function ParamAiFloatingButton({
     );
     bobLoop.start();
 
-    // Natural blinking animation every 4 seconds
+    // Natural blinking animation
     const blinkInterval = setInterval(() => {
       Animated.sequence([
         Animated.timing(blinkAnim, {
-          toValue: 0.1,
+          toValue: 0.15,
           duration: 120,
           useNativeDriver: Platform.OS !== "web",
         }),
@@ -68,7 +64,7 @@ export default function ParamAiFloatingButton({
           useNativeDriver: Platform.OS !== "web",
         }),
       ])?.start();
-    }, 4200);
+    }, 4000);
 
     return () => {
       bobLoop.stop();
@@ -85,7 +81,7 @@ export default function ParamAiFloatingButton({
     }
   };
 
-  // Dragging support so user can move PARAM AI if it overlaps any screen button
+  // Dragging support so user can move PARAM AI anywhere
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -148,120 +144,81 @@ export default function ParamAiFloatingButton({
           },
         ]}
       >
-        <Svg viewBox="0 0 100 130" width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="paramBodyGrad" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#8B5CF6" />
-              <Stop offset="1" stopColor="#6D28D9" />
-            </LinearGradient>
-            <LinearGradient id="paramBadgeGrad" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#1E1B4B" />
-              <Stop offset="1" stopColor="#0F172A" />
-            </LinearGradient>
-          </Defs>
+        {/* Vibrant Solid Glowing Circle Mascot */}
+        <LinearGradient
+          colors={["#8B5CF6", "#7C3AED", "#5B21B6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.mascotCircle}
+        >
+          {/* Subtle Outer Highlight Ring */}
+          <View style={styles.mascotInnerBorder} />
 
-          {/* Outer glow ring */}
-          <Circle
-            cx="50"
-            cy="46"
-            r="43"
-            fill="none"
-            stroke="#C4B5FD"
-            strokeWidth="1.5"
-            strokeOpacity="0.45"
-          />
+          {/* Cute Robot Mascot SVG */}
+          <View style={styles.svgContainer}>
+            <Svg viewBox="0 0 60 60" width="100%" height="100%">
+              {/* Antenna */}
+              <Line
+                x1="30"
+                y1="16"
+                x2="30"
+                y2="9"
+                stroke="#EDE9FE"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+              <Circle cx="30" cy="8" r="3" fill="#FFFFFF" />
 
-          {/* Main Circle Body */}
-          <Circle cx="50" cy="46" r="40" fill="url(#paramBodyGrad)" />
-          <Circle
-            cx="50"
-            cy="46"
-            r="40"
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="1.5"
-            strokeOpacity="0.6"
-          />
+              {/* Robot Head Outer Shell (Light Lilac/White) */}
+              <Rect
+                x="14"
+                y="15"
+                width="32"
+                height="26"
+                rx="9"
+                fill="#F5F3FF"
+              />
 
-          {/* Antenna */}
-          <Line
-            x1="50"
-            y1="28"
-            x2="50"
-            y2="20"
-            stroke="#EDE9FE"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <Circle cx="50" cy="18" r="3.5" fill="#FFFFFF" />
+              {/* Robot Screen Visor (Deep Midnight Purple) */}
+              <Rect
+                x="18"
+                y="19"
+                width="24"
+                height="17"
+                rx="5.5"
+                fill="#1E1B4B"
+              />
 
-          {/* Cute Robot Head Outer Shell */}
-          <Rect
-            x="30"
-            y="27"
-            width="40"
-            height="32"
-            rx="12"
-            fill="#F5F3FF"
-          />
+              {/* Friendly Glowing Eyes (Lavender) */}
+              <Circle cx="24.5" cy="27" r="2.8" fill="#C4B5FD" />
+              <Circle cx="35.5" cy="27" r="2.8" fill="#C4B5FD" />
 
-          {/* Robot Screen Visor */}
-          <Rect
-            x="35"
-            y="33"
-            width="30"
-            height="20"
-            rx="7"
-            fill="#1E1B4B"
-          />
+              {/* Warm Smiling Mouth */}
+              <Path
+                d="M 25 31 Q 30 34.5 35 31"
+                fill="none"
+                stroke="#C4B5FD"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
 
-          {/* Friendly Glowing Eyes */}
-          <Circle cx="43" cy="42" r="3.2" fill="#C4B5FD" />
-          <Circle cx="57" cy="42" r="3.2" fill="#C4B5FD" />
+              {/* Cute Collar / Neck Pill */}
+              <Rect
+                x="23"
+                y="43"
+                width="14"
+                height="4.5"
+                rx="2.2"
+                fill="#EDE9FE"
+              />
+            </Svg>
+          </View>
+        </LinearGradient>
 
-          {/* Happy Smile */}
-          <Path
-            d="M44 47 Q50 51 56 47"
-            fill="none"
-            stroke="#C4B5FD"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-
-          {/* Small Collar/Neck Pill */}
-          <Rect
-            x="42"
-            y="61"
-            width="16"
-            height="6"
-            rx="3"
-            fill="#EDE9FE"
-          />
-
-          {/* Bottom Capsule Badge: PARAM AI */}
-          <Rect
-            x="14"
-            y="98"
-            width="72"
-            height="20"
-            rx="10"
-            fill="url(#paramBadgeGrad)"
-            stroke="#6366F1"
-            strokeWidth="1"
-          />
-          <SvgText
-            x="50"
-            y="112"
-            textAnchor="middle"
-            fontFamily="Inter, system-ui, -apple-system, sans-serif"
-            fontSize="9"
-            fontWeight="700"
-            fill="#FFFFFF"
-            letterSpacing="0.6"
-          >
-            PARAM AI
-          </SvgText>
-        </Svg>
+        {/* High-Contrast Bottom Pill Badge: PARAM AI 🤖 */}
+        <View style={styles.badgePill}>
+          <Text style={styles.badgeText}>PARAM AI 🤖</Text>
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -271,31 +228,87 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     zIndex: 9999,
-    width: 60,
-    height: 78,
+    width: 68,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
     ...Platform.select({
       web: {
-        filter: "drop-shadow(0 6px 14px rgba(109, 40, 217, 0.4))",
+        filter: "drop-shadow(0 8px 18px rgba(124, 58, 237, 0.65))",
         cursor: "pointer",
         userSelect: "none",
       } as any,
       default: {
-        shadowColor: "#6D28D9",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        elevation: 8,
+        shadowColor: "#7C3AED",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.65,
+        shadowRadius: 10,
+        elevation: 12,
       },
     }),
   },
   innerWrap: {
-    width: "100%",
-    height: "100%",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
+  },
+  mascotCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    borderWidth: 2,
+    borderColor: "#DDD6FE",
+    ...Platform.select({
+      web: {
+        boxShadow: "0 6px 20px rgba(124, 58, 237, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.5)",
+      } as any,
+    }),
+  },
+  mascotInnerBorder: {
+    position: "absolute",
+    top: 2,
+    left: 2,
+    right: 2,
+    bottom: 2,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    pointerEvents: "none",
+  },
+  svgContainer: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgePill: {
+    marginTop: 4,
+    backgroundColor: "#160C32",
+    borderWidth: 1.5,
+    borderColor: "#7C3AED",
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    ...Platform.select({
+      web: {
+        boxShadow: "0 3px 8px rgba(0, 0, 0, 0.5)",
+      } as any,
+      default: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+        elevation: 4,
+      },
+    }),
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.4,
   },
 });
