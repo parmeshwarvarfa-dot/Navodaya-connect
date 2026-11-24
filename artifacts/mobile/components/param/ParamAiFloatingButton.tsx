@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { createElement, useEffect, useRef } from "react";
 import {
   Platform,
   StyleSheet,
   TouchableOpacity,
   View,
   Animated,
-  Text,
 } from "react-native";
 import { router } from "expo-router";
 import Svg, {
@@ -21,7 +20,7 @@ import Svg, {
 } from "react-native-svg";
 
 const RAW_ANIMATED_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -10 120 160" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -10 120 160" width="100%" height="100%" style="overflow:visible;display:block">
   <title>PARAM AI floating button (animated)</title>
   <style>
     /* Idle bob runs all the time */
@@ -149,12 +148,18 @@ export default function ParamAiFloatingButton({
       accessibilityLabel="Ask PARAM AI"
     >
       {isWeb ? (
-        // Web: render the SVG directly with full CSS keyframe animations (bob, wink, hop, squash, sparkles, heart)
-        <View
-          style={styles.svgWrapper}
-          // @ts-ignore
-          dangerouslySetInnerHTML={{ __html: RAW_ANIMATED_SVG }}
-        />
+        createElement("div", {
+          style: {
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            backgroundColor: "transparent",
+          },
+          dangerouslySetInnerHTML: { __html: RAW_ANIMATED_SVG },
+        })
       ) : (
         // Native: animated fallback using react-native-svg
         <Animated.View
@@ -203,20 +208,29 @@ export default function ParamAiFloatingButton({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    right: 10,
+    right: 12,
     zIndex: 9999,
-    width: 58,
-    height: 78,
+    width: 60,
+    height: 82,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: "transparent",
+    ...Platform.select({
+      web: {
+        filter: "drop-shadow(0 6px 14px rgba(106, 0, 224, 0.4))",
+        cursor: "pointer",
+      } as any,
+      default: {
+        shadowColor: "#6A00E0",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+    }),
   },
   svgWrapper: {
-    width: 58,
-    height: 78,
+    width: 60,
+    height: 82,
+    backgroundColor: "transparent",
   },
 });
