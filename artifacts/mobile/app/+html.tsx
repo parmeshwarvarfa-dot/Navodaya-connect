@@ -3,8 +3,9 @@ import React, { type PropsWithChildren } from "react";
 
 /**
  * Root HTML shell for Navodaya Connect web client.
- * Injects Google Fonts Inter, global CSS typography engine,
- * and eliminates serif (Times New Roman) and chunky bold fallbacks across all web views.
+ * Injects Google Fonts Inter, global typography configuration,
+ * and preserves ALL icon fonts (@expo/vector-icons like Ionicons, Feather, MaterialIcons)
+ * while ensuring clean modern typography without Times New Roman.
  */
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -67,20 +68,55 @@ export default function Root({ children }: PropsWithChildren) {
                 box-sizing: border-box;
               }
 
-              /* Force Inter typography across ALL tags and React Native Web generated divs */
-              html, body, #root, [data-testid="root"], div, span, p, a, input, textarea, button, select, [dir="auto"] {
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+              /* Root document typography - inherited by normal text naturally */
+              html, body, #root, [data-testid="root"] {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              }
+
+              input, textarea, select {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              }
+
+              /* CRITICAL: Explicitly protect all @expo/vector-icons and custom icon fonts from being overridden! */
+              [style*="font-family: Ionicons"], [style*="fontFamily: Ionicons"], [style*="font-family: 'Ionicons'"], [style*="font-family:ionicons"] {
+                font-family: Ionicons !important;
+              }
+              [style*="font-family: Feather"], [style*="fontFamily: Feather"], [style*="font-family: 'Feather'"] {
+                font-family: Feather !important;
+              }
+              [style*="font-family: MaterialIcons"], [style*="fontFamily: MaterialIcons"], [style*="font-family: 'MaterialIcons'"] {
+                font-family: MaterialIcons !important;
+              }
+              [style*="font-family: MaterialCommunityIcons"], [style*="fontFamily: MaterialCommunityIcons"] {
+                font-family: MaterialCommunityIcons !important;
+              }
+              [style*="font-family: FontAwesome"], [style*="fontFamily: FontAwesome"] {
+                font-family: FontAwesome !important;
+              }
+              [style*="font-family: FontAwesome5"], [style*="fontFamily: FontAwesome5"] {
+                font-family: FontAwesome5 !important;
+              }
+              [style*="font-family: AntDesign"], [style*="fontFamily: AntDesign"] {
+                font-family: AntDesign !important;
+              }
+              [style*="font-family: Entypo"], [style*="fontFamily: Entypo"] {
+                font-family: Entypo !important;
+              }
+              [style*="font-family: Octicons"], [style*="fontFamily: Octicons"] {
+                font-family: Octicons !important;
+              }
+              [style*="font-family: SimpleLineIcons"], [style*="fontFamily: SimpleLineIcons"] {
+                font-family: SimpleLineIcons !important;
               }
 
               /* Clean executive typography - eliminate chunky, clunky bold weights */
               [style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"],
               [style*="fontWeight: 700"], [style*="fontWeight: 800"], [style*="fontWeight: 900"],
               [style*="font-weight: bold"], b, strong {
-                font-weight: 600 !important;
                 letter-spacing: -0.015em;
               }
 
-              /* Never show blank white backgrounds for mascot or floating actions */
+              /* Transparent backgrounds for floating actions */
               .param-ai-floating-btn {
                 background-color: transparent !important;
               }

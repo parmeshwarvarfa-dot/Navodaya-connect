@@ -121,13 +121,45 @@ export default function RootLayout() {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
           }
-          body, html, #root, [data-testid="root"], div, span, p, div[dir="auto"], input, button, textarea {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          body, html, #root, [data-testid="root"] {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          }
+          input, textarea, select {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          }
+          /* CRITICAL: Protect all @expo/vector-icons and custom icon fonts from being overridden! */
+          [style*="font-family: Ionicons"], [style*="fontFamily: Ionicons"], [style*="font-family: 'Ionicons'"], [style*="font-family:ionicons"] {
+            font-family: Ionicons !important;
+          }
+          [style*="font-family: Feather"], [style*="fontFamily: Feather"], [style*="font-family: 'Feather'"] {
+            font-family: Feather !important;
+          }
+          [style*="font-family: MaterialIcons"], [style*="fontFamily: MaterialIcons"] {
+            font-family: MaterialIcons !important;
+          }
+          [style*="font-family: MaterialCommunityIcons"], [style*="fontFamily: MaterialCommunityIcons"] {
+            font-family: MaterialCommunityIcons !important;
+          }
+          [style*="font-family: FontAwesome"], [style*="fontFamily: FontAwesome"] {
+            font-family: FontAwesome !important;
+          }
+          [style*="font-family: FontAwesome5"], [style*="fontFamily: FontAwesome5"] {
+            font-family: FontAwesome5 !important;
+          }
+          [style*="font-family: AntDesign"], [style*="fontFamily: AntDesign"] {
+            font-family: AntDesign !important;
+          }
+          [style*="font-family: Entypo"], [style*="fontFamily: Entypo"] {
+            font-family: Entypo !important;
+          }
+          [style*="font-family: Octicons"], [style*="fontFamily: Octicons"] {
+            font-family: Octicons !important;
+          }
+          [style*="font-family: SimpleLineIcons"], [style*="fontFamily: SimpleLineIcons"] {
+            font-family: SimpleLineIcons !important;
           }
           /* Professional font-weight moderation - prevent chunky faux bold */
           h1, h2, h3, h4, [style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"], [style*="fontWeight: '700'"], [style*="fontWeight: '800'"], [style*="fontWeight: '900'"], [style*="font-weight: bold"], b, strong {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            font-weight: 600 !important;
             letter-spacing: -0.015em;
           }
         `;
