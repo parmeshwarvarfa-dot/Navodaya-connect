@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   activeText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#10B981",
     letterSpacing: 0.5,
   },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   seasonTitle: {
     fontSize: 20,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
     marginBottom: 6,
   },
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   bannerStatNum: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FBBF24",
   },
   bannerStatLabel: {
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   sectionSub: {
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   matchStage: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
     letterSpacing: 0.5,
   },
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   },
   ptsRewardText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#2563EB",
   },
   matchTeamsRow: {
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   vsText: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#475569",
   },
   finalTitleWrap: {
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   finalStage: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#B45309",
     letterSpacing: 0.5,
   },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   },
   hallYear: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
     width: 45,
   },
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   },
   hallPts: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   hallDivider: {

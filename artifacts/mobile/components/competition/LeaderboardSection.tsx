@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   },
   podiumRankText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   podiumAvatarWrap: {
     width: 44,
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
   },
   podiumPointsText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   listContainer: {
     marginTop: 8,
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
   },
   avatarWrap: {
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   },
   youPillText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   houseSubtitleRow: {
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   },
   pointsText: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   housesContent: {},
   leadingBanner: {
@@ -993,13 +993,13 @@ const styles = StyleSheet.create({
   },
   leadingOverline: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FBBF24",
     letterSpacing: 1,
   },
   leadingTitle: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   leadingSub: {
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   houseTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   yourHouseTag: {
@@ -1071,7 +1071,7 @@ const styles = StyleSheet.create({
   },
   yourHouseTagText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   houseMotto: {
@@ -1085,7 +1085,7 @@ const styles = StyleSheet.create({
   },
   housePointsNumber: {
     fontSize: 20,
-    fontWeight: "900",
+    fontWeight: "600",
   },
   housePointsUnit: {
     fontSize: 11,

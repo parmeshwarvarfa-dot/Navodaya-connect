@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E1B4B",
     lineHeight: 18,
   },
@@ -1060,7 +1060,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E1B4B",
     flex: 1,
     marginLeft: 8,

@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   infoBannerTitle: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#5B21B6",
   },
   infoBannerDesc: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   schoolName: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   schoolState: {
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   },
   scoreNumber: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   scoreOutOf: {
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   breakdownHeading: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#475569",
     marginBottom: 2,
   },
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   catScore: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     width: 48,
     textAlign: "right",
   },

@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
     letterSpacing: -0.2,
   },
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   },
   idCardName: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FFFFFF",
     marginBottom: 4,
   },

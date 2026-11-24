@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#0F172A",
   },
   headerSubtitle: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 8,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#475569",
   },
   badgeTextActive: {

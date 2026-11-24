@@ -543,14 +543,14 @@ const styles = StyleSheet.create({
   stepNumText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
     fontSize: 13.5,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
   },
   stepDesc: {
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   },
   houseName: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
   },
   houseSub: {
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontSize: 12.5,
-    fontWeight: "800",
+    fontWeight: "600",
     letterSpacing: 1.4,
     color: "#6A00E0",
   },
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 30,
     color: "#FFFFFF",
     letterSpacing: -0.4,
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 17,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
     marginBottom: 12,
     letterSpacing: -0.2,
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   },
   communityRole: {
     fontSize: 14.5,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
   },
   communityDesc: {
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   },
   bottomCtaTitle: {
     fontSize: 21,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
     textAlign: "center",
     lineHeight: 26,

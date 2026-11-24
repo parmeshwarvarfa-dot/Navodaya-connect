@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   closeBtn: {
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   noticeTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#065F46",
     marginBottom: 2,
   },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   formHeading: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   fieldLabel: {

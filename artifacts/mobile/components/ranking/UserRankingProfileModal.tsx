@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0F172A",
   },
   closeBtn: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   heroText: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   userJnv: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   roleText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   heroStatsRow: {
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   },
   statVal: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
     marginTop: 2,
   },
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   cardSubtitle: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   percentText: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   progressBarTrack: {
     height: 8,
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   awardTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#854D0E",
   },
   awardPeriod: {
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   actPoints: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   historyList: {
@@ -474,6 +474,6 @@ const styles = StyleSheet.create({
   },
   historyPoints: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
 });

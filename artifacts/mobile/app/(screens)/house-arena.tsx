@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0F172A",
   },
   headerStatusRow: {
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   },
   seasonBadge: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
     backgroundColor: "#F5F3FF",
     paddingHorizontal: 6,
@@ -532,13 +532,13 @@ const styles = StyleSheet.create({
   },
   heroHouseOverline: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#94A3B8",
     letterSpacing: 1,
   },
   heroHouseTitle: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
   },
   userPointsPill: {
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   },
   userPointsNumber: {
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
   },
   userPointsUnit: {
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   },
   heroStatValue: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   heroDivider: {
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   },
   segmentBadgeText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#475569",
   },
   segmentBadgeTextActive: {
@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   sectionSubtitle: {
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   },
   verifiedBadgeText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#059669",
   },
   gamesList: {
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
   },
   tickerTitle: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
     letterSpacing: 1,
   },
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   },
   tickerPts: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#059669",
   },
   gameModalRoot: {
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   },
   gameModalTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   gameModalCloseBtn: {

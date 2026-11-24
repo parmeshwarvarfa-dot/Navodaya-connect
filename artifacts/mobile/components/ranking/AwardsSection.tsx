@@ -411,13 +411,13 @@ const styles = StyleSheet.create({
   },
   badgePillText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
     letterSpacing: 0.5,
   },
   awardName: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
   },
   periodText: {
@@ -456,12 +456,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   winnerName: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   winnerState: {
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
   scoreNum: {
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#854D0E",
   },
   scoreUnit: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   },
   highlightsTitle: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#334155",
     marginBottom: 2,
   },
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   historyHeading: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     marginBottom: 4,
   },
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   },
   historyType: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   historyPeriod: {
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   },
   historyScoreText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#334155",
   },
   historyWinnerName: {

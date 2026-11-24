@@ -329,13 +329,13 @@ const styles = StyleSheet.create({
   },
   userGreeting: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#C7D2FE",
     letterSpacing: 1,
   },
   userName: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
     marginTop: 2,
   },
@@ -355,13 +355,13 @@ const styles = StyleSheet.create({
   },
   userRankLabel: {
     fontSize: 8,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FBBF24",
     letterSpacing: 0.5,
   },
   userRankValue: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#fff",
   },
   badgeProgressBox: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   badgeTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   badgePointsSub: {
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   },
   badgePercentText: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   progressBarTrack: {
     height: 6,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   pointBlockNum: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
     marginTop: 2,
   },
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   seeAllLink: {
@@ -486,13 +486,13 @@ const styles = StyleSheet.create({
   },
   awardOverline: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#B45309",
     letterSpacing: 0.5,
   },
   awardWinnerTitle: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   awardState: {
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   },
   awardScoreText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#854D0E",
   },
   awardSummaryText: {
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   },
   podiumRankNum: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   podiumAvatarWrap: {
     width: 44,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   podiumPts: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   topJnvList: {
     gap: 8,
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   },
   jnvScoreNum: {
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   jnvScoreLabel: {
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
   },
   recentPtsText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#059669",
   },
 });

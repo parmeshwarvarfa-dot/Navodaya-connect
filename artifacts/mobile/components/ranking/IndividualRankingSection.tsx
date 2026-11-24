@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   },
   podiumHeaderTitle: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     textAlign: "center",
     marginBottom: 10,
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   },
   podiumRankDigit: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   podiumAvatarBorder: {
     width: 44,
@@ -570,14 +570,14 @@ const styles = StyleSheet.create({
   },
   podiumPtsText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   tableList: {
     marginTop: 8,
   },
   tableHeading: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     marginBottom: 8,
   },
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   rankNumber: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#475569",
   },
   rankMovement: {
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   },
   youBadgeText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#fff",
   },
   userSchool: {
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   roleTagText: {
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   badgeTag: {
     flexDirection: "row",
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   },
   pointsNumber: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#854D0E",
   },
   pointsUnit: {

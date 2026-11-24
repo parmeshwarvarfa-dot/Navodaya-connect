@@ -181,12 +181,12 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   mainTitle: {
     fontSize: 17,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0F172A",
   },
   mainSubtitle: {
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
   },
   sectionDesc: {
@@ -251,12 +251,12 @@ const styles = StyleSheet.create({
   },
   actPtsText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   sectionSubtitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#334155",
     marginBottom: 8,
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   badgeRange: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   tieBreakText: {
     fontSize: 11,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   catWeightText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#2563EB",
   },
   catMetrics: {
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   policyTitle: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#065F46",
   },
   policyDesc: {

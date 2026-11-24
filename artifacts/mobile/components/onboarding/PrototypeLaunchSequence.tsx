@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   watermarkTitle: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     letterSpacing: 3,
     color: "#FFFFFF",
   },
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   watermarkTitleDocked: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     letterSpacing: 2.8,
     color: "#FFFFFF",
   },
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   },
   sloganLine2: {
     fontSize: 38,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
     marginTop: 4,
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   },
   hindiCenterpiece: {
     fontSize: 50,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
     lineHeight: 58,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 40,
-    fontWeight: "800",
+    fontWeight: "600",
     letterSpacing: 3,
     color: "#FFFFFF",
   },
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   sheetHeading: {
     fontSize: 36,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0A0A2A",
     lineHeight: 40,
     letterSpacing: -0.5,

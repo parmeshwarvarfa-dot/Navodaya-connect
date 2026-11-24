@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   headerHeading: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#FFFFFF",
   },
   headerSubtitle: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E1B4B",
     marginBottom: 10,
     textTransform: "uppercase",
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   bestValueText: {
     color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   planCardTop: {
     flexDirection: "row",
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   planName: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E1B4B",
   },
   planBilling: {
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   planPrice: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#7C3AED",
   },
   planOriginalPrice: {
@@ -476,6 +476,6 @@ const styles = StyleSheet.create({
   subscribeBtnText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
   },
 });
