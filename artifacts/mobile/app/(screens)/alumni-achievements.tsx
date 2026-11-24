@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import type { Achievement } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
 
 const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award", "Career", "Other"];
 const CAT_COLOR: Record<string, string> = {
@@ -39,6 +40,8 @@ export default function AlumniAchievementsScreen() {
   const [toast,        setToast]        = useState("");
   const [submitting,   setSubmitting]   = useState(false);
   const [sharePhoto, setSharePhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [photoToAdjust, setPhotoToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [adjustmentVisible, setAdjustmentVisible] = useState(false);
   const [shareError, setShareError] = useState("");
   const [editingAchievement, setEditingAchievement] = useState<Achievement | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -88,7 +91,8 @@ export default function AlumniAchievementsScreen() {
         setShareError("Choose a photo under 10 MB.");
         return;
       }
-      setSharePhoto(photo);
+      setPhotoToAdjust(photo);
+      setAdjustmentVisible(true);
     } catch {
       setShareError("The photo could not be opened. Please try again.");
     }
@@ -293,6 +297,22 @@ export default function AlumniAchievementsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ImageAdjustmentModal
+        visible={adjustmentVisible}
+        asset={photoToAdjust}
+        title="Adjust achievement photo"
+        defaultAspect="original"
+        onCancel={() => {
+          setAdjustmentVisible(false);
+          setPhotoToAdjust(null);
+        }}
+        onDone={(asset) => {
+          setSharePhoto(asset);
+          setAdjustmentVisible(false);
+          setPhotoToAdjust(null);
+        }}
+      />
 
       {toast ? <View style={styles.toast} pointerEvents="none"><Text style={styles.toastText}>{toast}</Text></View> : null}
     </View>
