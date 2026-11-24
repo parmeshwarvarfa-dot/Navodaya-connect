@@ -210,12 +210,12 @@ export default function MemoriesScreen() {
   const renderPeopleResults = (people: ChatContact[]) => (
     <View style={styles.peopleSection}>
       <View style={styles.peopleHeading}>
-        <View style={styles.peopleHeadingIcon}><Ionicons name="people-outline" size={15} color="#355BE5" /></View>
+        <View style={styles.peopleHeadingIcon}><Ionicons name="people-outline" size={15} color="#7C3AED" /></View>
         <Text style={styles.peopleTitle}>Accounts</Text>
         {!!people.length && <Text style={styles.peopleCount}>{people.length}</Text>}
       </View>
       {peopleSearch.isFetching && !peopleSearch.data ? (
-        <View style={styles.peopleState}><ActivityIndicator size="small" color="#355BE5" /><Text style={styles.peopleStateText}>Searching accounts…</Text></View>
+        <View style={styles.peopleState}><ActivityIndicator size="small" color="#7C3AED" /><Text style={styles.peopleStateText}>Searching accounts…</Text></View>
       ) : peopleSearch.isError ? (
         <TouchableOpacity style={styles.peopleState} onPress={() => void peopleSearch.refetch()} accessibilityRole="button">
           <Ionicons name="cloud-offline-outline" size={17} color="#66758E" /><Text style={styles.peopleStateText}>Account search failed. Tap to retry.</Text>
@@ -249,8 +249,8 @@ export default function MemoriesScreen() {
     </View>
   );
 
-  return (
-    <View style={styles.container}>
+  const renderListHeader = () => (
+    <View>
       <View style={[styles.header, { paddingTop: headerTop + 8 }]}>
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
@@ -268,6 +268,7 @@ export default function MemoriesScreen() {
             <Ionicons name="add" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
+
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={18} color="#8994A8" />
           <TextInput
@@ -285,16 +286,17 @@ export default function MemoriesScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <FlatList
+
+        <ScrollView
           horizontal
-          data={POST_FILTERS}
-          keyExtractor={(item) => item.value}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
-          renderItem={({ item }) => {
+        >
+          {POST_FILTERS.map((item) => {
             const selected = postFilter === item.value;
             return (
               <TouchableOpacity
+                key={item.value}
                 style={[styles.filterChip, selected && styles.filterChipActive]}
                 onPress={() => setPostFilter(item.value)}
                 accessibilityRole="button"
@@ -304,76 +306,127 @@ export default function MemoriesScreen() {
                 <Text style={[styles.filterText, selected && styles.filterTextActive]}>{item.label}</Text>
               </TouchableOpacity>
             );
-          }}
-        />
+          })}
+        </ScrollView>
       </View>
 
       {debouncedSearch.length >= 2 && renderPeopleResults(peopleSearch.data ?? [])}
 
-      {feed.isLoading ? (
+      <View style={styles.feedIntro}>
+        <View style={styles.introMark}>
+          <Ionicons name="people-outline" size={17} color="#7C3AED" />
+        </View>
+        <Text style={styles.introText}>
+          A shared space for JNV stories, achievements, events, and conversations.
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderListEmpty = () => {
+    if (feed.isLoading) {
+      return (
         <View style={styles.state}>
-          <ActivityIndicator size="small" color="#355BE5" />
+          <ActivityIndicator size="small" color="#7C3AED" />
           <Text style={styles.stateText}>Loading community posts…</Text>
         </View>
-      ) : feed.isError ? (
+      );
+    }
+
+    if (feed.isError) {
+      return (
         <View style={styles.state}>
-          <View style={styles.stateIcon}><Ionicons name="cloud-offline-outline" size={23} color="#68758D" /></View>
+          <View style={styles.stateIcon}>
+            <Ionicons name="cloud-offline-outline" size={23} color="#68758D" />
+          </View>
           <Text style={styles.stateTitle}>Memories could not load</Text>
           <Text style={styles.stateText}>Check your connection and try again.</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => void feed.refetch()}>
             <Text style={styles.retryText}>Try again</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={memories}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <FadeIn delay={Math.min(index, 4) * 30}>
-              <MemoryPostCard
-                memory={item}
-                currentUserId={profile?.uid}
-                actionPending={toggleLike.isPending || toggleBookmark.isPending || voteInPoll.isPending}
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                onComments={setCommentsPost}
-                onMore={setMenuPost}
-                onVote={handleVote}
-                onOpenProfile={(userId) => router.push({ pathname: "/(screens)/user-profile", params: { userId } })}
-                onMessage={showToast}
-              />
-            </FadeIn>
-          )}
-          contentContainerStyle={[styles.list, memories.length === 0 && styles.emptyList]}
-          refreshControl={<RefreshControl refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => feed.refetch()} tintColor="#355BE5" />}
-          onEndReached={() => {
-            if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
-          }}
-          onEndReachedThreshold={0.45}
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={(
-            <View style={styles.feedIntro}>
-              <View style={styles.introMark}><Ionicons name="people-outline" size={17} color="#355BE5" /></View>
-              <Text style={styles.introText}>A shared space for JNV stories, achievements, events, and conversations.</Text>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIcon}>
+          <Ionicons name="images-outline" size={28} color="#7C3AED" />
+        </View>
+        <Text style={styles.emptyTitle}>
+          {debouncedSearch || postFilter !== "all" ? "No matching posts" : "Start the conversation"}
+        </Text>
+        <Text style={styles.emptyText}>
+          {debouncedSearch || postFilter !== "all"
+            ? "Try another search or choose a different filter."
+            : "Share the first memory or update with your JNV community."}
+        </Text>
+        {!debouncedSearch && postFilter === "all" && (
+          <TouchableOpacity style={styles.emptyButton} onPress={openComposer}>
+            <Text style={styles.emptyButtonText}>Create a post</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={feed.isLoading || feed.isError ? [] : memories}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <FadeIn delay={Math.min(index, 4) * 30}>
+            <MemoryPostCard
+              memory={item}
+              currentUserId={profile?.uid}
+              actionPending={toggleLike.isPending || toggleBookmark.isPending || voteInPoll.isPending}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
+              onComments={setCommentsPost}
+              onMore={setMenuPost}
+              onVote={handleVote}
+              onOpenProfile={(userId) => router.push({ pathname: "/(screens)/user-profile", params: { userId } })}
+              onMessage={showToast}
+            />
+          </FadeIn>
+        )}
+        contentContainerStyle={[
+          styles.list,
+          (feed.isLoading || feed.isError || memories.length === 0) && styles.emptyList,
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={feed.isRefetching && !feed.isFetchingNextPage}
+            onRefresh={() => feed.refetch()}
+            tintColor="#7C3AED"
+          />
+        }
+        onEndReached={() => {
+          if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
+        }}
+        onEndReachedThreshold={0.45}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderListEmpty}
+        ListFooterComponent={
+          feed.isFetchingNextPage ? (
+            <View style={styles.footerLoading}>
+              <ActivityIndicator color="#7C3AED" />
+              <Text style={styles.stateText}>Loading more posts…</Text>
             </View>
-          )}
-          ListEmptyComponent={(
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}><Ionicons name="images-outline" size={28} color="#355BE5" /></View>
-              <Text style={styles.emptyTitle}>{debouncedSearch || postFilter !== "all" ? "No matching posts" : "Start the conversation"}</Text>
-              <Text style={styles.emptyText}>{debouncedSearch || postFilter !== "all" ? "Try another search or choose a different filter." : "Share the first memory or update with your JNV community."}</Text>
-              {!debouncedSearch && postFilter === "all" && <TouchableOpacity style={styles.emptyButton} onPress={openComposer}><Text style={styles.emptyButtonText}>Create a post</Text></TouchableOpacity>}
-            </View>
-          )}
-          ListFooterComponent={feed.isFetchingNextPage ? (
-            <View style={styles.footerLoading}><ActivityIndicator color="#355BE5" /><Text style={styles.stateText}>Loading more posts…</Text></View>
           ) : feed.hasNextPage ? (
-            <TouchableOpacity style={styles.loadMore} onPress={() => void feed.fetchNextPage()}><Text style={styles.loadMoreText}>Load more</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.loadMore} onPress={() => void feed.fetchNextPage()}>
+              <Text style={styles.loadMoreText}>Load more</Text>
+            </TouchableOpacity>
           ) : memories.length > 0 ? (
             <Text style={styles.endText}>You’re all caught up.</Text>
-          ) : <View style={{ height: 20 }} />}
-        />
-      )}
+          ) : (
+            <View style={{ height: 20 }} />
+          )
+        }
+      />
 
       {!!toast && <FadeIn style={[styles.toast, { bottom: Math.max(insets.bottom, 18) + 78 }]}><Text style={styles.toastText}>{toast}</Text></FadeIn>}
 
@@ -512,10 +565,10 @@ const styles = StyleSheet.create({
   filterTextActive: { color: "#FFFFFF" },
   list: { paddingBottom: 140 },
   emptyList: { flexGrow: 1 },
-  feedIntro: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 16, marginTop: 14, padding: 14, borderRadius: 16, backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)" },
+  feedIntro: { flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 16, marginTop: 14, marginBottom: 12, padding: 14, borderRadius: 16, backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)" },
   introMark: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF" },
   introText: { flex: 1, color: "#1E1B4B", fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
-  state: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
+  state: { flex: 1, minHeight: 280, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
   stateIcon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F3FF" },
   stateTitle: { color: "#1E1B4B", fontSize: 16, fontFamily: "Inter_700Bold", marginTop: 5 },
   stateText: { color: "#64748B", fontSize: 12, fontFamily: "Inter_400Regular" },
