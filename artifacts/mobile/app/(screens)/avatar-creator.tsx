@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { AVATAR_PRESETS } from "@/components/avatar/avatarConfig";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function AvatarCreatorScreen() {
   const insets = useSafeAreaInsets();

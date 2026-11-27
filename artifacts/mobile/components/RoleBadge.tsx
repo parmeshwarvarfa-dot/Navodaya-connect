@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { UserRole } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type RoleConfig = {
   label: string;

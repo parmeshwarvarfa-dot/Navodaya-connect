@@ -8,8 +8,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -31,6 +29,7 @@ import {
   type StoreReview,
   type StoreSeller,
 } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type StoreModal =
   | "cart"

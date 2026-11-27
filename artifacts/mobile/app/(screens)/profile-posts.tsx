@@ -1,9 +1,10 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function ProfilePostsScreen() {
   const insets = useSafeAreaInsets();

@@ -7,12 +7,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export type ErrorFallbackProps = {
   error: Error;

@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
   Modal,
-  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const SUBJECTS = [
@@ -93,7 +92,7 @@ function QuizModal({ visible, onClose }: { visible: boolean; onClose: () => void
 
         {done ? (
           <View style={quiz.doneWrap}>
-            <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={quiz.doneIcon}>
+            <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={quiz.doneIcon}>
               <Ionicons name="trophy" size={40} color="#FFD700" />
             </LinearGradient>
             <Text style={quiz.doneScore}>{score} / {QUICK_QUIZ.length}</Text>
@@ -202,7 +201,7 @@ export default function StudyScreen() {
 
         {/* Banner CTA */}
         <TouchableOpacity activeOpacity={0.88} onPress={() => setShowQuiz(true)} style={styles.bannerWrap}>
-          <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.banner}>
+          <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.banner}>
             <View style={{ flex: 1 }}>
               <Text style={styles.bannerTitle}>Test Your Knowledge</Text>
               <Text style={styles.bannerDesc}>5 quick questions across Science, Maths & Social Science. Ready?</Text>

@@ -1,8 +1,9 @@
 import React from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function AcademicFeatureUnavailable({ title, message }: { title: string; message: string }) {
   const insets = useSafeAreaInsets();

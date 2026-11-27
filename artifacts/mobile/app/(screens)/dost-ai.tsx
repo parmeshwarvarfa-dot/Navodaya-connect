@@ -1,11 +1,9 @@
 import React, { useState, useRef } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -13,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 interface Message {
   id: string;

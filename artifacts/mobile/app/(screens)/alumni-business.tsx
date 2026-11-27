@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform,
-  RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  RefreshControl, ScrollView, Share, StyleSheet, TouchableOpacity, View,
   useWindowDimensions, type TextInputProps,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import { formatPublishDateTime } from "@/lib/date-formatting";
 import { STATES } from "@/data/jnvData";
 import { useAuth } from "@/context/AuthContext";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 type Category = { name: string; icon: IconName };
@@ -430,7 +431,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F8F7FF" },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, gap: 11 },
   headerBack: { width: 42, height: 42, borderRadius: 15, backgroundColor: PURPLE_PALE, alignItems: "center", justifyContent: "center" },
-  eyebrow: { color: "#4B6EF5", fontSize: 10, letterSpacing: 1.05, fontFamily: "Inter_700Bold" }, pageTitle: { color: PURPLE_DARK, fontSize: 21, lineHeight: 27, fontFamily: "Inter_700Bold" },
+  eyebrow: { color: "#8B5CF6", fontSize: 10, letterSpacing: 1.05, fontFamily: "Inter_700Bold" }, pageTitle: { color: PURPLE_DARK, fontSize: 21, lineHeight: 27, fontFamily: "Inter_700Bold" },
   headerAdd: { minHeight: 42, borderRadius: 14, backgroundColor: PURPLE, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 10, shadowColor: PURPLE, shadowOpacity: 0.16, shadowRadius: 7, elevation: 3 }, headerAddText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
   communityBanner: { flexDirection: "row", alignItems: "center", gap: 11, marginHorizontal: 18, marginTop: 15, marginBottom: 15, padding: 13, borderRadius: 16, backgroundColor: "#EAF0FF", borderWidth: 1, borderColor: "#DDE6FF", overflow: "hidden" }, communityMark: { width: 40, height: 40, borderRadius: 13, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }, communityTitle: { color: "#1D2A53", fontSize: 13, fontFamily: "Inter_700Bold" }, communityCopy: { color: "#65728B", fontSize: 11, lineHeight: 16, marginTop: 2, fontFamily: "Inter_400Regular" }, communityAccent: { position: "absolute", right: -18, top: -25, width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(16,185,129,0.12)" },
   searchWrap: { height: 50, marginHorizontal: 18, paddingHorizontal: 14, backgroundColor: "#fff", borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#E5EAF2" }, searchInput: { flex: 1, color: PURPLE_DARK, fontSize: 14, fontFamily: "Inter_400Regular" },

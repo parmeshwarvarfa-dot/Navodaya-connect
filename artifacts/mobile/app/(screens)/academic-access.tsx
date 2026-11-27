@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function AcademicAccessRedirect() {
   const insets = useSafeAreaInsets();
   useEffect(() => { router.replace("/(screens)/assign-teachers"); }, []);
   return <View style={[s.page, { paddingTop: Platform.OS === "web" ? 20 : insets.top + 20 }]}>
-    <ActivityIndicator color="#3151E8" />
+    <ActivityIndicator color="#6D28D9" />
     <Text style={s.label}>Opening Academic Management…</Text>
   </View>;
 }

@@ -1,3 +1,4 @@
+import { fallbackSessions } from "../routes/auth";
 import type { Request, Response, NextFunction } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, sessionsTable, usersTable, verificationAssignmentsTable } from "@workspace/db";
@@ -82,22 +83,34 @@ export async function requireAuth(
   const token = auth.slice(7);
 
   try {
-    const [session] = await db
-      .select()
-      .from(sessionsTable)
-      .where(eq(sessionsTable.token, token))
-      .limit(1);
+    let session: any = fallbackSessions.get(token);
+    let user: any = session?.user;
+    if (!session) {
+      try {
+        const [found] = await db
+          .select()
+          .from(sessionsTable)
+          .where(eq(sessionsTable.token, token))
+          .limit(1);
+        session = found;
+      } catch {}
+    }
 
-    if (!session || session.expiresAt < new Date()) {
+    if (!session || (session.expiresAt && session.expiresAt < new Date())) {
       res.status(401).json({ error: "Session expired" });
       return;
     }
 
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, session.userId))
-      .limit(1);
+    if (!user) {
+      try {
+        const [foundUser] = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.id, session.userId))
+          .limit(1);
+        user = foundUser;
+      } catch {}
+    }
 
     if (!user) {
       res.status(401).json({ error: "User not found" });

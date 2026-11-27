@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,6 +11,7 @@ import {
   useUpdateProfilePrivacy,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function PrivacySettingsScreen() {
   const insets = useSafeAreaInsets();

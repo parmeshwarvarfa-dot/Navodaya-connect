@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const FEATURES = [
   { label: "Mentorship", icon: "people-outline" as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/alumni-mentorship" },

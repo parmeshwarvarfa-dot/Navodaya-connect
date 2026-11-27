@@ -4,14 +4,13 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type IndividualRankingItem } from "@/lib/api";
 import { STATES } from "@/data/jnvData";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 interface IndividualRankingSectionProps {
   onSelectUser: (userId: string) => void;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, TextInput,
+  View, StyleSheet, ScrollView, TouchableOpacity,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { AlumniUser } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const TRACKS = ["All", "Engineering", "Medicine", "UPSC/IAS", "Commerce/CA", "Law", "Research", "Defence"];
 

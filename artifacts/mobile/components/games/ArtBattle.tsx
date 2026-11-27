@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, PanResponder, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type DrawingStroke, type GameResult } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const COLORS = ["#1F2937", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#FFFFFF"];
 type Phase = "intro" | "drawing" | "preview" | "complete";

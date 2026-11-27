@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -19,6 +18,8 @@ import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumInput } from "@/components/PremiumInput";
 import EventCard from "@/components/EventCard";
+import { parseDateTimeInput } from "@/lib/date-formatting";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function EventsScreen() {
   const insets = useSafeAreaInsets();
@@ -58,12 +59,17 @@ export default function EventsScreen() {
       setFormError("Please fill title and date");
       return;
     }
+    const eventDate = parseDateTimeInput(date);
+    if (!eventDate) {
+      setFormError("Enter the date and time as DD-MM-YYYY HH:mm, for example 15-01-2026 10:00.");
+      return;
+    }
     setSubmitting(true);
     try {
       await api.events.create({
         title: title.trim(),
         description: description.trim(),
-        date: date.trim(),
+        date: eventDate.toISOString(),
         location: location.trim() || undefined,
       });
       setShowCreate(false);
@@ -140,7 +146,7 @@ export default function EventsScreen() {
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
             <PremiumInput label="Event Title" value={title} onChangeText={setTitle} placeholder="Event name" icon="calendar-outline" />
-            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="e.g. 2026-01-15T10:00:00Z" icon="time-outline" />
+            <PremiumInput label="Date & Time" value={date} onChangeText={setDate} placeholder="DD-MM-YYYY HH:mm (24-hour)" icon="time-outline" />
             <PremiumInput label="Location" value={location} onChangeText={setLocation} placeholder="e.g. School Auditorium" icon="location-outline" />
             <PremiumInput
               label="Description"

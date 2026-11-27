@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = ["General", "Academic", "Sports", "Cultural", "Achievement", "Announcement"];
 

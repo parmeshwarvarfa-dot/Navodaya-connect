@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, TextInput, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { api } from "@/lib/api";
 import type { PublicUserProfile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const REASONS = [
   { id: "false_alumni", label: "Suspected false alumni claim", icon: "school-outline" as const, color: "#B42318" },

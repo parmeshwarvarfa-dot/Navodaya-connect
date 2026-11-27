@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, StyleSheet, ScrollView, TouchableOpacity,
   Platform, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const GAMES = [
   { id: "tictactoe", title: "Tic Tac Toe",     emoji: "⭕", desc: "Classic 3×3 strategy game", color: "#7C3AED", bg: "#F5F3FF",  players: "2 Players", category: "Strategy"  },

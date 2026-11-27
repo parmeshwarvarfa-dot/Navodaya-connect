@@ -19,6 +19,7 @@ export const opportunitiesTable = pgTable("opportunities", {
   format: text("format").notNull().default("online"),
   participationMode: text("participation_mode").notNull().default("individual"),
   location: text("location"),
+  media: text("media"),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
   registrationOpensAt: timestamp("registration_opens_at", { withTimezone: true }),
   registrationDeadline: timestamp("registration_deadline", { withTimezone: true }),

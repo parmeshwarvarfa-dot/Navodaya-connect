@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
   Modal,
-  TextInput,
   ActivityIndicator,
   Image,
   RefreshControl,
@@ -24,8 +22,11 @@ import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import EventCard from "@/components/EventCard";
+import CalendarModal from "@/components/CalendarModal";
+import VenuePickerModal from "@/components/map/VenuePickerModal";
 import FadeIn from "@/components/motion/FadeIn";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 async function registerForEvent(
   eventId: string,
@@ -108,11 +109,16 @@ function eventDateInputValue(value: string) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
 }
 
+function calendarDateInputValue(date: Date) {
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
+}
+
 function eventTimeInputValue(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+    : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 const DIETARY_OPTIONS = ["No Preference", "Vegetarian", "Non-Vegetarian", "Vegan", "Jain"];
@@ -120,7 +126,7 @@ const HOUSE_OPTIONS = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASS_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"];
 
 const GRADIENT_SETS = [
-  ["#4B6EF5", "#3151E8"] as const,
+  ["#8B5CF6", "#6D28D9"] as const,
   ["#10B981", "#059669"] as const,
   ["#8B5CF6", "#7C3AED"] as const,
   ["#F59E0B", "#D97706"] as const,
@@ -304,6 +310,9 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
   const [eventMedia, setEventMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [mediaToAdjust, setMediaToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [showImageAdjustment, setShowImageAdjustment] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showVenuePicker, setShowVenuePicker] = useState(false);
+  const [datePickerMonth, setDatePickerMonth] = useState(() => new Date());
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -351,11 +360,18 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
     }
   };
 
+  const openDatePicker = () => {
+    const parsedDate = date ? parseEventDateValue(date, "") : null;
+    const initialDate = parsedDate ?? new Date();
+    setDatePickerMonth(new Date(initialDate.getFullYear(), initialDate.getMonth(), 1));
+    setShowDatePicker(true);
+  };
+
   const handleCreate = async () => {
     if (!title.trim() || !description.trim() || !venue.trim() || !date.trim()) return;
     const eventDate = parseEventDateValue(date, time);
     if (!eventDate) {
-      setCreateError("Enter the date as DD-MM-YYYY (for example, 25-12-2026) and use a valid time such as 10:00 AM.");
+      setCreateError("Enter the date as DD-MM-YYYY (for example, 25-12-2026) and time as HH:mm in 24-hour format (for example, 10:00).");
       return;
     }
     setSubmitting(true);
@@ -386,7 +402,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
       <Modal visible={visible} animationType="fade" transparent>
         <View style={cStyles.successOverlay}>
           <View style={cStyles.successBox}>
-            <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={cStyles.successIcon}>
+            <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={cStyles.successIcon}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </LinearGradient>
             <Text style={cStyles.successTitle}>{eventToEdit ? "Event Updated!" : "Event Created!"}</Text>
@@ -429,21 +445,28 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
 
             {[
               { label: "Event Title", value: title, onChange: setTitle, placeholder: "e.g. Annual Alumni Reunion 2025", icon: "megaphone-outline", required: true },
-              { label: "Venue / Location", value: venue, onChange: setVenue, placeholder: "e.g. School Auditorium / Online (Zoom)", icon: "location-outline", required: true },
-              { label: "Date", value: date, onChange: setDate, placeholder: "DD-MM-YYYY (e.g. 25-12-2026)", icon: "calendar-outline", required: true },
-              { label: "Time", value: time, onChange: setTime, placeholder: "e.g. 10:00 AM", icon: "time-outline", required: false },
+              { label: "Venue / Location", value: venue, onChange: setVenue, placeholder: "e.g. School Auditorium / Online (Zoom)", icon: "location-outline", required: true, onIconPress: () => setShowVenuePicker(true) },
+              { label: "Date", value: date, onChange: setDate, placeholder: "DD-MM-YYYY (e.g. 25-12-2026)", icon: "calendar-outline", required: true, onIconPress: openDatePicker },
+              { label: "Time", value: time, onChange: setTime, placeholder: "HH:mm (24-hour)", icon: "time-outline", required: false },
             ].map((f) => (
               <View key={f.label} style={cStyles.fieldWrap}>
                 <Text style={cStyles.fieldLabel}>{f.label}{f.required && <Text style={{ color: "#EF4444" }}> *</Text>}</Text>
                 <View style={cStyles.fieldRow}>
-                  <View style={cStyles.fieldIcon}>
-                    <Ionicons name={f.icon as any} size={18} color="#7C3AED" />
-                  </View>
+                  {f.onIconPress ? (
+                    <TouchableOpacity style={cStyles.fieldIcon} onPress={f.onIconPress} accessibilityRole="button" accessibilityLabel={f.label === "Date" ? "Choose event date" : "Search venue in Google Maps"}>
+                      <Ionicons name={f.icon as any} size={18} color="#7C3AED" />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={cStyles.fieldIcon}><Ionicons name={f.icon as any} size={18} color="#7C3AED" /></View>
+                  )}
                   <TextInput
                     style={cStyles.fieldInput} value={f.value} onChangeText={f.onChange}
                     placeholder={f.placeholder} placeholderTextColor="#9CA3AF"
                   />
                 </View>
+                {f.label === "Venue / Location" ? (
+                    <Text style={cStyles.fieldHint}>Tap the map icon to search or select a place; it will fill the venue automatically. You can also type it manually.</Text>
+                ) : null}
               </View>
             ))}
 
@@ -524,6 +547,71 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
       onCancel={() => { setShowImageAdjustment(false); setMediaToAdjust(null); }}
       onDone={(asset) => { setEventMedia(asset); setShowImageAdjustment(false); setMediaToAdjust(null); }}
     />
+    <VenuePickerModal
+      visible={showVenuePicker}
+      initialQuery={venue || profile?.jnvName || ""}
+      onClose={() => setShowVenuePicker(false)}
+      onSelect={(selectedVenue) => { setVenue(selectedVenue); setCreateError(""); }}
+    />
+    <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+      <View style={cStyles.datePickerBackdrop}>
+        <View style={cStyles.datePickerCard}>
+          <View style={cStyles.datePickerHeader}>
+            <Text style={cStyles.datePickerTitle}>Choose event date</Text>
+            <TouchableOpacity onPress={() => setShowDatePicker(false)} accessibilityRole="button" accessibilityLabel="Close date picker">
+              <Ionicons name="close" size={21} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          <View style={cStyles.datePickerNavigation}>
+            <TouchableOpacity onPress={() => setDatePickerMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))} style={cStyles.datePickerNavButton} accessibilityLabel="Previous month">
+              <Ionicons name="chevron-back" size={19} color="#6D28D9" />
+            </TouchableOpacity>
+            <Text style={cStyles.datePickerMonth}>{datePickerMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</Text>
+            <TouchableOpacity onPress={() => setDatePickerMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))} style={cStyles.datePickerNavButton} accessibilityLabel="Next month">
+              <Ionicons name="chevron-forward" size={19} color="#6D28D9" />
+            </TouchableOpacity>
+          </View>
+          <View style={cStyles.datePickerWeek}>
+            {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => <Text key={`${day}-${index}`} style={cStyles.datePickerWeekday}>{day}</Text>)}
+          </View>
+          <View style={cStyles.datePickerGrid}>
+            {Array.from({ length: 42 }, (_, index) => {
+              const first = new Date(datePickerMonth.getFullYear(), datePickerMonth.getMonth(), 1);
+              const dateValue = new Date(datePickerMonth.getFullYear(), datePickerMonth.getMonth(), 1 - first.getDay() + index);
+              const selectedDate = parseEventDateValue(date, "");
+              const isSelected = selectedDate
+                ? dateValue.getFullYear() === selectedDate.getFullYear() && dateValue.getMonth() === selectedDate.getMonth() && dateValue.getDate() === selectedDate.getDate()
+                : false;
+              const inMonth = dateValue.getMonth() === datePickerMonth.getMonth();
+              return (
+                <TouchableOpacity
+                  key={`${dateValue.getFullYear()}-${dateValue.getMonth()}-${dateValue.getDate()}`}
+                  style={[cStyles.datePickerDay, isSelected && cStyles.datePickerSelectedDay]}
+                  onPress={() => {
+                    setDate(calendarDateInputValue(dateValue));
+                    setShowDatePicker(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={dateValue.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                >
+                  <Text style={[cStyles.datePickerDayText, !inMonth && cStyles.datePickerOutsideMonth, isSelected && cStyles.datePickerSelectedText]}>{dateValue.getDate()}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={cStyles.datePickerToday}
+            onPress={() => {
+              setDate(calendarDateInputValue(new Date()));
+              setDatePickerMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+              setShowDatePicker(false);
+            }}
+          >
+            <Text style={cStyles.datePickerTodayText}>Today</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
     </>
   );
 }
@@ -544,6 +632,9 @@ export default function EventsScreen() {
   const [regEvent, setRegEvent] = useState<Event | null>(null);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [successEvent, setSuccessEvent] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showEventSearch, setShowEventSearch] = useState(false);
+  const [eventSearch, setEventSearch] = useState("");
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchEvents = async () => {
@@ -558,7 +649,17 @@ export default function EventsScreen() {
     setRefreshing(false);
   }, []);
 
-  const displayEvents = events;
+  const displayEvents = events.filter((event) => {
+    const query = eventSearch.trim().toLocaleLowerCase();
+    if (!query) return true;
+    const date = new Date(event.date);
+    const dateText = Number.isNaN(date.getTime()) ? event.date : date.toLocaleDateString("en-IN");
+    return [event.title, event.description, event.location, event.organizer, event.jnvName, dateText]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase()
+      .includes(query);
+  });
 
   const openOrganizerProfile = useCallback(async (organizerId?: string, organizerName?: string) => {
     if (organizerId) {
@@ -614,10 +715,20 @@ export default function EventsScreen() {
           <Text style={styles.headerTitle}>Events</Text>
           <Text style={styles.headerSub}>JNV functions, webinars & reunions</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={() => { setEditingEvent(null); setShowCreate(true); }}>
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addBtnText}>Organise</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerIconButton} onPress={() => setShowEventSearch((current) => !current)} accessibilityRole="button" accessibilityLabel="Search events">
+            <Ionicons name="search-outline" size={19} color="#6D28D9" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconButton} onPress={() => setShowCalendar(true)} accessibilityRole="button" accessibilityLabel="Open smart calendar">
+            <Ionicons name="calendar-outline" size={19} color="#6D28D9" />
+          </TouchableOpacity>
+          {profile && profile.role !== "student" ? (
+            <TouchableOpacity style={styles.addBtn} onPress={() => { setEditingEvent(null); setShowCreate(true); }}>
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addBtnText}>Organise</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView
@@ -625,8 +736,23 @@ export default function EventsScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
+        {showEventSearch ? (
+          <View style={styles.eventSearchBox}>
+            <Ionicons name="search-outline" size={17} color="#8B8498" />
+            <TextInput
+              style={styles.eventSearchInput}
+              value={eventSearch}
+              onChangeText={setEventSearch}
+              placeholder="Search events, dates, places..."
+              placeholderTextColor="#9B95A8"
+              returnKeyType="search"
+              accessibilityLabel="Search events"
+            />
+            {eventSearch ? <TouchableOpacity onPress={() => setEventSearch("")} accessibilityLabel="Clear event search"><Ionicons name="close-circle" size={18} color="#94A3B8" /></TouchableOpacity> : null}
+          </View>
+        ) : null}
         {loadError ? <TouchableOpacity onPress={fetchEvents} style={{ padding: 18, backgroundColor: "#FFF4E5", borderRadius: 12, marginBottom: 14 }}><Text style={{ color: "#8A4B08", fontFamily: "Inter_600SemiBold" }}>Could not load events. Tap to retry.</Text></TouchableOpacity> : null}
-        {!loadError && displayEvents.length === 0 ? <View style={{ alignItems: "center", paddingVertical: 48 }}><Ionicons name="calendar-outline" size={42} color="#9CA3AF" /><Text style={{ color: "#6B7280", marginTop: 12, fontFamily: "Inter_600SemiBold" }}>No events yet</Text></View> : null}
+        {!loadError && displayEvents.length === 0 ? <View style={{ alignItems: "center", paddingVertical: 48 }}><Ionicons name="calendar-outline" size={42} color="#9CA3AF" /><Text style={{ color: "#6B7280", marginTop: 12, fontFamily: "Inter_600SemiBold" }}>{eventSearch.trim() ? "No events match your search" : "No events yet"}</Text></View> : null}
         {displayEvents.map((event, idx) => (
           <FadeIn key={event.id} delay={Math.min(idx, 4) * 35}>
             <EventCard
@@ -636,7 +762,7 @@ export default function EventsScreen() {
               registrationSuccess={successEvent === event.id}
               onRegister={() => tryAccess("Events", () => setRegEvent(event))}
               onOrganizerPress={openOrganizerProfile}
-              onEdit={event.organizerId && event.organizerId === profile?.uid ? () => { setEditingEvent(event); setShowCreate(true); } : undefined}
+              onEdit={profile?.role !== "student" && event.organizerId && event.organizerId === profile?.uid ? () => { setEditingEvent(event); setShowCreate(true); } : undefined}
               onDelete={event.organizerId && event.organizerId === profile?.uid ? () => { setDeleteError(""); setDeleteTarget(event); } : undefined}
             />
           </FadeIn>
@@ -644,6 +770,17 @@ export default function EventsScreen() {
       </ScrollView>
 
       {gateModal}
+
+      <CalendarModal
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        registered={registered}
+        userId={profile?.uid}
+        onRegister={(event) => {
+          setShowCalendar(false);
+          tryAccess("Events", () => setRegEvent(event));
+        }}
+      />
 
       <CreateEventModal
         visible={showCreate}
@@ -696,12 +833,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#1E1B4B" },
   headerSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#64748B", marginTop: 2 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 7 },
+  headerIconButton: { width: 36, height: 36, borderRadius: 13, backgroundColor: "#F4F0FF", alignItems: "center", justifyContent: "center" },
   addBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     backgroundColor: "#7C3AED", borderRadius: 22, paddingHorizontal: 16, paddingVertical: 9,
     shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   addBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  eventSearchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fff", borderColor: "#E7E1F2", borderWidth: 1, borderRadius: 13, paddingHorizontal: 12, height: 44, marginBottom: 14 },
+  eventSearchInput: { flex: 1, color: "#25213A", fontFamily: "Inter_400Regular", fontSize: 13, paddingVertical: 0 },
   eventCard: {
     backgroundColor: "#fff", borderRadius: 22, marginBottom: 16, overflow: "hidden",
     shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 3,
@@ -829,6 +970,24 @@ const cStyles = StyleSheet.create({
   fieldRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB" },
   fieldIcon: { width: 44, alignItems: "center", justifyContent: "center" },
   fieldInput: { flex: 1, paddingVertical: 12, paddingRight: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
+  fieldHint: { color: "#7A8494", fontSize: 11, lineHeight: 16, fontFamily: "Inter_400Regular", marginTop: 6, marginHorizontal: 2 },
+  datePickerBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.48)", alignItems: "center", justifyContent: "center", padding: 20 },
+  datePickerCard: { width: "100%", maxWidth: 380, borderRadius: 22, backgroundColor: "#fff", padding: 18, shadowColor: "#1E1B4B", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 10 },
+  datePickerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  datePickerTitle: { color: "#1E1B4B", fontSize: 17, fontFamily: "Inter_700Bold" },
+  datePickerNavigation: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
+  datePickerNavButton: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#F4F0FF", alignItems: "center", justifyContent: "center" },
+  datePickerMonth: { color: "#29243D", fontSize: 15, fontFamily: "Inter_700Bold" },
+  datePickerWeek: { flexDirection: "row" },
+  datePickerWeekday: { width: `${100 / 7}%`, textAlign: "center", color: "#8B8498", fontSize: 11, fontFamily: "Inter_600SemiBold", paddingVertical: 8 },
+  datePickerGrid: { flexDirection: "row", flexWrap: "wrap" },
+  datePickerDay: { width: `${100 / 7}%`, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 12 },
+  datePickerSelectedDay: { backgroundColor: "#7C3AED" },
+  datePickerDayText: { color: "#39334D", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  datePickerOutsideMonth: { color: "#C1BDCA", fontFamily: "Inter_400Regular" },
+  datePickerSelectedText: { color: "#fff" },
+  datePickerToday: { alignSelf: "center", marginTop: 12, paddingVertical: 9, paddingHorizontal: 20, borderRadius: 12, backgroundColor: "#F4F0FF" },
+  datePickerTodayText: { color: "#6D28D9", fontSize: 13, fontFamily: "Inter_700Bold" },
   tipBox: {
     flexDirection: "row", alignItems: "flex-start", gap: 8,
     backgroundColor: "#F5F3FF", borderRadius: 12, padding: 14, marginBottom: 20,

@@ -2,12 +2,10 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Image,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
-  TextInput,
   Modal,
   ActivityIndicator,
 } from "react-native";
@@ -15,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import { api } from "@/lib/api";
@@ -23,6 +21,7 @@ import type { ChatContact, DirectConversation, DirectMessageRequest, Group } fro
 import MotionPressable from "@/components/motion/MotionPressable";
 import GroupNameEmojiPicker from "@/components/GroupNameEmojiPicker";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type CommunityKind = "house" | "class" | "batch" | "school" | "all" | "interest" | "staff" | "officials";
 type GroupCard = { id: string; kind?: CommunityKind; interestId?: string; icon: any; name: string; avatarUrl?: string; lastMessage: string; time: string; color: string; iconColor: string; lastMessageAt?: string | null; lastMessageSenderId?: string | null; lastMessageSenderName?: string | null };
@@ -113,6 +112,7 @@ export default function ChatsScreen() {
   const insets = useSafeAreaInsets();
   const { profile, isVerified, refreshProfile } = useAuth();
   const { tryAccess, modal: verificationGate } = useVerificationGate(isVerified);
+  const params = useLocalSearchParams<{ filter?: string }>();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [joinedExplore, setJoinedExplore] = useState<Set<string>>(new Set());
@@ -122,6 +122,7 @@ export default function ChatsScreen() {
   const [selectedGroupMembers, setSelectedGroupMembers] = useState<ChatContact[]>([]);
   const [joinToast, setJoinToast] = useState("");
   const [schoolGroups, setSchoolGroups] = useState<Group[]>([]);
+  const [groupLoadError, setGroupLoadError] = useState("");
   const [newGroupAvatar, setNewGroupAvatar] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [avatarToAdjust, setAvatarToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [showAvatarAdjuster, setShowAvatarAdjuster] = useState(false);
@@ -139,7 +140,7 @@ export default function ChatsScreen() {
   const [requestMessage, setRequestMessage] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<ChatFilter>("all");
+  const [filter, setFilter] = useState<ChatFilter>(params.filter === "groups" ? "groups" : "all");
   const [chatPreferences, setChatPreferences] = useState<ChatPreferences>(DEFAULT_CHAT_PREFERENCES);
   const [chatActionTarget, setChatActionTarget] = useState<ChatActionTarget | null>(null);
   const [chatActionBusy, setChatActionBusy] = useState(false);
@@ -152,6 +153,14 @@ export default function ChatsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => {
+    if (params.filter === "groups") {
+      setSearchQuery("");
+      setFilter("groups");
+      router.setParams({ filter: "" });
+    }
+  }, [params.filter]));
+
+  useFocusEffect(useCallback(() => {
     let active = true;
     void refreshProfile().catch(() => {});
     const refreshInbox = () => {
@@ -159,11 +168,13 @@ export default function ChatsScreen() {
         if (!active) return;
         const visibleGroups = groups.filter((group) => isGroupVisibleForProfile(group, profile?.role, profile?.class));
         setSchoolGroups(visibleGroups);
+        setGroupLoadError("");
         setStaffGroupError("");
         const names = new Set(visibleGroups.map((group) => normalizeGroupName(group.name)));
         setJoinedExplore(new Set(EXPLORE_GROUPS.filter((group) => names.has(normalizeGroupName(group.name))).map((group) => group.id)));
       }).catch((error) => {
         if (!active) return;
+        setGroupLoadError(chatOpenError(error, "Could not load your community groups."));
         if (profile?.role === "teacher" || profile?.role === "official") {
           setStaffGroupError(error instanceof Error ? error.message : "Could not sync the Staff Group.");
         }
@@ -648,12 +659,55 @@ export default function ChatsScreen() {
           </View>
         )}
 
-        {/* Your Groups */}
+        {/* Group conversations live in Chats alongside direct messages. */}
         <View style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>{filter === "archived" ? "Archived chats" : filter === "favorites" ? "Favorite chats" : filter === "unread" ? "Unread chats" : filter === "groups" ? "Group chats" : "Recent chats"}</Text>
+            <Text style={styles.sectionTitle}>{filter === "archived" ? "Archived chats" : filter === "favorites" ? "Favorite chats" : filter === "unread" ? "Unread chats" : filter === "groups" ? "Community Groups" : "Recent chats"}</Text>
             <Text style={styles.chatCount}>{filtered.length + visibleDirectConversations.length}</Text>
           </View>
+          {filter === "groups" ? (
+            <View style={styles.communityGroupsIntro}>
+              <View style={styles.communityGroupsCopy}>
+                <Text style={styles.communityGroupsTitle}>Your groups, all in one place</Text>
+                <Text style={styles.communityGroupsSubtitle}>Open a group chat or explore communities to join.</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.communityGroupsCreate}
+                onPress={() => {
+                  if (!tryAccess("Create a group")) return;
+                  setNewGroupName("");
+                  setGroupMemberSearch("");
+                  setSelectedGroupMembers([]);
+                  setNewGroupAvatar(null);
+                  setShowNewGroup(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Create a community group"
+              >
+                <Ionicons name="add" size={17} color="#fff" />
+                <Text style={styles.communityGroupsCreateText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {filter === "groups" && !isVerified ? (
+            <View style={styles.groupAccessNotice}>
+              <Ionicons name="shield-checkmark-outline" size={18} color="#8A5A00" />
+              <Text style={styles.groupAccessNoticeText}>Verify your account to browse, join, and create community groups.</Text>
+            </View>
+          ) : null}
+          {!!groupLoadError ? (
+            <TouchableOpacity style={styles.groupLoadError} onPress={() => {
+              api.groups.list()
+                .then((groups) => {
+                  setSchoolGroups(groups.filter((group) => isGroupVisibleForProfile(group, profile?.role, profile?.class)));
+                  setGroupLoadError("");
+                })
+                .catch((error: unknown) => setGroupLoadError(chatOpenError(error, "Could not load your community groups.")));
+            }} accessibilityRole="button">
+              <Ionicons name="refresh-outline" size={17} color="#B42318" />
+              <Text style={styles.groupLoadErrorText}>Could not load community groups. Tap to retry. {groupLoadError}</Text>
+            </TouchableOpacity>
+          ) : null}
           {visibleDirectConversations.map((chat) => {
             const unread = (chat.unreadCount > 0 || chatPreferences.markedUnread.includes(chat.id)) && !chatPreferences.muted.includes(chat.id);
             return (
@@ -711,7 +765,7 @@ export default function ChatsScreen() {
           </View>
         </View>
 
-        {!searchQuery && filter === "all" && (
+        {!searchQuery && (filter === "all" || filter === "groups") && (
           <>
             {/* Explore Groups */}
             <View style={styles.section}>
@@ -909,6 +963,16 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#1E1B4B", marginBottom: 4 },
   sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   chatCount: { minWidth: 26, textAlign: "center", color: "#7C3AED", backgroundColor: "#F5F3FF", borderRadius: 12, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 3, fontSize: 11, fontFamily: "Inter_700Bold" },
+  communityGroupsIntro: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, marginBottom: 10, borderRadius: 16, backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#E9D5FF" },
+  communityGroupsCopy: { flex: 1 },
+  communityGroupsTitle: { color: "#31245A", fontSize: 13, fontFamily: "Inter_700Bold" },
+  communityGroupsSubtitle: { color: "#746A87", fontSize: 11, lineHeight: 16, fontFamily: "Inter_400Regular", marginTop: 3 },
+  communityGroupsCreate: { minHeight: 36, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 11, borderRadius: 11, backgroundColor: "#7C3AED" },
+  communityGroupsCreateText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  groupAccessNotice: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, marginBottom: 10, borderRadius: 12, backgroundColor: "#FFF8E7" },
+  groupAccessNoticeText: { flex: 1, color: "#815500", fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
+  groupLoadError: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, marginBottom: 10, borderRadius: 12, backgroundColor: "#FEF3F2" },
+  groupLoadErrorText: { flex: 1, color: "#B42318", fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
   filterRow: { paddingHorizontal: 18, paddingTop: 14, gap: 8 },
   filterChip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.7)", backgroundColor: "#FFFFFF" },
   filterChipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },

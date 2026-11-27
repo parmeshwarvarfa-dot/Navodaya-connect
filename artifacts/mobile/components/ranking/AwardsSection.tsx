@@ -4,13 +4,13 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type RankingAwardItem } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface AwardsSectionProps {
   onSelectUser: (userId: string) => void;

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  RefreshControl, Platform, Animated,
+  View, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform, Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +10,7 @@ import { api } from "@/lib/api";
 import type { VerificationRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import AlumniPeerVerificationScreen from "./alumni-peer-verification";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap; label: string; desc: string }> = {
   unverified:   { color: "#6B7280", bg: "#F3F4F6", icon: "shield-outline", label: "Not Verified", desc: "Submit role-specific school evidence to request verification." },

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function GroupInviteScreen() {
   const params = useLocalSearchParams<{ token?: string | string[] }>();

@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Image,
   Platform,
@@ -31,6 +29,7 @@ import {
   type Announcement,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type ClassTab =
   | "overview"
@@ -1640,7 +1639,7 @@ function ClassDetailsView({
                 <Text style={s.inputLabel}>Due Date *</Text>
                 <TextInput
                   style={s.textInput}
-                  placeholder="e.g. 2026-11-15 or Tomorrow 5:00 PM"
+                  placeholder="DD-MM-YYYY HH:mm (e.g. 15-11-2026 17:00)"
                   value={newAsgDueDate}
                   onChangeText={setNewAsgDueDate}
                 />

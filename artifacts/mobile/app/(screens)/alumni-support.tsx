@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  Modal, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api, type SchoolSupportRequest } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const SUPPORT_TYPES = [
   { label: "Sponsor an Event",      icon: "calendar-outline"   as const, color: "#7C3AED", bg: "#F5F3FF", desc: "Co-sponsor school events, sports days, science fairs"     },

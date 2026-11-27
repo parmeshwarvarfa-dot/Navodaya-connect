@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Platform, Switch,
+  View, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, Switch,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { ManagedUser } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 export default function TeacherFeedbackSubmitScreen() {
   const insets = useSafeAreaInsets();

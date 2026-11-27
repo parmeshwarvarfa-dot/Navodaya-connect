@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -14,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type RankingProfileData } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface UserRankingProfileModalProps {
   userId: string | null;

@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Platform, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api, type BloodRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateTimeInput, parseDateTimeInput } from "@/lib/date-formatting";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -38,13 +40,18 @@ export default function AlumniCommunityScreen() {
   useEffect(() => { void load(); }, [load]);
 
   const submit = async () => {
+    const requiredAt = parseDateTimeInput(form.requiredAt);
+    if (!requiredAt) {
+      say("Enter the required date and time as DD-MM-YYYY HH:mm, for example 28-10-2026 10:00.");
+      return;
+    }
     setBusy(true);
     try {
       await api.bloodRequests.create({
         bloodGroup: form.bloodGroup || "",
         hospital: form.hospital || "",
         city: form.city || "",
-        requiredAt: new Date(form.requiredAt || "").toISOString(),
+        requiredAt: requiredAt.toISOString(),
         urgency: form.urgency || "normal",
         notes: form.notes || "",
       });
@@ -88,7 +95,7 @@ export default function AlumniCommunityScreen() {
       <Text style={styles.muted}>{request.hospital} · {request.city}</Text>
       <Text numberOfLines={2} style={styles.body}>{request.notes || "Contact the request owner to coordinate."}</Text>
       <View style={styles.row}>
-        <Text style={styles.muted}>Needed {new Date(request.requiredAt).toLocaleString()}</Text>
+        <Text style={styles.muted}>Needed {formatDateTimeInput(request.requiredAt)}</Text>
         <Text style={styles.owner}>{owner ? "Your request" : "View details →"}</Text>
       </View>
     </TouchableOpacity>;
@@ -142,7 +149,7 @@ export default function AlumniCommunityScreen() {
         <View style={styles.groupsWrap}>{GROUPS.map((value) => <TouchableOpacity key={value} onPress={() => set("bloodGroup", value)} style={[styles.group, form.bloodGroup === value && styles.groupActive]}><Text style={[styles.groupText, form.bloodGroup === value && styles.groupTextActive]}>{value}</Text></TouchableOpacity>)}</View>
         <Field label="Hospital *" value={form.hospital} onChange={(value) => set("hospital", value)} />
         <Field label="City/service area *" value={form.city} onChange={(value) => set("city", value)} />
-        <Field label="Needed at * (ISO date/time)" value={form.requiredAt} onChange={(value) => set("requiredAt", value)} placeholder="2026-10-28T10:00" />
+        <Field label="Needed at *" value={form.requiredAt} onChange={(value) => set("requiredAt", value)} placeholder="DD-MM-YYYY HH:mm" />
         <Field label="Context (avoid sensitive patient details)" value={form.notes} onChange={(value) => set("notes", value)} multiline />
         <Text style={styles.safety}>Do not include a patient’s private contact details or exact home address. Donor eligibility and compatibility must be confirmed with healthcare professionals.</Text>
         <TouchableOpacity disabled={busy} onPress={() => void submit()} style={styles.submit}>{busy ? <ActivityIndicator color="#fff"/> : <Text style={styles.submitText}>Publish request</Text>}</TouchableOpacity>
@@ -156,7 +163,7 @@ export default function AlumniCommunityScreen() {
         {detail ? <>
           <Text style={styles.modalTitle}>{detail.bloodGroup} donation request</Text>
           <Text style={styles.muted}>{detail.hospital} · {detail.city} · {detail.urgency}</Text>
-          <Text style={styles.body}>{detail.notes || "Contact the request owner to coordinate."}{"\n\n"}Needed: {new Date(detail.requiredAt).toLocaleString()}</Text>
+          <Text style={styles.body}>{detail.notes || "Contact the request owner to coordinate."}{"\n\n"}Needed: {formatDateTimeInput(detail.requiredAt)}</Text>
           {detail.ownerId !== profile?.uid ? <TouchableOpacity style={styles.submit} onPress={() => void respond(detail)}><Text style={styles.submitText}>Offer to help</Text></TouchableOpacity> : detail.status === "open" ? <TouchableOpacity style={styles.submit} onPress={async () => { try { await api.bloodRequests.update(detail.id, "fulfilled"); setDetail(null); await load(); say("Request marked fulfilled"); } catch (e) { say(e instanceof Error ? e.message : "Could not update the request"); } }}><Text style={styles.submitText}>Mark fulfilled</Text></TouchableOpacity> : null}
           {detail.ownerId !== profile?.uid ? <TouchableOpacity style={styles.cancel} onPress={() => void report(detail)}><Text style={styles.cancelText}>Report request</Text></TouchableOpacity> : null}
         </> : null}

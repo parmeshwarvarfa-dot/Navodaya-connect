@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import type { Announcement } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function StudyAnnouncementsScreen() {
   const insets = useSafeAreaInsets();

@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
-  TextInput,
   Modal,
   KeyboardAvoidingView,
   ActivityIndicator,
@@ -17,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api, getApiOrigin } from "@/lib/api";
 import type { StudyMaterial } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const DEFAULT_SUBJECTS = [
   "Physics",

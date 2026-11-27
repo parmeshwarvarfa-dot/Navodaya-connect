@@ -10,6 +10,8 @@ if (existsSync(envFile) && typeof process.loadEnvFile === "function") {
 }
 
 const env = { ...process.env };
+env.__UNSAFE_EXPO_HOME_DIRECTORY ??= path.resolve(projectDir, "../../.expo-home");
+env.EXPO_NO_TELEMETRY ??= "1";
 const replitDomain = env.REPLIT_DEV_DOMAIN;
 const expoDevDomain = env.REPLIT_EXPO_DEV_DOMAIN;
 

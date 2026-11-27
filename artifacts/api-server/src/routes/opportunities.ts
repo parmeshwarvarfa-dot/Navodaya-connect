@@ -7,12 +7,14 @@ import {
 import { getUser, isCommunityVerifiedAlumni, requireAuth } from "../lib/auth";
 import { createSocialNotification } from "../lib/social-access";
 import { isValidUserId } from "./user-validation";
+import { MemoryMediaError, parseStoredMemoryMedia, signMemoryMedia, validateOwnedMemoryMedia } from "../lib/memory-media";
 
 const router = Router();
 const TYPES = new Set([
   "quiz", "academic_competition", "coding_challenge", "course", "workshop", "webinar",
   "creative_competition", "scholarship", "internship", "mentorship", "community_challenge", "other",
 ]);
+const MAX_OPPORTUNITY_MEDIA_BYTES = 50 * 1024 * 1024;
 const ROLES = new Set(["student", "alumni", "teacher", "official"]);
 const CLASSES = new Set(["6", "7", "8", "9", "10", "11", "12"]);
 const FORMATS = new Set(["online", "offline", "hybrid"]);
@@ -22,6 +24,14 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 
 function validUrl(value: string) {
   try { return URL_PROTOCOLS.has(new URL(value).protocol); } catch { return false; }
+}
+
+async function validateOpportunityMedia(ownerId: string, key: string) {
+  const media = await validateOwnedMemoryMedia(ownerId, key);
+  if (media.size > MAX_OPPORTUNITY_MEDIA_BYTES) {
+    throw new MemoryMediaError("Choose an image or video under 50 MB.");
+  }
+  return media;
 }
 
 function parseDate(value: unknown, label: string): { value?: Date | null; error?: string } {
@@ -180,9 +190,17 @@ async function notifyUser(recipientId: string, actorId: string, opportunityId: s
   await createSocialNotification(recipientId, actorId, type, opportunityId, message);
 }
 
-function publicOpportunity(row: typeof opportunitiesTable.$inferSelect, organizerName: string, registrationCount: number, now = new Date()) {
-  const { eligibleRoles: _eligibleRoles, eligibleClasses: _eligibleClasses, ...visible } = row;
-  return { ...visible, organizerName, registrationCount, displayStatus: statusFor(row, now) };
+async function publicOpportunity(row: typeof opportunitiesTable.$inferSelect, organizerName: string, registrationCount: number, now = new Date()) {
+  const { eligibleRoles: _eligibleRoles, eligibleClasses: _eligibleClasses, media, ...visible } = row;
+  const [storedMedia] = parseStoredMemoryMedia(media);
+  const mediaUrl = storedMedia && typeof storedMedia !== "string"
+    ? await signMemoryMedia(storedMedia, row.organizerId)
+    : null;
+  return {
+    ...visible, mediaUrl,
+    mediaType: storedMedia && typeof storedMedia !== "string" ? storedMedia.mediaType : null,
+    organizerName, registrationCount, displayStatus: statusFor(row, now),
+  };
 }
 
 router.get("/opportunities", requireAuth, async (req, res) => {
@@ -236,10 +254,10 @@ router.get("/opportunities", requireAuth, async (req, res) => {
       .from(opportunityRegistrationsTable).where(and(eq(opportunityRegistrationsTable.participantId, viewer.id), eq(opportunityRegistrationsTable.status, "registered"), inArray(opportunityRegistrationsTable.opportunityId, ids))) : [];
     const registered = new Set(myRows.map((row) => row.opportunityId));
     return res.json({
-      items: rows.map(({ opportunity, organizerName }) => ({
-        ...publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0, now),
+      items: await Promise.all(rows.map(async ({ opportunity, organizerName }) => ({
+        ...await publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0, now),
         isRegistered: registered.has(opportunity.id),
-      })),
+      }))),
       page, limit, total: Number(totalRow?.total ?? 0), hasMore: page * limit < Number(totalRow?.total ?? 0),
     });
   } catch (error) {
@@ -268,7 +286,8 @@ router.get("/opportunities/mine", requireAuth, async (req, res) => {
       .innerJoin(usersTable, eq(usersTable.id, opportunitiesTable.organizerId)).where(eq(opportunitiesTable.organizerId, user.id))
       .orderBy(desc(opportunitiesTable.updatedAt)).limit(100);
     const counts = await registrationCounts(rows.map(({ opportunity }) => opportunity.id));
-    return res.json(rows.map(({ opportunity, organizerName }) => publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0)));
+    return res.json(await Promise.all(rows.map(({ opportunity, organizerName }) =>
+      publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0))));
   } catch (error) {
     req.log.error(error, "Failed to list organizer opportunities");
     return res.status(500).json({ error: "Could not load your opportunities." });
@@ -286,8 +305,8 @@ router.get("/opportunities/my-registrations", requireAuth, async (req, res) => {
     const submissions = rows.length ? await db.select().from(opportunitySubmissionsTable)
       .where(and(eq(opportunitySubmissionsTable.participantId, user.id), inArray(opportunitySubmissionsTable.opportunityId, rows.map(({ opportunity }) => opportunity.id)))) : [];
     const submissionByOpportunity = new Map(submissions.map((row) => [row.opportunityId, row]));
-    return res.json(rows.map(({ registration, opportunity, organizerName }) => ({
-      ...publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0),
+    return res.json(await Promise.all(rows.map(async ({ registration, opportunity, organizerName }) => ({
+      ...await publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0),
       registrationStatus: registration.status,
       registeredAt: registration.createdAt,
       submission: (() => {
@@ -297,7 +316,7 @@ router.get("/opportunities/my-registrations", requireAuth, async (req, res) => {
           ...submission, status: "submitted", score: null, organizerFeedback: "", reviewedBy: null, reviewedAt: null,
         };
       })(),
-    })));
+    }))));
   } catch (error) {
     req.log.error(error, "Failed to load participant registrations");
     return res.status(500).json({ error: "Could not load your registrations." });
@@ -312,7 +331,9 @@ router.get("/opportunities/saved", requireAuth, async (req, res) => {
       .innerJoin(usersTable, eq(usersTable.id, opportunitiesTable.organizerId))
       .where(and(eq(opportunityBookmarksTable.userId, user.id), inArray(opportunitiesTable.status, ["published", "completed"]))).orderBy(desc(opportunityBookmarksTable.createdAt)).limit(100);
     const counts = await registrationCounts(rows.map(({ opportunity }) => opportunity.id));
-    return res.json(rows.map(({ opportunity, organizerName, savedAt }) => ({ ...publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0), savedAt })));
+    return res.json(await Promise.all(rows.map(async ({ opportunity, organizerName, savedAt }) => ({
+      ...await publicOpportunity(opportunity, organizerName, counts.get(opportunity.id) ?? 0), savedAt,
+    }))));
   } catch (error) {
     req.log.error(error, "Failed to load saved opportunities");
     return res.status(500).json({ error: "Could not load saved opportunities." });
@@ -370,13 +391,21 @@ router.post("/opportunities", requireAuth, async (req, res) => {
     const validated = validateOpportunity(input, input.status === "published");
     if (validated.error || !validated.data) return res.status(400).json({ error: validated.error });
     if (validated.data.status === "published" && validated.data.registrationDeadline && validated.data.registrationDeadline <= new Date()) return res.status(400).json({ error: "Set a future registration deadline before publishing." });
+    let media = null;
+    if (req.body?.mediaKey !== undefined && req.body.mediaKey !== null) {
+      if (typeof req.body.mediaKey !== "string") return res.status(400).json({ error: "Choose a valid opportunity photo or video." });
+      media = await validateOpportunityMedia(user.id, req.body.mediaKey);
+    }
     const row = await db.transaction(async (tx) => {
-      const [created] = await tx.insert(opportunitiesTable).values({ ...validated.data, organizerId: user.id }).returning();
+      const [created] = await tx.insert(opportunitiesTable).values({
+        ...validated.data, organizerId: user.id, media: media ? JSON.stringify([media]) : null,
+      }).returning();
       await tx.insert(opportunityAuditTable).values({ opportunityId: created.id, actorId: user.id, action: created.status === "published" ? "published" : "draft_created", details: { type: created.type } });
       return created;
     });
-    return res.status(201).json({ ...publicOpportunity(row, user.fullName, 0), isRegistered: false });
+    return res.status(201).json({ ...await publicOpportunity(row, user.fullName, 0), isRegistered: false });
   } catch (error) {
+    if (error instanceof MemoryMediaError) return res.status(error.statusCode).json({ error: error.message });
     req.log.error(error, "Failed to create opportunity");
     return res.status(500).json({ error: "Could not save this opportunity." });
   }
@@ -445,7 +474,7 @@ router.get("/opportunities/:id", requireAuth, async (req, res) => {
     const [submission] = await db.select().from(opportunitySubmissionsTable)
       .where(and(eq(opportunitySubmissionsTable.opportunityId, id), eq(opportunitySubmissionsTable.participantId, user.id))).limit(1);
     const result = {
-      ...publicOpportunity(found.opportunity, found.organizerName, Number(countRow?.total ?? 0)),
+      ...await publicOpportunity(found.opportunity, found.organizerName, Number(countRow?.total ?? 0)),
       eligibleRoles: found.opportunity.eligibleRoles,
       eligibleClasses: found.opportunity.eligibleClasses,
       isOrganizer: organizerView,
@@ -660,11 +689,20 @@ router.patch("/opportunities/:id", requireAuth, async (req, res) => {
       : current.status === "published" ? new Set(["published", "cancelled", "completed"]) : new Set([current.status]);
     if (!allowed.has(nextStatus)) return res.status(409).json({ error: "This opportunity can no longer change to that status." });
     if (current.status === "draft" && nextStatus === "published" && validated.data.registrationDeadline && validated.data.registrationDeadline <= new Date()) return res.status(400).json({ error: "Set a future registration deadline before publishing." });
+    const mediaProvided = Object.prototype.hasOwnProperty.call(req.body ?? {}, "mediaKey");
+    let media = current.media;
+    if (mediaProvided) {
+      if (req.body.mediaKey === null) media = null;
+      else if (typeof req.body.mediaKey === "string") media = JSON.stringify([await validateOpportunityMedia(user.id, req.body.mediaKey)]);
+      else return res.status(400).json({ error: "Choose a valid opportunity photo or video." });
+    }
     const saved = await db.transaction(async (tx) => {
-      const [updated] = await tx.update(opportunitiesTable).set({ ...validated.data, updatedAt: new Date() })
+      const [updated] = await tx.update(opportunitiesTable).set({
+        ...validated.data, ...(mediaProvided ? { media } : {}), updatedAt: new Date(),
+      })
         .where(and(eq(opportunitiesTable.id, id), eq(opportunitiesTable.organizerId, user.id), eq(opportunitiesTable.status, current.status), eq(opportunitiesTable.resultsPublished, false))).returning();
       if (!updated) return null;
-      const changedFields = ["type", "category", "title", "summary", "description", "eligibility", "eligibleRoles", "eligibleClasses", "format", "location", "timezone", "registrationOpensAt", "registrationDeadline", "startsAt", "endsAt", "submissionDeadline", "maxParticipants", "rules", "judgingCriteria", "submissionMode", "submissionInstructions", "deliveryMode", "externalProvider", "externalUrl", "feeAmount", "feeDetails", "prizeDetails", "certificateType", "certificateDetails"]
+      const changedFields = ["type", "category", "title", "summary", "description", "eligibility", "eligibleRoles", "eligibleClasses", "format", "location", "media", "timezone", "registrationOpensAt", "registrationDeadline", "startsAt", "endsAt", "submissionDeadline", "maxParticipants", "rules", "judgingCriteria", "submissionMode", "submissionInstructions", "deliveryMode", "externalProvider", "externalUrl", "feeAmount", "feeDetails", "prizeDetails", "certificateType", "certificateDetails"]
         .filter((key) => JSON.stringify((current as any)[key]) !== JSON.stringify((updated as any)[key]));
       const statusChanged = current.status !== updated.status;
       await tx.insert(opportunityAuditTable).values({ opportunityId: id, actorId: user.id, action: statusChanged ? `status_${updated.status}` : "updated", details: { changedFields } });
@@ -686,8 +724,9 @@ router.patch("/opportunities/:id", requireAuth, async (req, res) => {
     }
     const [countRow] = await db.select({ total: count() }).from(opportunityRegistrationsTable)
       .where(and(eq(opportunityRegistrationsTable.opportunityId, id), eq(opportunityRegistrationsTable.status, "registered")));
-    return res.json(publicOpportunity(updated, user.fullName, Number(countRow?.total ?? 0)));
+    return res.json(await publicOpportunity(updated, user.fullName, Number(countRow?.total ?? 0)));
   } catch (error) {
+    if (error instanceof MemoryMediaError) return res.status(error.statusCode).json({ error: error.message });
     req.log.error(error, "Failed to update opportunity");
     return res.status(500).json({ error: "Could not update this opportunity." });
   }

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { api, type RecognitionAdminPoint, type RecognitionAward, type RecognitionLeader, type RecognitionRule, type RecognitionSummary } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type Tab = "month" | "categories" | "annual" | "history" | "awards" | "hall" | "admin";
 const CATEGORY_LABELS: Record<string, string> = {

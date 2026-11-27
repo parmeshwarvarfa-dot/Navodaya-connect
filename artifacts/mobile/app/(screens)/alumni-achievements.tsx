@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView, Image, ActivityIndicator, Alert,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  Modal, KeyboardAvoidingView, Image, ActivityIndicator, Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +12,7 @@ import type { Achievement } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatPublishDateTime } from "@/lib/date-formatting";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = ["All", "Placement", "College Admission", "UPSC/Gov", "Startup", "Research", "Sports", "Award", "Career", "Other"];
 const CAT_COLOR: Record<string, string> = {

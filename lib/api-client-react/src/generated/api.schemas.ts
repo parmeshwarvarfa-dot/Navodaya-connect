@@ -41,6 +41,7 @@ export interface CreateMemoryRequest {
   /** @maxItems 10 */
   mediaAssets?: MemoryMediaAsset[];
   pollOptions?: string[];
+  pollDurationHours?: 24 | 72 | 168 | 336;
   visibility?: CreateMemoryRequestVisibility;
   commentsEnabled?: boolean;
 }
@@ -103,11 +104,18 @@ export interface SocialMemory {
   id: string;
   caption?: string;
   postType: string;
+  contentType?: "post" | "poll" | "navodayan_talk";
+  talkTitle?: string;
+  talkCategory?: string;
+  talkStoryType?: "written" | "video";
+  talkTopics?: string[];
   mediaUrls: string[];
   mediaMetadata?: MemoryMediaMetadata[];
   pollOptions: string[];
   pollVotes: number[];
   viewerVote?: number;
+  pollExpiresAt?: string | null;
+  isPollClosed?: boolean;
   visibility: string;
   commentsEnabled: boolean;
   likes: number;

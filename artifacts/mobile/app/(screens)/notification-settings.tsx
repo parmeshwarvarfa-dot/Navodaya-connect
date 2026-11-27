@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type NotificationPreferences } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface SettingItem {
   key: keyof Omit<NotificationPreferences, "userId" | "updatedAt">;

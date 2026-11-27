@@ -23,6 +23,27 @@ export const memoryBookmarksTable = pgTable("memory_bookmarks", {
   uniqueIndex("memory_bookmarks_memory_user_uidx").on(table.memoryId, table.userId),
 ]);
 
+export const memoryBookmarkCollectionsTable = pgTable("memory_bookmark_collections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("memory_bookmark_collections_user_name_uidx").on(table.userId, table.name),
+  index("memory_bookmark_collections_user_created_idx").on(table.userId, table.createdAt),
+]);
+
+export const memoryBookmarkCollectionItemsTable = pgTable("memory_bookmark_collection_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collectionId: uuid("collection_id").notNull().references(() => memoryBookmarkCollectionsTable.id, { onDelete: "cascade" }),
+  memoryId: uuid("memory_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("memory_bookmark_collection_items_collection_memory_uidx").on(table.collectionId, table.memoryId),
+  index("memory_bookmark_collection_items_memory_idx").on(table.memoryId),
+]);
+
 export const memoryPollVotesTable = pgTable("memory_poll_votes", {
   id: uuid("id").primaryKey().defaultRandom(),
   memoryId: uuid("memory_id").notNull(),

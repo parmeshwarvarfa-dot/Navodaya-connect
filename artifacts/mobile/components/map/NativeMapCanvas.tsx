@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { Camera, Map, Marker } from "@maplibre/maplibre-react-native";
 import type { CameraRef } from "@maplibre/maplibre-react-native";
 import type { JnvMapSchool } from "@/lib/jnv-map-data";
 import type { MapViewRequest } from "./map-types";
 import { useReducedMotion } from "@/components/motion/MotionProvider";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type Props = {
   schools: JnvMapSchool[];

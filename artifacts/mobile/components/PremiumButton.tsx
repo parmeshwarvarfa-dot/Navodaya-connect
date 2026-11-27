@@ -1,7 +1,6 @@
 import React from "react";
 import {
   TouchableOpacity,
-  Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
@@ -10,6 +9,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface PremiumButtonProps {
   title: string;

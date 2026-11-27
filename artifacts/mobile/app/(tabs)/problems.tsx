@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -21,6 +20,7 @@ import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const STATUS_CONFIG = {
   submitted: { label: "Submitted", color: "#64748B", bg: "#F1F5F9" },

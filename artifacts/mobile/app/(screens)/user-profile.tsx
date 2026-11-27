@@ -8,8 +8,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -34,6 +32,7 @@ import {
   useListDirectConversations,
   useUnfollowUser,
 } from "@workspace/api-client-react";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 function getInitials(name: string) {
   return name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);

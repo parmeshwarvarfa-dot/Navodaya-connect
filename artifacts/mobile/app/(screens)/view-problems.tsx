@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl, Platform, Modal,
+  View, StyleSheet, ScrollView, TouchableOpacity,
+  RefreshControl, Platform, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { Problem, ProblemWithComments, ProblemComment } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap }> = {
   submitted:   { label: "Pending",      color: "#F59E0B", bg: "#FFFBEB", icon: "time-outline" },

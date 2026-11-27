@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   Alert,
   StyleSheet,
   ScrollView,
@@ -9,7 +8,6 @@ import {
   Pressable,
   Platform,
   Modal,
-  TextInput,
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
@@ -23,6 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import JnvDirectoryFields from "@/components/JnvDirectoryFields";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const HOUSE_OPTIONS = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASS_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"];
@@ -255,7 +254,7 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -280,7 +279,7 @@ export default function EditProfileScreen() {
               {displayImageURL ? (
                 <Image source={{ uri: displayImageURL }} style={styles.avatarImage} />
               ) : (
-                <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.avatarFallback}>
+                <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.avatarFallback}>
                   <Text style={styles.avatarInitials}>{initials}</Text>
                 </LinearGradient>
               )}
@@ -440,7 +439,7 @@ export default function EditProfileScreen() {
               </View>
             ) : (
               <View style={pms.previewWrap}>
-                <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={pms.previewFallback}>
+                <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={pms.previewFallback}>
                   <Text style={pms.previewInitials}>{initials}</Text>
                 </LinearGradient>
               </View>
@@ -498,7 +497,7 @@ export default function EditProfileScreen() {
       >
         <View style={styles.successOverlay}>
           <View style={styles.successBox}>
-            <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.successIcon}>
+            <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.successIcon}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </LinearGradient>
             <Text style={styles.successTitle}>Profile Updated!</Text>

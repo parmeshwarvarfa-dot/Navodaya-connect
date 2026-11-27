@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Platform, Modal, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, Modal, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import type { QaQuestion, QaAnswer } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = ["All", "JEE/NEET", "College Life", "Career", "Hostel Life", "Coding & Tech", "UPSC/Civics", "Other"];
 

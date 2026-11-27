@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { api, type DigitalCredential } from "@/lib/api";
 import DigitalIdCard from "@/components/DigitalIdCard";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function DigitalIdScreen() {
   const insets = useSafeAreaInsets();

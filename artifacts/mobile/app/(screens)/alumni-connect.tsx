@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { AlumniUser, Connection } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const PROFESSIONS = ["All", "Engineering", "Medicine", "IAS/IPS", "Defence", "Startup", "Law", "Research"];
 const YEARS       = ["All", "2024", "2023", "2022", "2021", "2020", "2018", "2016", "2014", "2012", "2010"];

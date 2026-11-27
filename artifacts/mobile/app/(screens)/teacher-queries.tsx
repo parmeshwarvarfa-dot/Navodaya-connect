@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { StudentQueryWithAnswers } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = ["All", "Academics", "Exams", "Career", "School Help"];
 const CATEGORY_COLOR: Record<string, string> = {

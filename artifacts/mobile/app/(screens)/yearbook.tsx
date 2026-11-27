@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type YearbookEntry, type YearbookReviewItem, type YearbookSubmission } from "@/lib/api";
 import type { SocialMemory } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function YearbookScreen() {
   const insets = useSafeAreaInsets();

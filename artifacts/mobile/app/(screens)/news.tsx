@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -9,7 +8,6 @@ import {
   Modal,
   ScrollView,
   Linking,
-  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +21,7 @@ import { useColors } from "@/hooks/useColors";
 import { PremiumCard } from "@/components/PremiumCard";
 import { PremiumButton } from "@/components/PremiumButton";
 import { PremiumInput } from "@/components/PremiumInput";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const NEWS_CATEGORIES    = ["General", "Academic", "Sports", "Cultural", "Achievement"];
 const ANNOUNCE_CATEGORIES = ["Announcement", "Circular", "Notice", "Holiday", "Exam", "Other"];

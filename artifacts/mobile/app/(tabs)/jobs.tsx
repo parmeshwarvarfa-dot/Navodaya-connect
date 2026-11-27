@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
   Platform,
   Modal,
   ScrollView,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +22,7 @@ import type { Job } from "@/lib/api";
 const CATEGORIES = ["All", "Tech", "Govt", "Medical", "Finance", "Other"];
 
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Tech: "#3B82F6",
@@ -37,7 +36,7 @@ function timeAgo(dateStr: string) {
   return formatPublishDateTime(dateStr);
 }
 
-export default function JobsScreen({ embedded = false }: { embedded?: boolean } = {}) {
+export default function JobsScreen({ embedded = false, topContent }: { embedded?: boolean; topContent?: React.ReactNode } = {}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
@@ -79,46 +78,9 @@ export default function JobsScreen({ embedded = false }: { embedded?: boolean } 
     const matchCat = activeCategory === "All" || j.category === activeCategory;
     return matchSearch && matchCat;
   });
-
-  const handlePost = async () => {
-    if (!title.trim() || !company.trim()) {
-      showToast("Please fill in title and company");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api.jobs.create({
-        title: title.trim(),
-        company: company.trim(),
-        location: location.trim() || "Remote",
-        salary: salary.trim() || undefined,
-        type: "Full-time",
-        category,
-        description: description.trim(),
-      });
-      setShowCreate(false);
-      setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription(""); setCategory("Other");
-      showToast("Job posted!");
-      fetchJobs();
-    } catch {
-      showToast("Failed to post job");
-    }
-    setSubmitting(false);
-  };
-
-  const handleDelete = async (job: Job) => {
-    try {
-      await api.jobs.remove(job.id);
-      setSelectedJob(null);
-      showToast("Job removed");
-      fetchJobs();
-    } catch {
-      showToast("Failed to remove job");
-    }
-  };
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+  const listHeader = (
+    <>
+      {topContent}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
         style={[styles.header, { paddingTop: topPad + 8 }]}
@@ -170,28 +132,65 @@ export default function JobsScreen({ embedded = false }: { embedded?: boolean } 
           ))}
         </ScrollView>
       </View>
+      <Text style={[styles.countText, { color: colors.mutedForeground }]}>{filtered.length} openings</Text>
+    </>
+  );
 
-      {loading ? (
-        <View style={styles.emptyState}>
-          <ActivityIndicator color={colors.saffron} />
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
+  const handlePost = async () => {
+    if (!title.trim() || !company.trim()) {
+      showToast("Please fill in title and company");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.jobs.create({
+        title: title.trim(),
+        company: company.trim(),
+        location: location.trim() || "Remote",
+        salary: salary.trim() || undefined,
+        type: "Full-time",
+        category,
+        description: description.trim(),
+      });
+      setShowCreate(false);
+      setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription(""); setCategory("Other");
+      showToast("Job posted!");
+      fetchJobs();
+    } catch {
+      showToast("Failed to post job");
+    }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (job: Job) => {
+    try {
+      await api.jobs.remove(job.id);
+      setSelectedJob(null);
+      showToast("Job removed");
+      fetchJobs();
+    } catch {
+      showToast("Failed to remove job");
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <FlatList
+          data={loading ? [] : filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContent, { paddingBottom: (embedded ? 28 : 100) + insets.bottom }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: (embedded ? 28 : 100) + insets.bottom, flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text style={[styles.countText, { color: colors.mutedForeground }]}>
-              {filtered.length} openings
-            </Text>
-          }
-          ListEmptyComponent={
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={loading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={colors.saffron} />
+            </View>
+          ) : (
             <View style={styles.emptyState}>
               <Ionicons name="briefcase-outline" size={48} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No jobs found</Text>
             </View>
-          }
+          )}
           renderItem={({ item }) => {
             const catColor = CATEGORY_COLORS[item.category] || "#8B5CF6";
             return (
@@ -248,7 +247,6 @@ export default function JobsScreen({ embedded = false }: { embedded?: boolean } 
             );
           }}
         />
-      )}
 
       <Modal visible={!!selectedJob} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setSelectedJob(null)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: navodaya-connect-api-staging
+    runtime: node
+    region: singapore
+    plan: free
+    autoDeploy: false
+    buildCommand: corepack enable && corepack prepare pnpm@12.4.1 --activate && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server build
+    startCommand: pnpm --filter @workspace/api-server start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: ANALYTICS_SALT
+        sync: false

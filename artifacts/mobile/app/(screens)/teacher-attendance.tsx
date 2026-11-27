@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -18,6 +17,7 @@ import {
   type AcademicStudent,
   type ClassAttendanceRecord,
 } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type AttStatus = "present" | "absent" | "leave";
 

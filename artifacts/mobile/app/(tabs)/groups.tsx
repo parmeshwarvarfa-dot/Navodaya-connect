@@ -1,170 +1,19 @@
-import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-  Modal,
-  ScrollView,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useFocusEffect } from "expo-router";
-import { api } from "@/lib/api";
-import type { Group } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { PremiumCard } from "@/components/PremiumCard";
-import { PremiumButton } from "@/components/PremiumButton";
-import { PremiumInput } from "@/components/PremiumInput";
-import GroupNameEmojiPicker from "@/components/GroupNameEmojiPicker";
+import React, { useEffect } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 
 export default function GroupsScreen() {
-  const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [name, setName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [classStr, setClassStr] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState("");
-  const topPad = Platform.OS === "web" ? 0 : insets.top;
-
-  const fetchGroups = useCallback(async () => {
-    try {
-      const data = await api.groups.list();
-      setGroups(data);
-    } catch {}
-    setLoading(false);
+  useEffect(() => {
+    router.replace({ pathname: "/(tabs)/chats", params: { filter: "groups" } } as any);
   }, []);
-
-  useFocusEffect(useCallback(() => { void fetchGroups(); }, [fetchGroups]));
-
-  const handleCreateGroup = async () => {
-    if (!name.trim() || !subject.trim()) {
-      setCreateError("Please fill in group name and subject.");
-      return;
-    }
-    setCreateError("");
-    setCreating(true);
-    try {
-      await api.groups.create({ name: name.trim(), subject: subject.trim(), class: classStr.trim() || undefined });
-      setShowCreate(false);
-      setName("");
-      setSubject("");
-      setClassStr("");
-      fetchGroups();
-    } catch {
-      setCreateError("Failed to create group. Please try again.");
-    }
-    setCreating(false);
-  };
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={["#4B6EF5", "#3151E8"]}
-        style={[styles.header, { paddingTop: topPad + 8 }]}
-      >
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Groups</Text>
-          {profile?.role === "teacher" && (
-            <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreate(true)}>
-              <Ionicons name="add" size={22} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient>
-
-      <FlatList
-        data={groups}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="chatbubbles-outline" size={48} color="#9AA4B5" />
-              <Text style={[styles.emptyText, { color: "#667085" }]}>No groups yet</Text>
-              {profile?.role === "teacher" && (
-                <Text style={[styles.emptySubText, { color: "#667085" }]}>
-                  Create a group for your students
-                </Text>
-              )}
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push(`/(screens)/group-chat?id=${item.id}&name=${encodeURIComponent(item.name)}` as any)}
-          >
-            <PremiumCard style={styles.groupCard}>
-              <View style={styles.groupRow}>
-                <View style={[styles.groupIconBg, { backgroundColor: "#F5F3FF" }]}>
-                  <Ionicons name="people" size={22} color="#7C3AED" />
-                </View>
-                <View style={styles.groupInfo}>
-                  <Text style={[styles.groupName, { color: "#111827" }]}>{item.name}</Text>
-                  <Text style={[styles.groupSub, { color: "#667085" }]}>
-                    {item.subject}{item.class ? ` • ${item.class.replace(/^Class\s+/i, "")}` : ""}
-                  </Text>
-                  <Text style={[styles.groupMeta, { color: "#7B879B" }]}>
-                    {item.jnvName} • {item.memberCount ?? 1} members
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#9AA4B5" />
-              </View>
-            </PremiumCard>
-          </TouchableOpacity>
-        )}
-      />
-
-      <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
-        <View style={[styles.modalContainer, { backgroundColor: "#F8F7FF" }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: "#E3E7EF", backgroundColor: "#FFFFFF" }]}>
-            <Text style={[styles.modalTitle, { color: "#111827" }]}>Create Group</Text>
-            <TouchableOpacity onPress={() => setShowCreate(false)}>
-              <Ionicons name="close" size={24} color="#111827" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <PremiumInput label="Group Name" value={name} onChangeText={setName} placeholder="e.g. Science Class 10" icon="people-outline" />
-            <GroupNameEmojiPicker onSelect={(emoji) => setName((current) => `${current.trimEnd()}${current.trim() ? " " : ""}${emoji}`)} />
-            <PremiumInput label="Subject" value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" icon="book-outline" />
-            <PremiumInput label="Class (optional)" value={classStr} onChangeText={setClassStr} placeholder="e.g. 10A" icon="school-outline" />
-            {createError ? <Text style={{ color: "#EF4444", fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 4 }}>{createError}</Text> : null}
-            <PremiumButton title="Create Group" onPress={handleCreateGroup} loading={creating} style={{ marginTop: 8 }} />
-          </ScrollView>
-        </View>
-      </Modal>
+      <ActivityIndicator color="#7C3AED" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F7FF" },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
-  createBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  listContent: { padding: 16 },
-  groupCard: { marginBottom: 10 },
-  groupRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  groupIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  groupInfo: { flex: 1 },
-  groupName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 3 },
-  groupSub: { fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 2 },
-  groupMeta: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptySubText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  modalContainer: { flex: 1 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  modalContent: { padding: 20 },
+  container: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F7FF" },
 });

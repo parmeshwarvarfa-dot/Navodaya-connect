@@ -5,7 +5,6 @@ import {
   Inter_700Bold,
   useFonts as useInterFonts,
 } from "@expo-google-fonts/inter";
-import { Pacifico_400Regular, useFonts as usePacificoFonts } from "@expo-google-fonts/pacifico";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import { Platform, StyleSheet, View } from "react-native";
@@ -26,7 +25,23 @@ SplashScreen.preventAutoHideAsync();
 setBaseUrl(getApiOrigin());
 setAuthTokenGetter(getToken);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        if (
+          "status" in error &&
+          typeof error.status === "number" &&
+          error.status >= 400 &&
+          error.status < 500
+        ) {
+          return false;
+        }
+        return failureCount < 1;
+      },
+    },
+  },
+});
 
 function AuthNavGuard() {
   const { user, loading } = useAuth();
@@ -62,11 +77,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
-  const [pacificoLoaded, pacificoError] = usePacificoFonts({
-    Pacifico_400Regular,
-  });
-
-  const loaded = (interLoaded || !!interError) && (pacificoLoaded || !!pacificoError);
+  const loaded = interLoaded || !!interError;
 
   useEffect(() => {
     if (loaded) {

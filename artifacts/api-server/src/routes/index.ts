@@ -16,6 +16,7 @@ import studyMaterialsRouter from "./studyMaterials";
 import qaRouter from "./qa";
 import connectionsRouter from "./connections";
 import memoriesRouter from "./memories";
+import talksRouter from "./talks";
 import socialRouter from "./social";
 import directMessagesRouter from "./directMessages";
 import achievementsRouter from "./achievements";
@@ -39,6 +40,7 @@ import alumniMembershipRouter from "./alumniMembership";
 import profileAnalyticsRouter from "./profileAnalytics";
 import competitionRouter from "./competition";
 import rankingRouter from "./ranking";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -61,6 +63,7 @@ router.use(studyMaterialsRouter);
 router.use(qaRouter);
 router.use(connectionsRouter);
 router.use(memoriesRouter);
+router.use(talksRouter);
 router.use(socialRouter);
 router.use(directMessagesRouter);
 router.use(achievementsRouter);
@@ -82,5 +85,6 @@ router.use(alumniMembershipRouter);
 router.use(profileAnalyticsRouter);
 router.use(competitionRouter);
 router.use(rankingRouter);
+router.use(calendarRouter);
 
 export default router;

@@ -4,8 +4,6 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -14,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { OFFICIAL_HOUSES, type HouseName, normalizeHouseName } from "@/constants/HouseTheme";
 import { api, type PlayerLeaderboardEntry, type HouseChampionshipStanding } from "@/lib/api";
 import HouseBadge from "./HouseBadge";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 interface LeaderboardSectionProps {
   userHouse?: string | null;

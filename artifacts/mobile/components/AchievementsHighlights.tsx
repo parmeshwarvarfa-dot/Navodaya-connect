@@ -1,9 +1,10 @@
 import React from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { api, type Achievement } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Placement: "#10B981",

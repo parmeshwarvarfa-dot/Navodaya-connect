@@ -1,14 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform,
-  RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform,
+  RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api, type Opportunity, type OpportunityAnalytics, type OpportunityDetails, type OpportunityInput, type OpportunityParticipant, type OpportunityRegistration, type OpportunitySubmission, type SavedOpportunity } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateTimeInput, parseDateTimeInput } from "@/lib/date-formatting";
 import JobsScreen from "@/app/(tabs)/jobs";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const BLUE = "#7C3AED";
 const PURPLE = "#6630B5";
@@ -49,8 +53,7 @@ function labelForType(type: string) {
 
 function dateLabel(value?: string | null) {
   if (!value) return "Not set";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return formatDateTimeInput(value) || value;
 }
 
 function Field({ label, value, onChangeText, placeholder, multiline, keyboardType }: {
@@ -110,6 +113,9 @@ export default function AlumniOpportunitiesScreen() {
   const [editorError, setEditorError] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<OpportunityInput>(freshForm());
+  const [mediaAsset, setMediaAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [existingMedia, setExistingMedia] = useState<{ url: string; type: "image" | "video" } | null>(null);
+  const [removeExistingMedia, setRemoveExistingMedia] = useState(false);
   const [preview, setPreview] = useState(false);
 
   const [manageOpen, setManageOpen] = useState(false);
@@ -256,23 +262,49 @@ export default function AlumniOpportunitiesScreen() {
   const openEditor = async (item?: Opportunity) => {
     setEditorError(""); setPreview(false);
     if (!item) {
-      setEditId(null); setForm(freshForm()); setEditorOpen(true); return;
+      setEditId(null); setForm(freshForm()); setMediaAsset(null); setExistingMedia(null); setRemoveExistingMedia(false); setEditorOpen(true); return;
     }
     try {
       const current = await api.opportunities.get(item.id);
       setEditId(item.id);
+      setMediaAsset(null);
+      setExistingMedia(current.mediaUrl && current.mediaType ? { url: current.mediaUrl, type: current.mediaType } : null);
+      setRemoveExistingMedia(false);
       const editable = Object.fromEntries(EDITABLE_KEYS.map((key) => [key, current[key]])) as OpportunityInput;
       setForm({
         ...editable, location: current.location ?? "", externalProvider: current.externalProvider ?? "",
         externalUrl: current.externalUrl ?? "", status: current.status as OpportunityInput["status"],
-        registrationOpensAt: current.registrationOpensAt ?? "", registrationDeadline: current.registrationDeadline ?? "",
-        startsAt: current.startsAt ?? "", endsAt: current.endsAt ?? "", submissionDeadline: current.submissionDeadline ?? "",
+        registrationOpensAt: formatDateTimeInput(current.registrationOpensAt), registrationDeadline: formatDateTimeInput(current.registrationDeadline),
+        startsAt: formatDateTimeInput(current.startsAt), endsAt: formatDateTimeInput(current.endsAt), submissionDeadline: formatDateTimeInput(current.submissionDeadline),
       });
       setEditorOpen(true);
     } catch (err) { Alert.alert("Unable to edit", err instanceof Error ? err.message : "Could not load this opportunity."); }
   };
 
   const setField = (key: keyof OpportunityInput, value: unknown) => setForm((current) => ({ ...current, [key]: value }) as OpportunityInput);
+  const chooseOpportunityMedia = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Allow photo library access to attach an image or video.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images", "videos"], quality: 0.85,
+      });
+      if (result.canceled) return;
+      const selected = result.assets?.[0];
+      if (!selected) return;
+      if ((selected.fileSize ?? 0) > 50 * 1024 * 1024) {
+        Alert.alert("File too large", "Choose an image or video under 50 MB.");
+        return;
+      }
+      setMediaAsset(selected);
+      setRemoveExistingMedia(false);
+    } catch (error) {
+      Alert.alert("Media unavailable", error instanceof Error ? error.message : "Could not open your photo library.");
+    }
+  };
   const toggleStringOption = (key: "eligibleRoles" | "eligibleClasses", value: string) => {
     const current = (form[key] ?? []) as string[];
     setField(key, current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
@@ -286,9 +318,41 @@ export default function AlumniOpportunitiesScreen() {
       feeAmount: Number(form.feeAmount || 0),
       maxParticipants: form.maxParticipants === null || form.maxParticipants === undefined ? null : Number(form.maxParticipants),
     };
+    const dateFields = [
+      ["registrationOpensAt", "Registration opens"],
+      ["registrationDeadline", "Registration deadline"],
+      ["startsAt", "Activity starts"],
+      ["endsAt", "Activity ends"],
+      ["submissionDeadline", "Submission deadline"],
+    ] as const;
+    for (const [key, label] of dateFields) {
+      const input = String(payload[key] ?? "").trim();
+      if (!input) {
+        payload[key] = null;
+        continue;
+      }
+      const date = parseDateTimeInput(input);
+      if (!date) {
+        setEditorError(`${label}: enter DD-MM-YYYY HH:mm, for example 15-12-2026 18:00.`);
+        return;
+      }
+      payload[key] = date.toISOString();
+    }
     setEditorBusy(true);
+    const uploadedKeys: string[] = [];
     try {
+      if (mediaAsset) {
+        const fileName = mediaAsset.fileName?.replace(/[^a-zA-Z0-9._ -]/g, "_") || "opportunity-media";
+        const uploaded = await api.memories.uploadMedia(mediaAsset.uri, fileName, mediaAsset.mimeType);
+        uploadedKeys.push(uploaded.key);
+        payload.mediaKey = uploaded.key;
+      } else if (editId && removeExistingMedia) {
+        payload.mediaKey = null;
+      }
       const saved = editId ? await api.opportunities.update(editId, payload) : await api.opportunities.create(payload);
+      setExistingMedia(saved.mediaUrl && saved.mediaType ? { url: saved.mediaUrl, type: saved.mediaType } : null);
+      setMediaAsset(null);
+      setRemoveExistingMedia(false);
       setEditorOpen(false);
       setDetailOpen(false);
       setTab("organizer");
@@ -296,7 +360,14 @@ export default function AlumniOpportunitiesScreen() {
       await load();
       Alert.alert(publish ? "Opportunity published" : "Draft saved", publish ? "Eligible Navodaya Connect users can now find it." : "You can publish it when the listing is ready.");
       if (saved.id) setManageTarget(saved);
-    } catch (err) { setEditorError(err instanceof Error ? err.message : "Could not save this opportunity."); }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not save this opportunity.";
+      if (uploadedKeys.length) {
+        try { await api.memories.cleanupUploads(uploadedKeys); }
+        catch { setEditorError(`${message} A temporary upload may remain; please retry when your connection is available.`); return; }
+      }
+      setEditorError(message);
+    }
     finally { setEditorBusy(false); }
   };
 
@@ -360,6 +431,8 @@ export default function AlumniOpportunitiesScreen() {
   const renderCard = (item: Opportunity, organizer = false) => {
     const status = item.displayStatus || item.status;
     return <TouchableOpacity key={item.id} activeOpacity={0.88} style={styles.card} onPress={() => void openDetail(item)}>
+      {item.mediaUrl && item.mediaType === "image" ? <Image source={{ uri: item.mediaUrl }} style={styles.opportunityCardImage} resizeMode="cover" accessibilityLabel={`${item.title} image`} /> : null}
+      {item.mediaUrl && item.mediaType === "video" ? <TouchableOpacity style={styles.opportunityCardVideo} onPress={(event) => { event.stopPropagation(); void openExternal(item.mediaUrl); }}><Ionicons name="play-circle" size={40} color="#fff" /><Text style={styles.videoLabel}>Play preview video</Text></TouchableOpacity> : null}
       <View style={styles.cardHead}>
         <View style={styles.iconBadge}><Ionicons name={item.type.includes("competition") || item.type.includes("challenge") ? "trophy-outline" : "sparkles-outline"} size={21} color={PURPLE} /></View>
         <View style={styles.cardTitleWrap}>
@@ -387,20 +460,35 @@ export default function AlumniOpportunitiesScreen() {
     </TouchableOpacity>;
   };
 
+  const pageHeader = <View style={[styles.header, { paddingTop: headerTop }]}>
+    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}><Ionicons name="arrow-back" size={21} color="#1E1B2E" /></TouchableOpacity>
+    <View style={{ flex: 1 }}><Text style={styles.headerTitle}>Opportunities</Text><Text style={styles.headerSubtitle}>Discover and share ways to grow</Text></View>
+    {canOrganize && tab !== "jobs" && <TouchableOpacity style={styles.createButton} onPress={() => void openEditor()}><Ionicons name="add" size={24} color="#fff" /><Text style={styles.createText}>Create</Text></TouchableOpacity>}
+  </View>;
+  const pageTabs = <ScrollView horizontal style={styles.tabsScroll} contentContainerStyle={styles.tabs} showsHorizontalScrollIndicator={false}>
+    {[["discover", "Discover"], ["jobs", "Jobs"], ["saved", "Saved"], ["mine", "My activity"], ...(canOrganize ? [["organizer", "Organizer"]] : [])].map(([key, title]) => <TouchableOpacity key={key} onPress={() => setTab(key as typeof tab)} style={[styles.tab, tab === key && styles.activeTab]}><Text style={[styles.tabText, tab === key && styles.activeTabText]}>{title}</Text></TouchableOpacity>)}
+  </ScrollView>;
+
   return <View style={styles.screen}>
-    <View style={[styles.header, { paddingTop: headerTop }]}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}><Ionicons name="arrow-back" size={21} color="#1E1B2E" /></TouchableOpacity>
-      <View style={{ flex: 1 }}><Text style={styles.headerTitle}>Opportunities</Text><Text style={styles.headerSubtitle}>Discover and share ways to grow</Text></View>
-      {canOrganize && tab !== "jobs" && <TouchableOpacity style={styles.createButton} onPress={() => void openEditor()}><Ionicons name="add" size={24} color="#fff" /><Text style={styles.createText}>Create</Text></TouchableOpacity>}
-    </View>
-
-    <ScrollView horizontal style={styles.tabsScroll} contentContainerStyle={styles.tabs} showsHorizontalScrollIndicator={false}>
-      {[["discover", "Discover"], ["jobs", "Jobs"], ["saved", "Saved"], ["mine", "My activity"], ...(canOrganize ? [["organizer", "Organizer"]] : [])].map(([key, title]) => <TouchableOpacity key={key} onPress={() => setTab(key as typeof tab)} style={[styles.tab, tab === key && styles.activeTab]}><Text style={[styles.tabText, tab === key && styles.activeTabText]}>{title}</Text></TouchableOpacity>)}
-    </ScrollView>
-
-    {tab === "jobs" ? <JobsScreen embedded /> : <>
-    {tab === "discover" && <View style={styles.filterPanel}>
-      <View style={styles.searchBox}><Ionicons name="search-outline" size={18} color="#7C8798" /><TextInput style={styles.searchInput} placeholder="Search title, organizer, topic..." placeholderTextColor="#8A94A4" value={search} onChangeText={setSearch} returnKeyType="search" /></View>
+    {tab === "jobs" ? <JobsScreen embedded topContent={<>{pageHeader}{pageTabs}</>} /> : <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: 34 + insets.bottom }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={BLUE} />}
+      keyboardShouldPersistTaps="handled"
+    >
+      {pageHeader}
+      {pageTabs}
+    {tab === "discover" && <>
+      <LinearGradient colors={["#7C3AED", "#5B21B6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.discoverHero}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroEyebrow}>GROW YOUR POTENTIAL</Text>
+          <Text style={styles.heroTitle}>Find your next opportunity</Text>
+          <Text style={styles.heroSubtitle}>Challenges, learning and experiences shared by your community.</Text>
+        </View>
+        <View style={styles.heroIcon}><Ionicons name="rocket-outline" size={27} color="#fff" /></View>
+      </LinearGradient>
+      <View style={styles.filterPanel}>
+      <View style={styles.searchBox}><Ionicons name="search-outline" size={18} color="#7C3AED" /><TextInput style={styles.searchInput} placeholder="Search title, organizer, topic..." placeholderTextColor="#8A94A4" value={search} onChangeText={setSearch} returnKeyType="search" /></View>
       <ScrollView horizontal style={styles.filterScroller} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         {TYPE_FILTERS.map(([value, title]) => <Chip key={value} title={title} active={typeFilter === value} onPress={() => { setTypeFilter(value); resetPage(); }} />)}
       </ScrollView>
@@ -419,13 +507,10 @@ export default function AlumniOpportunitiesScreen() {
           <Ionicons name="swap-vertical" size={17} color={BLUE} /><Text style={styles.sortText}>{sort === "deadline" ? "Deadline first" : "Newest first"}</Text>
         </TouchableOpacity>
       </View>
-    </View>}
+      </View>
+    </>}
 
-    <ScrollView
-      style={{ flex: 1 }} contentContainerStyle={[styles.content, { paddingBottom: 34 + insets.bottom }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={BLUE} />}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View style={styles.content}>
       {tab === "organizer" && analytics && <View style={styles.statsCard}>
         {[["Your listings", analytics.totalOpportunities], ["Published", analytics.activeOpportunities], ["Registrations", analytics.registrations], ["Entries", analytics.submissions]].map(([label, value]) => <View key={String(label)} style={styles.statItem}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>)}
       </View>}
@@ -436,8 +521,8 @@ export default function AlumniOpportunitiesScreen() {
         {items.map((item) => renderCard(item, tab === "organizer"))}
         {tab === "discover" && hasMore && <TouchableOpacity style={styles.loadMore} disabled={loadingMore} onPress={() => void load(true)}>{loadingMore ? <ActivityIndicator color={BLUE} /> : <Text style={styles.loadMoreText}>Load more</Text>}</TouchableOpacity>}
       </> : <View style={styles.emptyCard}><Ionicons name={tab === "organizer" ? "briefcase-outline" : "search-outline"} size={34} color="#A1A9B5" /><Text style={styles.stateTitle}>{tab === "organizer" ? "No opportunities yet" : "No matching opportunities"}</Text><Text style={styles.stateText}>{tab === "organizer" ? "Create a draft, review the preview, then publish when the details are ready." : "Try a different search or filter. New opportunities will appear here when organizers publish them."}</Text>{tab === "organizer" && <TouchableOpacity style={styles.primaryButton} onPress={() => void openEditor()}><Ionicons name="add" size={18} color="#fff" /><Text style={styles.primaryButtonText}>Create opportunity</Text></TouchableOpacity>}</View>}
-    </ScrollView>
-    </>}
+    </View>
+    </ScrollView>}
 
     <Modal visible={detailOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDetailOpen(false)}>
       <View style={styles.modalScreen}>
@@ -446,6 +531,8 @@ export default function AlumniOpportunitiesScreen() {
           <Text style={styles.detailType}>{labelForType(detail.type)} · {detail.category}</Text>
           <Text style={styles.detailTitle}>{detail.title}</Text>
           <Text style={styles.detailOrganizer}>Organized by {detail.organizerName || "Navodaya Connect alumnus"}</Text>
+          {detail.mediaUrl && detail.mediaType === "image" ? <Image source={{ uri: detail.mediaUrl }} style={styles.opportunityDetailImage} resizeMode="cover" accessibilityLabel={`${detail.title} image`} /> : null}
+          {detail.mediaUrl && detail.mediaType === "video" ? <TouchableOpacity style={styles.opportunityDetailVideo} onPress={() => void openExternal(detail.mediaUrl)}><Ionicons name="play-circle" size={48} color="#fff" /><Text style={styles.videoLabel}>Play opportunity video</Text></TouchableOpacity> : null}
           {!detail.isOrganizer && <TouchableOpacity style={styles.secondaryButton} onPress={() => void toggleSaved()}><Ionicons name={saved.some((item) => item.id === detail.id) ? "bookmark" : "bookmark-outline"} size={18} color={BLUE} /><Text style={styles.secondaryText}>{saved.some((item) => item.id === detail.id) ? "Remove from saved" : "Save opportunity"}</Text></TouchableOpacity>}
           <View style={styles.detailStatus}><Text style={styles.detailStatusText}>{(detail.displayStatus || detail.status).replaceAll("_", " ")}</Text><Text style={styles.detailStatusText}>{detail.format} · Individual participation</Text></View>
           <DetailSection title="About this opportunity"><Text style={styles.detailBody}>{detail.description || detail.summary}</Text></DetailSection>
@@ -469,27 +556,54 @@ export default function AlumniOpportunitiesScreen() {
       <KeyboardAvoidingView style={styles.modalScreen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.modalHeader}><Text style={styles.modalTitle}>{editId ? "Edit opportunity" : "Create opportunity"}</Text><TouchableOpacity onPress={() => setEditorOpen(false)} style={styles.closeButton}><Ionicons name="close" size={22} color="#334155" /></TouchableOpacity></View>
         <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-          {preview ? <View style={styles.previewCard}><Text style={styles.detailType}>PREVIEW · {labelForType(String(form.type))}</Text><Text style={styles.detailTitle}>{String(form.title || "Opportunity title")}</Text><Text style={styles.detailOrganizer}>{String(form.summary || "Summary shown on the discovery card")}</Text><Text style={styles.detailBody}>{String(form.description || "Full description")}</Text><Text style={styles.detailBody}>Deadline: {dateLabel(String(form.registrationDeadline || ""))}</Text><Text style={styles.detailBody}>This preview is not published yet.</Text><TouchableOpacity onPress={() => setPreview(false)}><Text style={styles.linkText}>Back to edit</Text></TouchableOpacity></View> : <>
+          {preview ? <View style={styles.previewCard}><Text style={styles.detailType}>PREVIEW · {labelForType(String(form.type))}</Text><Text style={styles.detailTitle}>{String(form.title || "Opportunity title")}</Text><Text style={styles.detailOrganizer}>{String(form.summary || "Summary shown on the discovery card")}</Text>
+            {mediaAsset?.type === "image" ? <Image source={{ uri: mediaAsset.uri }} style={styles.opportunityDetailImage} resizeMode="cover" /> : null}
+            {mediaAsset?.type === "video" ? <View style={styles.opportunityDetailVideo}><Ionicons name="videocam" size={42} color="#fff" /><Text style={styles.videoLabel}>Video preview attached</Text></View> : null}
+            {!mediaAsset && !removeExistingMedia && existingMedia?.type === "image" ? <Image source={{ uri: existingMedia.url }} style={styles.opportunityDetailImage} resizeMode="cover" /> : null}
+            {!mediaAsset && !removeExistingMedia && existingMedia?.type === "video" ? <View style={styles.opportunityDetailVideo}><Ionicons name="videocam" size={42} color="#fff" /><Text style={styles.videoLabel}>Video preview attached</Text></View> : null}
+            <Text style={styles.detailBody}>{String(form.description || "Full description")}</Text><Text style={styles.detailBody}>Deadline: {dateLabel(String(form.registrationDeadline || ""))}</Text><Text style={styles.detailBody}>This preview is not published yet.</Text><TouchableOpacity onPress={() => setPreview(false)}><Text style={styles.linkText}>Back to edit</Text></TouchableOpacity></View> : <>
             <Text style={styles.fieldLabel}>Opportunity type</Text><View style={styles.optionWrap}>{TYPES.map(([value, title]) => <Chip key={value} title={title} active={form.type === value} onPress={() => setField("type", value)} />)}</View>
             <Field label="Category *" value={String(form.category || "")} onChangeText={(value) => setField("category", value)} placeholder="Academic, technology, arts..." />
             <Field label="Title *" value={String(form.title || "")} onChangeText={(value) => setField("title", value)} placeholder="Clear, specific title" />
             <Field label="Short summary" value={String(form.summary || "")} onChangeText={(value) => setField("summary", value)} placeholder="A short description for discovery cards" multiline />
             <Field label="Full description *" value={String(form.description || "")} onChangeText={(value) => setField("description", value)} placeholder="Objectives and what participants can expect" multiline />
+            <View style={styles.mediaField}>
+              <Text style={styles.fieldLabel}>Add a photo or video</Text>
+              <Text style={styles.helperText}>Help people quickly understand what this opportunity is about. This is optional.</Text>
+              {mediaAsset?.type === "image" ? <Image source={{ uri: mediaAsset.uri }} style={styles.opportunityDetailImage} resizeMode="cover" /> : null}
+              {mediaAsset?.type === "video" ? <View style={styles.opportunityDetailVideo}><Ionicons name="videocam" size={38} color="#fff" /><Text style={styles.videoLabel}>{mediaAsset.fileName || "Video selected"}</Text></View> : null}
+              {!mediaAsset && !removeExistingMedia && existingMedia?.type === "image" ? <Image source={{ uri: existingMedia.url }} style={styles.opportunityDetailImage} resizeMode="cover" /> : null}
+              {!mediaAsset && !removeExistingMedia && existingMedia?.type === "video" ? <View style={styles.opportunityDetailVideo}><Ionicons name="videocam" size={38} color="#fff" /><Text style={styles.videoLabel}>Video already attached</Text></View> : null}
+              <View style={styles.mediaActions}>
+                <TouchableOpacity style={styles.uploadMediaButton} onPress={() => void chooseOpportunityMedia()} activeOpacity={0.82}>
+                  <View style={styles.uploadIcon}><Ionicons name="cloud-upload-outline" size={22} color={BLUE} /></View>
+                  <View style={styles.uploadCopy}>
+                    <Text style={styles.uploadTitle}>{mediaAsset || existingMedia && !removeExistingMedia ? "Change uploaded media" : "Upload an image or video"}</Text>
+                    <Text style={styles.uploadSubtitle}>Choose from your device · up to 50 MB</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={19} color="#7C3AED" />
+                </TouchableOpacity>
+                {(mediaAsset || existingMedia && !removeExistingMedia) && <TouchableOpacity style={styles.removeMediaButton} onPress={() => {
+                  if (mediaAsset) setMediaAsset(null);
+                  else setRemoveExistingMedia(true);
+                }}><Ionicons name="trash-outline" size={17} color="#B42318" /><Text style={styles.removeMediaText}>Remove</Text></TouchableOpacity>}
+              </View>
+            </View>
             <Field label="Eligibility *" value={String(form.eligibility || "")} onChangeText={(value) => setField("eligibility", value)} placeholder="Who can participate? Include age restrictions where relevant." multiline />
             <Text style={styles.fieldLabel}>Eligible roles</Text><View style={styles.optionWrap}>{ROLE_OPTIONS.map(([value, title]) => <Chip key={value} title={title} active={(form.eligibleRoles || []).includes(value)} onPress={() => toggleStringOption("eligibleRoles", value)} />)}</View>
             <Text style={styles.fieldLabel}>Eligible student classes (optional)</Text><View style={styles.optionWrap}>{CLASS_OPTIONS.map((value) => <Chip key={value} title={`Class ${value}`} active={(form.eligibleClasses || []).includes(value)} onPress={() => toggleStringOption("eligibleClasses", value)} />)}</View>
             <Text style={styles.fieldLabel}>Participation format</Text><View style={styles.optionWrap}>{["online", "offline", "hybrid"].map((value) => <Chip key={value} title={value} active={form.format === value} onPress={() => setField("format", value)} />)}</View>
             <Field label="Venue (required for offline or hybrid)" value={String(form.location || "")} onChangeText={(value) => setField("location", value)} placeholder="Venue or meeting location" />
-            <Text style={styles.helperText}>Dates should include a timezone, for example 2026-12-15T18:00:00+05:30. Leave optional dates blank.</Text>
-            <Field label="Registration opens" value={String(form.registrationOpensAt || "")} onChangeText={(value) => setField("registrationOpensAt", value)} placeholder="2026-12-01T09:00:00+05:30" />
-            <Field label="Registration deadline *" value={String(form.registrationDeadline || "")} onChangeText={(value) => setField("registrationDeadline", value)} placeholder="2026-12-15T18:00:00+05:30" />
-            <Field label="Activity starts" value={String(form.startsAt || "")} onChangeText={(value) => setField("startsAt", value)} placeholder="2026-12-20T10:00:00+05:30" />
-            <Field label="Activity ends" value={String(form.endsAt || "")} onChangeText={(value) => setField("endsAt", value)} placeholder="2026-12-20T17:00:00+05:30" />
+            <Text style={styles.helperText}>Enter local date and time as DD-MM-YYYY HH:mm (24-hour), for example 15-12-2026 18:00. Leave optional dates blank.</Text>
+            <Field label="Registration opens" value={String(form.registrationOpensAt || "")} onChangeText={(value) => setField("registrationOpensAt", value)} placeholder="DD-MM-YYYY HH:mm" />
+            <Field label="Registration deadline *" value={String(form.registrationDeadline || "")} onChangeText={(value) => setField("registrationDeadline", value)} placeholder="DD-MM-YYYY HH:mm" />
+            <Field label="Activity starts" value={String(form.startsAt || "")} onChangeText={(value) => setField("startsAt", value)} placeholder="DD-MM-YYYY HH:mm" />
+            <Field label="Activity ends" value={String(form.endsAt || "")} onChangeText={(value) => setField("endsAt", value)} placeholder="DD-MM-YYYY HH:mm" />
             <Field label="Maximum participants (optional)" value={String(form.maxParticipants ?? "")} onChangeText={(value) => setField("maxParticipants", value ? Number(value) : null)} placeholder="No limit" keyboardType="numeric" />
             <Field label="Rules" value={String(form.rules || "")} onChangeText={(value) => setField("rules", value)} placeholder="Participation rules" multiline />
             <Field label="Judging criteria" value={String(form.judgingCriteria || "")} onChangeText={(value) => setField("judgingCriteria", value)} placeholder="How entries will be assessed" multiline />
             <Text style={styles.fieldLabel}>Submission format</Text><View style={styles.optionWrap}>{[["none", "No in-app entry"], ["text", "Text"], ["link", "Link"]].map(([value, title]) => <Chip key={value} title={title} active={form.submissionMode === value} onPress={() => setField("submissionMode", value)} />)}</View>
-            {form.submissionMode !== "none" && <><Field label="Submission deadline" value={String(form.submissionDeadline || "")} onChangeText={(value) => setField("submissionDeadline", value)} placeholder="2026-12-20T17:00:00+05:30" /><Field label="Submission instructions" value={String(form.submissionInstructions || "")} onChangeText={(value) => setField("submissionInstructions", value)} placeholder="What participants should submit" multiline /></>}
+            {form.submissionMode !== "none" && <><Field label="Submission deadline" value={String(form.submissionDeadline || "")} onChangeText={(value) => setField("submissionDeadline", value)} placeholder="DD-MM-YYYY HH:mm" /><Field label="Submission instructions" value={String(form.submissionInstructions || "")} onChangeText={(value) => setField("submissionInstructions", value)} placeholder="What participants should submit" multiline /></>}
             <Text style={styles.fieldLabel}>Activity delivery</Text><View style={styles.optionWrap}>{[["internal", "Navodaya Connect listing"], ["external", "External provider"]].map(([value, title]) => <Chip key={value} title={title} active={form.deliveryMode === value} onPress={() => setField("deliveryMode", value)} />)}</View>
             {form.deliveryMode === "external" && <><Field label="Provider name *" value={String(form.externalProvider || "")} onChangeText={(value) => setField("externalProvider", value)} placeholder="Provider / organizer" /><Field label="Provider or registration link *" value={String(form.externalUrl || "")} onChangeText={(value) => setField("externalUrl", value)} placeholder="https://..." keyboardType="url" /></>}
             <Field label="Fee in INR (0 if free)" value={String(form.feeAmount ?? 0)} onChangeText={(value) => setField("feeAmount", value ? Number(value) : 0)} placeholder="0" keyboardType="numeric" />
@@ -497,7 +611,7 @@ export default function AlumniOpportunitiesScreen() {
             <Field label="Prize details (optional)" value={String(form.prizeDetails || "")} onChangeText={(value) => setField("prizeDetails", value)} placeholder="Only list confirmed prizes" multiline />
             <Text style={styles.fieldLabel}>Certificate</Text><View style={styles.optionWrap}><Chip title="No certificate" active={form.certificateType === "none"} onPress={() => { setField("certificateType", "none"); setField("certificateDetails", ""); }} /><Chip title="External provider certificate" active={form.certificateType === "external"} onPress={() => setField("certificateType", "external")} /></View>
             {form.certificateType === "external" && <Field label="Who issues it? *" value={String(form.certificateDetails || "")} onChangeText={(value) => setField("certificateDetails", value)} placeholder="External issuing organization" multiline />}
-            <View style={styles.disclosure}><Ionicons name="shield-checkmark-outline" size={19} color="#7555A5" /><Text style={styles.disclosureText}>Listings are provided by the organizer. Navodaya Connect does not validate external providers, issue certificates, host custom quizzes, accept file uploads, or support team registration.</Text></View>
+            <View style={styles.disclosure}><Ionicons name="shield-checkmark-outline" size={19} color="#7555A5" /><Text style={styles.disclosureText}>Listings are provided by the organizer. Navodaya Connect does not validate external providers, issue certificates, host custom quizzes, accept participant submission files, or support team registration.</Text></View>
           </>}
           {!!editorError && <Text style={styles.errorText}>{editorError}</Text>}
           <TouchableOpacity style={styles.secondaryButton} onPress={() => setPreview((value) => !value)}><Ionicons name="eye-outline" size={18} color={BLUE} /><Text style={styles.secondaryText}>{preview ? "Continue editing" : "Preview listing"}</Text></TouchableOpacity>
@@ -541,6 +655,12 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: "row", alignItems: "stretch", paddingHorizontal: 15, gap: 2 },
   tab: { minWidth: 80, paddingHorizontal: 5, paddingVertical: 13, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   activeTab: { borderBottomColor: BLUE }, tabText: { color: "#7B8595", fontSize: 13, fontFamily: "Inter_500Medium" }, activeTabText: { color: BLUE, fontFamily: "Inter_700Bold" },
+  discoverHero: { flexDirection: "row", alignItems: "center", gap: 14, marginHorizontal: 16, marginTop: 13, marginBottom: 10, paddingHorizontal: 18, paddingVertical: 18, borderRadius: 18 },
+  heroCopy: { flex: 1 },
+  heroEyebrow: { color: "#E9D5FF", fontSize: 9, letterSpacing: 1.1, fontFamily: "Inter_700Bold" },
+  heroTitle: { color: "#fff", fontSize: 19, lineHeight: 25, marginTop: 5, fontFamily: "Inter_700Bold" },
+  heroSubtitle: { color: "#F3E8FF", fontSize: 11, lineHeight: 16, marginTop: 4, fontFamily: "Inter_400Regular" },
+  heroIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: "#FFFFFF24", alignItems: "center", justifyContent: "center" },
   filterPanel: { backgroundColor: "#fff", paddingTop: 4, paddingBottom: 7, borderBottomWidth: 1, borderBottomColor: "#E9ECF2" },
   searchBox: { height: 48, flexDirection: "row", gap: 9, alignItems: "center", backgroundColor: "#F8F9FC", marginHorizontal: 16, marginTop: 8, marginBottom: 7, paddingHorizontal: 13, borderRadius: 14, borderWidth: 1, borderColor: "#E7EAF0" },
   searchInput: { flex: 1, paddingVertical: 0, color: "#1B2230", fontSize: 14, fontFamily: "Inter_400Regular" },
@@ -561,5 +681,19 @@ const styles = StyleSheet.create({
   detailType: { color: PURPLE, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, fontFamily: "Inter_700Bold" }, detailTitle: { color: "#171B29", fontSize: 22, lineHeight: 28, marginTop: 6, fontFamily: "Inter_700Bold" }, detailOrganizer: { color: "#768194", fontSize: 13, marginTop: 5, lineHeight: 20, fontFamily: "Inter_400Regular" }, detailStatus: { flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 14, backgroundColor: "#EFEDFF", borderRadius: 12, padding: 12 }, detailStatusText: { color: "#605388", fontSize: 11, textTransform: "capitalize", fontFamily: "Inter_600SemiBold" }, detailSection: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginTop: 12, borderWidth: 1, borderColor: "#EDF0F4" }, sectionTitle: { color: "#202637", fontSize: 14, marginBottom: 8, fontFamily: "Inter_700Bold" }, detailBody: { color: "#586477", fontSize: 13, lineHeight: 20, marginTop: 3, fontFamily: "Inter_400Regular" },
   disclosure: { flexDirection: "row", gap: 8, backgroundColor: "#FFF7E8", borderRadius: 12, padding: 12, marginTop: 12 }, disclosureText: { flex: 1, color: "#765C31", fontSize: 11, lineHeight: 17, fontFamily: "Inter_400Regular" }, entryBox: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginTop: 14, borderWidth: 1, borderColor: "#E9ECF1" }, detailActions: { gap: 8, marginTop: 14 }, primaryButton: { backgroundColor: BLUE, minHeight: 48, borderRadius: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 13, paddingHorizontal: 14 }, primaryButtonText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" }, disabledButton: { backgroundColor: "#AEB6C4" }, secondaryButton: { backgroundColor: "#EEF0FF", minHeight: 44, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 10, paddingHorizontal: 12 }, secondaryText: { color: BLUE, fontSize: 13, fontFamily: "Inter_600SemiBold" }, externalButton: { borderWidth: 1, borderColor: "#D8D0EC", minHeight: 42, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 9 }, reportButton: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 5, padding: 13, marginTop: 4 }, reportText: { color: "#697586", fontSize: 12, fontFamily: "Inter_500Medium" },
   fieldWrap: { marginTop: 13 }, fieldLabel: { color: "#434E60", fontSize: 12, marginBottom: 7, fontFamily: "Inter_600SemiBold" }, input: { minHeight: 45, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff", color: "#252C3B", borderWidth: 1, borderColor: "#E2E6ED", borderRadius: 11, fontSize: 13, fontFamily: "Inter_400Regular" }, textArea: { minHeight: 92, paddingTop: 12 }, helperText: { color: "#8993A2", fontSize: 11, lineHeight: 17, marginTop: 6, fontFamily: "Inter_400Regular" }, optionWrap: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 8, marginBottom: 5 }, previewCard: { backgroundColor: "#fff", borderRadius: 16, padding: 17, borderWidth: 1, borderColor: "#E6E9F0" }, errorText: { color: "#C43E46", marginTop: 10, fontSize: 12, fontFamily: "Inter_500Medium" }, formActions: { flexDirection: "row", gap: 10, marginTop: 10 }, draftButton: { flex: 1, minHeight: 48, borderRadius: 13, borderWidth: 1, borderColor: "#D8DDE6", alignItems: "center", justifyContent: "center", marginTop: 13, backgroundColor: "#fff" }, draftText: { color: "#465267", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  uploadMediaButton: { flexDirection: "row", alignItems: "center", gap: 12, padding: 13, marginTop: 12, backgroundColor: "#F7F4FF", borderWidth: 1, borderColor: "#D9CCFF", borderRadius: 14 },
+  uploadIcon: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "#EDE7FF" },
+  uploadCopy: { flex: 1 },
+  uploadTitle: { color: "#4F249C", fontSize: 13, fontFamily: "Inter_700Bold" },
+  uploadSubtitle: { color: "#7B728D", fontSize: 10, marginTop: 4, fontFamily: "Inter_400Regular" },
   personRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderColor: "#EEF0F4" }, personIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#EDF0FF", alignItems: "center", justifyContent: "center" }, personName: { color: "#2A3140", fontSize: 13, fontFamily: "Inter_600SemiBold" }, entryCard: { padding: 12, backgroundColor: "#fff", borderRadius: 13, borderWidth: 1, borderColor: "#E9ECF1", marginTop: 9 }, entryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, statusPillText: { color: "#625587", fontSize: 10, textTransform: "capitalize", fontFamily: "Inter_600SemiBold" }, submissionContent: { color: "#444E5E", backgroundColor: "#F6F7FA", padding: 11, borderRadius: 9, marginTop: 9, fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular" }, resultText: { color: "#17825C", marginTop: 8, fontSize: 13, fontFamily: "Inter_700Bold" },
+  opportunityCardImage: { width: "100%", height: 176, borderRadius: 14, marginBottom: 13, backgroundColor: "#F1F2F6" },
+  opportunityCardVideo: { height: 130, borderRadius: 14, marginBottom: 13, backgroundColor: "#36264E", alignItems: "center", justifyContent: "center", gap: 5 },
+  opportunityDetailImage: { width: "100%", height: 220, borderRadius: 15, marginVertical: 12, backgroundColor: "#F1F2F6" },
+  opportunityDetailVideo: { height: 180, borderRadius: 15, marginVertical: 12, backgroundColor: "#36264E", alignItems: "center", justifyContent: "center", gap: 5 },
+  videoLabel: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  mediaField: { marginVertical: 10 },
+  mediaActions: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 },
+  removeMediaButton: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 10 },
+  removeMediaText: { color: "#B42318", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });

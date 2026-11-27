@@ -1,10 +1,11 @@
 import React from "react";
 import {
-  Modal, View, Text, StyleSheet, TouchableOpacity, Animated,
+  Modal, View, StyleSheet, TouchableOpacity, Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface Props {
   visible: boolean;

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from "react-native";
+import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type AlumniModerationReport } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type Action = "begin_review" | "suspend" | "revoke" | "complete_review" | "allow_peer_retry";
 const ACTIONS: Array<{ id: Action; label: string; color: string }> = [
@@ -55,7 +56,7 @@ export default function AlumniModerationScreen() {
       <TouchableOpacity style={styles.refresh} onPress={() => { setLoading(true); void load(); }}><Ionicons name="refresh" size={19} color="#7C3AED" /></TouchableOpacity>
     </View>
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 + insets.bottom }}>
-      <View style={styles.notice}><Ionicons name="shield-checkmark-outline" size={18} color="#3151E8" /><Text style={styles.noticeText}>Moderation can investigate, suspend, or revoke peer verification. Moderators cannot grant the alumni badge.</Text></View>
+      <View style={styles.notice}><Ionicons name="shield-checkmark-outline" size={18} color="#6D28D9" /><Text style={styles.noticeText}>Moderation can investigate, suspend, or revoke peer verification. Moderators cannot grant the alumni badge.</Text></View>
       {loading ? <View style={styles.empty}><ActivityIndicator color="#7C3AED" /><Text style={styles.muted}>Loading reports…</Text></View> : error ? <View style={styles.empty}><Text style={styles.body}>{error}</Text><TouchableOpacity onPress={() => { setLoading(true); void load(); }} style={styles.primary}><Text style={styles.primaryText}>Retry</Text></TouchableOpacity></View> : rows.length === 0 ? <View style={styles.empty}><Ionicons name="checkmark-circle-outline" size={34} color="#12B76A" /><Text style={styles.cardTitle}>No alumni reports</Text><Text style={styles.body}>There are no reports for alumni in this assigned JNV.</Text></View> : rows.map((item) => <View key={item.id} style={styles.card}>
         <View style={styles.cardTop}><View style={{ flex: 1 }}><Text style={styles.cardTitle}>{item.reportedUserName || "Alumni account"}</Text><Text style={styles.muted}>Case {item.id.slice(0, 8)} · {item.status.replaceAll("_", " ")}</Text></View><Text style={styles.badge}>{item.targetStatus?.replaceAll("_", " ") || "unverified"}</Text></View>
         <Text style={styles.reason}>{item.reason}</Text>{item.details ? <Text style={styles.body}>{item.details}</Text> : null}

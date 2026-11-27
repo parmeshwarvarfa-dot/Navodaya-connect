@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type SchoolDirectoryEntry, type SchoolDirectoryPage } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -20,7 +21,7 @@ function displayClassName(value: string | null) {
 }
 
 const ROLE_META: Record<SchoolDirectoryEntry["role"], { label: string; color: string; bg: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
-  student: { label: "Student", color: "#3151E8", bg: "#F5F3FF", icon: "school-outline" },
+  student: { label: "Student", color: "#6D28D9", bg: "#F5F3FF", icon: "school-outline" },
   teacher: { label: "Teacher", color: "#07875D", bg: "#EAFBF4", icon: "book-outline" },
   alumni: { label: "Alumni", color: "#7C3AED", bg: "#F4F0FF", icon: "ribbon-outline" },
   official: { label: "JNV Official", color: "#B45309", bg: "#FFF7E8", icon: "shield-checkmark-outline" },
@@ -114,7 +115,7 @@ export default function SchoolDirectoryScreen() {
     </View>
 
     <ScrollView contentContainerStyle={[s.list, { paddingBottom: 28 + insets.bottom }]} keyboardShouldPersistTaps="handled">
-      {loading ? <View style={s.state}><ActivityIndicator color="#3151E8" size="large" /><Text style={s.stateText}>Loading school records…</Text></View>
+      {loading ? <View style={s.state}><ActivityIndicator color="#6D28D9" size="large" /><Text style={s.stateText}>Loading school records…</Text></View>
         : error ? <View style={[s.state, s.stateError, officialAccountRequired && s.stateAccessDenied]}>
           <Ionicons name={officialAccountRequired ? "shield-outline" : "cloud-offline-outline"} size={32} color={officialAccountRequired ? "#B7791F" : "#B42318"} />
           <Text style={s.stateTitle}>{officialAccountRequired ? "JNV official account required" : "Directory unavailable"}</Text>
@@ -128,7 +129,7 @@ export default function SchoolDirectoryScreen() {
             const classKey = item.className ?? UNASSIGNED_CLASS;
             return <TouchableOpacity key={classKey} style={s.classCard} onPress={() => { setSelectedClass(classKey); setPage(1); }} accessibilityRole="button" accessibilityLabel={`View ${item.students} students in ${displayClassName(item.className)}`}>
               <View style={s.classCardTop}>
-                <View style={s.classIcon}><Ionicons name="school-outline" size={22} color="#3151E8" /></View>
+                <View style={s.classIcon}><Ionicons name="school-outline" size={22} color="#6D28D9" /></View>
                 <Ionicons name="chevron-forward" size={18} color="#98A2B3" />
               </View>
               <Text style={s.className}>{displayClassName(item.className)}</Text>
@@ -143,7 +144,7 @@ export default function SchoolDirectoryScreen() {
         : <>
           {selectedClass && <View style={s.classBreadcrumb}>
             <TouchableOpacity onPress={() => { setSelectedClass(null); setPage(1); }} style={s.classBack} accessibilityLabel="Back to classes">
-              <Ionicons name="arrow-back" size={16} color="#3151E8" /><Text style={s.classBackText}>All classes</Text>
+              <Ionicons name="arrow-back" size={16} color="#6D28D9" /><Text style={s.classBackText}>All classes</Text>
             </TouchableOpacity>
             <Text style={s.classBreadcrumbTitle}>{selectedClassLabel}</Text>
           </View>}
@@ -175,7 +176,7 @@ export default function SchoolDirectoryScreen() {
               </TouchableOpacity>;
             })}
             {data.total > data.users.length && <TouchableOpacity style={s.more} onPress={() => setPage((current) => current + 1)} accessibilityLabel="Load more directory records">
-              {loading ? <ActivityIndicator color="#3151E8" /> : <Text style={s.moreText}>Load more · {data.users.length} of {data.total}</Text>}
+              {loading ? <ActivityIndicator color="#6D28D9" /> : <Text style={s.moreText}>Load more · {data.users.length} of {data.total}</Text>}
             </TouchableOpacity>}
           </>}
         </>}
@@ -185,7 +186,7 @@ export default function SchoolDirectoryScreen() {
 
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#F8F7FF" },
-  header: { minHeight: 70, flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 15, paddingBottom: 12, backgroundColor: "#3151E8" },
+  header: { minHeight: 70, flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 15, paddingBottom: 12, backgroundColor: "#6D28D9" },
   back: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   refresh: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   title: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
@@ -195,7 +196,7 @@ const s = StyleSheet.create({
   tabsRail: { flexGrow: 0, flexShrink: 0 },
   tabs: { paddingHorizontal: 15, paddingVertical: 8, gap: 8, alignItems: "center" },
   tab: { flexShrink: 0, minHeight: 38, paddingHorizontal: 12, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E4E7EC", flexDirection: "row", alignItems: "center", gap: 7 },
-  tabSelected: { backgroundColor: "#3151E8", borderColor: "#3151E8" },
+  tabSelected: { backgroundColor: "#6D28D9", borderColor: "#6D28D9" },
   tabText: { color: "#475467", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   tabTextSelected: { color: "#fff" },
   tabCount: { minWidth: 18, textAlign: "center", color: "#667085", fontSize: 11, fontFamily: "Inter_700Bold" },
@@ -207,7 +208,7 @@ const s = StyleSheet.create({
   personCard: { minHeight: 80, padding: 12, borderRadius: 15, backgroundColor: "#fff", borderWidth: 1, borderColor: "#EAECF0", flexDirection: "row", alignItems: "center", gap: 11 },
   avatar: { width: 45, height: 45, borderRadius: 23, backgroundColor: "#F5F3FF" },
   avatarFallback: { alignItems: "center", justifyContent: "center" },
-  initial: { color: "#3151E8", fontSize: 16, fontFamily: "Inter_700Bold" },
+  initial: { color: "#6D28D9", fontSize: 16, fontFamily: "Inter_700Bold" },
   personInfo: { flex: 1, gap: 3 },
   name: { color: "#172033", fontSize: 14, fontFamily: "Inter_700Bold" },
   detail: { color: "#667085", fontSize: 11, fontFamily: "Inter_400Regular" },
@@ -222,7 +223,7 @@ const s = StyleSheet.create({
   stateAccessDenied: { backgroundColor: "#FFFCF5", borderColor: "#FDE68A" },
   stateTitle: { color: "#172033", fontSize: 15, fontFamily: "Inter_700Bold", textAlign: "center" },
   stateText: { color: "#667085", fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular", textAlign: "center" },
-  retry: { minHeight: 40, minWidth: 90, borderRadius: 11, backgroundColor: "#3151E8", alignItems: "center", justifyContent: "center", marginTop: 4 },
+  retry: { minHeight: 40, minWidth: 90, borderRadius: 11, backgroundColor: "#6D28D9", alignItems: "center", justifyContent: "center", marginTop: 4 },
   retryText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
   more: { minHeight: 42, alignItems: "center", justifyContent: "center" },
   moreText: { color: "#667085", fontSize: 11, fontFamily: "Inter_500Medium" },
@@ -234,6 +235,6 @@ const s = StyleSheet.create({
   classStudentCount: { color: "#667085", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   classBreadcrumb: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4, paddingBottom: 4 },
   classBack: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 5, paddingRight: 8 },
-  classBackText: { color: "#3151E8", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  classBackText: { color: "#6D28D9", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   classBreadcrumbTitle: { color: "#172033", fontSize: 13, fontFamily: "Inter_700Bold" },
 });

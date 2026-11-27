@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import { db, eventsTable, eventRegistrationsTable } from "@workspace/db";
 import { requireAuth, getUser, isCommunityVerifiedAlumni } from "../lib/auth";
 import { MemoryMediaError, parseStoredMemoryMedia, signMemoryMedia, validateOwnedMemoryMedia } from "../lib/memory-media";
@@ -8,7 +8,32 @@ const router = Router();
 
 router.get("/events", requireAuth, async (req, res) => {
   try {
-    const events = await db.select().from(eventsTable).where(ne(eventsTable.date, "")).orderBy(desc(eventsTable.createdAt)).limit(100);
+    const { from: fromParam, to: toParam } = req.query;
+    let events;
+    if (fromParam !== undefined || toParam !== undefined) {
+      if (typeof fromParam !== "string" || typeof toParam !== "string") {
+        return res.status(400).json({ error: "Both valid from and to dates are required." });
+      }
+      const from = new Date(fromParam);
+      const to = new Date(toParam);
+      const rangeLength = to.getTime() - from.getTime();
+      if (
+        Number.isNaN(from.getTime()) ||
+        Number.isNaN(to.getTime()) ||
+        rangeLength < 0 ||
+        rangeLength > 366 * 24 * 60 * 60 * 1000
+      ) {
+        return res.status(400).json({ error: "Choose a valid date range of 366 days or less." });
+      }
+      events = await db
+        .select()
+        .from(eventsTable)
+        .where(and(ne(eventsTable.date, ""), gte(eventsTable.date, from.toISOString()), lte(eventsTable.date, to.toISOString())))
+        .orderBy(asc(eventsTable.date))
+        .limit(500);
+    } else {
+      events = await db.select().from(eventsTable).where(ne(eventsTable.date, "")).orderBy(desc(eventsTable.createdAt)).limit(100);
+    }
     const serialized = await Promise.all(events.map(async (event) => {
       const [media] = parseStoredMemoryMedia(event.media);
       if (!media || typeof media === "string" || !event.organizerId) return { ...event, mediaUrl: null, mediaType: null };
@@ -28,6 +53,7 @@ router.get("/events", requireAuth, async (req, res) => {
 router.post("/events", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
+    if (user.role === "student") return res.status(403).json({ error: "Student accounts cannot publish events." });
     if (user.role === "alumni" ? !isCommunityVerifiedAlumni(user) : user.verificationStatus !== "verified") return res.status(403).json({ error: user.role === "alumni" ? "Community verification is required to publish events." : "Verified accounts can publish events." });
     const { title, description, date, location, mediaKey } = req.body ?? {};
     if (typeof title !== "string" || !title.trim() || title.length > 160 || typeof description !== "string" || !description.trim() || description.length > 4000 || typeof date !== "string" || Number.isNaN(new Date(date).getTime())) return res.status(400).json({ error: "A valid title, description and date are required" });
@@ -57,6 +83,7 @@ router.post("/events", requireAuth, async (req, res) => {
 router.patch("/events/:id", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
+    if (user.role === "student") return res.status(403).json({ error: "Student accounts cannot publish or edit events." });
     const eventId = req.params.id as string;
     const [existing] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
     if (!existing) return res.status(404).json({ error: "Event not found" });

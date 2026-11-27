@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { voiceService } from "@/lib/voiceService";
 import { getApiOrigin, getToken } from "@/lib/api";
 import ParamAiOrb from "./ParamAiOrb";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export type VoiceState = "idle" | "listening" | "processing" | "speaking" | "error";
 

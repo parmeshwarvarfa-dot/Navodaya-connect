@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  Modal, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api, type MentorRequest, type MentorDirectoryEntry } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateTimeInput, parseDateTimeInput } from "@/lib/date-formatting";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = ["JEE/IIT", "NEET", "UPSC", "Coding/Tech", "Startup", "Defence", "Law", "Research", "General Career"];
 const CAT_COLOR: Record<string, string> = {
@@ -69,9 +71,8 @@ export default function AlumniMentorshipScreen() {
   };
   const scheduleSession = async (request: MentorRequest) => {
     const raw = (scheduleDrafts[request.id] ?? "").trim();
-    const localValue = raw.includes("T") ? raw : raw.replace(" ", "T");
-    const when = new Date(localValue);
-    if (Number.isNaN(when.getTime())) { showToast("Enter a date and time like 2026-11-05 17:30."); return; }
+    const when = parseDateTimeInput(raw);
+    if (!when) { showToast("Enter a date and time as DD-MM-YYYY HH:mm, for example 05-11-2026 17:30."); return; }
     try { const saved = await api.mentorRequests.schedule(request.id, when.toISOString()); setRequests((rows) => rows.map((row) => row.id === saved.id ? saved : row)); showToast("Session time saved."); }
     catch (error) { showToast(error instanceof Error ? error.message : "Could not schedule this session."); }
   };
@@ -160,8 +161,8 @@ export default function AlumniMentorshipScreen() {
                   )}
                   {r.status === "accepted" && <View style={styles.sessionBox}>
                     <Text style={styles.fieldLabel}>Schedule this mentoring session</Text>
-                    <Text style={styles.sessionHint}>{r.scheduledAt ? `Current time: ${new Date(r.scheduledAt).toLocaleString()}` : "Enter a local date and time (example: 2026-11-05 17:30). Agree on a call method in your chat."}</Text>
-                    <TextInput style={styles.input} placeholder="YYYY-MM-DD HH:mm" value={scheduleDrafts[r.id] ?? (r.scheduledAt ? new Date(r.scheduledAt).toISOString().slice(0, 16).replace("T", " ") : "")} onChangeText={(value) => setScheduleDrafts((items) => ({ ...items, [r.id]: value }))} />
+                    <Text style={styles.sessionHint}>{r.scheduledAt ? `Current time: ${formatDateTimeInput(r.scheduledAt)}` : "Enter local date and time as DD-MM-YYYY HH:mm (24-hour). Agree on a call method in your chat."}</Text>
+                    <TextInput style={styles.input} placeholder="DD-MM-YYYY HH:mm" value={scheduleDrafts[r.id] ?? (r.scheduledAt ? formatDateTimeInput(r.scheduledAt) : "")} onChangeText={(value) => setScheduleDrafts((items) => ({ ...items, [r.id]: value }))} />
                     <TouchableOpacity style={styles.sessionButton} onPress={() => void scheduleSession(r)}><Text style={styles.sessionButtonText}>{r.scheduledAt ? "Update session time" : "Save session time"}</Text></TouchableOpacity>
                     {profile?.role === "alumni" && r.mentorId === profile.uid && r.scheduledAt && <TouchableOpacity style={styles.completeButton} onPress={() => void completeSession(r)}><Text style={styles.completeButtonText}>Mark session complete</Text></TouchableOpacity>}
                   </View>}

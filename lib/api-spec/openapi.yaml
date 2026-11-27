@@ -586,6 +586,9 @@ components:
           items:
             type: string
             maxLength: 100
+        pollDurationHours:
+          type: integer
+          enum: [24, 72, 168, 336]
         visibility:
           type: string
           enum: [public, followers]
@@ -658,6 +661,20 @@ components:
           type: string
         postType:
           type: string
+        contentType:
+          type: string
+          enum: [post, poll, navodayan_talk]
+        talkTitle:
+          type: string
+        talkCategory:
+          type: string
+        talkStoryType:
+          type: string
+          enum: [written, video]
+        talkTopics:
+          type: array
+          items:
+            type: string
         mediaUrls:
           type: array
           items:
@@ -676,6 +693,12 @@ components:
             type: integer
         viewerVote:
           type: integer
+        pollExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        isPollClosed:
+          type: boolean
         visibility:
           type: string
         commentsEnabled:
@@ -956,4 +979,3 @@ components:
           type: string
           format: date-time
       required: [id, type, actorId, actorName, message, createdAt]
-

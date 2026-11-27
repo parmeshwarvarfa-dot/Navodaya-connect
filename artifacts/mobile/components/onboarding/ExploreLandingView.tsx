@@ -1,7 +1,6 @@
 import React, { useRef, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -11,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import CampusSvgArt from "./CampusSvgArt";
 import FeaturePreviewsModal from "./FeaturePreviewsModal";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface ExploreLandingViewProps {
   visible: boolean;

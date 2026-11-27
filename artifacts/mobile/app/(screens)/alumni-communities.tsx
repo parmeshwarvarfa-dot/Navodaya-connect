@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  Modal, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type CommunityIcon = React.ComponentProps<typeof Ionicons>["name"];
 interface Community {

@@ -5,7 +5,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -22,6 +21,7 @@ import AwardsSection from "@/components/ranking/AwardsSection";
 import MethodologySection from "@/components/ranking/MethodologySection";
 import UserRankingProfileModal from "@/components/ranking/UserRankingProfileModal";
 import AdminRankingModal from "@/components/ranking/AdminRankingModal";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type RankingTab = "overview" | "individual" | "jnv" | "awards" | "methodology";
 

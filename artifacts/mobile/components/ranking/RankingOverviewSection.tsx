@@ -3,13 +3,13 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import type { RankingOverviewData } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface RankingOverviewSectionProps {
   data: RankingOverviewData | null;

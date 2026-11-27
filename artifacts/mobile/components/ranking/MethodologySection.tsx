@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type RankingMethodologyData } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function MethodologySection() {
   const [loading, setLoading] = useState(false);

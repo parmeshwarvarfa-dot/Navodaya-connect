@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Modal, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, TouchableOpacity, Platform,
+  Modal, KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
 import type { AssignmentWithSubs, TeacherClassAssignment } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Pending"   },

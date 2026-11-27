@@ -23,6 +23,7 @@ config.resolver = {
     ...(Array.isArray(config.resolver?.blockList) ? config.resolver.blockList : config.resolver?.blockList ? [config.resolver.blockList] : []),
     /[\\/](?:\.local|\.(?:chrome-avatar|edge-avatar|avatar-)[^\\/]*)(?:[\\/]|$)/,
     /[\\/]artifacts[\\/]mobile[\\/](?:dist|\.expo[\\/](?:alumni-peer-check(?:-android)?|web))(?:[\\/]|$)/,
+    /[\\/]\.pnpm-task-run-state[^\\/]*(?:[\\/]|$)/,
   ],
   nodeModulesPaths: [
     path.resolve(projectRoot, "node_modules"),

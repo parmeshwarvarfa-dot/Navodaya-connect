@@ -8,7 +8,9 @@ import {
   ilike,
   inArray,
   lt,
+  notExists,
   or,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import {
@@ -20,10 +22,13 @@ import {
   groupsTable,
   memoriesTable,
   memoryBookmarksTable,
+  memoryBookmarkCollectionsTable,
+  memoryBookmarkCollectionItemsTable,
   memoryCommentsTable,
   memoryLikesTable,
   recognitionPointsTable,
   memoryPollVotesTable,
+  navodayanTalksTable,
   userBlocksTable,
   userFollowsTable,
   usersTable,
@@ -46,6 +51,20 @@ import {
 const router = Router();
 const POST_TYPES = new Set(["text", "photo", "video", "poll", "achievement", "event"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+let navodayanTalksTableExists: Promise<boolean> | undefined;
+
+function hasNavodayanTalksTable(): Promise<boolean> {
+  if (navodayanTalksTableExists) return navodayanTalksTableExists;
+
+  const check = db.execute(sql`select to_regclass('navodayan_talks') is not null as exists`)
+    .then((result) => Boolean(result.rows[0]?.exists));
+  const pending = check.catch((error: unknown) => {
+    navodayanTalksTableExists = undefined;
+    throw error;
+  });
+  navodayanTalksTableExists = pending;
+  return pending;
+}
 
 function parseStringArray(value: string | null | undefined): string[] {
   if (!value) return [];
@@ -96,6 +115,20 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
   const commentsByMemory = new Map(commentCounts.map((row) => [row.memoryId, Number(row.total)]));
   const bookmarkedIds = new Set(bookmarks.map((row) => row.memoryId));
   const authorPhotoById = new Map(authors.map((author) => [author.id, author.photoURL]));
+  const talkRows = await hasNavodayanTalksTable()
+    ? await db.select({
+        memoryId: navodayanTalksTable.memoryId,
+        title: navodayanTalksTable.title,
+        category: navodayanTalksTable.category,
+        storyType: navodayanTalksTable.storyType,
+        topics: navodayanTalksTable.topics,
+      }).from(navodayanTalksTable)
+        .where(and(
+          inArray(navodayanTalksTable.memoryId, ids),
+          inArray(navodayanTalksTable.status, ["approved", "published"]),
+        ))
+    : [];
+  const talksByMemory = new Map(talkRows.map((talk) => [talk.memoryId, talk]));
   const pollVotesByMemory = new Map<string, Map<number, number>>();
   const viewerVotes = new Map<string, number>();
   for (const vote of votes) {
@@ -121,16 +154,24 @@ async function serializeMemories(rows: (typeof memoriesTable.$inferSelect)[], vi
     const isWithin24Hours = publishedTime > 0 && (Date.now() - publishedTime) <= 24 * 60 * 60 * 1000;
     const isOwner = Boolean(row.authorId && row.authorId === viewerId);
     const canEdit = isOwner && isWithin24Hours;
+    const talk = talksByMemory.get(row.id);
     return {
       ...row,
       createdAt: (row.createdAt ?? new Date(0)).toISOString(),
       updatedAt: row.updatedAt?.toISOString() ?? null,
       postType: row.postType || "text",
+      contentType: talk ? "navodayan_talk" : row.postType === "poll" ? "poll" : "post",
+      talkTitle: talk?.title,
+      talkCategory: talk?.category,
+      talkStoryType: talk?.storyType,
+      talkTopics: talk?.topics ?? [],
       mediaUrls: mediaUrls.filter(Boolean),
       mediaMetadata: storedMedia.map(mediaMetadata).filter((item): item is NonNullable<typeof item> => item !== null),
       pollOptions,
       pollVotes: pollOptions.map((_, index) => pollCounts?.get(index) ?? 0),
       viewerVote: viewerVotes.get(row.id),
+      pollExpiresAt: row.pollExpiresAt?.toISOString() ?? null,
+      isPollClosed: row.postType === "poll" && Boolean(row.pollExpiresAt && row.pollExpiresAt <= new Date()),
       commentsEnabled: row.commentsEnabled ?? true,
       likes: likeUsersByMemory.get(row.id)?.size ?? 0,
       commentsCount: commentsByMemory.get(row.id) ?? 0,
@@ -147,6 +188,13 @@ async function getVisibleMemory(memoryId: string, viewerId: string) {
   const [memory] = await db.select().from(memoriesTable)
     .where(eq(memoriesTable.id, memoryId)).limit(1);
   if (!memory) return null;
+  if (await hasNavodayanTalksTable()) {
+    const [talk] = await db.select({ status: navodayanTalksTable.status })
+      .from(navodayanTalksTable)
+      .where(eq(navodayanTalksTable.memoryId, memoryId))
+      .limit(1);
+    if (talk && !["approved", "published"].includes(talk.status) && memory.authorId !== viewerId) return null;
+  }
   if (memory.authorId && memory.authorId !== viewerId) {
     if (await isBlockedBetween(viewerId, memory.authorId)) return null;
     if (!await canViewProfile(viewerId, memory.authorId)) return null;
@@ -194,7 +242,9 @@ router.get("/memories", requireAuth, async (req, res) => {
     const user = getUser(req);
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 20, 50));
     const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
-    const postType = typeof req.query.type === "string" && POST_TYPES.has(req.query.type) ? req.query.type : "";
+    const requestedType = typeof req.query.type === "string" ? req.query.type : "";
+    const postType = POST_TYPES.has(requestedType) ? requestedType : "";
+    const talksOnly = requestedType === "navodayan_talk";
     const authorId = typeof req.query.authorId === "string" && UUID_PATTERN.test(req.query.authorId)
       ? req.query.authorId
       : "";
@@ -210,13 +260,64 @@ router.get("/memories", requireAuth, async (req, res) => {
     }
     if (search) {
       const pattern = `%${search.replace(/[%_]/g, "\\$&")}%`;
-      filters.push(or(
+      const standardSearch = or(
         ilike(memoriesTable.caption, pattern),
         ilike(memoriesTable.authorName, pattern),
         ilike(memoriesTable.jnvName, pattern),
-      ) as SQL);
+      ) as SQL;
+      filters.push(await hasNavodayanTalksTable()
+        ? or(
+            standardSearch,
+            inArray(memoriesTable.id, db.select({ memoryId: navodayanTalksTable.memoryId })
+              .from(navodayanTalksTable)
+              .where(and(
+                inArray(navodayanTalksTable.status, ["approved", "published"]),
+                ilike(navodayanTalksTable.title, pattern),
+              ))),
+          ) as SQL
+        : standardSearch);
     }
     if (postType) filters.push(eq(memoriesTable.postType, postType));
+    if (req.query.following === "true") {
+      filters.push(or(
+        eq(memoriesTable.authorId, user.id),
+        inArray(memoriesTable.authorId, db.select({ followingId: userFollowsTable.followingId })
+          .from(userFollowsTable)
+          .where(and(
+            eq(userFollowsTable.followerId, user.id),
+            eq(userFollowsTable.status, "accepted"),
+          ))),
+      ) as SQL);
+    }
+    if (req.query.saved === "true") {
+      filters.push(inArray(memoriesTable.id, db.select({ memoryId: memoryBookmarksTable.memoryId })
+        .from(memoryBookmarksTable).where(eq(memoryBookmarksTable.userId, user.id))));
+    }
+    if (typeof req.query.collectionId === "string") {
+      if (!UUID_PATTERN.test(req.query.collectionId)) return res.status(400).json({ error: "Invalid saved collection." });
+      const [collection] = await db.select({ id: memoryBookmarkCollectionsTable.id })
+        .from(memoryBookmarkCollectionsTable)
+        .where(and(
+          eq(memoryBookmarkCollectionsTable.id, req.query.collectionId),
+          eq(memoryBookmarkCollectionsTable.userId, user.id),
+        )).limit(1);
+      if (!collection) return res.status(404).json({ error: "Saved collection not found." });
+      filters.push(inArray(memoriesTable.id, db.select({ memoryId: memoryBookmarkCollectionItemsTable.memoryId })
+        .from(memoryBookmarkCollectionItemsTable)
+        .where(eq(memoryBookmarkCollectionItemsTable.collectionId, collection.id))));
+    }
+    if (await hasNavodayanTalksTable()) {
+      const publishedTalks = inArray(memoriesTable.id, db.select({ memoryId: navodayanTalksTable.memoryId })
+        .from(navodayanTalksTable)
+        .where(inArray(navodayanTalksTable.status, ["approved", "published"])));
+      const notTalk = notExists(
+        db.select({ value: sql`1` }).from(navodayanTalksTable)
+          .where(eq(navodayanTalksTable.memoryId, memoriesTable.id)),
+      );
+      if (talksOnly) filters.push(publishedTalks);
+      else if (postType) filters.push(notTalk);
+      else filters.push(or(notTalk, publishedTalks) as SQL);
+    }
 
     let cursorBoundary: Date | null = null;
     let cursorId: string | null = null;
@@ -372,7 +473,7 @@ router.post("/memories", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const caption = typeof req.body.caption === "string" ? req.body.caption.trim() : "";
-    const postType = POST_TYPES.has(req.body.postType) ? req.body.postType : "text";
+    let postType = POST_TYPES.has(req.body.postType) ? req.body.postType : "text";
     if (req.body.mediaUrls !== undefined) {
       return res.status(400).json({ error: "Upload photos and videos before creating a post." });
     }
@@ -391,11 +492,21 @@ router.post("/memories", requireAuth, async (req, res) => {
       }
       mediaAssets = await Promise.all(keys.map((key: string) => validateOwnedMemoryMedia(user.id, key)));
     }
+    const mediaTypes = new Set(mediaAssets.map((asset) => asset.mediaType));
+    if (mediaTypes.size > 1) {
+      return res.status(400).json({ error: "Choose photos or videos for a post, not both together." });
+    }
+    if (postType === "text" && mediaAssets.length > 0) {
+      postType = mediaAssets[0].mediaType === "video" ? "video" : "photo";
+    }
     const pollOptions = Array.isArray(req.body.pollOptions)
       ? req.body.pollOptions.filter((value: unknown): value is string =>
           typeof value === "string" && value.trim().length > 0,
         ).map((value: string) => value.trim().slice(0, 100)).slice(0, 4)
       : [];
+    const pollDurationHours = req.body.pollDurationHours === undefined
+      ? 168
+      : Number(req.body.pollDurationHours);
     if ((!caption && postType !== "photo" && postType !== "video") || caption.length > 4000) {
       return res.status(400).json({ error: postType === "poll" ? "Add a question of up to 4,000 characters." : "Add post text of up to 4,000 characters." });
     }
@@ -412,6 +523,12 @@ router.post("/memories", requireAuth, async (req, res) => {
     if (postType === "poll" && pollOptions.length < 2) {
       return res.status(400).json({ error: "A poll needs at least two options." });
     }
+    if (postType === "poll" && (!Number.isInteger(pollDurationHours) || ![24, 72, 168, 336].includes(pollDurationHours))) {
+      return res.status(400).json({ error: "Choose a poll duration of 1, 3, 7, or 14 days." });
+    }
+    if (postType === "poll" && new Set(pollOptions.map((option: string) => option.toLocaleLowerCase())).size !== pollOptions.length) {
+      return res.status(400).json({ error: "Poll answer choices must be unique." });
+    }
     if (postType !== "poll" && pollOptions.length > 0) {
       return res.status(400).json({ error: "Poll options are only allowed on poll posts." });
     }
@@ -421,6 +538,9 @@ router.post("/memories", requireAuth, async (req, res) => {
       imageUrl: null,
       mediaUrls: JSON.stringify(mediaAssets),
       pollOptions: JSON.stringify(pollOptions),
+      pollExpiresAt: postType === "poll"
+        ? new Date(Date.now() + pollDurationHours * 60 * 60 * 1000)
+        : null,
       postType,
       visibility: requestedVisibility,
       commentsEnabled: req.body.commentsEnabled !== false,
@@ -443,6 +563,11 @@ router.patch("/memories/:id", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const memoryId = req.params.id as string;
+    const [linkedTalk] = (await hasNavodayanTalksTable())
+      ? await db.select({ id: navodayanTalksTable.id })
+        .from(navodayanTalksTable).where(eq(navodayanTalksTable.memoryId, memoryId)).limit(1)
+      : [];
+    if (linkedTalk) return res.status(403).json({ error: "Edit Navodayan Talks from the Talks screen so they can be reviewed again." });
     const [memory] = await db.select().from(memoriesTable)
       .where(eq(memoriesTable.id, memoryId)).limit(1);
     if (!memory) return res.status(404).json({ error: "Post not found" });
@@ -486,6 +611,11 @@ router.delete("/memories/:id", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const memoryId = req.params.id as string;
+    const [linkedTalk] = (await hasNavodayanTalksTable())
+      ? await db.select({ id: navodayanTalksTable.id })
+        .from(navodayanTalksTable).where(eq(navodayanTalksTable.memoryId, memoryId)).limit(1)
+      : [];
+    if (linkedTalk) return res.status(403).json({ error: "Navodayan Talks must be removed through their moderation workflow." });
     const [memory] = await db.select().from(memoriesTable)
       .where(eq(memoriesTable.id, memoryId)).limit(1);
     if (!memory) return res.status(404).json({ error: "Post not found" });
@@ -494,6 +624,7 @@ router.delete("/memories/:id", requireAuth, async (req, res) => {
     await db.delete(memoryLikesTable).where(eq(memoryLikesTable.memoryId, memoryId));
     await db.delete(memoryCommentsTable).where(eq(memoryCommentsTable.memoryId, memoryId));
     await db.delete(memoryBookmarksTable).where(eq(memoryBookmarksTable.memoryId, memoryId));
+    await db.delete(memoryBookmarkCollectionItemsTable).where(eq(memoryBookmarkCollectionItemsTable.memoryId, memoryId));
     await db.delete(memoryPollVotesTable).where(eq(memoryPollVotesTable.memoryId, memoryId));
     await db.delete(memoriesTable).where(eq(memoriesTable.id, memoryId));
     return res.json({ success: true, status: "deleted" });
@@ -620,6 +751,12 @@ router.post("/memories/:id/bookmark", requireAuth, async (req, res) => {
       .limit(1);
     if (bookmark) {
       await db.delete(memoryBookmarksTable).where(eq(memoryBookmarksTable.id, bookmark.id));
+      await db.delete(memoryBookmarkCollectionItemsTable).where(and(
+        eq(memoryBookmarkCollectionItemsTable.memoryId, memoryId),
+        inArray(memoryBookmarkCollectionItemsTable.collectionId, db.select({ id: memoryBookmarkCollectionsTable.id })
+          .from(memoryBookmarkCollectionsTable)
+          .where(eq(memoryBookmarkCollectionsTable.userId, user.id))),
+      ));
       return res.json({ success: true, status: "removed" });
     }
     await db.insert(memoryBookmarksTable).values({ memoryId, userId: user.id });
@@ -630,12 +767,141 @@ router.post("/memories/:id/bookmark", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/memories/collections", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const collections = await db.select({
+      id: memoryBookmarkCollectionsTable.id,
+      name: memoryBookmarkCollectionsTable.name,
+      createdAt: memoryBookmarkCollectionsTable.createdAt,
+      items: count(memoryBookmarkCollectionItemsTable.id),
+    }).from(memoryBookmarkCollectionsTable)
+      .leftJoin(memoryBookmarkCollectionItemsTable, eq(memoryBookmarkCollectionItemsTable.collectionId, memoryBookmarkCollectionsTable.id))
+      .where(eq(memoryBookmarkCollectionsTable.userId, user.id))
+      .groupBy(memoryBookmarkCollectionsTable.id)
+      .orderBy(asc(memoryBookmarkCollectionsTable.createdAt));
+    return res.json(collections.map((collection) => ({
+      ...collection,
+      createdAt: collection.createdAt.toISOString(),
+      itemCount: Number(collection.items),
+    })));
+  } catch (error) {
+    req.log.error(error, "Failed to fetch saved collections");
+    return res.status(500).json({ error: "Could not load saved collections." });
+  }
+});
+
+router.post("/memories/collections", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    if (!name || name.length > 40) return res.status(400).json({ error: "Collection names must be between 1 and 40 characters." });
+    const [existing] = await db.select({ id: memoryBookmarkCollectionsTable.id })
+      .from(memoryBookmarkCollectionsTable)
+      .where(and(eq(memoryBookmarkCollectionsTable.userId, user.id), eq(memoryBookmarkCollectionsTable.name, name)))
+      .limit(1);
+    if (existing) return res.status(409).json({ error: "A collection with that name already exists." });
+    const [collection] = await db.insert(memoryBookmarkCollectionsTable)
+      .values({ userId: user.id, name })
+      .returning();
+    return res.status(201).json({ id: collection.id, name: collection.name, itemCount: 0 });
+  } catch (error) {
+    req.log.error(error, "Failed to create saved collection");
+    return res.status(500).json({ error: "Could not create collection." });
+  }
+});
+
+router.patch("/memories/collections/:id", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const collectionId = req.params.id as string;
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    if (!UUID_PATTERN.test(collectionId) || !name || name.length > 40) {
+      return res.status(400).json({ error: "Choose a valid collection name." });
+    }
+    const [collection] = await db.update(memoryBookmarkCollectionsTable).set({ name, updatedAt: new Date() })
+      .where(and(
+        eq(memoryBookmarkCollectionsTable.id, collectionId),
+        eq(memoryBookmarkCollectionsTable.userId, user.id),
+      )).returning({ id: memoryBookmarkCollectionsTable.id, name: memoryBookmarkCollectionsTable.name });
+    if (!collection) return res.status(404).json({ error: "Saved collection not found." });
+    return res.json(collection);
+  } catch (error) {
+    req.log.error(error, "Failed to rename saved collection");
+    return res.status(500).json({ error: "Could not rename collection." });
+  }
+});
+
+router.post("/memories/collections/:id/items", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const collectionId = req.params.id as string;
+    const memoryId = req.body?.memoryId;
+    if (!UUID_PATTERN.test(collectionId) || typeof memoryId !== "string" || !UUID_PATTERN.test(memoryId)) {
+      return res.status(400).json({ error: "Choose a valid saved collection and post." });
+    }
+    const [collection] = await db.select({ id: memoryBookmarkCollectionsTable.id })
+      .from(memoryBookmarkCollectionsTable)
+      .where(and(
+        eq(memoryBookmarkCollectionsTable.id, collectionId),
+        eq(memoryBookmarkCollectionsTable.userId, user.id),
+      )).limit(1);
+    if (!collection) return res.status(404).json({ error: "Saved collection not found." });
+    if (!await getVisibleMemory(memoryId, user.id)) return res.status(404).json({ error: "Post not found." });
+    const [bookmark] = await db.select({ id: memoryBookmarksTable.id })
+      .from(memoryBookmarksTable)
+      .where(and(eq(memoryBookmarksTable.memoryId, memoryId), eq(memoryBookmarksTable.userId, user.id)))
+      .limit(1);
+    if (!bookmark) return res.status(409).json({ error: "Save this post before adding it to a collection." });
+    await db.transaction(async (tx) => {
+      await tx.delete(memoryBookmarkCollectionItemsTable).where(and(
+        eq(memoryBookmarkCollectionItemsTable.memoryId, memoryId),
+        inArray(memoryBookmarkCollectionItemsTable.collectionId, tx.select({ id: memoryBookmarkCollectionsTable.id })
+          .from(memoryBookmarkCollectionsTable)
+          .where(eq(memoryBookmarkCollectionsTable.userId, user.id))),
+      ));
+      await tx.insert(memoryBookmarkCollectionItemsTable).values({ collectionId, memoryId });
+    });
+    return res.json({ success: true, collectionId, memoryId });
+  } catch (error) {
+    req.log.error(error, "Failed to move saved post");
+    return res.status(500).json({ error: "Could not move post to collection." });
+  }
+});
+
+router.delete("/memories/collections/:id/items/:memoryId", requireAuth, async (req, res) => {
+  try {
+    const user = getUser(req);
+    const collectionId = req.params.id as string;
+    const memoryId = req.params.memoryId as string;
+    if (!UUID_PATTERN.test(collectionId) || !UUID_PATTERN.test(memoryId)) {
+      return res.status(400).json({ error: "Choose a valid collection and post." });
+    }
+    const [collection] = await db.select({ id: memoryBookmarkCollectionsTable.id })
+      .from(memoryBookmarkCollectionsTable)
+      .where(and(eq(memoryBookmarkCollectionsTable.id, collectionId), eq(memoryBookmarkCollectionsTable.userId, user.id)))
+      .limit(1);
+    if (!collection) return res.status(404).json({ error: "Saved collection not found." });
+    await db.delete(memoryBookmarkCollectionItemsTable).where(and(
+      eq(memoryBookmarkCollectionItemsTable.collectionId, collectionId),
+      eq(memoryBookmarkCollectionItemsTable.memoryId, memoryId),
+    ));
+    return res.json({ success: true });
+  } catch (error) {
+    req.log.error(error, "Failed to remove post from saved collection");
+    return res.status(500).json({ error: "Could not remove post from collection." });
+  }
+});
+
 router.post("/memories/:id/poll-votes", requireAuth, async (req, res) => {
   try {
     const user = getUser(req);
     const memoryId = req.params.id as string;
     const memory = await getVisibleMemory(memoryId, user.id);
     if (!memory || memory.postType !== "poll") return res.status(404).json({ error: "Poll not found" });
+    if (memory.pollExpiresAt && memory.pollExpiresAt <= new Date()) {
+      return res.status(409).json({ error: "This poll has closed and no longer accepts votes." });
+    }
     const options = parseStringArray(memory.pollOptions);
     const optionIndex = Number(req.body.optionIndex);
     if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= options.length) {

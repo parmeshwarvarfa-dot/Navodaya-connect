@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView, Image, Linking } from "react-native";
+import { Alert, View, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView, Image, Linking } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import type { Event } from "@/lib/api";
 import MotionPressable from "@/components/motion/MotionPressable";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const GRADIENT_SETS: [string, string][] = [
   ["#7C3AED", "#6366F1"],
@@ -80,6 +81,16 @@ export default function EventCard({
     if (opened === false) setOrganizerMessage("There is no linked organizer account for this event yet.");
   };
 
+  const openEventLocation = async () => {
+    if (!event.location?.trim()) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.trim())}`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Google Maps could not be opened. Please try again.");
+    }
+  };
+
   return (
     <View style={styles.card}>
       {event.mediaUrl && event.mediaType === "image" ? (
@@ -148,7 +159,7 @@ export default function EventCard({
           </View>
 
           {event.location ? (
-            <View style={styles.metaItem}>
+            <TouchableOpacity style={styles.metaItem} onPress={() => void openEventLocation()} accessibilityRole="button" accessibilityLabel={`Open ${event.location} in Google Maps`}>
               <View style={[styles.metaIcon, { backgroundColor: "#FEF2F2" }]}>
                 <Ionicons name="location-outline" size={14} color="#EF4444" />
               </View>
@@ -158,7 +169,8 @@ export default function EventCard({
                   {event.location}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="open-outline" size={15} color="#7C3AED" />
+            </TouchableOpacity>
           ) : null}
 
           {event.jnvName ? (
@@ -248,7 +260,13 @@ export default function EventCard({
               <View style={styles.detailsSection}>
                 <Text style={styles.detailsSectionTitle}>Date and location</Text>
                 <DetailRow icon="calendar-outline" color="#7C3AED" label="Date & time" value={formatDateTime(event.date)} />
-                <DetailRow icon="location-outline" color="#EF4444" label="Venue" value={event.location || "Venue not specified"} />
+                <DetailRow
+                  icon="location-outline"
+                  color="#EF4444"
+                  label="Venue · Open in Google Maps"
+                  value={event.location || "Venue not specified"}
+                  onPress={event.location ? () => { void openEventLocation(); } : undefined}
+                />
                 <DetailRow icon="school-outline" color="#10B981" label="Hosted by" value={event.jnvName || "JNV community"} />
               </View>
               {event.organizer ? (
@@ -325,9 +343,9 @@ export default function EventCard({
   );
 }
 
-function DetailRow({ icon, color, label, value }: { icon: "calendar-outline" | "location-outline" | "school-outline"; color: string; label: string; value: string }) {
+function DetailRow({ icon, color, label, value, onPress }: { icon: "calendar-outline" | "location-outline" | "school-outline"; color: string; label: string; value: string; onPress?: () => void }) {
   return (
-    <View style={styles.detailsRow}>
+    <TouchableOpacity style={styles.detailsRow} onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined}>
       <View style={[styles.detailIcon, { backgroundColor: `${color}14` }]}>
         <Ionicons name={icon} size={17} color={color} />
       </View>
@@ -335,7 +353,8 @@ function DetailRow({ icon, color, label, value }: { icon: "calendar-outline" | "
         <Text style={styles.detailsLabel}>{label}</Text>
         <Text style={styles.detailsValue}>{value}</Text>
       </View>
-    </View>
+      {onPress ? <Ionicons name="open-outline" size={15} color="#7C3AED" /> : null}
+    </TouchableOpacity>
   );
 }
 

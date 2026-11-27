@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Platform,
   Modal,
   FlatList,
@@ -17,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { JNV_DATA, STATES } from "@/data/jnvData";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const HOUSES   = ["Aravali", "Nilgiri", "Shivalik", "Udaygiri"];
 const CLASSES  = ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
@@ -449,7 +448,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     marginBottom: 28,
   },
-  roleScreenTitle: { fontFamily: "Pacifico_400Regular", fontSize: 28, color: "#fff", marginBottom: 8 },
+  roleScreenTitle: { fontFamily: "Inter_700Bold", fontSize: 28, color: "#fff", marginBottom: 8 },
   roleScreenSub: { fontFamily: "Inter_400Regular", fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 36 },
   roleCards: { gap: 14 },
   roleCard: {
@@ -459,7 +458,7 @@ const styles = StyleSheet.create({
   },
   roleIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" },
   roleCardText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#111827" },
-  formTitle: { fontFamily: "Pacifico_400Regular", fontSize: 26, color: "#fff", marginBottom: 6 },
+  formTitle: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginBottom: 6 },
   formSub: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 28 },
   form: { gap: 14 },
   emailHint: { marginTop: -7, marginLeft: 14, color: "rgba(255,255,255,0.76)", fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16 },

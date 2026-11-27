@@ -33,6 +33,11 @@ export const ListMemoriesResponse = zod.object({
       id: zod.string().uuid(),
       caption: zod.string().optional(),
       postType: zod.string(),
+      contentType: zod.enum(["post", "poll", "navodayan_talk"]).optional(),
+      talkTitle: zod.string().optional(),
+      talkCategory: zod.string().optional(),
+      talkStoryType: zod.enum(["written", "video"]).optional(),
+      talkTopics: zod.array(zod.string()).optional(),
       mediaUrls: zod.array(zod.string()),
       mediaMetadata: zod
         .array(
@@ -47,6 +52,8 @@ export const ListMemoriesResponse = zod.object({
       pollOptions: zod.array(zod.string()),
       pollVotes: zod.array(zod.number()),
       viewerVote: zod.number().optional(),
+      pollExpiresAt: zod.string().nullable().optional(),
+      isPollClosed: zod.boolean().optional(),
       visibility: zod.string(),
       commentsEnabled: zod.boolean(),
       likes: zod.number(),

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
-  RefreshControl, Platform, Modal, TextInput,
+  View, StyleSheet, ScrollView, TouchableOpacity, Alert,
+  RefreshControl, Platform, Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import type { VerificationRequest, TeacherFeedbackItem } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const ROLE_COLORS: Record<string, string> = {
   student: "#7C3AED", teacher: "#10B981", alumni: "#8B5CF6", official: "#D97706",

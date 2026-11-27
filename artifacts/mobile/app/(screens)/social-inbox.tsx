@@ -6,8 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -33,6 +31,7 @@ import {
 import type { SocialNotification } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
 import { getNotificationRoute } from "@/lib/notification-navigation";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type InboxTab = "messages" | "message_requests" | "follow_requests" | "activity";
 
@@ -361,7 +360,7 @@ export default function SocialInboxScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F7FF" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#3151E8" },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#6D28D9" },
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)" },
   headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   headerSubtitle: { color: "rgba(255,255,255,0.78)", fontSize: 11, marginTop: 2 },

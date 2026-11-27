@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Modal,
-  TextInput,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type DailyPuzzleItem } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const PUZZLE_ICONS: Record<string, { icon: string; emoji: string; color: string; desc: string }> = {
   word_of_day: { icon: "book-outline", emoji: "🔤", color: "#8B5CF6", desc: "Guess the hidden 5-letter word in 6 tries" },

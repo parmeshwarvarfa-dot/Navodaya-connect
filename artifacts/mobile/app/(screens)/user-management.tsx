@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking,
-  TextInput, RefreshControl, Platform, Modal,
+  View, StyleSheet, ScrollView, TouchableOpacity, Linking,
+  RefreshControl, Platform, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import type { AlumniBatchPreview, AlumniBatchProcessResult, CredentialReconcilePreview, ManagedUser, VerificationAssignment, VerificationAuditEvent, VerificationRequest } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
   student:  { color: "#7C3AED", bg: "#F5F3FF" },

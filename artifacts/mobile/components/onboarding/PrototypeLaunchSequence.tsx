@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Image,
   Platform,
   useWindowDimensions,
@@ -15,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import CampusSvgArt from "./CampusSvgArt";
 import ExploreLandingView from "./ExploreLandingView";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 interface PrototypeLaunchSequenceProps {
   onContinueAuth: (role: "student" | "alumni" | "teacher" | "official", phoneOrEmail?: string) => void;

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Linking, Modal,
-  Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  Platform, Pressable, StyleSheet, TouchableOpacity, View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +14,7 @@ import { api, type DirectMessage } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { firebaseApp } from "@/lib/firebase";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const IMAGE_MARKER = "__NAVODAYA_IMAGE__:";
 const LOCATION_MARKER = "__NAVODAYA_LOCATION__:";
@@ -215,7 +216,7 @@ export default function DirectChatScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#F8F7FF" }]}>
-      <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconButton} accessibilityLabel="Back">
             <Ionicons name="arrow-back" size={22} color="#fff" />

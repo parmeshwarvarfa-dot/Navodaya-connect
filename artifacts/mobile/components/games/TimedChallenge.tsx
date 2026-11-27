@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type GameDifficulty, type GameId, type GameQuestion, type GameResult, type StartedGame } from "@/lib/api";
 import FadeIn from "@/components/motion/FadeIn";
 import MotionPressable from "@/components/motion/MotionPressable";
 import { useReducedMotion } from "@/components/motion/MotionProvider";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type Props = { gameId: Exclude<GameId, "chess-cup" | "art-battle">; onComplete: (result: GameResult) => void };
 

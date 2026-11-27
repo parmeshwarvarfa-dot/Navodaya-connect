@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -14,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { api, type HouseBattleItem } from "@/lib/api";
 import { getHouseMeta } from "@/constants/HouseTheme";
 import LiveIndicator from "./LiveIndicator";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface BattleArenaSectionProps {
   userHouse: string;

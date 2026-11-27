@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -11,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { OFFICIAL_HOUSES, type HouseName, normalizeHouseName } from "@/constants/HouseTheme";
 import { api } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function EventsSection() {
   const [loading, setLoading] = useState(false);

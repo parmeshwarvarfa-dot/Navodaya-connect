@@ -1,6 +1,12 @@
-import { Platform } from "react-native";
-
 export const theme = {
+  typography: {
+    fontFamily: {
+      regular: "Inter_400Regular",
+      medium: "Inter_500Medium",
+      semibold: "Inter_600SemiBold",
+      bold: "Inter_700Bold",
+    },
+  },
   colors: {
     primary: "#7C3AED",
     primaryDark: "#5B21B6",
@@ -35,8 +41,8 @@ export const theme = {
   },
 
   gradients: {
-    hero: ["#7C3AED", "#6366F1"] as const,
-    purpleRoyal: ["#6D28D9", "#4F46E5"] as const,
+    hero: ["#8B5CF6", "#6D28D9"] as const,
+    purpleRoyal: ["#6D28D9", "#5B21B6"] as const,
     purpleVibrant: ["#8B5CF6", "#6D28D9"] as const,
     purplePill: ["#9333EA", "#7C3AED"] as const,
     ambientBg: ["#EDE9FE", "#F5F3FF", "#FFFFFF"] as const,

@@ -1,11 +1,12 @@
 import React, { useRef, useState } from "react";
-import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { isDigitalId, parseDigitalIdProfileLink } from "@/lib/digital-id";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 export default function DigitalIdScannerScreen() {
   const insets = useSafeAreaInsets();

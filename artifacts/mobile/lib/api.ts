@@ -17,6 +17,12 @@ function getBaseUrl(): string {
     development: __DEV__,
   });
 }
+export interface MemoryBookmarkCollection {
+  id: string;
+  name: string;
+  itemCount: number;
+  createdAt?: string;
+}
 
 export function getApiOrigin(): string {
   return getBaseUrl().replace(/\/api\/?$/, "");
@@ -46,7 +52,7 @@ export async function clearStoreAdminToken(): Promise<void> {
   await AsyncStorage.removeItem(STORE_ADMIN_TOKEN_KEY);
 }
 
-async function request<T>(path: string, options: RequestInit = {}, timeoutMs = 15000, session: "user" | "store_admin" = "user"): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, timeoutMs = 15000, session: "user" | "store_admin" = "user", signal?: AbortSignal): Promise<T> {
   const token = session === "store_admin" ? await getStoreAdminToken() : await getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -55,6 +61,9 @@ async function request<T>(path: string, options: RequestInit = {}, timeoutMs = 1
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const abortRequest = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener("abort", abortRequest, { once: true });
 
   let res: Response;
   try {
@@ -65,11 +74,12 @@ async function request<T>(path: string, options: RequestInit = {}, timeoutMs = 1
     });
   } catch (error) {
     if (controller.signal.aborted) {
-      throw new Error("The request took too long. Please try again.");
+      throw new Error(signal?.aborted ? "Upload canceled." : "The request took too long. Please try again.");
     }
     throw new Error("Network error. Check your connection and try again.");
   } finally {
     clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", abortRequest);
   }
 
   if (!res.ok) {
@@ -104,8 +114,8 @@ function queryString(params: Record<string, unknown>) {
   return encoded ? `?${encoded}` : "";
 }
 
-async function uploadMedia(uri: string, fileName: string, mimeType?: string, endpoint = "/memories/uploads") {
-  const response = await fetch(uri);
+async function uploadMedia(uri: string, fileName: string, mimeType?: string, endpoint = "/memories/uploads", signal?: AbortSignal) {
+  const response = await fetch(uri, { signal });
   if (!response.ok) throw new Error("The selected media could not be read. Please choose it again.");
   const blob = await response.blob();
   if (!blob.size || blob.size > 50 * 1024 * 1024) throw new Error("Choose a file under 50 MB.");
@@ -116,7 +126,7 @@ async function uploadMedia(uri: string, fileName: string, mimeType?: string, end
       "X-Media-Filename": encodeURIComponent(fileName),
     },
     body: blob,
-  }, 120000);
+  }, 120000, "user", signal);
 }
 
 export const api = {
@@ -347,7 +357,7 @@ export const api = {
       request<Problem>(`/problems/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   },
   events: {
-    list: () => request<Event[]>("/events"),
+    list: (range?: { from: string; to: string }) => request<Event[]>(`/events${queryString(range ?? {})}`),
     create: (data: { title: string; description: string; date: string; location?: string; mediaKey?: string }) =>
       request<Event>("/events", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: { title: string; description: string; date: string; location?: string | null; mediaKey?: string }) =>
@@ -355,6 +365,14 @@ export const api = {
     delete: (id: string) => request<{ deleted: boolean }>(`/events/${encodeURIComponent(id)}`, { method: "DELETE" }),
     register: (id: string, data: Record<string, string>) =>
       request<Record<string, unknown>>(`/events/${encodeURIComponent(id)}/register`, { method: "POST", body: JSON.stringify(data) }),
+  },
+  calendar: {
+    holidays: (range: { from: string; to: string }) =>
+      request<{ entries: PublicHolidayEntry[]; unavailableCalendars: string[] }>(`/calendar/holidays${queryString(range)}`),
+    searchPlaces: (q: string, signal?: AbortSignal) =>
+      request<{ places: VenuePlace[] }>(`/calendar/places/search${queryString({ q })}`, { signal }),
+    reversePlace: (coordinates: [number, number]) =>
+      request<{ place: VenuePlace }>(`/calendar/places/reverse${queryString({ lon: coordinates[0], lat: coordinates[1] })}`),
   },
   users: {
     alumni: () => request<AlumniUser[]>("/users/alumni"),
@@ -367,6 +385,9 @@ export const api = {
       request<ManagedUser>(`/users/${id}/suspend`, { method: "PATCH", body: JSON.stringify({ suspended }) }),
     search: (query: string) => request<ChatContact[]>(`/users/search?q=${encodeURIComponent(query)}`),
     profileStats: (id: string) => request<ProfileStats>(`/users/${encodeURIComponent(id)}/profile-stats`),
+    socialStatus: (id: string) => request<{ followStatus: string; isFollowing: boolean; followsYou: boolean; isBlocked: boolean }>(`/users/${encodeURIComponent(id)}/social-status`),
+    follow: (id: string) => request<{ followStatus: string; isFollowing: boolean; followsYou: boolean; isBlocked: boolean }>(`/users/${encodeURIComponent(id)}/follow`, { method: "POST" }),
+    unfollow: (id: string) => request<{ followStatus: string; isFollowing: boolean; followsYou: boolean; isBlocked: boolean }>(`/users/${encodeURIComponent(id)}/follow`, { method: "DELETE" }),
     followers: (id: string) => request<ProfileConnection[]>(`/users/${encodeURIComponent(id)}/followers`),
     following: (id: string) => request<ProfileConnection[]>(`/users/${encodeURIComponent(id)}/following`),
   },
@@ -484,15 +505,50 @@ export const api = {
   },
   memories: {
     list: () => request<Memory[]>("/memories"),
+    feed: (params: { limit?: number; cursor?: string; search?: string; type?: string; following?: boolean }) =>
+      request<MemoryFeedPage>(`/memories${queryString(params)}`),
     create: (data: { caption?: string; imageUrl?: string }) =>
       request<Memory>("/memories", { method: "POST", body: JSON.stringify(data) }),
     toggleLike: (id: string) =>
       request<{ liked: boolean; likes: number }>(`/memories/${id}/like`, { method: "POST" }),
+    toggleBookmark: (id: string) =>
+      request<{ success: boolean; status: string }>(`/memories/${id}/bookmark`, { method: "POST" }),
+    comments: (id: string) =>
+      request<NavodayanTalkComment[]>(`/memories/${id}/comments`),
+    addComment: (id: string, content: string) =>
+      request<NavodayanTalkComment>(`/memories/${id}/comments`, { method: "POST", body: JSON.stringify({ content }) }),
+    report: (id: string, reason: string, details?: string) =>
+      request<{ success: boolean; status: string }>(`/memories/${id}/report`, { method: "POST", body: JSON.stringify({ reason, details }) }),
     profileList: (authorId: string, limit = 12, cursor?: string) => request<MemoryFeedPage>(
       `/memories?authorId=${encodeURIComponent(authorId)}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
     ),
-    uploadMedia: (uri: string, fileName: string, mimeType?: string) => uploadMedia(uri, fileName, mimeType),
+    saved: (limit = 20, cursor?: string, collectionId?: string) => request<MemoryFeedPage>(
+      `/memories?${queryString({ saved: true, limit, cursor, collectionId })}`,
+    ),
+    collections: {
+      list: () => request<MemoryBookmarkCollection[]>("/memories/collections"),
+      create: (name: string) => request<MemoryBookmarkCollection>("/memories/collections", { method: "POST", body: JSON.stringify({ name }) }),
+      rename: (id: string, name: string) => request<Pick<MemoryBookmarkCollection, "id" | "name">>(`/memories/collections/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+      move: (id: string, memoryId: string) => request<{ success: boolean }>(`/memories/collections/${encodeURIComponent(id)}/items`, { method: "POST", body: JSON.stringify({ memoryId }) }),
+      remove: (id: string, memoryId: string) => request<{ success: boolean }>(`/memories/collections/${encodeURIComponent(id)}/items/${encodeURIComponent(memoryId)}`, { method: "DELETE" }),
+    },
+    uploadMedia: (uri: string, fileName: string, mimeType?: string, signal?: AbortSignal) => uploadMedia(uri, fileName, mimeType, undefined, signal),
     cleanupUploads: (keys: string[]) => request<{ deleted: number }>("/memories/uploads", { method: "DELETE", body: JSON.stringify({ keys }) }),
+  },
+  talks: {
+    list: (search?: string, category?: string, cursor?: string) =>
+      request<NavodayanTalkPage>(`/talks${queryString({ search, category, cursor })}`),
+    mine: () => request<NavodayanTalk[]>("/talks/mine"),
+    moderationQueue: () => request<NavodayanTalk[]>("/talks/moderation"),
+    create: (data: {
+      submissionKey: string; title: string; body: string; storyType: "written" | "video";
+      category: string; topics: string[]; career?: string; batch?: string; mediaKey?: string;
+      consentConfirmed: boolean; rightsConfirmed: boolean; saveAsDraft?: boolean;
+    }) => request<{ id: string; status: string; duplicate: boolean }>("/talks", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: { title: string; body: string; category: string; topics: string[]; consentConfirmed: boolean; rightsConfirmed: boolean; saveAsDraft?: boolean }) =>
+      request<{ id: string; status: string }>(`/talks/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
+    moderate: (id: string, action: "start_review" | "request_changes" | "approve" | "reject" | "publish" | "remove", reason: string) =>
+      request<{ id: string; status: string }>(`/talks/${encodeURIComponent(id)}/moderate`, { method: "PATCH", body: JSON.stringify({ action, reason }) }),
   },
   achievements: {
     list: () => request<Achievement[]>("/achievements"),
@@ -730,6 +786,11 @@ export interface GroupMessage {
   deletedAt?: string | null;
   createdAt: string;
 }
+export interface NavodayanTalkPage {
+  items: NavodayanTalk[];
+  nextCursor?: string;
+  hasMore: boolean;
+}
 
 export interface MentorProfile { available: boolean; categories: string[]; bio: string }
 export interface MentorDirectoryEntry extends AlumniUser { categories: string[]; bio: string }
@@ -779,6 +840,20 @@ export interface Event {
   jnvName?: string;
   createdAt: string;
   organizerId?: string;
+}
+
+export interface PublicHolidayEntry {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  calendar: string;
+  sourceUrl: string;
+}
+
+export interface VenuePlace {
+  label: string;
+  coordinates: [number, number];
 }
 
 export interface AlumniUser {
@@ -1381,7 +1456,10 @@ export type GameId = "gk-blitz" | "word-master" | "math-ninja" | "art-battle" | 
 export type GameResult = ApiRecord;
 export interface GameSummary { points: number; houses: Array<{ house: string; points: number }> }
 export interface GameQuestion { round: number; total: number; category?: string; prompt: string; type: string; options?: string[]; definition?: string }
-export interface Opportunity extends ApiRecord { id: string; title: string; status: string; eligibleRoles: string[]; eligibleClasses: string[] }
+export interface Opportunity extends ApiRecord {
+  id: string; title: string; status: string; eligibleRoles: string[]; eligibleClasses: string[];
+  mediaUrl?: string | null; mediaType?: "image" | "video" | null;
+}
 export interface SavedOpportunity extends Opportunity { savedAt: string }
 export interface OpportunityAnalytics extends ApiRecord { totalOpportunities: number; activeOpportunities: number; registrations: number; submissions: number }
 export interface OpportunityDetails extends Opportunity { eligibleRoles: string[]; eligibleClasses: string[]; mySubmission?: OpportunitySubmission | null }
@@ -1413,6 +1491,37 @@ export interface AcademicManagementOverview {
 export interface StartedGame { sessionId: string; gameId: GameId; difficulty: GameDifficulty; seconds: number; total: number; prompt?: string; question: GameQuestion | null }
 export interface TeacherClassAssignment { id: string; teacherId: string; teacherName: string; className: string; subject: string; active: boolean; jnvName?: string; jnvState?: string; assignmentType?: AcademicAssignmentType; section?: string; academicYear?: string; periodsPerWeek?: number | null; revokedAt?: string | null }
 export type UploadedMemoryMedia = ApiRecord;
+export interface NavodayanTalkMedia { url: string; mediaType: "image" | "video" }
+export interface NavodayanTalk {
+  id: string;
+  memoryId: string;
+  title: string;
+  storyType: "written" | "video";
+  category: string;
+  topics: string[];
+  career: string | null;
+  batch: string | null;
+  status: string;
+  moderationFeedback: string | null;
+  body: string;
+  media: NavodayanTalkMedia[];
+  author: { id: string; name: string; photoUrl: string | null; jnvName: string; role: string; profession: string | null; passoutYear: string | null };
+  likes: number;
+  liked: boolean;
+  bookmarked: boolean;
+  commentsCount: number;
+  createdAt: string;
+}
+export interface NavodayanTalkComment {
+  id: string;
+  memoryId: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoUrl?: string;
+  parentId: string | null;
+  content: string;
+  createdAt: string;
+}
 export type VerifiedTeacher = ApiRecord;
 export type YearbookEntry = ApiRecord;
 export type YearbookReviewItem = ApiRecord;

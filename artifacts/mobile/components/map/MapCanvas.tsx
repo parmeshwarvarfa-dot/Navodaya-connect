@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import type { JnvMapSchool } from "@/lib/jnv-map-data";
 import type { MapViewRequest } from "./map-types";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type Props = {
   schools: JnvMapSchool[];

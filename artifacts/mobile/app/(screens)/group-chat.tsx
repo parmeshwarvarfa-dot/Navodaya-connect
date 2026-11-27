@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
-  TextInput, Platform, KeyboardAvoidingView, Modal, Image, Share, Linking,
+  View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  Platform, KeyboardAvoidingView, Modal, Image, Share, Linking,
   Pressable, ScrollView, Animated, Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { VerificationGateModal } from "@/components/VerificationGateModal";
 import { firebaseApp } from "@/lib/firebase";
 import ImageAdjustmentModal from "@/components/media/ImageAdjustmentModal";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const EMOJI_CATEGORIES = {
   Smileys: "😀 😃 😄 😁 😆 😅 😂 🤣 🥲 ☺️ 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫣 🤭 🫢 🫡 🤫 🤥 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠",
@@ -851,7 +852,7 @@ export default function GroupChatScreen() {
   return (
     <View style={[s.container, { backgroundColor: chatBackground }]}>
       <VerificationGateModal visible={!isVerified} onClose={() => router.back()} featureName="Group chats" />
-      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#3151E8" }]}>
+      <View style={[s.header, { paddingTop: topPad + 8, backgroundColor: "#7C3AED", borderBottomWidth: 1, borderBottomColor: "#6D28D9" }]}>
         <View style={s.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={s.iconBtn}>
             <Ionicons name="arrow-back" size={22} color="#FFFFFF" />

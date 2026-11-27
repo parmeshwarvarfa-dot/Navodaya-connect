@@ -6,8 +6,6 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -20,6 +18,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { SocialMemory } from "@workspace/api-client-react";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type Props = {
   visible: boolean;

@@ -7,8 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -21,6 +19,7 @@ import {
   type AcademicManagementOverview,
   type AcademicTeacherAssignment,
 } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type MainTab = "directory" | "allocate" | "workload" | "history" | "policies";
 type DirectorySubView = "class" | "teacher" | "class_teacher" | "subject_teacher";

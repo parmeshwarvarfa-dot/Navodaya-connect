@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type JnvRankingScoreItem } from "@/lib/api";
 import { STATES } from "@/data/jnvData";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function JnvRankingSection() {
   const [periodType, setPeriodType] = useState<"month" | "year">("month");

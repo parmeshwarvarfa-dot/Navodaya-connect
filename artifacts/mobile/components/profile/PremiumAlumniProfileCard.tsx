@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   Image,
   TouchableOpacity,
@@ -17,6 +16,7 @@ import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import type { UserProfile } from "@/context/AuthContext";
 import { api, type ProfileInsightsData } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(SCREEN_WIDTH - 48, 350);
@@ -26,14 +26,18 @@ const DEFAULT_PORTRAIT = require("@/assets/images/default-professional-portrait.
 
 interface PremiumAlumniProfileCardProps {
   profile: UserProfile;
+  previewMode?: boolean;
   onEditPress?: () => void;
   onBenefitsPress?: () => void;
+  onMenuPress?: () => void;
 }
 
 export default function PremiumAlumniProfileCard({
   profile,
+  previewMode = false,
   onEditPress,
   onBenefitsPress,
+  onMenuPress,
 }: PremiumAlumniProfileCardProps) {
   const [range, setRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [showRangeDropdown, setShowRangeDropdown] = useState(false);
@@ -63,7 +67,7 @@ export default function PremiumAlumniProfileCard({
     };
   }, [profile.uid, range]);
 
-  const hasPremium = Boolean(profile.isPremium || (profile as any).membershipStatus?.isPremium);
+  const hasPremium = previewMode || Boolean(profile.isPremium || (profile as any).membershipStatus?.isPremium);
 
   // Determine profile image: use uploaded real photograph if available; otherwise use professional default portrait
   const isRealPhoto = Boolean(
@@ -137,14 +141,18 @@ export default function PremiumAlumniProfileCard({
 
           <TouchableOpacity
             style={styles.avatarHeaderBtn}
-            onPress={onEditPress || (() => router.push("/(screens)/edit-profile" as any))}
+            onPress={onMenuPress || onEditPress || (() => router.push("/(screens)/edit-profile" as any))}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Edit Profile"
+            accessibilityLabel={onMenuPress ? "Open profile menu" : "Edit Profile"}
           >
-            <Text style={styles.avatarLetter}>
-              {fullName.charAt(0).toUpperCase()}
-            </Text>
+            {onMenuPress ? (
+              <Ionicons name="menu" size={20} color="#7C3AED" />
+            ) : (
+              <Text style={styles.avatarLetter}>
+                {fullName.charAt(0).toUpperCase()}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -652,9 +660,11 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#9A3412",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E9D5FF",
   },
   avatarLetter: {
     fontSize: 17,

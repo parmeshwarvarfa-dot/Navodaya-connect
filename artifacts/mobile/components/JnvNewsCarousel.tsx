@@ -11,7 +11,6 @@ import {
   NativeSyntheticEvent,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -22,6 +21,7 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api, type NewsItem } from "@/lib/api";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const HORIZONTAL_MARGIN = 16;
 const MAX_CARD_WIDTH = 560;

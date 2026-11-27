@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type PublicCredentialStatus } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export default function PublicCredentialPage() {
   const { token } = useLocalSearchParams<{ token: string }>();

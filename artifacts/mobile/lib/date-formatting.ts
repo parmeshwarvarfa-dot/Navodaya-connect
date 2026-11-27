@@ -88,3 +88,39 @@ export function formatTimeAgo(
   if (diffDays === 1) return "1 day ago";
   return `${diffDays} days ago`;
 }
+
+export function parseDateTimeInput(value: string | null | undefined): Date | null {
+  const input = value?.trim();
+  if (!input) return null;
+
+  const dayFirst = /^(\d{1,2})-(\d{1,2})-(\d{4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(input);
+  const legacyYearFirst = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(input);
+  const parts = dayFirst
+    ? [Number(dayFirst[3]), Number(dayFirst[2]), Number(dayFirst[1]), Number(dayFirst[4]), Number(dayFirst[5]), Number(dayFirst[6] ?? 0)]
+    : legacyYearFirst
+      ? [Number(legacyYearFirst[1]), Number(legacyYearFirst[2]), Number(legacyYearFirst[3]), Number(legacyYearFirst[4]), Number(legacyYearFirst[5]), Number(legacyYearFirst[6] ?? 0)]
+      : null;
+
+  if (parts) {
+    const [year, month, day, hours, minutes, seconds] = parts;
+    if (
+      month < 1 || month > 12 || day < 1 || day > 31 ||
+      hours > 23 || minutes > 59 || seconds > 59
+    ) return null;
+    const date = new Date(year, month - 1, day, hours, minutes, seconds);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+      ? date
+      : null;
+  }
+
+  const parsed = new Date(input);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function formatDateTimeInput(value: string | number | Date | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, Modal } from "react-native";
+import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View, Alert, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type Peer = { id: string; fullName: string; photoURL: string | null; passoutYear: string | null; enrollYear: string | null; status: string; response: string | null };
 type InboxItem = { id: string; userId: string; fullName: string; photoURL: string | null; passoutYear: string | null; enrollYear: string | null; createdAt: string; decision: string | null };

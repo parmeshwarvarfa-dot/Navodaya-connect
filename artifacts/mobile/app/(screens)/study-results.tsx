@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import AcademicFeatureUnavailable from "@/components/AcademicFeatureUnavailable";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const EXAMS = [
   {

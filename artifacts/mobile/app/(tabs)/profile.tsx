@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   Alert,
   StyleSheet,
   ScrollView,
@@ -20,13 +19,13 @@ import { useAuth } from "@/context/AuthContext";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { RoleBadge } from "@/components/RoleBadge";
 import ProfilePostsSection from "@/components/profile/ProfilePostsSection";
-import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
 import { api, type RecognitionProfile, type AlumniMembershipStatus } from "@/lib/api";
 import type { DigitalCredential } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import PremiumAlumniProfileCard from "@/components/profile/PremiumAlumniProfileCard";
 import AlumniPremiumSubscriptionModal from "@/components/profile/AlumniPremiumSubscriptionModal";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -153,21 +152,6 @@ export default function ProfileScreen() {
       : []),
   ];
 
-  const menuItems = [
-    { icon: "trophy-outline" as const, label: "Achievements & Leaderboard", onPress: () => router.push("/(screens)/alumni-contributions" as any) },
-    { icon: "map-outline" as const, label: "JNV Communities", onPress: () => router.push("/(screens)/school-directory" as any) },
-    { icon: "book-outline" as const, label: "Digital Yearbook", onPress: () => router.push("/(screens)/yearbook" as any) },
-    { icon: "scan-outline" as const, label: "Scan Digital ID", onPress: () => router.push("/(screens)/digital-id-scanner" as any) },
-    { icon: "mail-unread-outline" as const, label: "Social Inbox", onPress: () => router.push("/(screens)/social-inbox" as any) },
-    { icon: "compass-outline" as const, label: "Explore Platform Previews", onPress: () => router.push("/(screens)/explore" as any) },
-    { icon: "sparkles-outline" as const, label: "Replay Launch Experience", onPress: () => router.push("/onboarding" as any) },
-    { icon: "lock-closed-outline" as const, label: "Privacy & Requests", onPress: () => router.push("/(screens)/privacy-settings" as any) },
-    { icon: "alert-circle-outline" as const, label: "Report a Problem", onPress: () => router.push("/(screens)/report-problem" as any) },
-    ...(profile.role === "alumni"
-      ? [{ icon: "shield-checkmark-outline" as const, label: "Alumni Verification", onPress: () => router.push("/(screens)/alumni-peer-verification" as any) }]
-      : []),
-  ];
-
   const toggleMenuSection = (title: string) => {
     setOpenMenuSections((current) =>
       current.includes(title)
@@ -184,8 +168,12 @@ export default function ProfileScreen() {
         { label: "Edit Profile", icon: "create-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
         { label: "Personal Information", icon: "information-circle-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
         { label: "Profile Photo Management", icon: "camera-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
+        { label: "Public Profile Preview", icon: "eye-outline" as const, onPress: () => router.push({ pathname: "/profile/[id]", params: { id: profile.uid } } as any) },
         { label: "Digital ID Card", icon: "card-outline" as const, onPress: () => router.push("/(screens)/digital-id" as any) },
+        { label: "My QR Code", icon: "qr-code-outline" as const, onPress: () => router.push("/(screens)/digital-id" as any) },
         { label: "Account Verification", icon: "shield-checkmark-outline" as const, onPress: () => router.push((profile.role === "alumni" ? "/(screens)/alumni-peer-verification" : "/(screens)/verification-center") as any) },
+        { label: "My JNV & Batch", icon: "location-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
+        { label: "Education, Skills & Experience", icon: "school-outline" as const, onPress: () => router.push("/(screens)/edit-profile" as any) },
         {
           label: "Share My Profile",
           icon: "share-social-outline" as const,
@@ -207,28 +195,33 @@ export default function ProfileScreen() {
       items: [
         { label: "Find Navodayans", icon: "compass-outline" as const, onPress: () => router.push("/(screens)/explore" as any) },
         { label: "Alumni Network", icon: "school-outline" as const, onPress: () => router.push("/(screens)/alumni-connect" as any) },
+        { label: "Community Groups", icon: "people-circle-outline" as const, onPress: () => router.push({ pathname: "/(tabs)/chats", params: { filter: "groups" } } as any) },
         { label: "Social Inbox", icon: "mail-unread-outline" as const, onPress: () => router.push("/(screens)/social-inbox" as any) },
-        { label: "Privacy & Requests", icon: "lock-closed-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
+        { label: "Message Requests", icon: "mail-outline" as const, onPress: () => router.push({ pathname: "/(screens)/social-inbox", params: { tab: "message_requests" } } as any) },
+        { label: "Follow Requests", icon: "person-add-outline" as const, onPress: () => router.push({ pathname: "/(screens)/social-inbox", params: { tab: "follow_requests" } } as any) },
+        { label: "Blocked Accounts", icon: "ban-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
+        { label: "Follow & Privacy Preferences", icon: "people-circle-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
       ],
     },
     {
       title: "Content & Memories",
       icon: "grid-outline" as const,
       items: [
-        { label: "My Posts", icon: "albums-outline" as const, onPress: () => router.push("/(screens)/profile-posts" as any) },
-        { label: "Memories", icon: "images-outline" as const, onPress: () => router.push("/(tabs)/memories" as any) },
+        { label: "My Posts", icon: "albums-outline" as const, onPress: () => router.push({ pathname: "/(screens)/profile-posts", params: { userId: profile.uid, isOwner: "true" } } as any) },
+        { label: "My Photos", icon: "image-outline" as const, onPress: () => router.push({ pathname: "/(tabs)/memories", params: { filter: "photo" } } as any) },
+        { label: "My Videos", icon: "videocam-outline" as const, onPress: () => router.push({ pathname: "/(tabs)/memories", params: { filter: "video" } } as any) },
+        { label: "My Polls", icon: "stats-chart-outline" as const, onPress: () => router.push({ pathname: "/(tabs)/memories", params: { filter: "poll" } } as any) },
+        { label: "Saved Posts", icon: "bookmark-outline" as const, onPress: () => router.push("/(tabs)/memories-saved" as any) },
+        { label: "Memories", icon: "images-outline" as const, onPress: () => router.push({ pathname: "/(tabs)/memories", params: { filter: "all" } } as any) },
+        { label: "Create New Memory", icon: "add-circle-outline" as const, onPress: () => router.push("/(tabs)/memories" as any) },
         { label: "Digital Yearbook", icon: "book-outline" as const, onPress: () => router.push("/(screens)/yearbook" as any) },
       ],
     },
     {
-      title: "Community",
-      icon: "planet-outline" as const,
+      title: "Events",
+      icon: "calendar-outline" as const,
       items: [
-        { label: "My JNV", icon: "location-outline" as const, onPress: () => router.push("/(screens)/school-directory" as any) },
-        { label: "Communities", icon: "people-circle-outline" as const, onPress: () => router.push("/(screens)/community" as any) },
-        { label: "Groups", icon: "chatbubbles-outline" as const, onPress: () => router.push("/(tabs)/groups" as any) },
-        { label: "Events", icon: "calendar-outline" as const, onPress: () => router.push("/(screens)/events" as any) },
-        { label: "Achievements", icon: "trophy-outline" as const, onPress: () => router.push("/(screens)/alumni-contributions" as any) },
+        { label: "Explore Events", icon: "calendar-outline" as const, onPress: () => router.push("/(screens)/events" as any) },
       ],
     },
     {
@@ -238,6 +231,7 @@ export default function ProfileScreen() {
         { label: "Opportunities", icon: "briefcase-outline" as const, onPress: () => router.push("/(tabs)/jobs" as any) },
         { label: "Mentorship", icon: "accessibility-outline" as const, onPress: () => router.push("/(tabs)/mentorship" as any) },
         { label: "Study Resources", icon: "library-outline" as const, onPress: () => router.push("/(screens)/study" as any) },
+        { label: "Job Bookmarks", icon: "bookmark-outline" as const, onPress: () => router.push("/(tabs)/jobs" as any) },
         ...(profile.role === "alumni"
           ? [{ label: "Alumni Opportunities", icon: "rocket-outline" as const, onPress: () => router.push("/(screens)/alumni-opportunities" as any) }]
           : []),
@@ -247,22 +241,21 @@ export default function ProfileScreen() {
       title: "Activity & Analytics",
       icon: "analytics-outline" as const,
       items: [
+        { label: "My Activity", icon: "pulse-outline" as const, onPress: () => router.push({ pathname: "/(screens)/social-inbox", params: { tab: "activity" } } as any) },
         { label: "Notifications", icon: "notifications-outline" as const, onPress: () => router.push("/(screens)/notifications" as any) },
         { label: "Notification Settings", icon: "options-outline" as const, onPress: () => router.push("/(screens)/notification-settings" as any) },
         { label: "Rankings", icon: "stats-chart-outline" as const, onPress: () => router.push("/(screens)/rankings" as any) },
-        ...(profile.role === "alumni"
-          ? [{ label: "Community Recognition", icon: "ribbon-outline" as const, onPress: () => router.push("/(screens)/alumni-contributions" as any) }]
-          : []),
       ],
     },
     {
       title: "Privacy, Security & Support",
       icon: "settings-outline" as const,
       items: [
-        { label: "Privacy Settings", icon: "lock-closed-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
+        { label: "Account Privacy", icon: "lock-closed-outline" as const, onPress: () => router.push("/(screens)/privacy-settings" as any) },
         { label: "Help & Support", icon: "help-circle-outline" as const, onPress: () => router.push("/(screens)/alumni-support" as any) },
         { label: "Report a Problem", icon: "alert-circle-outline" as const, onPress: () => router.push("/(screens)/report-problem" as any) },
         { label: "Explore Platform", icon: "compass-outline" as const, onPress: () => router.push("/(screens)/explore" as any) },
+        { label: "Replay Launch Experience", icon: "sparkles-outline" as const, onPress: () => router.push("/onboarding" as any) },
       ],
     },
     ...(profile.role === "alumni"
@@ -274,6 +267,40 @@ export default function ProfileScreen() {
           ],
         }]
       : []),
+    ...(profile.role === "alumni"
+      ? [{
+          title: "Alumni Tools",
+          icon: "school-outline" as const,
+          items: [
+            { label: "Alumni Zone", icon: "business-outline" as const, onPress: () => router.push("/(screens)/alumni-zone" as any) },
+          ],
+        }]
+      : []),
+    ...(profile.role === "student"
+      ? [{
+          title: "Student Tools",
+          icon: "school-outline" as const,
+          items: [
+            { label: "Academic Access", icon: "book-outline" as const, onPress: () => router.push("/(screens)/academic-access" as any) },
+          ],
+        }]
+      : profile.role === "teacher"
+        ? [{
+            title: "Teacher Tools",
+            icon: "briefcase-outline" as const,
+            items: [
+              { label: "Teacher Zone", icon: "easel-outline" as const, onPress: () => router.push("/(screens)/teacher-zone" as any) },
+            ],
+          }]
+        : profile.role === "official"
+          ? [{
+              title: "Official Tools",
+              icon: "business-outline" as const,
+              items: [
+                { label: "Official Dashboard", icon: "grid-outline" as const, onPress: () => router.push("/(screens)/official-dashboard" as any) },
+              ],
+            }]
+          : []),
   ];
 
   const renderProfileMenu = () => (
@@ -302,7 +329,11 @@ export default function ProfileScreen() {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.profileMenuName} numberOfLines={1}>{profile.fullName}</Text>
-                <Text style={styles.profileMenuRole}>{roleLabel}{profile.jnvName ? ` · ${profile.jnvName}` : ""}</Text>
+                <Text style={styles.profileMenuRole}>
+                  {roleLabel}
+                  {profile.jnvName ? ` · ${profile.jnvName}` : ""}
+                  {profile.role === "alumni" && profile.passoutYear ? ` · ${profile.passoutYear} Batch` : ""}
+                </Text>
               </View>
             </View>
             <TouchableOpacity
@@ -380,14 +411,6 @@ export default function ProfileScreen() {
   if (isPremiumAlumni) {
     return (
       <View style={[styles.container]}>
-        <TouchableOpacity
-          style={[styles.premiumMenuFloating, { top: topPad + 8 }]}
-          onPress={() => setShowProfileMenu(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile menu"
-        >
-          <Ionicons name="menu" size={22} color="#7C3AED" />
-        </TouchableOpacity>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 150 + insets.bottom }}
@@ -413,8 +436,10 @@ export default function ProfileScreen() {
           <View style={{ paddingTop: topPad }}>
             <PremiumAlumniProfileCard
               profile={profile}
+              previewMode={previewPremium}
               onEditPress={() => router.push("/(screens)/edit-profile" as any)}
               onBenefitsPress={() => setShowSubscriptionModal(true)}
+              onMenuPress={() => setShowProfileMenu(true)}
             />
           </View>
 
@@ -475,30 +500,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={styles.menuCard}>
-              {menuItems.map((item, index) => (
-                <MotionPressable
-                  key={item.label}
-                  style={[styles.menuRow, index < menuItems.length - 1 && styles.menuRowBorder]}
-                  onPress={item.onPress}
-                >
-                  <View style={styles.menuIconWrap}>
-                    <Ionicons name={item.icon} size={18} color="#7C3AED" />
-                  </View>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                </MotionPressable>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.signOutBtn}
-              onPress={handleSignOut}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
-              <Text style={styles.signOutText}>Sign Out</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -790,26 +791,6 @@ export default function ProfileScreen() {
           <View style={styles.recognitionLinks}>{[{ label: "Points History", section: "history" }, { label: "My Awards", section: "awards" }, { label: "Leaderboard", section: "leaderboard" }, { label: "Hall of Fame", section: "hall" }].map((item) => <TouchableOpacity key={item.section} onPress={() => router.push({ pathname: "/(screens)/alumni-contributions", params: { section: item.section } } as any)}><Text style={styles.recognitionLink}>{item.label} ›</Text></TouchableOpacity>)}</View>
         </View>
 
-        <View style={styles.menuCard}>
-          {menuItems.map((item, index) => (
-            <MotionPressable
-              key={item.label}
-              style={[styles.menuRow, index < menuItems.length - 1 && styles.menuRowBorder]}
-              onPress={item.onPress}
-            >
-              <View style={styles.menuIconWrap}>
-                <Ionicons name={item.icon} size={18} color="#7C3AED" />
-              </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-            </MotionPressable>
-          ))}
-        </View>
-
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.8}>
-          <Ionicons name="log-out-outline" size={18} color="#EF4444" />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {renderProfileMenu()}
@@ -895,24 +876,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#E9D5FF",
-  },
-  premiumMenuFloating: {
-    position: "absolute",
-    right: 16,
-    zIndex: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#E9D5FF",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
   },
   profileCard: {
     backgroundColor: "#FFFFFF",

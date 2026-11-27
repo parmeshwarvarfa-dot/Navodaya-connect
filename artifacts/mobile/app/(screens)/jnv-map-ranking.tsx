@@ -1,15 +1,16 @@
 import React from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const OPTIONS = [
   {
     title: "JNV Connect Map",
     description: "Explore Jawahar Navodaya Vidyalayas across locations.",
     icon: "map-outline" as const,
-    color: "#3151E8",
+    color: "#6D28D9",
     background: "#F5F3FF",
     route: "/(screens)/map-prototype",
   },

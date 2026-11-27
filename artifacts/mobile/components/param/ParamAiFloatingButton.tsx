@@ -4,13 +4,13 @@ import {
   PanResponder,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface ParamAiFloatingButtonProps {
   bottom?: number;

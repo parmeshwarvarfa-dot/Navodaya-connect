@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Animated,
@@ -14,7 +12,9 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import type { TextInput as NativeTextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -23,6 +23,7 @@ import { getApiOrigin, getToken } from "@/lib/api";
 import { voiceService } from "@/lib/voiceService";
 import ParamVoiceModal from "@/components/param/ParamVoiceModal";
 import ParamAiOrb from "@/components/param/ParamAiOrb";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface VerifiedLink {
@@ -273,6 +274,7 @@ export default function ParamAIScreen() {
   const [voiceLang, setVoiceLang] = useState<"en" | "hi">("en");
 
   const scrollRef = useRef<ScrollView>(null);
+  const composerInputRef = useRef<NativeTextInput>(null);
   const typingPulse = useRef(new Animated.Value(0.4)).current;
 
   const topPad = Platform.OS === "web" ? 12 : insets.top;
@@ -805,56 +807,119 @@ export default function ParamAIScreen() {
         {!hasMessages ? (
           /* ── Welcome Screen ── */
           <View style={styles.welcomeSection}>
-            <View style={styles.orbWrapper}>
-              <ParamAiOrb size={82} state={loading ? "thinking" : isRecordingVoiceMsg ? "listening" : "idle"} />
-            </View>
-
-            <Text style={styles.welcomeHeading}>PARAM AI 🤖</Text>
-            <Text style={styles.welcomeTagline}>Your Navodaya AI Companion</Text>
-            <Text style={styles.welcomeDescription}>
-              Your companion for learning, competitive exam guidance, document analysis, and exploring the Navodaya community.
-            </Text>
-
-            {/* Quick Action Filter Chips */}
-            <View style={styles.sectionHeadingRow}>
-              <Text style={styles.sectionHeading}>Explore Topics</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
+            <LinearGradient
+              colors={["#4C1D95", "#6D28D9", "#8B5CF6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCard}
             >
-              {QUICK_ACTIONS.map((cat) => {
-                const isActive = selectedCategory === cat.id;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                    onPress={() => setSelectedCategory(cat.id)}
-                    activeOpacity={0.75}
-                  >
-                    <Ionicons
-                      name={cat.icon}
-                      size={14}
-                      color={isActive ? "#FFFFFF" : "#7C3AED"}
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+              <View style={styles.heroDecorTop} />
+              <View style={styles.heroDecorBottom} />
+              <View style={styles.heroEyebrow}>
+                <View style={styles.heroOnlineDot} />
+                <Text style={styles.heroEyebrowText}>NAVODAYA AI COMPANION</Text>
+              </View>
+              <View style={styles.heroMain}>
+                <View style={styles.heroCopy}>
+                  <Text style={styles.heroTitle}>Your next big idea starts here.</Text>
+                  <Text style={styles.heroDescription}>
+                    Study smarter, plan your future, and explore Navodaya with PARAM.
+                  </Text>
+                </View>
+                <View style={styles.heroOrb}>
+                  <ParamAiOrb size={76} state={loading ? "thinking" : isRecordingVoiceMsg ? "listening" : "idle"} />
+                </View>
+              </View>
+              <View style={styles.heroFooter}>
+                <Ionicons name="shield-checkmark" size={14} color="#DDD6FE" />
+                <Text style={styles.heroFooterText}>Ready to help you learn and grow</Text>
+              </View>
+            </LinearGradient>
 
-            {/* Discovery Prompt Cards */}
+            <View style={styles.dashboardActions}>
+              <TouchableOpacity
+                style={styles.dashboardActionCard}
+                onPress={() => composerInputRef.current?.focus()}
+                activeOpacity={0.78}
+              >
+                <View style={[styles.dashboardActionIcon, styles.questionActionIcon]}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={19} color="#7C3AED" />
+                </View>
+                <View style={styles.dashboardActionCopy}>
+                  <Text style={styles.dashboardActionTitle}>Ask a question</Text>
+                  <Text style={styles.dashboardActionSubtitle}>Get a tailored answer</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color="#A78BFA" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dashboardActionCard}
+                onPress={handlePickDocument}
+                activeOpacity={0.78}
+                disabled={isProcessingFile}
+              >
+                <View style={[styles.dashboardActionIcon, styles.documentActionIcon]}>
+                  {isProcessingFile
+                    ? <ActivityIndicator size="small" color="#7C3AED" />
+                    : <Ionicons name="document-text-outline" size={19} color="#7C3AED" />}
+                </View>
+                <View style={styles.dashboardActionCopy}>
+                  <Text style={styles.dashboardActionTitle}>Analyze a file</Text>
+                  <Text style={styles.dashboardActionSubtitle}>Ask about notes or PDFs</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color="#A78BFA" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.topicSection}>
+              <View style={styles.sectionHeadingRow}>
+                <View>
+                  <Text style={styles.sectionHeading}>Explore topics</Text>
+                  <Text style={styles.sectionCaption}>Choose a path or start with a suggestion</Text>
+                </View>
+                <View style={styles.suggestionCount}>
+                  <Ionicons name="sparkles" size={13} color="#7C3AED" />
+                  <Text style={styles.suggestionCountText}>{filteredPrompts.length}</Text>
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
+              >
+                {QUICK_ACTIONS.map((cat) => {
+                  const isActive = selectedCategory === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                      onPress={() => setSelectedCategory(cat.id)}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isActive }}
+                    >
+                      <Ionicons
+                        name={cat.icon}
+                        size={14}
+                        color={isActive ? "#FFFFFF" : "#7C3AED"}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
             <View style={styles.promptCardsContainer}>
-              {filteredPrompts.map((item, idx) => (
+              <Text style={styles.promptSectionTitle}>Try asking</Text>
+              {filteredPrompts.map((item) => (
                 <TouchableOpacity
-                  key={`prompt-${idx}`}
+                  key={item.tag}
                   style={styles.promptCard}
                   onPress={() => sendMessage(item.prompt)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.78}
                   disabled={loading}
                 >
                   <View style={styles.promptCardTop}>
@@ -862,29 +927,13 @@ export default function ParamAIScreen() {
                       <Ionicons name={item.icon} size={13} color="#7C3AED" style={{ marginRight: 5 }} />
                       <Text style={styles.promptBadgeText}>{item.tag}</Text>
                     </View>
-                    <Ionicons name="arrow-forward" size={15} color="#7C3AED" />
+                    <View style={styles.promptArrow}>
+                      <Ionicons name="arrow-up" size={14} color="#7C3AED" />
+                    </View>
                   </View>
                   <Text style={styles.promptText}>{item.prompt}</Text>
                 </TouchableOpacity>
               ))}
-
-              {/* Upload Document Highlight Card */}
-              <TouchableOpacity
-                style={[styles.promptCard, styles.uploadPromptCard]}
-                onPress={handlePickDocument}
-                activeOpacity={0.8}
-              >
-                <View style={styles.promptCardTop}>
-                  <View style={[styles.promptBadge, { backgroundColor: "#F5F3FF" }]}>
-                    <Ionicons name="document-attach" size={14} color="#7C3AED" style={{ marginRight: 5 }} />
-                    <Text style={styles.promptBadgeText}>Multimodal Document Analysis</Text>
-                  </View>
-                  <Ionicons name="cloud-upload-outline" size={16} color="#7C3AED" />
-                </View>
-                <Text style={styles.promptText}>
-                  Upload PDFs, Word docs, spreadsheets, or problem photos for instant step-by-step solutions and revision notes.
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -1137,6 +1186,7 @@ export default function ParamAIScreen() {
 
             {/* Text Input */}
             <TextInput
+              ref={composerInputRef}
               style={styles.textInput}
               placeholder={
                 selectedAttachments.length > 0
@@ -1366,63 +1416,198 @@ const styles = StyleSheet.create({
 
   // ── Welcome Screen ──
   welcomeSection: {
-    alignItems: "center",
-    paddingTop: 12,
+    paddingTop: 4,
+    gap: 18,
   },
-  orbWrapper: {
-    width: 82,
-    height: 82,
+  heroCard: {
+    minHeight: 220,
+    borderRadius: 26,
+    padding: 20,
+    overflow: "hidden",
+    justifyContent: "space-between",
+    shadowColor: "#4C1D95",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 7,
+  },
+  heroDecorTop: {
+    position: "absolute",
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    right: -80,
+    top: -110,
+  },
+  heroDecorBottom: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    right: 65,
+    bottom: -120,
+  },
+  heroEyebrow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  heroOnlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#34D399",
+  },
+  heroEyebrowText: {
+    color: "#E9D5FF",
+    fontSize: 10,
+    letterSpacing: 1.15,
+    fontFamily: "Inter_700Bold",
+  },
+  heroMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  heroCopy: {
+    flex: 1,
+    paddingRight: 4,
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 23,
+    lineHeight: 29,
+    fontFamily: "Inter_700Bold",
+  },
+  heroDescription: {
+    color: "#E9D5FF",
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: "Inter_400Regular",
+    marginTop: 8,
+    maxWidth: 250,
+  },
+  heroOrb: {
+    width: 96,
+    height: 96,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginRight: -2,
   },
-  welcomeHeading: {
-    fontSize: 22,
+  heroFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.18)",
+  },
+  heroFooterText: {
+    color: "#E9D5FF",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
+  dashboardActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  dashboardActionCard: {
+    flex: 1,
+    minHeight: 78,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#EEE7FF",
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    gap: 8,
+    shadowColor: "#5B21B6",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    elevation: 2,
+  },
+  dashboardActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  questionActionIcon: { backgroundColor: "#F3E8FF" },
+  documentActionIcon: { backgroundColor: "#EEF2FF" },
+  dashboardActionCopy: {
+    flex: 1,
+  },
+  dashboardActionTitle: {
+    color: "#29224C",
+    fontSize: 11,
     fontFamily: "Inter_700Bold",
-    color: "#1E1B4B",
-    marginBottom: 4,
-    textAlign: "center",
   },
-  welcomeTagline: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: "#7C3AED",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  welcomeDescription: {
-    fontSize: 13,
-    lineHeight: 19,
+  dashboardActionSubtitle: {
+    color: "#758099",
+    fontSize: 9,
+    lineHeight: 13,
     fontFamily: "Inter_400Regular",
-    color: "#64748B",
-    textAlign: "center",
-    maxWidth: 320,
-    marginBottom: 20,
+    marginTop: 3,
   },
   sectionHeadingRow: {
     width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   sectionHeading: {
-    fontSize: 12,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: "#1E1B4B",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    textTransform: "none",
+    letterSpacing: 0,
+  },
+  sectionCaption: {
+    color: "#818AA0",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 3,
+  },
+  suggestionCount: {
+    minWidth: 36,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3E8FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+  },
+  suggestionCountText: {
+    color: "#6D28D9",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+  topicSection: {
+    width: "100%",
   },
   categoryScroll: {
     gap: 8,
-    paddingBottom: 16,
+    paddingBottom: 2,
   },
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 9,
     borderRadius: 18,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(233, 213, 255, 0.8)",
+    borderColor: "#E9D5FF",
   },
   categoryChipActive: {
     backgroundColor: "#7C3AED",
@@ -1438,24 +1623,26 @@ const styles = StyleSheet.create({
   },
   promptCardsContainer: {
     width: "100%",
-    gap: 10,
-    marginTop: 4,
+    gap: 9,
+    marginTop: -4,
+  },
+  promptSectionTitle: {
+    color: "#1E1B4B",
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    marginBottom: 1,
   },
   promptCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 17,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(233, 213, 255, 0.7)",
+    borderColor: "#EEE7FF",
     shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOpacity: 0.045,
+    shadowRadius: 7,
     elevation: 2,
-  },
-  uploadPromptCard: {
-    backgroundColor: "#FAF8FF",
-    borderColor: "#DDD6FE",
   },
   promptCardTop: {
     flexDirection: "row",
@@ -1467,9 +1654,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F5F3FF",
-    borderRadius: 8,
+    borderRadius: 9,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 5,
   },
   promptBadgeText: {
     fontSize: 11,
@@ -1477,10 +1664,18 @@ const styles = StyleSheet.create({
     color: "#7C3AED",
   },
   promptText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: "Inter_400Regular",
-    color: "#334155",
+    color: "#475569",
+  },
+  promptArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F3FF",
   },
 
   // ── Messages ──

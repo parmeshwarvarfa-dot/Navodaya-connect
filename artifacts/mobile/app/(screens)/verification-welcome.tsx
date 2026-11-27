@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Dimensions, ScrollView,
+  View, StyleSheet, TouchableOpacity, Animated, Platform, Dimensions, ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +8,7 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const { width } = Dimensions.get("window");
 

@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
   Platform,
-  TextInput,
   ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,6 +17,7 @@ import { useColors } from "@/hooks/useColors";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/context/AuthContext";
 import type { Connection } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const FILTERS = ["All", "Verified", "Engineers", "Doctors", "IAS/IPS", "Defence"];
 

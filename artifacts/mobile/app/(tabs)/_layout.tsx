@@ -1,11 +1,12 @@
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, TouchableOpacity, Text } from "react-native";
+import { Platform, StyleSheet, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "@/components/motion/MotionProvider";
 import ParamAiFloatingButton from "@/components/param/ParamAiFloatingButton";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
@@ -23,7 +24,7 @@ const TAB_ITEMS: {
   { name: "profile",  title: "Profile",  icon: "person-outline",     activeIcon: "person" },
 ];
 
-const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store"];
+const HIDDEN = ["alumni", "jobs", "groups", "mentorship", "problems", "store", "memories-saved", "memories-settings"];
 
 function DostAiFab() {
   const insets = useSafeAreaInsets();
@@ -45,7 +46,9 @@ function FloatingTabBar({ state, navigation }: TabBarProps) {
           const routeIndex = state.routes.findIndex((r: { name: string }) => r.name === item.name);
           if (routeIndex === -1) return null;
           const route = state.routes[routeIndex];
-          const isFocused = state.index === routeIndex;
+          const currentRouteName = state.routes[state.index]?.name;
+          const isFocused = state.index === routeIndex ||
+            item.name === "memories" && ["memories-saved", "memories-settings"].includes(currentRouteName);
 
           const onPress = () => {
             const event = navigation.emit({

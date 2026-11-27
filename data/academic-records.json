@@ -1,0 +1,340 @@
+{
+  "attendance": [],
+  "assessments": [],
+  "timetables": {
+    "d4bc2c34-7ae9-4405-b644-02a7fa6289b4": {
+      "assignmentId": "d4bc2c34-7ae9-4405-b644-02a7fa6289b4",
+      "className": "12",
+      "section": "Unspecified",
+      "schedule": {
+        "Monday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          },
+          {
+            "period": 6,
+            "time": "14:30 - 15:15",
+            "subject": "Biology / Comp Sci",
+            "teacherName": "Faculty",
+            "room": "Computer Lab"
+          },
+          {
+            "period": 7,
+            "time": "15:15 - 16:00",
+            "subject": "Physical Education",
+            "teacherName": "PET",
+            "room": "Ground"
+          },
+          {
+            "period": 8,
+            "time": "16:00 - 16:45",
+            "subject": "Self-Study & Remedial",
+            "teacherName": "Aman Kumar",
+            "room": "Library"
+          }
+        ],
+        "Tuesday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          },
+          {
+            "period": 6,
+            "time": "14:30 - 15:15",
+            "subject": "Biology / Comp Sci",
+            "teacherName": "Faculty",
+            "room": "Computer Lab"
+          },
+          {
+            "period": 7,
+            "time": "15:15 - 16:00",
+            "subject": "Physical Education",
+            "teacherName": "PET",
+            "room": "Ground"
+          },
+          {
+            "period": 8,
+            "time": "16:00 - 16:45",
+            "subject": "Self-Study & Remedial",
+            "teacherName": "Aman Kumar",
+            "room": "Library"
+          }
+        ],
+        "Wednesday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          },
+          {
+            "period": 6,
+            "time": "14:30 - 15:15",
+            "subject": "Biology / Comp Sci",
+            "teacherName": "Faculty",
+            "room": "Computer Lab"
+          },
+          {
+            "period": 7,
+            "time": "15:15 - 16:00",
+            "subject": "Physical Education",
+            "teacherName": "PET",
+            "room": "Ground"
+          },
+          {
+            "period": 8,
+            "time": "16:00 - 16:45",
+            "subject": "Self-Study & Remedial",
+            "teacherName": "Aman Kumar",
+            "room": "Library"
+          }
+        ],
+        "Thursday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          },
+          {
+            "period": 6,
+            "time": "14:30 - 15:15",
+            "subject": "Biology / Comp Sci",
+            "teacherName": "Faculty",
+            "room": "Computer Lab"
+          },
+          {
+            "period": 7,
+            "time": "15:15 - 16:00",
+            "subject": "Physical Education",
+            "teacherName": "PET",
+            "room": "Ground"
+          },
+          {
+            "period": 8,
+            "time": "16:00 - 16:45",
+            "subject": "Self-Study & Remedial",
+            "teacherName": "Aman Kumar",
+            "room": "Library"
+          }
+        ],
+        "Friday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          },
+          {
+            "period": 6,
+            "time": "14:30 - 15:15",
+            "subject": "Biology / Comp Sci",
+            "teacherName": "Faculty",
+            "room": "Computer Lab"
+          },
+          {
+            "period": 7,
+            "time": "15:15 - 16:00",
+            "subject": "Physical Education",
+            "teacherName": "PET",
+            "room": "Ground"
+          },
+          {
+            "period": 8,
+            "time": "16:00 - 16:45",
+            "subject": "Self-Study & Remedial",
+            "teacherName": "Aman Kumar",
+            "room": "Library"
+          }
+        ],
+        "Saturday": [
+          {
+            "period": 1,
+            "time": "09:15 - 10:00",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 2,
+            "time": "10:00 - 10:45",
+            "subject": "Physics",
+            "teacherName": "Faculty",
+            "room": "Physics Lab"
+          },
+          {
+            "period": 3,
+            "time": "10:45 - 11:30",
+            "subject": "Chemistry",
+            "teacherName": "Faculty",
+            "room": "Chemistry Lab"
+          },
+          {
+            "period": 4,
+            "time": "11:50 - 12:35",
+            "subject": "mathematics",
+            "teacherName": "Aman Kumar",
+            "room": "Room 101"
+          },
+          {
+            "period": 5,
+            "time": "12:35 - 13:20",
+            "subject": "English",
+            "teacherName": "Faculty",
+            "room": "Room 101"
+          }
+        ]
+      }
+    }
+  }
+}

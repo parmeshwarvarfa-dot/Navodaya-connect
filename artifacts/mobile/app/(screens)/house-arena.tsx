@@ -6,7 +6,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -25,6 +24,7 @@ import LeaderboardSection from "@/components/competition/LeaderboardSection";
 import EventsSection from "@/components/competition/EventsSection";
 import AdminCompetitionModal from "@/components/competition/AdminCompetitionModal";
 import GamePlayModal from "@/components/games/GamePlayModal";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type CompetitionTab = "battles" | "daily_puzzles" | "games" | "leaderboards" | "events";
 

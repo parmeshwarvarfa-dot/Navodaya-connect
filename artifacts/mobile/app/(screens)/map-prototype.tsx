@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import type { MapViewRequest } from "@/components/map/map-types";
 import { hasValidCoordinates, JNV_MAP_PILOT_SCHOOLS, type JnvMapSchool } from "@/lib/jnv-map-data";
 import FadeIn from "@/components/motion/FadeIn";
 import MotionPressable from "@/components/motion/MotionPressable";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 type ViewMode = "map" | "list";
 type JnvDirectorySchool = {

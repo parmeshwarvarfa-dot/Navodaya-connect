@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  TextInput,
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +17,7 @@ import {
   type AcademicStudent,
   type ClassAssessmentRecord,
 } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const GRADE_COLOR: Record<string, string> = {
   "A+": "#10B981",

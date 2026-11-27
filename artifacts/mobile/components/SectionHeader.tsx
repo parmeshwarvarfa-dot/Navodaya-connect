@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface SectionHeaderProps {
   title: string;

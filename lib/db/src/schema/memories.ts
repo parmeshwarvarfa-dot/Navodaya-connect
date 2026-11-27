@@ -11,6 +11,7 @@ export const memoriesTable = pgTable("memories", {
   postType: text("post_type").notNull().default("text"),
   mediaUrls: text("media_urls").notNull().default("[]"),
   pollOptions: text("poll_options").notNull().default("[]"),
+  pollExpiresAt: timestamp("poll_expires_at"),
   visibility: text("visibility").notNull().default("public"),
   commentsEnabled: boolean("comments_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at").defaultNow(),

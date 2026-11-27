@@ -16,6 +16,7 @@ export interface CreateMemoryRequest {
   /** @maxItems 10 */
   mediaAssets?: MemoryMediaAsset[];
   pollOptions?: string[];
+  pollDurationHours?: 24 | 72 | 168 | 336;
   visibility?: CreateMemoryRequestVisibility;
   commentsEnabled?: boolean;
 }

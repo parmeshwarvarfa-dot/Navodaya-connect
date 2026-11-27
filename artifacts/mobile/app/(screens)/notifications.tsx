@@ -9,7 +9,6 @@ import {
   ScrollView,
   SectionList,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -26,6 +25,7 @@ import { api, type SocialNotification } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 import { getNotificationRoute } from "@/lib/notification-navigation";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type FilterTab = "all" | "unread" | "mentions" | "social" | "messages" | "requests" | "opportunities" | "system";
 

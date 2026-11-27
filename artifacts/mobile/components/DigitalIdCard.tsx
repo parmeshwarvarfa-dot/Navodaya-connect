@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Alert, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, Platform, Share, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import * as Clipboard from "expo-clipboard";
@@ -8,6 +8,7 @@ import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import type { DigitalCredential } from "@/lib/api";
 import { createDigitalIdProfileUrl } from "@/lib/digital-id";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const ROLE_LABEL: Record<string, string> = { student: "Student", alumni: "Alumni", teacher: "Teacher", official: "JNV Official" };
 

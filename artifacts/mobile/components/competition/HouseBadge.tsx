@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { getHouseMeta, type HouseName } from "@/constants/HouseTheme";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface HouseBadgeProps {
   house: string;

@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Switch,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +17,7 @@ import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { Problem } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const CATEGORIES = [
   { id: "Academic", label: "Academic", icon: "book-outline" },
@@ -101,7 +100,7 @@ export default function ReportProblemScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
+      <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -312,7 +311,7 @@ export default function ReportProblemScreen() {
       <Modal visible={successModal} transparent animationType="fade" onRequestClose={() => setSuccessModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <LinearGradient colors={["#4B6EF5", "#3151E8"]} style={styles.modalIconWrap}>
+            <LinearGradient colors={["#8B5CF6", "#6D28D9"]} style={styles.modalIconWrap}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </LinearGradient>
             <Text style={styles.modalTitle}>Report Submitted!</Text>

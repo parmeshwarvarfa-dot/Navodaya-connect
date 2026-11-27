@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,6 +18,7 @@ import { isPostEditable, formatEditTimeRemaining } from "@/lib/post-editing";
 import MemoryCommentsSheet from "@/components/memories/MemoryCommentsSheet";
 import MemoryComposer from "@/components/memories/MemoryComposer";
 import MemoryPostCard from "@/components/memories/MemoryPostCard";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type Props = { userId: string; isOwner: boolean; restricted?: boolean; mode?: "preview" | "all" };
 type RelationList = "followers" | "following";

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api, type AlumniMembershipPlan } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 interface AlumniPremiumSubscriptionModalProps {
   visible: boolean;

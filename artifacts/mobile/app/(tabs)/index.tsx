@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
-  Text,
   ActivityIndicator,
   ScrollView,
   StyleSheet,
@@ -24,6 +23,7 @@ import AchievementsHighlights from "@/components/AchievementsHighlights";
 import MotionPressable from "@/components/motion/MotionPressable";
 import FadeIn from "@/components/motion/FadeIn";
 import JnvNewsCarousel from "@/components/JnvNewsCarousel";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const STUDENT_ACTIONS = [
   { label: "Study Hub",        icon: "book-outline"            as const, color: "#7C3AED", bg: "#F5F3FF", route: "/(screens)/study-section"          },
@@ -439,7 +439,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="JNV Map and Ranking. Explore Navodaya schools and discover their rankings."
           >
-            <LinearGradient colors={["#273F8F", "#3151E8"]} style={styles.mapRankingGradient}>
+            <LinearGradient colors={["#4C1D95", "#6D28D9"]} style={styles.mapRankingGradient}>
               <View style={styles.mapRankingText}>
                 <Text style={styles.mapRankingTitle}>JNV Map & Ranking</Text>
                 <Text style={styles.mapRankingSubtitle}>Explore Navodaya schools and discover their rankings.</Text>

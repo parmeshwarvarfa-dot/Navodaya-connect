@@ -4,8 +4,8 @@ import {
   Linking,
   Modal,
   Share,
+  ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { SocialMemory } from "@workspace/api-client-react";
 import MotionPressable from "@/components/motion/MotionPressable";
 import { formatPublishDateTime } from "@/lib/date-formatting";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 type Props = {
   memory: SocialMemory;
@@ -32,7 +33,7 @@ type Props = {
 const TYPE_LABEL: Record<string, string> = {
   achievement: "Achievement",
   event: "Event",
-  poll: "Poll",
+  poll: "POLL",
 };
 
 function formatDate(value: string) {
@@ -54,10 +55,17 @@ export default function MemoryPostCard({
   onMessage,
 }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [mediaIndex, setMediaIndex] = useState(0);
   const { width, height } = useWindowDimensions();
+  const mediaWidth = Math.max(220, Math.min(width - 68, 680));
   const mediaUrls = memory.mediaUrls ?? [];
   const totalVotes = (memory.pollVotes ?? []).reduce((sum, value) => sum + value, 0);
   const isOwner = memory.authorId === currentUserId;
+  const isPollClosed = Boolean(
+    memory.isPollClosed ||
+    (memory.pollExpiresAt && new Date(memory.pollExpiresAt).getTime() <= Date.now()),
+  );
+  const showPollResults = memory.viewerVote !== undefined || isPollClosed;
 
   const share = async () => {
     try {
@@ -102,9 +110,20 @@ export default function MemoryPostCard({
             {[memory.jnvName, formatPublishDateTime(memory.createdAt)].filter(Boolean).join(" · ")}
           </Text>
         </View>
-        {TYPE_LABEL[memory.postType] ? (
-          <View style={[styles.typePill, memory.postType === "event" ? styles.eventPill : memory.postType === "achievement" ? styles.achievementPill : styles.pollPill]}>
-            <Text style={styles.typePillText}>{TYPE_LABEL[memory.postType]}</Text>
+        {memory.contentType === "navodayan_talk" || TYPE_LABEL[memory.postType] ? (
+          <View style={[
+            styles.typePill,
+            memory.contentType === "navodayan_talk"
+              ? styles.talkPill
+              : memory.postType === "event"
+                ? styles.eventPill
+                : memory.postType === "achievement"
+                  ? styles.achievementPill
+                  : styles.pollPill,
+          ]}>
+            <Text style={styles.typePillText}>
+              {memory.contentType === "navodayan_talk" ? "NAVODAYAN TALKS" : TYPE_LABEL[memory.postType]}
+            </Text>
           </View>
         ) : null}
         <TouchableOpacity style={styles.moreButton} onPress={() => onMore(memory)} accessibilityLabel="Post options">
@@ -112,6 +131,8 @@ export default function MemoryPostCard({
         </TouchableOpacity>
       </View>
 
+      {memory.talkTitle ? <Text style={styles.talkTitle}>{memory.talkTitle}</Text> : null}
+      {memory.talkCategory ? <Text style={styles.talkCategory}>{memory.talkCategory}</Text> : null}
       {memory.caption ? <Text style={styles.caption}>{memory.caption}</Text> : null}
 
       {memory.postType === "poll" && memory.pollOptions?.length > 0 && (
@@ -125,48 +146,63 @@ export default function MemoryPostCard({
                 key={`${memory.id}-${index}`}
                 style={[styles.pollOption, chosen && styles.pollOptionChosen]}
                 onPress={() => onVote(memory, index)}
-                disabled={memory.viewerVote !== undefined || actionPending}
+                disabled={showPollResults || actionPending}
                 accessibilityRole="button"
-                accessibilityState={{ selected: chosen, disabled: memory.viewerVote !== undefined || actionPending }}
+                accessibilityState={{ selected: chosen, disabled: showPollResults || actionPending }}
               >
                 <View style={[styles.pollFill, { width: `${percentage}%` }]} />
                 <Text style={styles.pollOptionText}>{option}</Text>
-                <Text style={styles.pollPercent}>{memory.viewerVote !== undefined ? `${percentage}%` : ""}</Text>
+                <Text style={styles.pollPercent}>{showPollResults ? `${percentage}%` : ""}</Text>
               </TouchableOpacity>
             );
           })}
-          <Text style={styles.pollTotal}>{totalVotes} {totalVotes === 1 ? "vote" : "votes"}</Text>
+          <Text style={styles.pollTotal}>
+            {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
+            {isPollClosed ? " · Poll closed" : memory.pollExpiresAt ? ` · Ends ${formatDate(memory.pollExpiresAt)}` : ""}
+          </Text>
         </View>
       )}
 
       {mediaUrls.length > 0 && (
-        <View style={styles.mediaGrid}>
-          {mediaUrls.slice(0, 4).map((url, index) => (
-            memory.postType === "video" ? (
-              <TouchableOpacity key={`${memory.id}-${index}`} style={styles.videoCard} onPress={() => openVideo(url)}>
-                <Ionicons name="play-circle" size={50} color="#fff" />
+        <View style={[styles.mediaCarousel, { width: mediaWidth }]}>
+          {memory.postType === "video" ? (
+            <TouchableOpacity style={styles.videoCard} onPress={() => openVideo(mediaUrls[0])} accessibilityLabel="Play video">
+              <View style={styles.videoPlay}>
+                <Ionicons name="play-circle" size={52} color="#fff" />
                 <Text style={styles.videoText}>Tap to play video</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                key={`${memory.id}-${index}`}
-                style={[styles.mediaImageTouch, mediaUrls.length === 1 && styles.singleImageTouch]}
-                onPress={() => setLightboxIndex(index)}
-                accessibilityLabel={`Open photo ${index + 1}`}
-              >
-                <Image
-                  source={{ uri: url }}
-                  style={styles.mediaImage}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            )
-          ))}
-          {mediaUrls.length > 4 && (
-            <TouchableOpacity style={styles.moreMedia} onPress={() => setLightboxIndex(3)} accessibilityLabel={`View ${mediaUrls.length - 3} more photos`}>
-              <Text style={styles.moreMediaText}>+{mediaUrls.length - 4}</Text>
+              </View>
             </TouchableOpacity>
+          ) : (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              decelerationRate="fast"
+              accessibilityLabel={`Photo carousel with ${mediaUrls.length} photos. Swipe to view more.`}
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => setMediaIndex(Math.round(event.nativeEvent.contentOffset.x / mediaWidth))}
+            >
+              {mediaUrls.map((url, index) => (
+                <TouchableOpacity
+                  key={`${memory.id}-${index}`}
+                  style={{ width: mediaWidth }}
+                  onPress={() => setLightboxIndex(index)}
+                  accessibilityLabel={`Open photo ${index + 1}`}
+                >
+                  <Image source={{ uri: url }} style={[styles.mediaImage, { width: mediaWidth }]} resizeMode="cover" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           )}
+          {memory.postType !== "video" && mediaUrls.length > 1 ? (
+            <>
+              <View style={styles.mediaCount}><Text style={styles.mediaCountText}>{mediaIndex + 1}/{mediaUrls.length}</Text></View>
+              <View style={styles.mediaPagination} accessibilityLabel={`Photo ${mediaIndex + 1} of ${mediaUrls.length}`}>
+                {mediaUrls.map((_, index) => (
+                  <View key={`${memory.id}-indicator-${index}`} style={[styles.mediaDot, index === mediaIndex && styles.mediaDotActive]} />
+                ))}
+              </View>
+            </>
+          ) : null}
         </View>
       )}
 
@@ -195,14 +231,14 @@ export default function MemoryPostCard({
           <Ionicons name="chatbubble-outline" size={18} color="#65728A" />
           <Text style={styles.actionText}>Comment</Text>
         </TouchableOpacity>
-        <MotionPressable style={styles.action} onPress={() => onBookmark(memory)} disabled={actionPending} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
-          <Ionicons name={memory.bookmarked ? "bookmark" : "bookmark-outline"} size={18} color={memory.bookmarked ? "#355BE5" : "#65728A"} />
-          <Text style={[styles.actionText, memory.bookmarked && styles.bookmarkActive]}>Save</Text>
-        </MotionPressable>
         <TouchableOpacity style={styles.action} onPress={share}>
           <Ionicons name="share-social-outline" size={18} color="#65728A" />
           <Text style={styles.actionText}>Share</Text>
         </TouchableOpacity>
+        <MotionPressable style={styles.action} onPress={() => onBookmark(memory)} disabled={actionPending} accessibilityLabel={memory.bookmarked ? "Remove bookmark" : "Bookmark post"}>
+          <Ionicons name={memory.bookmarked ? "bookmark" : "bookmark-outline"} size={18} color={memory.bookmarked ? "#355BE5" : "#65728A"} />
+          <Text style={[styles.actionText, memory.bookmarked && styles.bookmarkActive]}>Save</Text>
+        </MotionPressable>
         {isOwner && <Ionicons name="lock-closed-outline" size={13} color="#8A95A8" style={styles.ownerIcon} />}
       </View>
 
@@ -244,17 +280,12 @@ export default function MemoryPostCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 18,
-    marginHorizontal: 16,
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: "rgba(233, 213, 255, 0.7)",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 3,
+    paddingHorizontal: 16,
+    paddingTop: 13,
+    paddingBottom: 8,
+    marginTop: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0EBF5",
   },
   header: { flexDirection: "row", alignItems: "center", gap: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F5F3FF", borderWidth: 1.5, borderColor: "#7C3AED", alignItems: "center", justifyContent: "center", overflow: "hidden" },
@@ -268,16 +299,21 @@ const styles = StyleSheet.create({
   achievementPill: { backgroundColor: "#ECFDF5" },
   eventPill: { backgroundColor: "#FFFBEB" },
   pollPill: { backgroundColor: "#F5F3FF" },
+  talkPill: { backgroundColor: "#EDE9FE" },
   typePillText: { color: "#7C3AED", fontSize: 10, fontFamily: "Inter_700Bold" },
+  talkTitle: { color: "#211B45", fontSize: 17, lineHeight: 23, fontFamily: "Inter_700Bold", marginTop: 12 },
+  talkCategory: { color: "#7C3AED", fontSize: 11, fontFamily: "Inter_600SemiBold", marginTop: 5 },
   caption: { color: "#1E1B4B", fontSize: 14, lineHeight: 22, fontFamily: "Inter_400Regular", marginTop: 12, marginBottom: 12 },
-  mediaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, overflow: "hidden", borderRadius: 16, marginTop: 4 },
-  mediaImageTouch: { width: "48.8%", height: 160 },
-  singleImageTouch: { width: "100%", height: 260 },
-  mediaImage: { width: "100%", height: "100%", borderRadius: 12, backgroundColor: "#EDE9FE" },
-  videoCard: { width: "100%", height: 210, backgroundColor: "#1E1B4B", borderRadius: 16, alignItems: "center", justifyContent: "center", gap: 6 },
+  mediaCarousel: { alignSelf: "center", position: "relative", overflow: "hidden", borderRadius: 14, marginTop: 3, backgroundColor: "#EDE9FE" },
+  mediaImage: { height: 300, backgroundColor: "#EDE9FE" },
+  videoCard: { width: "100%", height: 240, backgroundColor: "#1E1B4B", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  videoPlay: { alignItems: "center", justifyContent: "center", backgroundColor: "#211B45", ...StyleSheet.absoluteFillObject },
   videoText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  moreMedia: { position: "absolute", right: 0, bottom: 0, width: "48.8%", height: 160, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(30, 27, 75, 0.65)" },
-  moreMediaText: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold" },
+  mediaCount: { position: "absolute", top: 10, right: 10, borderRadius: 14, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: "rgba(28,22,44,0.68)" },
+  mediaCountText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  mediaPagination: { position: "absolute", bottom: 10, alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: 14, backgroundColor: "rgba(28,22,44,0.62)" },
+  mediaDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.66)" },
+  mediaDotActive: { width: 15, backgroundColor: "#FFFFFF" },
   poll: { gap: 8, marginTop: 10, marginBottom: 10 },
   pollOption: { minHeight: 44, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(233, 213, 255, 0.8)", backgroundColor: "#FFFFFF" },
   pollOptionChosen: { borderColor: "#7C3AED", backgroundColor: "#F5F3FF" },

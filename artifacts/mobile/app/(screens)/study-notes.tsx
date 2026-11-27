@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
-  TextInput,
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api, getApiOrigin } from "@/lib/api";
 import type { StudyMaterial } from "@/lib/api";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 const BASE_SUBJECTS = ["All", "Physics", "Chemistry", "Maths", "English", "Biology", "History", "Geography", "Computer Science", "Economics", "Hindi"];
 const TYPES = ["All", "PDF", "Notes", "PYQ", "Slides", "Link", "Assignment"];

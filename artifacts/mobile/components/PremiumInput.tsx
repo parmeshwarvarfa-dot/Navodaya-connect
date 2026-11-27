@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInputProps,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
+import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
 interface PremiumInputProps extends TextInputProps {
   label?: string;

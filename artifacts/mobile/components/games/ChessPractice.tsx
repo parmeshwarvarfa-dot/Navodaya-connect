@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { Chess, type Square } from "chess.js";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api } from "@/lib/api";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 const FILES = "abcdefgh";
 const GLYPHS: Record<string, string> = {

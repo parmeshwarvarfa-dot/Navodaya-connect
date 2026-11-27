@@ -6,7 +6,6 @@ import {
   PanResponder,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
@@ -14,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import type { ImagePickerAsset } from "expo-image-picker";
+import { ThemedText as Text } from "@/components/ThemedNative";
 
 export type ImageCropAspect = "original" | "square" | "portrait" | "landscape" | "free";
 
