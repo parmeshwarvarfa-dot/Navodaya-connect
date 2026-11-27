@@ -7,7 +7,7 @@ import { clearStoreAdminToken, getStoreAdminToken, setStoreAdminToken } from "@/
 import { firebaseAuth } from "@/lib/firebase";
 import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/ThemedNative";
 
-type Section = "Overview" | "Products" | "Categories" | "Sellers" | "Inventory" | "Staff & permissions" | "Audit logs";
+type Section = "Overview" | "Products" | "Categories" | "Sellers" | "Inventory" | "Orders" | "Returns" | "Commissions" | "Payouts" | "Staff & permissions" | "Audit logs";
 const ADMIN_ROLES: StoreAdminRole[] = ["store_manager", "product_manager", "order_manager", "inventory_manager", "seller_manager", "finance_manager", "customer_support"];
 
 export default function StoreAdminScreen() {
@@ -48,6 +48,13 @@ export default function StoreAdminScreen() {
   const [staffRole, setStaffRole] = useState<StoreAdminRole>("product_manager");
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [editingStaffRole, setEditingStaffRole] = useState<StoreAdminRole>("product_manager");
+  const [adminOrders, setAdminOrders] = useState<Array<Record<string, any>>>([]);
+  const [adminSubOrders, setAdminSubOrders] = useState<Array<Record<string, any>>>([]);
+  const [adminReturns, setAdminReturns] = useState<Array<Record<string, any>>>([]);
+  const [commissionRules, setCommissionRules] = useState<Array<Record<string, any>>>([]);
+  const [payoutBatches, setPayoutBatches] = useState<Array<Record<string, any>>>([]);
+  const [commCategoryId, setCommCategoryId] = useState<string>("");
+  const [commRatePct, setCommRatePct] = useState<string>("10");
   const { width: viewportWidth } = useWindowDimensions();
   const wideLayout = viewportWidth >= 960;
 
@@ -206,6 +213,24 @@ export default function StoreAdminScreen() {
       try { setAdminStaff((await api.storeAdmin.staff()).items); }
       catch (e) { setError(e instanceof Error ? e.message : "Staff list could not be loaded."); }
     }
+    if (next === "Orders" && has("orders.view")) {
+      try { const o = await api.storeAdmin.orders(); setAdminOrders(o.orders); setAdminSubOrders(o.subOrders); }
+      catch (e) { setError(e instanceof Error ? e.message : "Orders could not be loaded."); }
+    }
+    if (next === "Returns" && has("returns.manage")) {
+      try { setAdminReturns((await api.storeAdmin.returns()).items); }
+      catch (e) { setError(e instanceof Error ? e.message : "Returns could not be loaded."); }
+    }
+    if (next === "Commissions") {
+      try {
+        setCommissionRules((await api.storeAdmin.commissions()).items);
+        if (!commCategoryId && categories[0]) setCommCategoryId(categories[0].id);
+      } catch (e) { setError(e instanceof Error ? e.message : "Commission rules could not be loaded."); }
+    }
+    if (next === "Payouts") {
+      try { setPayoutBatches((await api.storeAdmin.payouts()).batches); }
+      catch (e) { setError(e instanceof Error ? e.message : "Payouts could not be loaded."); }
+    }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator color="#7C3AED" /><Text style={styles.muted}>Checking administrator access…</Text></View>;
@@ -230,7 +255,7 @@ export default function StoreAdminScreen() {
     </View>
   );
 
-   const sections: Section[] = ["Overview", ...(has("products.view") ? ["Products" as const] : []), ...(has("products.view") ? ["Categories" as const] : []), ...(has("sellers.approve") ? ["Sellers" as const] : []), ...(has("inventory.manage") ? ["Inventory" as const] : []), ...(has("staff.manage") ? ["Staff & permissions" as const] : []), ...(has("audit_logs.view") ? ["Audit logs" as const] : [])];
+   const sections: Section[] = ["Overview", ...(has("products.view") ? ["Products" as const] : []), ...(has("products.view") ? ["Categories" as const] : []), ...(has("sellers.approve") ? ["Sellers" as const] : []), ...(has("inventory.manage") ? ["Inventory" as const] : []), ...(has("orders.view") ? ["Orders" as const] : []), ...(has("returns.manage") ? ["Returns" as const] : []), ...(has("commissions.manage") ? ["Commissions" as const] : []), ...(has("payouts.prepare") || has("payouts.execute") ? ["Payouts" as const] : []), ...(has("staff.manage") ? ["Staff & permissions" as const] : []), ...(has("audit_logs.view") ? ["Audit logs" as const] : [])];
   return (
     <View style={styles.page}>
       <View style={styles.topbar}>
@@ -273,6 +298,91 @@ export default function StoreAdminScreen() {
           <Text style={styles.pageTitle}>Staff & permissions</Text><Text style={styles.muted}>Assign existing accounts one of the least-privilege Store roles. Changes require your password and revoke the target account’s current sessions.</Text>
           <View style={styles.panel}><Text style={styles.panelTitle}>Assign a staff role</Text><TextInput style={styles.input} placeholder="Existing account email" value={staffEmail} onChangeText={setStaffEmail} autoCapitalize="none" keyboardType="email-address" /><Text style={styles.label}>Role</Text><View style={styles.roleChoices}>{ADMIN_ROLES.map((role) => <TouchableOpacity key={role} onPress={() => setStaffRole(role)} style={[styles.roleChoice, staffRole === role && styles.roleChoiceActive]}><Text style={[styles.roleChoiceText, staffRole === role && styles.roleChoiceTextActive]}>{role.replaceAll("_", " ")}</Text></TouchableOpacity>)}</View><TextInput style={[styles.input, { marginTop: 12 }]} placeholder="Confirm with your current password" value={staffPassword} onChangeText={setStaffPassword} secureTextEntry autoComplete="current-password" /><TouchableOpacity style={styles.primary} disabled={busy} onPress={assignStaff}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Assign role</Text>}</TouchableOpacity></View>
           {adminStaff.map((member: StoreAdminMember) => <View key={member.userId} style={styles.productRow}><View style={styles.productIcon}><Ionicons name="person-outline" size={20} color="#7C3AED" /></View><View style={{ flex: 1 }}><Text style={styles.productName}>{member.name}</Text>{editingStaffId === member.userId ? <><View style={styles.roleChoices}>{ADMIN_ROLES.map((role) => <TouchableOpacity key={role} onPress={() => setEditingStaffRole(role)} style={[styles.roleChoice, editingStaffRole === role && styles.roleChoiceActive]}><Text style={[styles.roleChoiceText, editingStaffRole === role && styles.roleChoiceTextActive]}>{role.replaceAll("_", " ")}</Text></TouchableOpacity>)}</View><View style={styles.rowActions}><TouchableOpacity disabled={busy} style={styles.smallPrimary} onPress={() => void updateStaffRole(member)}><Text style={styles.smallPrimaryText}>Save role</Text></TouchableOpacity><TouchableOpacity style={styles.stockButton} onPress={() => setEditingStaffId(null)}><Text style={styles.stockButtonText}>Cancel</Text></TouchableOpacity></View></> : <Text style={styles.productMeta}>{member.email} · {member.role.replaceAll("_", " ")}</Text>}</View><TouchableOpacity style={styles.stockButton} onPress={() => { setEditingStaffId(member.userId); setEditingStaffRole(member.role); }}><Text style={styles.stockButtonText}>Role</Text></TouchableOpacity><TouchableOpacity style={[styles.statusPill, !member.active && styles.statusDisabled]} onPress={() => void toggleStaffActive(member)}><Text style={styles.statusText}>{member.active ? "Disable" : "Enable"}</Text></TouchableOpacity></View>)}
+        </>}
+        {section === "Orders" && <>
+          <Text style={styles.pageTitle}>Orders & Sub-Orders</Text>
+          <Text style={styles.muted}>{adminOrders.length} parent orders · {adminSubOrders.length} seller/platform sub-orders</Text>
+          {adminOrders.map((o) => (
+            <View key={o.id} style={styles.productRow}>
+              <View style={styles.productIcon}><Ionicons name="receipt-outline" size={20} color="#7C3AED" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.productName}>{o.orderNumber} · ₹{(Number(o.totalPaise || 0) / 100).toFixed(0)}</Text>
+                <Text style={styles.productMeta}>{o.status} · payment: {o.paymentStatus} ({o.paymentMethod})</Text>
+              </View>
+            </View>
+          ))}
+        </>}
+        {section === "Returns" && <>
+          <Text style={styles.pageTitle}>Central Returns & Refunds</Text>
+          {adminReturns.map((r) => (
+            <View key={r.id} style={styles.productRow}>
+              <View style={styles.productIcon}><Ionicons name="return-down-back-outline" size={20} color="#7C3AED" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.productName}>{r.reason} · ₹{(Number(r.refundAmountPaise || 0) / 100).toFixed(0)}</Text>
+                <Text style={styles.productMeta}>Status: {r.status} · Type: {r.returnType}</Text>
+                {r.status === "requested" && (
+                  <View style={styles.rowActions}>
+                    <TouchableOpacity style={styles.smallPrimary} onPress={async () => { await api.storeAdmin.updateReturn(r.id, { status: "approved" }); setAdminReturns((await api.storeAdmin.returns()).items); }}><Text style={styles.smallPrimaryText}>Approve</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.smallDanger} onPress={async () => { await api.storeAdmin.updateReturn(r.id, { status: "rejected" }); setAdminReturns((await api.storeAdmin.returns()).items); }}><Text style={styles.dangerText}>Reject</Text></TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          ))}
+          {!adminReturns.length && <View style={styles.empty}><Text style={styles.muted}>No return requests yet.</Text></View>}
+        </>}
+        {section === "Commissions" && <>
+          <Text style={styles.pageTitle}>Category Commission Rules</Text>
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>Set category commission %</Text>
+            <View style={styles.roleChoices}>
+              {categories.map((c) => (
+                <TouchableOpacity key={c.id} onPress={() => setCommCategoryId(c.id)} style={[styles.roleChoice, commCategoryId === c.id && styles.roleChoiceActive]}>
+                  <Text style={[styles.roleChoiceText, commCategoryId === c.id && styles.roleChoiceTextActive]}>{c.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput style={[styles.input, { marginTop: 10 }]} value={commRatePct} onChangeText={setCommRatePct} keyboardType="decimal-pad" placeholder="Commission % (e.g. 10)" />
+            <TouchableOpacity style={styles.smallPrimary} onPress={async () => {
+              if (!commCategoryId) return;
+              await api.storeAdmin.setCommission(commCategoryId, Number(commRatePct));
+              setCommissionRules((await api.storeAdmin.commissions()).items);
+            }}><Text style={styles.smallPrimaryText}>Save Commission Rule</Text></TouchableOpacity>
+          </View>
+          {commissionRules.map((cr) => (
+            <View key={cr.id} style={styles.productRow}>
+              <View style={styles.productIcon}><Ionicons name="pricetag-outline" size={20} color="#7C3AED" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.productName}>{cr.categoryName || "Category"} · {(cr.rateBps / 100).toFixed(2)}%</Text>
+                <Text style={styles.productMeta}>Version {cr.version} · {cr.active ? "Active" : "Historical"}</Text>
+              </View>
+            </View>
+          ))}
+        </>}
+        {section === "Payouts" && <>
+          <View style={styles.titleRow}>
+            <View><Text style={styles.pageTitle}>Weekly Seller Payouts</Text><Text style={styles.muted}>Prepare and execute weekly seller settlements.</Text></View>
+            {has("payouts.prepare") && <TouchableOpacity style={styles.smallPrimary} onPress={async () => {
+              try { await api.storeAdmin.generatePayoutBatch(); setPayoutBatches((await api.storeAdmin.payouts()).batches); }
+              catch (e) { setError(e instanceof Error ? e.message : "No unpaid seller earnings ready."); }
+            }}><Text style={styles.smallPrimaryText}>Generate Batch</Text></TouchableOpacity>}
+          </View>
+          {payoutBatches.map((b) => (
+            <View key={b.id} style={styles.productRow}>
+              <View style={styles.productIcon}><Ionicons name="cash-outline" size={20} color="#7C3AED" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.productName}>{b.batchNumber} · ₹{(Number(b.totalAmountPaise || 0) / 100).toFixed(2)}</Text>
+                <Text style={styles.productMeta}>Status: {b.status}</Text>
+              </View>
+              {b.status === "scheduled" && has("payouts.execute") && (
+                <TouchableOpacity style={styles.publishBtn} onPress={async () => {
+                  await api.storeAdmin.executePayoutBatch(b.id);
+                  setPayoutBatches((await api.storeAdmin.payouts()).batches);
+                }}><Text style={styles.publishText}>Execute</Text></TouchableOpacity>
+              )}
+            </View>
+          ))}
+          {!payoutBatches.length && <View style={styles.empty}><Text style={styles.muted}>No payout batches generated yet.</Text></View>}
         </>}
         {section === "Audit logs" && <><Text style={styles.pageTitle}>Audit logs</Text><Text style={styles.muted}>Recent administrator activity.</Text>{auditLogs.map((entry: Record<string, any>) => <View key={entry.id} style={styles.productRow}><View style={styles.productIcon}><Ionicons name="document-text-outline" size={20} color="#7C3AED" /></View><View style={{ flex: 1 }}><Text style={styles.productName}>{String(entry.action).replaceAll(".", " · ")}</Text><Text style={styles.productMeta}>{entry.actorRole ?? "System"} · {new Date(entry.createdAt).toLocaleString()}</Text></View><Text style={styles.auditOutcome}>{entry.outcome}</Text></View>)}</>}
       </ScrollView>

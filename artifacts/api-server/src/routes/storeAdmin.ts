@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, count, desc, eq, ilike, lt, or } from "drizzle-orm";
 import { db, storeAdminSessionsTable, storeAdminAuditLogsTable, storeAdminStaffTable, storeCategoriesTable, storeProductsTable, storeSellersTable, usersTable } from "@workspace/db";
 import { isStoreAdminRole, STORE_ADMIN_PERMISSIONS, storeAdminHasPermission, type StoreAdminRole } from "../lib/store-admin-access";
+import storeAdminMarketplaceRouter from "./storeAdminMarketplace";
 import { verifyFirebaseToken } from "./auth";
 
 const router = Router();
@@ -362,5 +363,7 @@ router.patch("/store-admin/staff/:userId", requirePermission("staff.manage"), as
     return res.status(500).json({ error: "Staff access could not be changed." });
   }
 });
+
+router.use(storeAdminMarketplaceRouter);
 
 export default router;

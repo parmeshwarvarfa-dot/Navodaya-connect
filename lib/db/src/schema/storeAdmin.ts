@@ -22,7 +22,10 @@ export const storeCategoriesTable = pgTable("store_categories", {
   name: text("name").notNull().unique(),
   description: text("description"),
   imageUrl: text("image_url"),
+  parentId: uuid("parent_id"),
+  sortOrder: integer("sort_order").notNull().default(0),
   visible: boolean("visible").notNull().default(true),
+  archived: boolean("archived").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -39,14 +42,34 @@ export const storeProductsTable = pgTable("store_products", {
   brand: text("brand"),
   variants: jsonb("variants").$type<Array<{ name: string; options: Array<{ value: string; stock: number }> }>>().notNull().default([]),
   categoryId: uuid("category_id").references(() => storeCategoriesTable.id, { onDelete: "set null" }),
+  subcategoryId: uuid("subcategory_id"),
+  ownershipType: text("ownership_type").notNull().default("platform"),
+  sellerId: uuid("seller_id"),
+  fulfillmentModel: text("fulfillment_model").notNull().default("platform"),
+  weightGrams: integer("weight_grams").notNull().default(250),
+  dimensionsCm: jsonb("dimensions_cm").$type<{ length?: number; width?: number; height?: number }>().notNull().default({}),
   stock: integer("stock").notNull().default(0),
+  reservedStock: integer("reserved_stock").notNull().default(0),
+  soldCount: integer("sold_count").notNull().default(0),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
+  codEligible: boolean("cod_eligible").notNull().default(false),
+  returnPolicyDays: integer("return_policy_days").notNull().default(7),
+  condition: text("condition").notNull().default("new"),
   status: text("status").notNull().default("draft"),
+  approvalFeedback: text("approval_feedback"),
+  approvedBy: uuid("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  publishedAt: timestamp("published_at"),
   featured: boolean("featured").notNull().default(false),
   createdBy: uuid("created_by").notNull().references(() => usersTable.id),
   updatedBy: uuid("updated_by").notNull().references(() => usersTable.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("store_products_status_idx").on(table.status),
+  index("store_products_seller_idx").on(table.sellerId),
+  index("store_products_category_idx").on(table.categoryId),
+]);
 
 export const storeAdminAuditLogsTable = pgTable("store_admin_audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),

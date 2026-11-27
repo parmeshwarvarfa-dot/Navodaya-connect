@@ -674,6 +674,25 @@ export const api = {
     deactivateCategory: (id: string) => adminRequest<{ id: string; visible: boolean }>(`/store-admin/categories/${encodeURIComponent(id)}`, { method: "DELETE" }),
     sellers: (status?: string) => adminRequest<{ items: StoreSeller[] }>(`/store-admin/sellers${queryString({ status })}`),
     updateSeller: (id: string, status: "approved" | "rejected" | "suspended") => adminRequest<StoreSeller>(`/store-admin/sellers/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    reviewProduct: (id: string, action: "approve" | "publish" | "request_changes" | "reject" | "unpublish" | "suspend", feedback?: string) =>
+      adminRequest<StoreAdminProduct>(`/store-admin/products/${encodeURIComponent(id)}/review`, { method: "PATCH", body: JSON.stringify({ action, feedback }) }),
+    adjustInventory: (productId: string, stock: number, note: string) =>
+      adminRequest<StoreAdminProduct>(`/store-admin/inventory/${encodeURIComponent(productId)}/adjust`, { method: "POST", body: JSON.stringify({ stock, note }) }),
+    analytics: () => adminRequest<Record<string, number>>("/store-admin/analytics"),
+    orders: () => adminRequest<{ orders: StoreOrder[]; subOrders: ApiRecord[] }>("/store-admin/orders"),
+    fulfillSubOrder: (id: string, data: { fulfillmentStatus: string; trackingNumber?: string; carrier?: string }) =>
+      adminRequest<ApiRecord>(`/store-admin/sub-orders/${encodeURIComponent(id)}/fulfill`, { method: "PATCH", body: JSON.stringify(data) }),
+    commissions: () => adminRequest<{ items: ApiRecord[] }>("/store-admin/commissions"),
+    setCommission: (categoryId: string, ratePercent: number) =>
+      adminRequest<ApiRecord>("/store-admin/commissions", { method: "POST", body: JSON.stringify({ categoryId, ratePercent }) }),
+    payouts: () => adminRequest<{ batches: ApiRecord[]; payouts: ApiRecord[] }>("/store-admin/payouts"),
+    generatePayoutBatch: () => adminRequest<ApiRecord>("/store-admin/payouts/generate-batch", { method: "POST" }),
+    executePayoutBatch: (id: string) => adminRequest<{ id: string; status: string }>(`/store-admin/payouts/batches/${encodeURIComponent(id)}/execute`, { method: "PATCH" }),
+    returns: () => adminRequest<{ items: ApiRecord[] }>("/store-admin/returns"),
+    updateReturn: (id: string, data: { status: string; adminNotes?: string; inspectionOutcome?: string; restockEligible?: boolean; refundReference?: string }) =>
+      adminRequest<ApiRecord>(`/store-admin/returns/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
+    coupons: () => adminRequest<{ items: ApiRecord[] }>("/store-admin/coupons"),
+    createCoupon: (data: Record<string, unknown>) => adminRequest<ApiRecord>("/store-admin/coupons", { method: "POST", body: JSON.stringify(data) }),
     auditLogs: (limit = 50) => adminRequest<{ items: ApiRecord[] }>(`/store-admin/audit-logs${queryString({ limit })}`),
     staff: () => adminRequest<{ items: StoreAdminMember[] }>("/store-admin/staff"),
     assignStaff: (email: string, role: StoreAdminRole, currentPassword: string) => adminRequest<ApiRecord>("/store-admin/staff", { method: "POST", body: JSON.stringify({ email, role, currentPassword }) }),
@@ -694,15 +713,35 @@ export const api = {
     wishlist: () => request<{ items: StoreProduct[] }>("/store/wishlist"),
     saveWishlist: (productId: string) => request<{ saved: boolean }>(`/store/wishlist/${encodeURIComponent(productId)}`, { method: "POST" }),
     removeWishlist: (productId: string) => request<{ saved: boolean }>(`/store/wishlist/${encodeURIComponent(productId)}`, { method: "DELETE" }),
-    previewCheckout: (addressId: string) => request<StoreCheckoutPreview>("/store/checkout/preview", { method: "POST", body: JSON.stringify({ addressId }) }),
-    placeOrder: (addressId: string, idempotencyKey: string, paymentMethod = "upi") => request<StoreOrderDetails>("/store/orders", { method: "POST", body: JSON.stringify({ addressId, idempotencyKey, paymentMethod }) }),
+    previewCheckout: (addressId: string, couponCode?: string, paymentMethod?: string) =>
+      request<StoreCheckoutPreview>("/store/checkout/preview", { method: "POST", body: JSON.stringify({ addressId, couponCode, paymentMethod }) }),
+    placeOrder: (addressId: string, idempotencyKey: string, paymentMethod = "upi", couponCode?: string) =>
+      request<StoreOrderDetails>("/store/orders", { method: "POST", body: JSON.stringify({ addressId, idempotencyKey, paymentMethod, couponCode }) }),
     cancelOrder: (id: string, reason?: string) => request<StoreOrder>(`/store/orders/${encodeURIComponent(id)}/cancel`, { method: "PATCH", body: JSON.stringify({ reason }) }),
     orders: () => request<{ items: StoreOrder[] }>("/store/orders"),
     order: (id: string) => request<StoreOrderDetails>(`/store/orders/${encodeURIComponent(id)}`),
+    returns: () => request<{ items: ApiRecord[] }>("/store/returns"),
+    requestReturn: (data: { orderId: string; orderItemId?: string; quantity?: number; returnType?: "refund" | "replacement"; reason: string; description?: string }) =>
+      request<ApiRecord>("/store/returns", { method: "POST", body: JSON.stringify(data) }),
+    sellerProfile: (id: string) => request<{ seller: StoreSeller; products: StoreProduct[] }>(`/store/sellers/${encodeURIComponent(id)}`),
     reviews: (productId: string) => request<StoreReview[]>(`/store/products/${encodeURIComponent(productId)}/reviews`),
     submitReview: (productId: string, rating: number, body: string) => request<StoreReview>(`/store/products/${encodeURIComponent(productId)}/reviews`, { method: "POST", body: JSON.stringify({ rating, body }) }),
     applyAsSeller: (displayName: string, description: string) => request<StoreSeller>("/store/sellers/apply", { method: "POST", body: JSON.stringify({ displayName, description }) }),
     sellerApplication: () => request<StoreSeller>("/store/sellers/me"),
+  },
+  seller: {
+    me: () => request<StoreSeller>("/seller/me"),
+    apply: (data: Record<string, unknown>) => request<StoreSeller>("/seller/apply", { method: "POST", body: JSON.stringify(data) }),
+    dashboard: () => request<ApiRecord>("/seller/dashboard"),
+    products: () => request<{ items: ApiRecord[] }>("/seller/products"),
+    createProduct: (data: Record<string, unknown>) => request<ApiRecord>("/seller/products", { method: "POST", body: JSON.stringify(data) }),
+    updateProduct: (id: string, data: Record<string, unknown>) => request<ApiRecord>(`/seller/products/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
+    updateInventory: (productId: string, stock: number, note?: string) =>
+      request<ApiRecord>(`/seller/inventory/${encodeURIComponent(productId)}`, { method: "PATCH", body: JSON.stringify({ stock, note }) }),
+    orders: () => request<{ items: ApiRecord[] }>("/seller/orders"),
+    fulfillOrder: (subOrderId: string, data: { fulfillmentStatus: string; trackingNumber?: string; carrier?: string }) =>
+      request<ApiRecord>(`/seller/orders/${encodeURIComponent(subOrderId)}/fulfill`, { method: "PATCH", body: JSON.stringify(data) }),
+    earnings: () => request<{ ledger: ApiRecord[]; payouts: ApiRecord[]; returnsCount: number }>("/seller/earnings"),
   },
 };
 

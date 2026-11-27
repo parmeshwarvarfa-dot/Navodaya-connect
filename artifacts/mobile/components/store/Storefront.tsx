@@ -1269,7 +1269,7 @@ export default function Storefront({ showBack = false }: { showBack?: boolean })
         <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.profileOptionRow} onPress={() => setActiveModal("seller")}>
+      <TouchableOpacity style={styles.profileOptionRow} onPress={() => router.push("/(screens)/seller-portal" as any)}>
         <View style={styles.profileOptionLeft}>
           <Ionicons name="storefront-outline" size={20} color="#7C3AED" />
           <Text style={styles.profileOptionText}>Sell on Store Room (Alumni & Student Creators)</Text>
