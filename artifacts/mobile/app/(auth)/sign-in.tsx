@@ -492,14 +492,25 @@ export default function SignInScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.exploreLinkBtn}
-            onPress={() => router.push("/(screens)/explore" as any)}
-            activeOpacity={0.75}
-          >
-            <Ionicons name="compass-outline" size={15} color="#7C3AED" />
-            <Text style={styles.exploreLinkText}>Explore Navodaya Connect Previews</Text>
-          </TouchableOpacity>
+          <View style={styles.secondaryLinksRow}>
+            <TouchableOpacity
+              style={styles.exploreLinkBtn}
+              onPress={() => router.push("/(screens)/explore" as any)}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="compass-outline" size={15} color="#7C3AED" />
+              <Text style={styles.exploreLinkText}>Explore Navodaya Connect Previews</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.storeAdminIconBtn}
+              onPress={() => router.push("/store-admin" as any)}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Store Admin Sign In"
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color="#7C3AED" />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -908,6 +919,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#7C3AED",
   },
+  secondaryLinksRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
   exploreLinkBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -916,6 +933,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 16,
+  },
+  storeAdminIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#EDE9FE",
+    alignItems: "center",
+    justifyContent: "center",
   },
   exploreLinkText: {
     fontSize: 12,
