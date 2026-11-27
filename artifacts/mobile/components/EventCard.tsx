@@ -49,6 +49,8 @@ interface EventCardProps {
   registered?: boolean;
   registrationSuccess?: boolean;
   onRegister?: () => void;
+  onCancelRegistration?: () => void;
+  onManageRegistrations?: () => void;
   onOrganizerPress?: (organizerId: string | undefined, organizerName: string) => boolean | void | Promise<boolean | void>;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -61,6 +63,8 @@ export default function EventCard({
   registered = false,
   registrationSuccess = false,
   onRegister,
+  onCancelRegistration,
+  onManageRegistrations,
   onOrganizerPress,
   onEdit,
   onDelete,
@@ -192,8 +196,21 @@ export default function EventCard({
           <Ionicons name="chevron-forward" size={15} color="#7C3AED" />
         </MotionPressable>
 
-        {(onEdit || onDelete) && (
+        {(onManageRegistrations || onEdit || onDelete) && (
           <View style={styles.ownerActions}>
+            {onManageRegistrations && (
+              <TouchableOpacity
+                style={styles.manageRegButton}
+                onPress={onManageRegistrations}
+                accessibilityRole="button"
+                accessibilityLabel={`Manage registrations for ${event.title}`}
+              >
+                <Ionicons name="people-outline" size={16} color="#fff" />
+                <Text style={styles.manageRegText}>
+                  Manage Registrations{typeof event.confirmedCount === "number" ? ` (${event.confirmedCount})` : ""}
+                </Text>
+              </TouchableOpacity>
+            )}
             {onEdit && <TouchableOpacity style={styles.editEventButton} onPress={onEdit} accessibilityRole="button" accessibilityLabel={`Edit ${event.title}`}>
               <Ionicons name="create-outline" size={16} color="#7C3AED" />
               <Text style={styles.editEventText}>Edit event</Text>
@@ -205,25 +222,47 @@ export default function EventCard({
           </View>
         )}
 
+        {typeof event.maxCapacity === "number" && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <Ionicons name="ticket-outline" size={14} color="#6D28D9" />
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#6D28D9" }}>
+              {event.remainingCapacity === 0
+                ? "Event Full"
+                : `${event.confirmedCount ?? 0} / ${event.maxCapacity} registered · ${event.remainingCapacity ?? event.maxCapacity} spots left`}
+            </Text>
+          </View>
+        )}
+
         {showRegisterButton && (
-          registrationSuccess ? (
-            <View style={styles.successBanner}>
-              <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-              <Text style={styles.successBannerText}>You&apos;re registered! See you there.</Text>
+          registrationSuccess || registered ? (
+            <View style={{ gap: 8 }}>
+              <View style={styles.successBanner}>
+                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                <Text style={styles.successBannerText}>Confirmed! You&apos;re registered for this event.</Text>
+              </View>
+              {onCancelRegistration ? (
+                <TouchableOpacity onPress={onCancelRegistration} style={{ alignSelf: "flex-end", paddingVertical: 4 }}>
+                  <Text style={{ fontSize: 12, color: "#B42318", fontFamily: "Inter_600SemiBold" }}>Cancel registration</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : (
             <MotionPressable
-              style={[styles.registerBtn, registered && styles.registeredBtn]}
-              onPress={registered ? undefined : onRegister}
-              disabled={registered || !onRegister}
+              style={[styles.registerBtn, (event.remainingCapacity === 0 || event.status === "cancelled") && styles.registeredBtn]}
+              onPress={event.remainingCapacity === 0 || event.status === "cancelled" ? undefined : onRegister}
+              disabled={event.remainingCapacity === 0 || event.status === "cancelled" || !onRegister}
             >
               <Ionicons
-                name={registered ? "checkmark-circle" : "person-add-outline"}
+                name={event.status === "cancelled" ? "close-circle-outline" : "person-add-outline"}
                 size={17}
                 color="#fff"
               />
               <Text style={styles.registerBtnText}>
-                {registered ? "Registered" : "Register for this Event"}
+                {event.status === "cancelled"
+                  ? "Event Cancelled"
+                  : event.remainingCapacity === 0
+                    ? "Event Full"
+                    : "Register for this Event"}
               </Text>
             </MotionPressable>
           )
@@ -424,7 +463,9 @@ const styles = StyleSheet.create({
   metaGrid: { gap: 10, marginBottom: 16 },
   detailsLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 5, marginTop: -8, marginBottom: 8 },
   detailsLinkText: { color: "#7C3AED", fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  ownerActions: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  ownerActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
+  manageRegButton: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#7C3AED" },
+  manageRegText: { color: "#FFFFFF", fontSize: 12, fontFamily: "Inter_700Bold" },
   detailsOwnerActions: { marginTop: 8, marginBottom: 18 },
   editEventButton: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#F5F3FF" },
   editEventText: { color: "#7C3AED", fontSize: 12, fontFamily: "Inter_600SemiBold" },

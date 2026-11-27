@@ -22,6 +22,7 @@ import type { Event } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useVerificationGate } from "@/components/VerificationGateModal";
 import EventCard from "@/components/EventCard";
+import EventRegistrationsModal from "@/components/EventRegistrationsModal";
 import CalendarModal from "@/components/CalendarModal";
 import VenuePickerModal from "@/components/map/VenuePickerModal";
 import FadeIn from "@/components/motion/FadeIn";
@@ -30,7 +31,7 @@ import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/T
 
 async function registerForEvent(
   eventId: string,
-  data: Record<string, string>
+  data: Record<string, unknown>
 ): Promise<void> {
   await api.events.register(eventId, data);
 }
@@ -183,18 +184,23 @@ function RegistrationModal({ event, role, profile, visible, onClose, onSuccess }
   const [feedback, setFeedback] = useState("");
   const [attending, setAttending] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [regError, setRegError] = useState("");
 
   const handleSubmit = async () => {
     if (!name.trim() || !contact.trim()) return;
     setSubmitting(true);
+    setRegError("");
     try {
       await registerForEvent(event.id, {
         fullName: name.trim(), jnvName, jnvState, contactNo: contact.trim(),
         passoutBatch, house, class: cls, designation, subject,
         contribution, feedback, dietaryPreference: dietary,
+        attendingInPerson: attending,
       });
       onSuccess();
-    } catch {}
+    } catch (error) {
+      setRegError(error instanceof Error ? error.message : "Could not complete registration. Please try again.");
+    }
     setSubmitting(false);
   };
 
@@ -275,6 +281,12 @@ function RegistrationModal({ event, role, profile, visible, onClose, onSuccess }
               multiline
             />
 
+            {regError ? (
+              <Text style={{ color: "#B42318", fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 10 }}>
+                {regError}
+              </Text>
+            ) : null}
+
             <TouchableOpacity
               style={[regStyles.submitBtn, (!name.trim() || !contact.trim() || submitting) && regStyles.submitBtnDisabled]}
               onPress={handleSubmit}
@@ -307,6 +319,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [maxCapacity, setMaxCapacity] = useState("");
   const [eventMedia, setEventMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [mediaToAdjust, setMediaToAdjust] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [showImageAdjustment, setShowImageAdjustment] = useState(false);
@@ -324,6 +337,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
     setVenue(eventToEdit?.location ?? "");
     setDate(eventToEdit ? eventDateInputValue(eventToEdit.date) : "");
     setTime(eventToEdit ? eventTimeInputValue(eventToEdit.date) : "");
+    setMaxCapacity(eventToEdit?.maxCapacity ? String(eventToEdit.maxCapacity) : "");
     setEventMedia(null);
     setCreateError("");
     setSuccess(false);
@@ -383,11 +397,19 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
         const uploaded = await api.memories.uploadMedia(eventMedia.uri, fileName, eventMedia.mimeType);
         uploadedKey = uploaded.key;
       }
-      const payload = { title: title.trim(), description: description.trim(), date: eventDate.toISOString(), location: venue.trim(), ...(uploadedKey ? { mediaKey: uploadedKey } : {}) };
+      const parsedCap = maxCapacity.trim() ? Number(maxCapacity.trim()) : null;
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        date: eventDate.toISOString(),
+        location: venue.trim(),
+        ...(parsedCap && Number.isInteger(parsedCap) && parsedCap > 0 ? { maxCapacity: parsedCap } : { maxCapacity: null }),
+        ...(uploadedKey ? { mediaKey: uploadedKey } : {}),
+      };
       if (eventToEdit) await api.events.update(eventToEdit.id, payload);
       else await api.events.create(payload);
       setSuccess(true);
-      setTitle(""); setDescription(""); setVenue(""); setDate(""); setTime(""); setEventMedia(null);
+      setTitle(""); setDescription(""); setVenue(""); setDate(""); setTime(""); setMaxCapacity(""); setEventMedia(null);
     } catch (error) {
       if (uploadedKey) {
         try { await api.memories.cleanupUploads([uploadedKey]); } catch {}
@@ -448,6 +470,7 @@ function CreateEventModal({ visible, onClose, onCreated, eventToEdit }: { visibl
               { label: "Venue / Location", value: venue, onChange: setVenue, placeholder: "e.g. School Auditorium / Online (Zoom)", icon: "location-outline", required: true, onIconPress: () => setShowVenuePicker(true) },
               { label: "Date", value: date, onChange: setDate, placeholder: "DD-MM-YYYY (e.g. 25-12-2026)", icon: "calendar-outline", required: true, onIconPress: openDatePicker },
               { label: "Time", value: time, onChange: setTime, placeholder: "HH:mm (24-hour)", icon: "time-outline", required: false },
+              { label: "Max Capacity (Optional)", value: maxCapacity, onChange: setMaxCapacity, placeholder: "Leave blank for unlimited", icon: "people-outline", required: false },
             ].map((f) => (
               <View key={f.label} style={cStyles.fieldWrap}>
                 <Text style={cStyles.fieldLabel}>{f.label}{f.required && <Text style={{ color: "#EF4444" }}> *</Text>}</Text>
@@ -630,6 +653,7 @@ export default function EventsScreen() {
   const [deletingEvent, setDeletingEvent] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [regEvent, setRegEvent] = useState<Event | null>(null);
+  const [manageEvent, setManageEvent] = useState<Event | null>(null);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [successEvent, setSuccessEvent] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -638,7 +662,14 @@ export default function EventsScreen() {
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const fetchEvents = async () => {
-    try { setEvents(await api.events.list()); setLoadError(false); } catch { setLoadError(true); }
+    try {
+      const list = await api.events.list();
+      setEvents(list);
+      setRegistered(new Set(list.filter((e) => e.isRegistered).map((e) => e.id)));
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
   };
 
   useEffect(() => { fetchEvents(); }, []);
@@ -686,6 +717,20 @@ export default function EventsScreen() {
     setRegistered((prev) => new Set([...prev, eventId]));
     setRegEvent(null);
     setSuccessEvent(eventId);
+    void fetchEvents();
+  };
+
+  const handleCancelRegistration = async (eventId: string) => {
+    try {
+      await api.events.cancelRegistration(eventId);
+      setRegistered((prev) => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+      if (successEvent === eventId) setSuccessEvent(null);
+      void fetchEvents();
+    } catch {}
   };
 
   const confirmDeleteEvent = async () => {
@@ -761,8 +806,10 @@ export default function EventsScreen() {
               registered={registered.has(event.id)}
               registrationSuccess={successEvent === event.id}
               onRegister={() => tryAccess("Events", () => setRegEvent(event))}
+              onCancelRegistration={() => void handleCancelRegistration(event.id)}
+              onManageRegistrations={event.canManage ? () => setManageEvent(event) : undefined}
               onOrganizerPress={openOrganizerProfile}
-              onEdit={profile?.role !== "student" && event.organizerId && event.organizerId === profile?.uid ? () => { setEditingEvent(event); setShowCreate(true); } : undefined}
+              onEdit={profile?.role !== "student" && event.canManage ? () => { setEditingEvent(event); setShowCreate(true); } : undefined}
               onDelete={event.organizerId && event.organizerId === profile?.uid ? () => { setDeleteError(""); setDeleteTarget(event); } : undefined}
             />
           </FadeIn>
@@ -780,6 +827,12 @@ export default function EventsScreen() {
           setShowCalendar(false);
           tryAccess("Events", () => setRegEvent(event));
         }}
+      />
+
+      <EventRegistrationsModal
+        event={manageEvent}
+        visible={!!manageEvent}
+        onClose={() => { setManageEvent(null); void fetchEvents(); }}
       />
 
       <CreateEventModal

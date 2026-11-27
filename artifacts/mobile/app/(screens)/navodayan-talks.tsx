@@ -27,7 +27,7 @@ import { ThemedText as Text, ThemedTextInput as TextInput } from "@/components/T
 const CATEGORIES = [
   "Career Journey", "Education", "Entrepreneurship", "Community Service", "Personal Growth", "Other",
 ];
-type TalkModerationAction = "start_review" | "request_changes" | "approve" | "reject" | "publish" | "remove";
+type TalkModerationAction = "start_review" | "request_changes" | "approve" | "reject" | "publish" | "remove" | "restore";
 type Tab = "discover" | "my" | "review";
 
 function makeRequestKey() {
@@ -68,7 +68,9 @@ function TalkCard({
         ? ["publish"]
         : talk.status === "published"
           ? ["remove"]
-          : [];
+          : talk.status === "removed"
+            ? ["restore"]
+            : [];
 
   const toggleLike = async () => {
     setBusy(true);
@@ -199,7 +201,7 @@ function TalkCard({
                   action === "request_changes" ? "Request changes" :
                     action === "approve" ? "Approve" :
                       action === "reject" ? "Reject" :
-                        action === "publish" ? "Publish" : "Remove"}
+                        action === "publish" ? "Publish" : action === "restore" ? "Restore" : "Remove"}
               </Text>
             </TouchableOpacity>
           ))}
@@ -233,6 +235,7 @@ export default function NavodayanTalksScreen() {
   const [batch, setBatch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [storyType, setStoryType] = useState<"written" | "video">("written");
+  const [visibility, setVisibility] = useState<"public" | "followers">("public");
   const [mediaKey, setMediaKey] = useState("");
   const [mediaLabel, setMediaLabel] = useState("");
   const [consentConfirmed, setConsentConfirmed] = useState(false);
@@ -310,6 +313,7 @@ export default function NavodayanTalksScreen() {
     setBatch("");
     setSelectedCategory(CATEGORIES[0]);
     setStoryType("written");
+    setVisibility("public");
     setMediaKey("");
     setMediaLabel("");
     setConsentConfirmed(false);
@@ -387,6 +391,7 @@ export default function NavodayanTalksScreen() {
           body: body.trim(),
           category: selectedCategory,
           topics: topicsInput.split(",").map((topic) => topic.trim()).filter(Boolean).slice(0, 6),
+          visibility,
           consentConfirmed,
           rightsConfirmed,
           saveAsDraft,
@@ -402,6 +407,7 @@ export default function NavodayanTalksScreen() {
           ...(career.trim() ? { career: career.trim() } : {}),
           ...(batch.trim() ? { batch: batch.trim() } : {}),
           ...(mediaKey ? { mediaKey } : {}),
+          visibility,
           consentConfirmed,
           rightsConfirmed,
           saveAsDraft,
@@ -412,13 +418,12 @@ export default function NavodayanTalksScreen() {
       resetComposer();
       setTab("my");
       refreshTalks();
+      void queryClient.invalidateQueries({ queryKey: ["/api/memories"] });
       Alert.alert(
-        saveAsDraft ? "Draft saved" : wasEditing ? "Story resubmitted" : "Story submitted",
+        saveAsDraft ? "Draft saved" : wasEditing ? "Story updated" : "Story published!",
         saveAsDraft
           ? "Your Talk is saved privately in My Talks."
-          : wasEditing
-            ? "Your changes are pending moderator review."
-            : "Your story is pending moderator review and will appear in Memories after approval.",
+          : "Your Navodayan Talk is now live in the Memories Posts feed.",
       );
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "Could not submit your story.");
@@ -497,7 +502,7 @@ export default function NavodayanTalksScreen() {
             onPress={() => setTab(value)}
           >
             <Text style={[styles.tabText, tab === value && styles.tabTextActive]}>
-              {value === "my" ? "My Talks" : "Review queue"}
+              {value === "my" ? "My Talks" : "Moderation"}
             </Text>
           </TouchableOpacity>
         ))}
@@ -635,6 +640,15 @@ export default function NavodayanTalksScreen() {
             <ConsentRow checked={consentConfirmed} onPress={() => setConsentConfirmed(!consentConfirmed)}>
               I confirm I have permission from identifiable people shown or mentioned, especially minors.
             </ConsentRow>
+            <Text style={styles.fieldLabel}>Audience</Text>
+            <View style={styles.formatRow}>
+              {(["public", "followers"] as const).map((vis) => (
+                <TouchableOpacity key={vis} style={[styles.formatCard, visibility === vis && styles.formatCardActive]} onPress={() => setVisibility(vis)}>
+                  <Ionicons name={vis === "public" ? "globe-outline" : "people-outline"} size={19} color={visibility === vis ? "#6D28D9" : "#667085"} />
+                  <Text style={[styles.formatText, visibility === vis && styles.formatTextActive]}>{vis === "public" ? "Public (Memories)" : "Followers only"}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <ConsentRow checked={rightsConfirmed} onPress={() => setRightsConfirmed(!rightsConfirmed)}>
               I own or have permission to share this story and all attached media.
             </ConsentRow>
@@ -643,9 +657,9 @@ export default function NavodayanTalksScreen() {
               <Text style={styles.draftButtonText}>Save draft</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.submitWide, (submitting || uploading) && styles.disabled]} onPress={() => void submitTalk(false)} disabled={submitting || uploading}>
-              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitWideText}>{editingTalk ? "Submit changes for review" : "Submit for review"}</Text>}
+              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitWideText}>{editingTalk ? "Save & Publish" : "Publish Talk"}</Text>}
             </TouchableOpacity>
-            <Text style={styles.privacyNote}>Your Talk will be reviewed before it appears in the Memories Posts feed. You can track its status in My Talks.</Text>
+            <Text style={styles.privacyNote}>Valid Talks publish automatically to the Memories Posts feed with a NAVODAYAN TALKS badge.</Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>

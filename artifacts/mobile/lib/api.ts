@@ -358,13 +358,47 @@ export const api = {
   },
   events: {
     list: (range?: { from: string; to: string }) => request<Event[]>(`/events${queryString(range ?? {})}`),
-    create: (data: { title: string; description: string; date: string; location?: string; mediaKey?: string }) =>
+    create: (data: { title: string; description: string; date: string; location?: string; mediaKey?: string; maxCapacity?: number | null; registrationDeadline?: string | null; authorizedOrganizers?: string[] }) =>
       request<Event>("/events", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: { title: string; description: string; date: string; location?: string | null; mediaKey?: string }) =>
+    update: (id: string, data: { title: string; description: string; date: string; location?: string | null; mediaKey?: string; maxCapacity?: number | null; registrationDeadline?: string | null; authorizedOrganizers?: string[]; status?: "active" | "cancelled" }) =>
       request<Event>(`/events/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<{ deleted: boolean }>(`/events/${encodeURIComponent(id)}`, { method: "DELETE" }),
-    register: (id: string, data: Record<string, string>) =>
+    register: (id: string, data: Record<string, unknown>) =>
       request<Record<string, unknown>>(`/events/${encodeURIComponent(id)}/register`, { method: "POST", body: JSON.stringify(data) }),
+    cancelRegistration: (id: string) =>
+      request<{ cancelled: boolean; status: string }>(`/events/${encodeURIComponent(id)}/register`, { method: "DELETE" }),
+    registrations: (
+      id: string,
+      params?: {
+        search?: string;
+        role?: string;
+        jnvName?: string;
+        batch?: string;
+        status?: string;
+        attendanceStatus?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        sort?: "newest" | "oldest" | "name_asc" | "name_desc";
+        page?: number;
+        limit?: number;
+      },
+    ) => request<EventRegistrationsDashboardResponse>(`/events/${encodeURIComponent(id)}/registrations${queryString(params ?? {})}`),
+    checkIn: (eventId: string, registrationId: string, checkedIn: boolean) =>
+      request<{ id: string; attendanceStatus: string; checkedInAt: string | null }>(
+        `/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/check-in`,
+        { method: "PATCH", body: JSON.stringify({ checkedIn }) },
+      ),
+    exportRegistrationsCsv: async (eventId: string): Promise<string> => {
+      const token = await getToken();
+      const response = await fetch(`${getBaseUrl()}/events/${encodeURIComponent(eventId)}/registrations/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text || "Could not export attendee list.");
+      }
+      return response.text();
+    },
   },
   calendar: {
     holidays: (range: { from: string; to: string }) =>
@@ -543,11 +577,12 @@ export const api = {
     create: (data: {
       submissionKey: string; title: string; body: string; storyType: "written" | "video";
       category: string; topics: string[]; career?: string; batch?: string; mediaKey?: string;
+      visibility?: "public" | "followers";
       consentConfirmed: boolean; rightsConfirmed: boolean; saveAsDraft?: boolean;
-    }) => request<{ id: string; status: string; duplicate: boolean }>("/talks", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: { title: string; body: string; category: string; topics: string[]; consentConfirmed: boolean; rightsConfirmed: boolean; saveAsDraft?: boolean }) =>
+    }) => request<{ id: string; memoryId?: string; status: string; duplicate: boolean }>("/talks", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: { title: string; body: string; category: string; topics: string[]; visibility?: "public" | "followers"; consentConfirmed: boolean; rightsConfirmed: boolean; saveAsDraft?: boolean }) =>
       request<{ id: string; status: string }>(`/talks/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }),
-    moderate: (id: string, action: "start_review" | "request_changes" | "approve" | "reject" | "publish" | "remove", reason: string) =>
+    moderate: (id: string, action: "start_review" | "request_changes" | "approve" | "reject" | "publish" | "remove" | "restore", reason: string) =>
       request<{ id: string; status: string }>(`/talks/${encodeURIComponent(id)}/moderate`, { method: "PATCH", body: JSON.stringify({ action, reason }) }),
   },
   achievements: {
@@ -1530,6 +1565,71 @@ export type YearbookSubmission = ApiRecord;
 export interface Event {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | null;
+  maxCapacity?: number | null;
+  registrationDeadline?: string | null;
+  authorizedOrganizers?: string[];
+  status?: string;
+  confirmedCount?: number;
+  remainingCapacity?: number | null;
+  isRegistered?: boolean;
+  myRegistrationStatus?: string | null;
+  canManage?: boolean;
+}
+
+export interface EventRegistrationItem {
+  id: string;
+  eventId: string;
+  userId: string;
+  fullName: string;
+  role: string;
+  jnvName?: string | null;
+  jnvState?: string | null;
+  jnvId?: string | null;
+  photoUrl?: string | null;
+  canOpenProfile: boolean;
+  passoutBatch?: string | null;
+  house?: string | null;
+  class?: string | null;
+  designation?: string | null;
+  subject?: string | null;
+  contribution?: string | null;
+  feedback?: string | null;
+  dietaryPreference?: string | null;
+  attendingInPerson: boolean;
+  customAnswers: Record<string, string>;
+  status: "confirmed" | "cancelled";
+  attendanceStatus: "checked_in" | "not_checked_in";
+  checkedInAt?: string | null;
+  cancelledAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface EventRegistrationsDashboardResponse {
+  event: {
+    id: string;
+    title: string;
+    date: string;
+    location?: string | null;
+    maxCapacity?: number | null;
+    registrationDeadline?: string | null;
+    status: string;
+  };
+  summary: {
+    total: number;
+    confirmed: number;
+    checkedIn: number;
+    cancelled: number;
+    remainingCapacity: number | null;
+    maxCapacity: number | null;
+    activityByDay: Array<{ date: string; count: number }>;
+  };
+  items: EventRegistrationItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalMatching: number;
+    hasMore: boolean;
+  };
 }
 
 export interface AlumniUser {
